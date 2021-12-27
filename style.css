@@ -99,3 +99,16 @@ button:focus {
         margin-right: auto;
     }
 }
+body{
+	font-family: "Segoe UI",Tahoma,Geneva,Verdana,sans-serif;		
+	margin: 0;
+	color: white;
+	background: linear-gradient(90deg,rgba(55,71,79,0),rgba(55, 71, 79, 0.7),rgba(55, 71, 79, 0.7),rgba(55,71,79,0)),url(bg1.jpg);
+	background-attachment: fixed;
+	}
+	@media (max-width:900px){
+		body{
+			background: url(bg1.jpg);
+			background-attachment: fixed;
+		}
+	}
