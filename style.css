@@ -2,7 +2,6 @@
     margin-left: auto;
     margin-right: auto;
     margin-top: 50px;
-    display: grid;
     width: 30vw;
     text-align: center;
 }
@@ -18,6 +17,7 @@ input{
     padding-right: 5px;
     vertical-align: middle;
     transition: outline ease-in-out 300ms, transform 150ms ease;
+    width: 30vw;
 }
 input:focus{
     outline: 2px solid #ee7a05;
@@ -50,19 +50,6 @@ button:focus {
 }
 .nosuchsystem{
     display: none;
-}
-@media (max-width:900px) {
-    .inputfield{
-        width: auto;
-        display: block;
-    }
-    button{
-        width: auto;
-        display: block;
-    }
-    input{
-        width: auto;
-    }
 }
 .suggestion{
     position: absolute;
@@ -97,6 +84,17 @@ button:focus {
         margin-top: 10px;
         margin-left: auto;
         margin-right: auto;
+    }
+    input{
+        width: 60vw;
+    }
+    .inputfield{
+        width: auto;
+        display: block;
+    }
+    button{
+        width: auto;
+        display: block;
     }
 }
 body{
