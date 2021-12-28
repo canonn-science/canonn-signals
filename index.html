@@ -14,7 +14,6 @@
 <h1>Canonn Signals</h1>
 <p>Enter a system name to view signals recorded by Canonn field researchers</p>
 <input type="text">
-<p class="suggestion">test</p>
 <button onclick="submitsysname()">Submit</button>
 <p class="nosuchsystem"></p>
 </div>
@@ -23,8 +22,9 @@ if (sysname !== undefined) {
     document.querySelector("input").value = sysname
 }
 function submitsysname() {
-    if (document.querySelector("input").value !== null || document.querySelector("input").value !== undefined) {
-        window.location.href = window.location.href.split('?')[0] + "?system=" + (document.querySelector("input").value).replace(/\+/g, "%2B").replace(/ /g, "+")
+    if (document.querySelector("input").value) {
+        var trimmedsysname = (document.querySelector("input").value).trim() 
+        window.location.href = window.location.href.split('?')[0] + "?system=" + trimmedsysname.replace(/\+/g, "%2B").replace(/ /g, "+")
     }
 }
 document.querySelector("input").addEventListener("keyup", function(event) {
@@ -35,7 +35,6 @@ document.querySelector("input").addEventListener("keyup", function(event) {
 document.querySelector("input").addEventListener("input", function(event) {
     
 })
-document.querySelector("inputafter").innerText = "test"
 </script>
 	
 <div class="main">
