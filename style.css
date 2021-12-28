@@ -91,7 +91,7 @@ button:focus {
 .bodynametag{
     margin-left: 10px;
 }
-@media (max-width:900px) {
+@media (max-width:1000px) {
     .systeminfo, .bodyinfo, .nosuchsystem{
         width: 90vw;
         margin-top: 10px;
