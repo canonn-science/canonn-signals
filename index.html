@@ -105,7 +105,7 @@ function makePage(system) {
             if (body.signals.biology !== undefined) {
                 biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/"+ body.signals.signals["$SAA_SignalType_Biological;"] + "\n" +  String(body.signals.biology).replace(/,/g, '\n')
             } else{
-                iosignals.innerText = "Biological signals: 0/"+ body.signals.signals["$SAA_SignalType_Biological;"]
+                biosignals.innerText = "Biological signals: 0/"+ body.signals.signals["$SAA_SignalType_Biological;"]
             }
             bodyinfo.appendChild(biosignals)
             if (body.signals.guesses !== undefined && body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"]) {
@@ -121,6 +121,12 @@ function makePage(system) {
         }
         main.appendChild(bodyinfo)
         }
+    }
+    if (document.querySelectorAll('.bodyinfo').length == 0) {
+        var nobodies = document.createElement("p")
+            nobodies.innerText = "There are no bodies in this system with recorded signals."
+            nobodies.classList.add("bodyinfo")
+            main.appendChild(nobodies)
     }
 }
 </script>
