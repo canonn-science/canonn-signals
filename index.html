@@ -2,134 +2,137 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Canonn Signals</title>
+	<title>System Signals</title>
 </head>
 <body>
 	<script>
 		const params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
 		const sysname = params.system
+        if (sysname) {
+            document.title = "System Signals - " + sysname
+        }
 	</script>
 	<link rel="stylesheet" href="style.css">
-<div class="inputfield">
-<h1>Canonn Signals</h1>
-<p>Enter a system name to view signals recorded by Canonn field researchers</p>
-<input type="text">
-<button onclick="submitsysname()">Submit</button>
-<p class="nosuchsystem"></p>
-</div>
-<script>
-if (sysname !== undefined) {
-    document.querySelector("input").value = sysname
-}
-function submitsysname() {
-    if (document.querySelector("input").value) {
-        var trimmedsysname = (document.querySelector("input").value).trim() 
-        window.location.href = window.location.href.split('?')[0] + "?system=" + trimmedsysname.replace(/\+/g, "%2B").replace(/ /g, "+")
+    <div class="inputfield">
+    <h1>System Signals</h1>
+    <p>Enter a system name to view signals recorded by Canonn field researchers</p>
+    <input type="text">
+    <button onclick="submitsysname()">Submit</button>
+    <p class="nosuchsystem"></p>
+    </div>
+    <script>
+    if (sysname) {
+        document.querySelector("input").value = sysname
     }
-}
-document.querySelector("input").addEventListener("keyup", function(event) {
-  if (event.key === "Enter") {
-      submitsysname()
-  }
-})
-document.querySelector("input").addEventListener("input", function(event) {
-    
-})
-</script>
-	
-<div class="main">
-</div>
-<script>
-if (sysname !== undefined) {
-    fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + sysname.replace(/\+/g, "%2B").replace(/ /g, "+"))
-      .then(response => response.json())
-      .then(data => getSystemInfo(data.id64))
-}
-function getSystemInfo(id64) {
-    if (id64 == undefined) {
-        document.querySelector(".nosuchsystem").innerText = "No such system found"
-        document.querySelector(".nosuchsystem").style.display = "block"
+    function submitsysname() {
+        if (document.querySelector("input").value) {
+            var trimmedsysname = (document.querySelector("input").value).trim() 
+            window.location.href = window.location.href.split('?')[0] + "?system=" + trimmedsysname.replace(/\+/g, "%2B").replace(/ /g, "+")
+        }
     }
-    else{
-        fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=" + id64)
+    document.querySelector("input").addEventListener("keyup", function(event) {
+    if (event.key === "Enter") {
+        submitsysname()
+    }
+    })
+    document.querySelector("input").addEventListener("input", function(event) {
+        
+    })
+    </script>
+
+    <div class="main">
+    </div>
+    <script>
+    if (sysname) {
+        fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + sysname.replace(/\+/g, "%2B").replace(/ /g, "+"))
         .then(response => response.json())
-        .then(data => makePage(data.system))
+        .then(data => getSystemInfo(data.id64))
     }
-}
-function makePage(system) {
-    const main = document.querySelector(".main")
-    var systeminfo = document.createElement("div")
-    systeminfo.classList.add("systeminfo")
-    var coords = document.createElement("p")
-    coords.innerText = "Coordinates: " + String(system.coords.x) + " / " + String(system.coords.y) + " / " + String(system.coords.z)
-    systeminfo.appendChild(coords)
-    var region = document.createElement("p")
-    region.innerText = "Region: " + system.region.name
-    systeminfo.appendChild(region)
-    main.appendChild(systeminfo)
-    for (let x = 0; x < system.bodies.length; x++) {
-        const body = system.bodies[x]
-        if (body.signals !== undefined && body.signals.signals !== undefined && (body.signals.signals["$SAA_SignalType_Human;"] !== undefined || body.signals.signals["$SAA_SignalType_Geological;"] !== undefined || body.signals.signals["$SAA_SignalType_Biological;"] !== undefined || body.signals.signals["$SAA_SignalType_Other;"] == true)) {
-        var bodyinfo = document.createElement("div")
-        bodyinfo.classList.add("bodyinfo")
-        var bodyname = document.createElement("p")
-        bodyname.classList.add("bodyname")
-        bodyname.innerText = body.name
-        bodyinfo.appendChild(bodyname)
-        var bodynametag = document.createElement("p")
-        bodynametag.classList.add("bodynametag")
-        if (body.mainStar == true) {
-            bodynametag.innerText = "(Main star)"
+    function getSystemInfo(id64) {
+        if (id64 == undefined) {
+            document.querySelector(".nosuchsystem").innerText = "No such system found"
+            document.querySelector(".nosuchsystem").style.display = "block"
         }
-        else if (body.isLandable == true) {
-            bodynametag.innerText = "(Landable)"
-        }
-        bodyinfo.appendChild(bodynametag)
-        if (body.signals.signals["$SAA_SignalType_Human;"] !== undefined) {
-            var humansignals = document.createElement("p")
-            humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]                
-            bodyinfo.appendChild(humansignals)
-        }
-        if (body.signals.signals["$SAA_SignalType_Geological;"] !== undefined) {
-            var geosignals = document.createElement("p")
-            if (body.signals.geology !== undefined) {
-                geosignals.innerText = "Geological signals: " + body.signals.geology.length + "/"+ body.signals.signals["$SAA_SignalType_Geological;"] + "\n" + String(body.signals.geology).replace(/,/g, '\n')
-
-            } else{
-                geosignals.innerText = "Geological signals: 0/"+ body.signals.signals["$SAA_SignalType_Geological;"]
-            }
-            bodyinfo.appendChild(geosignals)
-            }
-        if (body.signals.signals["$SAA_SignalType_Biological;"] !== undefined) {
-            var biosignals = document.createElement("p")
-            if (body.signals.biology !== undefined) {
-                biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/"+ body.signals.signals["$SAA_SignalType_Biological;"] + "\n" +  String(body.signals.biology).replace(/,/g, '\n')
-            } else{
-                biosignals.innerText = "Biological signals: 0/"+ body.signals.signals["$SAA_SignalType_Biological;"]
-            }
-            bodyinfo.appendChild(biosignals)
-            if (body.signals.guesses !== undefined && body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"]) {
-                var bioguesses = document.createElement("p")
-                bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
-                bodyinfo.appendChild(bioguesses)
-            }
-        }
-        if (body.signals.signals["$SAA_SignalType_Other;"] !== undefined) {
-            var othersignals = document.createElement("p")
-            othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
-            bodyinfo.appendChild(othersignals)
-        }
-        main.appendChild(bodyinfo)
+        else{
+            fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=" + id64)
+            .then(response => response.json())
+            .then(data => makePage(data.system))
         }
     }
-    if (document.querySelectorAll('.bodyinfo').length == 0) {
-        var nobodies = document.createElement("p")
-            nobodies.innerText = "There are no bodies in this system with recorded signals."
-            nobodies.classList.add("bodyinfo")
-            main.appendChild(nobodies)
+    function makePage(system) {
+        const main = document.querySelector(".main")
+        var systeminfo = document.createElement("div")
+        systeminfo.classList.add("systeminfo")
+        var coords = document.createElement("p")
+        coords.innerText = "Coordinates: " + String(system.coords.x) + " / " + String(system.coords.y) + " / " + String(system.coords.z)
+        systeminfo.appendChild(coords)
+        var region = document.createElement("p")
+        region.innerText = "Region: " + system.region.name
+        systeminfo.appendChild(region)
+        main.appendChild(systeminfo)
+        for (let x = 0; x < system.bodies.length; x++) {
+            const body = system.bodies[x]
+            if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"])) {
+            var bodyinfo = document.createElement("div")
+            bodyinfo.classList.add("bodyinfo")
+            var bodyname = document.createElement("p")
+            bodyname.classList.add("bodyname")
+            bodyname.innerText = body.name
+            bodyinfo.appendChild(bodyname)
+            var bodynametag = document.createElement("p")
+            bodynametag.classList.add("bodynametag")
+            if (body.mainStar == true) {
+                bodynametag.innerText = "(Main star)"
+            }
+            else if (body.isLandable == true) {
+                bodynametag.innerText = "(Landable)"
+            }
+            bodyinfo.appendChild(bodynametag)
+            if (body.signals.signals["$SAA_SignalType_Human;"]) {
+                var humansignals = document.createElement("p")
+                humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]                
+                bodyinfo.appendChild(humansignals)
+            }
+            if (body.signals.signals["$SAA_SignalType_Geological;"]) {
+                var geosignals = document.createElement("p")
+                if (body.signals.geology) {
+                    geosignals.innerText = "Geological signals: " + body.signals.geology.length + "/"+ body.signals.signals["$SAA_SignalType_Geological;"] + "\n" + String(body.signals.geology).replace(/,/g, '\n')
+                } else{
+                    geosignals.innerText = "Geological signals: 0/"+ body.signals.signals["$SAA_SignalType_Geological;"]
+                }
+                bodyinfo.appendChild(geosignals)
+                }
+            if (body.signals.signals["$SAA_SignalType_Biological;"]) {
+                var biosignals = document.createElement("p")
+                if (body.signals.biology) {
+                    biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/"+ body.signals.signals["$SAA_SignalType_Biological;"] + "\n" +  String(body.signals.biology).replace(/,/g, '\n')
+                    if (body.signals.guesses && body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"]) {
+                        var bioguesses = document.createElement("p")
+                        bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
+                    }
+                } 
+                else{
+                    biosignals.innerText = "Biological signals: 0/"+ body.signals.signals["$SAA_SignalType_Biological;"]
+                }
+                bodyinfo.appendChild(biosignals)
+                if (bioguesses) {
+                    bodyinfo.appendChild(bioguesses)
+                }
+            }
+            if (body.signals.signals["$SAA_SignalType_Other;"]) {
+                var othersignals = document.createElement("p")
+                othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
+                bodyinfo.appendChild(othersignals)
+            }
+            main.appendChild(bodyinfo)
+            }
+        }
+        if (document.querySelectorAll('.bodyinfo').length == 0) {
+            var nobodies = document.createElement("p")
+                nobodies.innerText = "There are no bodies in this system with recorded signals."
+                nobodies.classList.add("bodyinfo")
+                main.appendChild(nobodies)
+        }
     }
-}
-</script>
-	
-
+    </script>
 </body></html>
