@@ -1,0 +1,1 @@
+This is Elfener's attempt at making the new signals webpage for Canonn.

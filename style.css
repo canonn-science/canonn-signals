@@ -63,7 +63,7 @@ button:focus {
     margin: 10px;
     padding-top: 5px;
     padding-bottom: 5px;
-    width: 30vw;
+    width: min(30vw, 1000px);
     text-align: left;
     margin-left: auto;
     margin-right: auto;
@@ -74,13 +74,16 @@ button:focus {
 }
 .bodynametag, .bodyname{
     display: inline-block;
+    margin-block: 10px;
 }
 .bodynametag{
     margin-left: 10px;
 }
+.bodyinfo p {
+    margin-block: 10px;
+}
 @media (max-width:1000px) {
     .systeminfo, .bodyinfo, .nosuchsystem{
-        width: 90vw;
         margin-top: 10px;
         margin-left: auto;
         margin-right: auto;
@@ -104,9 +107,9 @@ body{
 	background: linear-gradient(90deg,rgba(55,71,79,0),rgba(55, 71, 79, 0.7),rgba(55, 71, 79, 0.7),rgba(55,71,79,0)),url(bg1.jpg);
 	background-attachment: fixed;
 	}
-	@media (max-width:900px){
-		body{
-			background: url(bg1.jpg);
-			background-attachment: fixed;
-		}
+@media (max-width:900px){
+	body{
+		background: linear-gradient(90deg,rgba(55, 71, 79, 0.7),rgba(55, 71, 79, 0.7)),url(bg1.jpg);
+		background-attachment: fixed;
 	}
+}
