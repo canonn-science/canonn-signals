@@ -59,6 +59,7 @@
         }
     }
     function makePage(system) {
+        console.log(system);
         const main = document.querySelector(".main")
         var systeminfo = document.createElement("div")
         systeminfo.classList.add("systeminfo")
@@ -68,12 +69,23 @@
         var region = document.createElement("p")
         region.innerText = "Region: " + system.region.name
         systeminfo.appendChild(region)
+        if (system.signals) {
+            if (system.signals.anomaly) {
+                var anomalies = document.createElement("p")
+                anomalies.innerText = "Anomalies:\n" + String(system.signals.anomaly).replace(/,/g, '\n')
+                systeminfo.appendChild(anomalies)
+                }
+            if (system.signals.cloud) {   
+                var clouds = document.createElement("p")
+                clouds.innerText = "Clouds:\n" + String(system.signals.cloud).replace(/,/g, '\n')
+                systeminfo.appendChild(clouds)
+            }
+        }
         main.appendChild(systeminfo)
         for (let x = 0; x < system.bodies.length; x++) {
             const body = system.bodies[x]
             // the huge if statement below checks if the body has the signals we want (human,other,geo,bio,guardian,thargoid) as we do not want to show bodies without signals (or bodies with just mining ring hotspot signals)
             if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) {
-            console.log(body);
             var bodyinfo = document.createElement("div")
             bodyinfo.classList.add("bodyinfo")
             var bodyname = document.createElement("p")
