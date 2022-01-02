@@ -6,8 +6,8 @@
 </head>
 <body>
 	<script>
-		const params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
-		const sysname = params.system
+        // section for getting the system name from URL and putting it in the page title
+		const sysname = Object.fromEntries(new URLSearchParams(window.location.search).entries()).system
         if (sysname) {
             document.title = "System Signals - " + sysname
         }
@@ -21,6 +21,7 @@
     <p class="nosuchsystem"></p>
     </div>
     <script>
+    //section for the input box
     if (sysname) {
         document.querySelector("input").value = sysname
     }
@@ -35,14 +36,12 @@
         submitsysname()
     }
     })
-    document.querySelector("input").addEventListener("input", function(event) {
-        
-    })
     </script>
 
     <div class="main">
     </div>
     <script>
+        // section for getting the system data and making the page out of it
     if (sysname) {
         fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + sysname.replace(/\+/g, "%2B").replace(/ /g, "+"))
         .then(response => response.json())
@@ -72,6 +71,7 @@
         main.appendChild(systeminfo)
         for (let x = 0; x < system.bodies.length; x++) {
             const body = system.bodies[x]
+            // the huge if statement below checks if the body has the signals we want (human,other,geo,bio,guardian,thargoid) as we do not want to show bodies without signals (or bodies with just mining ring hotspot signals)
             if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) {
             console.log(body);
             var bodyinfo = document.createElement("div")
@@ -128,18 +128,18 @@
             if (body.signals.signals["$SAA_SignalType_Thargoid;"]) {
                 var thargoidsignals = document.createElement("p")
                 if (body.signals.thargoid) {
-                    thargoidsignals.innerText = "Thargoid signals: " + body.signals.thargoid.length + "/"+ body.signals.signals["$SAA_SignalType_Thargoid;"] + "\n" + String(body.signals.thargoid).replace(/,/g, '\n')
+                    thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"] + "\n" + String(body.signals.thargoid).replace(/,/g, '\n')
                 } else{
-                    thargoidsignals.innerText = "Thargoid signals: 0/"+ body.signals.signals["$SAA_SignalType_Thargoid;"]
+                    thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"]
                 }
                 bodyinfo.appendChild(thargoidsignals)
             }
             if (body.signals.signals["$SAA_SignalType_Guardian;"]) {
                 var guardiansignals = document.createElement("p")
                 if (body.signals.guardian) {
-                    guardiansignals.innerText = "Guardian signals: "+ body.signals.signals["$SAA_SignalType_Guardian;"] + "\n" + String(body.signals.guardian).replace(/,/g, '\n')
+                    guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"] + "\n" + String(body.signals.guardian).replace(/,/g, '\n')
                 } else{
-                    guardiansignals.innerText = "Guardian signals: 0"
+                    guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"]
                 }
                 bodyinfo.appendChild(guardiansignals)
             }
