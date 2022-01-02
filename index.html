@@ -72,7 +72,8 @@
         main.appendChild(systeminfo)
         for (let x = 0; x < system.bodies.length; x++) {
             const body = system.bodies[x]
-            if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"])) {
+            if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) {
+            console.log(body);
             var bodyinfo = document.createElement("div")
             bodyinfo.classList.add("bodyinfo")
             var bodyname = document.createElement("p")
@@ -93,6 +94,11 @@
                 humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]                
                 bodyinfo.appendChild(humansignals)
             }
+            if (body.signals.signals["$SAA_SignalType_Other;"]) {
+                var othersignals = document.createElement("p")
+                othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
+                bodyinfo.appendChild(othersignals)
+            }
             if (body.signals.signals["$SAA_SignalType_Geological;"]) {
                 var geosignals = document.createElement("p")
                 if (body.signals.geology) {
@@ -101,12 +107,12 @@
                     geosignals.innerText = "Geological signals: 0/"+ body.signals.signals["$SAA_SignalType_Geological;"]
                 }
                 bodyinfo.appendChild(geosignals)
-                }
+            }
             if (body.signals.signals["$SAA_SignalType_Biological;"]) {
                 var biosignals = document.createElement("p")
                 if (body.signals.biology) {
                     biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/"+ body.signals.signals["$SAA_SignalType_Biological;"] + "\n" +  String(body.signals.biology).replace(/,/g, '\n')
-                    if (body.signals.guesses && body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"]) {
+                    if (body.signals.guesses && (body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])) {
                         var bioguesses = document.createElement("p")
                         bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
                     }
@@ -119,20 +125,33 @@
                     bodyinfo.appendChild(bioguesses)
                 }
             }
-            if (body.signals.signals["$SAA_SignalType_Other;"]) {
-                var othersignals = document.createElement("p")
-                othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
-                bodyinfo.appendChild(othersignals)
+            if (body.signals.signals["$SAA_SignalType_Thargoid;"]) {
+                var thargoidsignals = document.createElement("p")
+                if (body.signals.thargoid) {
+                    thargoidsignals.innerText = "Thargoid signals: " + body.signals.thargoid.length + "/"+ body.signals.signals["$SAA_SignalType_Thargoid;"] + "\n" + String(body.signals.thargoid).replace(/,/g, '\n')
+                } else{
+                    thargoidsignals.innerText = "Thargoid signals: 0/"+ body.signals.signals["$SAA_SignalType_Thargoid;"]
+                }
+                bodyinfo.appendChild(thargoidsignals)
+            }
+            if (body.signals.signals["$SAA_SignalType_Guardian;"]) {
+                var guardiansignals = document.createElement("p")
+                if (body.signals.guardian) {
+                    guardiansignals.innerText = "Guardian signals: "+ body.signals.signals["$SAA_SignalType_Guardian;"] + "\n" + String(body.signals.guardian).replace(/,/g, '\n')
+                } else{
+                    guardiansignals.innerText = "Guardian signals: 0"
+                }
+                bodyinfo.appendChild(guardiansignals)
             }
             main.appendChild(bodyinfo)
             }
         }
         if (document.querySelectorAll('.bodyinfo').length == 0) {
             var nobodies = document.createElement("p")
-                nobodies.innerText = "There are no bodies in this system with recorded signals."
-                nobodies.classList.add("bodyinfo")
-                main.appendChild(nobodies)
+            nobodies.innerText = "There are no bodies in this system with recorded signals."
+            nobodies.classList.add("bodyinfo")
+            main.appendChild(nobodies)
         }
-    }
+    } 
     </script>
 </body></html>
