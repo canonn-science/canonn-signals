@@ -92,7 +92,11 @@
             bodyname.classList.add("bodyname")
             bodyname.innerText = body.name
             bodyinfo.appendChild(bodyname)
-            var bodynametag = document.createElement("p")
+            var bodytype = document.createElement("p")
+            bodytype.classList.add("bodynametag")
+            bodytype.innerText = body.subType
+            bodyinfo.appendChild(bodytype)
+                var bodynametag = document.createElement("p")
             bodynametag.classList.add("bodynametag")
             if (body.mainStar == true) {
                 bodynametag.innerText = "(Main star)"
@@ -122,21 +126,21 @@
             }
             if (body.signals.signals["$SAA_SignalType_Biological;"]) {
                 var biosignals = document.createElement("p")
+                var bioguesses = document.createElement("p")
                 if (body.signals.biology) {
                     biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/"+ body.signals.signals["$SAA_SignalType_Biological;"] + "\n" +  String(body.signals.biology).replace(/,/g, '\n')
                     if (body.signals.guesses && (body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])) {
-                        var bioguesses = document.createElement("p")
                         bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
-                    }
-                } 
-                else{
+                    } 
+                } else {
                     biosignals.innerText = "Biological signals: 0/"+ body.signals.signals["$SAA_SignalType_Biological;"]
+                    bioguesses.innerText =  "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
                 }
                 bodyinfo.appendChild(biosignals)
                 if (bioguesses) {
                     bodyinfo.appendChild(bioguesses)
                 }
-            }
+            } 
             if (body.signals.signals["$SAA_SignalType_Thargoid;"]) {
                 var thargoidsignals = document.createElement("p")
                 if (body.signals.thargoid) {
@@ -155,15 +159,35 @@
                 }
                 bodyinfo.appendChild(guardiansignals)
             }
+            var atmosphere = document.createElement("p")
+            if (body.atmosphereType) {
+                atmosphere.innerText = "Atmosphere: " + body.atmosphereType
+                var surfacePressure = document.createElement("p")
+                surfacePressure.innerText = "Surface pressure: " + body.surfacePressure.toFixed(2) + " atmospheres"
+                bodyinfo.appendChild(surfacePressure)
+            } else {
+                atmosphere.innerText = "Atmosphere: None"
+            }
+            bodyinfo.appendChild(atmosphere)
+            var gravity = document.createElement("p")
+            gravity.innerText = "Gravity: " + body.gravity.toFixed(2) + " G"
+            bodyinfo.appendChild(gravity)
+            var surfaceTemperature = document.createElement("p")
+            surfaceTemperature.innerText = "Surface temperature: " + body.surfaceTemperature.toFixed(2) + " K"
+            bodyinfo.appendChild(surfaceTemperature)
+            var radius = document.createElement("p")
+            radius.innerText = "Radius: " + body.radius.toFixed(2) + "km"
+            bodyinfo.appendChild(radius)
+
             main.appendChild(bodyinfo)
             }
         }
-        if (document.querySelectorAll('.bodyinfo').length == 0) {
+        if (document.querySelectorAll('.bodyinfo').length == 0) {   
             var nobodies = document.createElement("p")
             nobodies.innerText = "There are no bodies in this system with recorded signals."
             nobodies.classList.add("bodyinfo")
             main.appendChild(nobodies)
-        }
+        }   
     } 
     </script>
 </body></html>
