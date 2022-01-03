@@ -96,15 +96,12 @@
             bodytype.classList.add("bodynametag")
             bodytype.innerText = body.subType
             bodyinfo.appendChild(bodytype)
-                var bodynametag = document.createElement("p")
-            bodynametag.classList.add("bodynametag")
-            if (body.mainStar == true) {
-                bodynametag.innerText = "(Main star)"
+            if (body.isLandable == true) {
+                var landabletag = document.createElement("p")
+                landabletag.classList.add("bodynametag")
+                landabletag.innerText = "(Landable)"
+                bodyinfo.appendChild(landabletag)
             }
-            else if (body.isLandable == true) {
-                bodynametag.innerText = "(Landable)"
-            }
-            bodyinfo.appendChild(bodynametag)
             if (body.signals.signals["$SAA_SignalType_Human;"]) {
                 var humansignals = document.createElement("p")
                 humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]                
