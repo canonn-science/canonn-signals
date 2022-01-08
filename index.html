@@ -27,7 +27,7 @@
     }
     function submitsysname() {
         if (document.querySelector("input").value) {
-            var trimmedsysname = (document.querySelector("input").value).trim() 
+            let trimmedsysname = (document.querySelector("input").value).trim() 
             window.location.href = window.location.href.split('?')[0] + "?system=" + trimmedsysname.replace(/\+/g, "%2B").replace(/ /g, "+")
         }
     }
@@ -61,22 +61,22 @@
     function makePage(system) {
         console.log(system);
         const main = document.querySelector(".main")
-        var systeminfo = document.createElement("div")
+        let systeminfo = document.createElement("div")
         systeminfo.classList.add("systeminfo")
-        var coords = document.createElement("p")
+        let coords = document.createElement("p")
         coords.innerText = "Coordinates: " + String(system.coords.x) + " / " + String(system.coords.y) + " / " + String(system.coords.z)
         systeminfo.appendChild(coords)
-        var region = document.createElement("p")
+        let region = document.createElement("p")
         region.innerText = "Region: " + system.region.name
         systeminfo.appendChild(region)
         if (system.signals) {
             if (system.signals.anomaly) {
-                var anomalies = document.createElement("p")
+                let anomalies = document.createElement("p")
                 anomalies.innerText = "Anomalies:\n" + String(system.signals.anomaly).replace(/,/g, '\n')
                 systeminfo.appendChild(anomalies)
                 }
             if (system.signals.cloud) {   
-                var clouds = document.createElement("p")
+                let clouds = document.createElement("p")
                 clouds.innerText = "Clouds:\n" + String(system.signals.cloud).replace(/,/g, '\n')
                 systeminfo.appendChild(clouds)
             }
@@ -86,34 +86,34 @@
             const body = system.bodies[x]
             // the huge if statement below checks if the body has the signals we want (human,other,geo,bio,guardian,thargoid) as we do not want to show bodies without signals (or bodies with just mining ring hotspot signals)
             if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) {
-            var bodyinfo = document.createElement("div")
+            let bodyinfo = document.createElement("div")
             bodyinfo.classList.add("bodyinfo")
-            var bodyname = document.createElement("p")
+            let bodyname = document.createElement("p")
             bodyname.classList.add("bodyname")
             bodyname.innerText = body.name
             bodyinfo.appendChild(bodyname)
-            var bodytype = document.createElement("p")
+            let bodytype = document.createElement("p")
             bodytype.classList.add("bodynametag")
             bodytype.innerText = body.subType
             bodyinfo.appendChild(bodytype)
             if (body.isLandable == true) {
-                var landabletag = document.createElement("p")
+                let landabletag = document.createElement("p")
                 landabletag.classList.add("bodynametag")
                 landabletag.innerText = "(Landable)"
                 bodyinfo.appendChild(landabletag)
             }
             if (body.signals.signals["$SAA_SignalType_Human;"]) {
-                var humansignals = document.createElement("p")
+                let humansignals = document.createElement("p")
                 humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]                
                 bodyinfo.appendChild(humansignals)
             }
             if (body.signals.signals["$SAA_SignalType_Other;"]) {
-                var othersignals = document.createElement("p")
+                let othersignals = document.createElement("p")
                 othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
                 bodyinfo.appendChild(othersignals)
             }
             if (body.signals.signals["$SAA_SignalType_Geological;"]) {
-                var geosignals = document.createElement("p")
+                let geosignals = document.createElement("p")
                 if (body.signals.geology) {
                     geosignals.innerText = "Geological signals: " + body.signals.geology.length + "/"+ body.signals.signals["$SAA_SignalType_Geological;"] + "\n" + String(body.signals.geology).replace(/,/g, '\n')
                 } else{
@@ -122,8 +122,8 @@
                 bodyinfo.appendChild(geosignals)
             }
             if (body.signals.signals["$SAA_SignalType_Biological;"]) {
-                var biosignals = document.createElement("p")
-                var bioguesses = document.createElement("p")
+                let biosignals = document.createElement("p")
+                let bioguesses = document.createElement("p")
                 if (body.signals.biology) {
                     biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/"+ body.signals.signals["$SAA_SignalType_Biological;"] + "\n" +  String(body.signals.biology).replace(/,/g, '\n')
                     if (body.signals.guesses && (body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])) {
@@ -139,7 +139,7 @@
                 }
             } 
             if (body.signals.signals["$SAA_SignalType_Thargoid;"]) {
-                var thargoidsignals = document.createElement("p")
+                let thargoidsignals = document.createElement("p")
                 if (body.signals.thargoid) {
                     thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"] + "\n" + String(body.signals.thargoid).replace(/,/g, '\n')
                 } else{
@@ -148,7 +148,7 @@
                 bodyinfo.appendChild(thargoidsignals)
             }
             if (body.signals.signals["$SAA_SignalType_Guardian;"]) {
-                var guardiansignals = document.createElement("p")
+                let guardiansignals = document.createElement("p")
                 if (body.signals.guardian) {
                     guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"] + "\n" + String(body.signals.guardian).replace(/,/g, '\n')
                 } else{
@@ -156,23 +156,23 @@
                 }
                 bodyinfo.appendChild(guardiansignals)
             }
-            var atmosphere = document.createElement("p")
+            let atmosphere = document.createElement("p")
             if (body.atmosphereType) {
                 atmosphere.innerText = "Atmosphere: " + body.atmosphereType
-                var surfacePressure = document.createElement("p")
+                let surfacePressure = document.createElement("p")
                 surfacePressure.innerText = "Surface pressure: " + body.surfacePressure.toFixed(2) + " atmospheres"
                 bodyinfo.appendChild(surfacePressure)
             } else {
                 atmosphere.innerText = "Atmosphere: None"
             }
             bodyinfo.appendChild(atmosphere)
-            var gravity = document.createElement("p")
+            let gravity = document.createElement("p")
             gravity.innerText = "Gravity: " + body.gravity.toFixed(2) + " G"
             bodyinfo.appendChild(gravity)
-            var surfaceTemperature = document.createElement("p")
+            let surfaceTemperature = document.createElement("p")
             surfaceTemperature.innerText = "Surface temperature: " + body.surfaceTemperature.toFixed(2) + " K"
             bodyinfo.appendChild(surfaceTemperature)
-            var radius = document.createElement("p")
+            let radius = document.createElement("p")
             radius.innerText = "Radius: " + body.radius.toFixed(2) + "km"
             bodyinfo.appendChild(radius)
 
@@ -180,7 +180,7 @@
             }
         }
         if (document.querySelectorAll('.bodyinfo').length == 0) {   
-            var nobodies = document.createElement("p")
+            let nobodies = document.createElement("p")
             nobodies.innerText = "There are no bodies in this system with recorded signals."
             nobodies.classList.add("bodyinfo")
             main.appendChild(nobodies)
