@@ -8,8 +8,9 @@
 	<script>
         // section for getting the system name from URL and putting it in the page title
 		const sysname = Object.fromEntries(new URLSearchParams(window.location.search).entries()).system
-        if (sysname) {
-            document.title = "System Signals - " + sysname
+        const trimmedsysname = sysname.trim()
+        if (trimmedsysname) {
+            document.title = "System Signals - " + trimmedsysname
         }
 	</script>
 	<link rel="stylesheet" href="style.css">
@@ -22,13 +23,12 @@
     </div>
     <script>
     //section for the input box
-    if (sysname) {
-        document.querySelector("input").value = sysname
+    if (trimmedsysname) {
+        document.querySelector("input").value = trimmedsysname
     }
     function submitsysname() {
         if (document.querySelector("input").value) {
-            let trimmedsysname = (document.querySelector("input").value).trim() 
-            window.location.href = window.location.href.split('?')[0] + "?system=" + trimmedsysname.replace(/\+/g, "%2B").replace(/ /g, "+")
+            window.location.href = window.location.href.split('?')[0] + "?system=" + document.querySelector("input").value.replace(/\+/g, "%2B").replace(/ /g, "+")
         }
     }
     document.querySelector("input").addEventListener("keyup", function(event) {
@@ -42,8 +42,8 @@
     </div>
     <script>
         // section for getting the system data and making the page out of it
-    if (sysname) {
-        fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + sysname.replace(/\+/g, "%2B").replace(/ /g, "+"))
+    if (trimmedsysname) {
+        fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + trimmedsysname.replace(/\+/g, "%2B").replace(/ /g, "+"))
         .then(response => response.json())
         .then(data => getSystemInfo(data.id64))
     }
