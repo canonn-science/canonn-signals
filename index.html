@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +30,8 @@
     }
     function submitsysname() {
         if (document.querySelector("input").value) {
-            window.location.href = window.location.href.split('?')[0] + "?system=" + document.querySelector("input").value.replace(/\+/g, "%2B").replace(/ /g, "+")
+            const trimmedinput = document.querySelector("input").value.trim()
+            window.location.href = window.location.href.split('?')[0] + "?system=" + encodeURIComponent(trimmedinput)
         }
     }
     document.querySelector("input").addEventListener("keyup", function(event) {
@@ -43,7 +46,7 @@
     <script>
         // section for getting the system data and making the page out of it
     if (trimmedsysname) {
-        fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + trimmedsysname.replace(/\+/g, "%2B").replace(/ /g, "+"))
+        fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + encodeURIComponent(trimmedsysname))
         .then(response => response.json())
         .then(data => getSystemInfo(data.id64))
     }
@@ -187,4 +190,5 @@
         }   
     } 
     </script>
-</body></html>
+</body>
+</html>
