@@ -1,27 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>System Signals</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Signals</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-	<script>
+    <script>
         // section for getting the system name from URL and putting it in the page title
-		var sysname = Object.fromEntries(new URLSearchParams(window.location.search).entries()).system
+        var sysname = Object.fromEntries(new URLSearchParams(window.location.search).entries()).system
         if (sysname) {
             var trimmedsysname = sysname.trim()
             document.title = "System Signals - " + trimmedsysname
         }
-	</script>
+    </script>
     <div class="inputfield">
-    <h1>System Signals</h1>
-    <p>Enter a system name to view signals recorded by Canonn field researchers</p>
-    <input type="text">
-    <button onclick="submitsysname()">Submit</button>
-    <p class="nosuchsystem"></p>
+        <h1>System Signals</h1>
+        <p>Enter a system name or id64 to view signals recorded by Canonn field researchers</p>
+        <input type="text">
+        <button onclick="submitsysname()">Submit</button>
+        <p class="nosuchsystem"></p>
     </div>
     <script>
         //section for the input box
@@ -34,30 +36,32 @@
                 window.location.href = window.location.href.split('?')[0] + "?system=" + encodeURIComponent(trimmedinput)
             }
         }
-        document.querySelector("input").addEventListener("keyup", function(event) {
-        if (event.key === "Enter") {
-            submitsysname()
-        }
+        document.querySelector("input").addEventListener("keyup", function (event) {
+            if (event.key === "Enter") {
+                submitsysname()
+            }
         })
     </script>
     <div class="main">
     </div>
     <script>
         // section for getting the system data and making the page out of it
-        if (sysname) {
+        if (sysname && isNaN(sysname)) {
             fetch("https://www.edsm.net/api-v1/system?showId=1&systemName=" + encodeURIComponent(trimmedsysname))
-            .then(response => response.json())
-            .then(data => getSystemInfo(data.id64))
+                .then(response => response.json())
+                .then(data => getSystemInfo(data.id64))
+        } else if (sysname && !isNaN(sysname)) {
+            getSystemInfo(sysname)
         }
         function getSystemInfo(id64) {
             if (id64 === undefined) {
                 document.querySelector(".nosuchsystem").innerText = "No such system found"
                 document.querySelector(".nosuchsystem").style.display = "block"
             }
-            else{
+            else {
                 fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=" + id64)
-                .then(response => response.json())
-                .then(data => makePage(data.system))
+                    .then(response => response.json())
+                    .then(data => makePage(data.system))
             }
         }
         function makePage(system) {
@@ -76,8 +80,8 @@
                     let anomalies = document.createElement("p")
                     anomalies.innerText = "Anomalies:\n" + String(system.signals.anomaly).replace(/,/g, '\n')
                     systeminfo.appendChild(anomalies)
-                    }
-                if (system.signals.cloud) {   
+                }
+                if (system.signals.cloud) {
                     let clouds = document.createElement("p")
                     clouds.innerText = "Clouds:\n" + String(system.signals.cloud).replace(/,/g, '\n')
                     systeminfo.appendChild(clouds)
@@ -86,8 +90,11 @@
             main.appendChild(systeminfo)
             for (let x = 0; x < system.bodies.length; x++) {
                 const body = system.bodies[x]
-                // the huge if statement below checks if the body has the signals we want (human,other,geo,bio,guardian,thargoid) as we do not want to show bodies without signals (or bodies with just mining ring hotspot signals)
-                if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) {
+
+                // Let's see all bodies as we may add some additional information to the bodies and we are interested in guesses.
+                // spansh may not be up to date so we need to include things missing from spansh
+
+                //if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) {
                 let bodyinfo = document.createElement("div")
                 bodyinfo.classList.add("bodyinfo")
                 let bodyname = document.createElement("p")
@@ -104,90 +111,98 @@
                     landabletag.innerText = "(Landable)"
                     bodyinfo.appendChild(landabletag)
                 }
-                if (body.signals.signals["$SAA_SignalType_Human;"]) {
-                    let humansignals = document.createElement("p")
-                    humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]                
-                    bodyinfo.appendChild(humansignals)
-                }
-                if (body.signals.signals["$SAA_SignalType_Other;"]) {
-                    let othersignals = document.createElement("p")
-                    othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
-                    bodyinfo.appendChild(othersignals)
-                }
-                if (body.signals.signals["$SAA_SignalType_Geological;"]) {
-                    let geosignals = document.createElement("p")
-                    if (body.signals.geology) {
-                        geosignals.innerText = "Geological signals: " + body.signals.geology.length + "/"+ body.signals.signals["$SAA_SignalType_Geological;"] + "\n" + String(body.signals.geology).replace(/,/g, '\n')
-                    } else{
-                        geosignals.innerText = "Geological signals: 0/"+ body.signals.signals["$SAA_SignalType_Geological;"]
+                if (body.signals && body.signals.signals) {
+                    if (body.signals.signals["$SAA_SignalType_Human;"]) {
+                        let humansignals = document.createElement("p")
+                        humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]
+                        bodyinfo.appendChild(humansignals)
                     }
-                    bodyinfo.appendChild(geosignals)
-                }
-                if (body.signals.signals["$SAA_SignalType_Biological;"]) {
-                    let biosignals = document.createElement("p")
-                    let bioguesses = document.createElement("p")
-                    if (body.signals.biology) {
-                        biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/"+ body.signals.signals["$SAA_SignalType_Biological;"] + "\n" +  String(body.signals.biology).replace(/,/g, '\n')
-                        if (body.signals.guesses && (body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])) {
+                    if (body.signals.signals["$SAA_SignalType_Other;"]) {
+                        let othersignals = document.createElement("p")
+                        othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
+                        bodyinfo.appendChild(othersignals)
+                    }
+                    if (body.signals.signals["$SAA_SignalType_Geological;"]) {
+                        let geosignals = document.createElement("p")
+                        if (body.signals.geology) {
+                            geosignals.innerText = "Geological signals: " + body.signals.geology.length + "/" + body.signals.signals["$SAA_SignalType_Geological;"] + "\n" + String(body.signals.geology).replace(/,/g, '\n')
+                        } else {
+                            geosignals.innerText = "Geological signals: 0/" + body.signals.signals["$SAA_SignalType_Geological;"]
+                        }
+                        bodyinfo.appendChild(geosignals)
+                    }
+                    if (body.signals.signals["$SAA_SignalType_Biological;"]) {
+                        let biosignals = document.createElement("p")
+                        let bioguesses = document.createElement("p")
+                        if (body.signals.biology) {
+                            biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/" + body.signals.signals["$SAA_SignalType_Biological;"] + "\n" + String(body.signals.biology).replace(/,/g, '\n')
+                            if (body.signals.guesses && (body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])) {
+                                bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
+                            }
+                        } else {
+                            biosignals.innerText = "Biological signals: 0/" + body.signals.signals["$SAA_SignalType_Biological;"]
                             bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
-                        } 
-                    } else {
-                        biosignals.innerText = "Biological signals: 0/"+ body.signals.signals["$SAA_SignalType_Biological;"]
-                        bioguesses.innerText =  "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
+                        }
+                        bodyinfo.appendChild(biosignals)
+                        if (bioguesses) {
+                            bodyinfo.appendChild(bioguesses)
+                        }
                     }
-                    bodyinfo.appendChild(biosignals)
-                    if (bioguesses) {
-                        bodyinfo.appendChild(bioguesses)
+                    if (body.signals.signals["$SAA_SignalType_Thargoid;"]) {
+                        let thargoidsignals = document.createElement("p")
+                        if (body.signals.thargoid) {
+                            thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"] + "\n" + String(body.signals.thargoid).replace(/,/g, '\n')
+                        } else {
+                            thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"]
+                        }
+                        bodyinfo.appendChild(thargoidsignals)
                     }
-                } 
-                if (body.signals.signals["$SAA_SignalType_Thargoid;"]) {
-                    let thargoidsignals = document.createElement("p")
-                    if (body.signals.thargoid) {
-                        thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"] + "\n" + String(body.signals.thargoid).replace(/,/g, '\n')
-                    } else{
-                        thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"]
+                    if (body.signals.signals["$SAA_SignalType_Guardian;"]) {
+                        let guardiansignals = document.createElement("p")
+                        if (body.signals.guardian) {
+                            guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"] + "\n" + String(body.signals.guardian).replace(/,/g, '\n')
+                        } else {
+                            guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"]
+                        }
+                        bodyinfo.appendChild(guardiansignals)
                     }
-                    bodyinfo.appendChild(thargoidsignals)
                 }
-                if (body.signals.signals["$SAA_SignalType_Guardian;"]) {
-                    let guardiansignals = document.createElement("p")
-                    if (body.signals.guardian) {
-                        guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"] + "\n" + String(body.signals.guardian).replace(/,/g, '\n')
-                    } else{
-                        guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"]
-                    }
-                    bodyinfo.appendChild(guardiansignals)
-                }
-                let atmosphere = document.createElement("p")
                 if (body.atmosphereType) {
-                    atmosphere.innerText = "Atmosphere: " + body.atmosphereType
-                    let surfacePressure = document.createElement("p")
-                    surfacePressure.innerText = "Surface pressure: " + body.surfacePressure.toFixed(2) + " atmospheres"
-                    bodyinfo.appendChild(surfacePressure)
-                } else {
-                    atmosphere.innerText = "Atmosphere: None"
+                    let atmosphere = document.createElement("p")
+                    if (body.atmosphereType) {
+                        atmosphere.innerText = "Atmosphere: " + body.atmosphereType
+                        let surfacePressure = document.createElement("p")
+                        surfacePressure.innerText = "Surface pressure: " + body.surfacePressure.toFixed(2) + " atmospheres"
+                        bodyinfo.appendChild(surfacePressure)
+                    } else {
+                        atmosphere.innerText = "Atmosphere: None"
+                    }
+                    bodyinfo.appendChild(atmosphere)
                 }
-                bodyinfo.appendChild(atmosphere)
-                let gravity = document.createElement("p")
-                gravity.innerText = "Gravity: " + body.gravity.toFixed(2) + " G"
-                bodyinfo.appendChild(gravity)
+                if (body.gravity) {
+                    let gravity = document.createElement("p")
+                    gravity.innerText = "Gravity: " + body.gravity.toFixed(2) + " G"
+                    bodyinfo.appendChild(gravity)
+                }
                 let surfaceTemperature = document.createElement("p")
                 surfaceTemperature.innerText = "Surface temperature: " + body.surfaceTemperature.toFixed(2) + " K"
                 bodyinfo.appendChild(surfaceTemperature)
-                let radius = document.createElement("p")
-                radius.innerText = "Radius: " + body.radius.toFixed(2) + "km"
-                bodyinfo.appendChild(radius)
-
-                main.appendChild(bodyinfo)
+                if (body.radius) {
+                    let radius = document.createElement("p")
+                    radius.innerText = "Radius: " + body.radius.toFixed(2) + "km"
+                    bodyinfo.appendChild(radius)
                 }
+                main.appendChild(bodyinfo)
+                //}
             }
-            if (document.querySelectorAll('.bodyinfo').length === 0) {   
+            if (document.querySelectorAll('.bodyinfo').length === 0) {
                 let nobodies = document.createElement("p")
                 nobodies.innerText = "There are no bodies in this system with recorded signals."
                 nobodies.classList.add("bodyinfo")
                 main.appendChild(nobodies)
-            }   
+            }
         }
     </script>
 </body>
+
 </html>
