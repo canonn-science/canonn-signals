@@ -111,18 +111,19 @@
                     landabletag.innerText = "(Landable)"
                     bodyinfo.appendChild(landabletag)
                 }
-                if (body.signals && body.signals.signals) {
-                    if (body.signals.signals["$SAA_SignalType_Human;"]) {
+                //if (body.signals && body.signals.signals) {
+                if (body.signals) {
+                    if (body.signals.signals && body.signals.signals["$SAA_SignalType_Human;"]) {
                         let humansignals = document.createElement("p")
                         humansignals.innerText = "Human signals: " + body.signals.signals["$SAA_SignalType_Human;"]
                         bodyinfo.appendChild(humansignals)
                     }
-                    if (body.signals.signals["$SAA_SignalType_Other;"]) {
+                    if (body.signals.signals && body.signals.signals["$SAA_SignalType_Other;"]) {
                         let othersignals = document.createElement("p")
                         othersignals.innerText = "Other signals: " + body.signals.signals["$SAA_SignalType_Other;"]
                         bodyinfo.appendChild(othersignals)
                     }
-                    if (body.signals.signals["$SAA_SignalType_Geological;"]) {
+                    if (body.signals.signals && body.signals.signals["$SAA_SignalType_Geological;"]) {
                         let geosignals = document.createElement("p")
                         if (body.signals.geology) {
                             geosignals.innerText = "Geological signals: " + body.signals.geology.length + "/" + body.signals.signals["$SAA_SignalType_Geological;"] + "\n" + String(body.signals.geology).replace(/,/g, '\n')
@@ -131,9 +132,9 @@
                         }
                         bodyinfo.appendChild(geosignals)
                     }
-                    unmatchedSignals = (body.signals.biology && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])
-                    showguesses = (body.signals.guesses)
-                    if (body.signals.signals["$SAA_SignalType_Biological;"]) {
+                    matchedSignals = (body.signals.biology && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length == int(body.signals.signals["$SAA_SignalType_Biological;"]))
+                    showguesses = (body.signals.guesses || body.signals.biology || (body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"]))
+                    if (body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"]) {
                         let biosignals = document.createElement("p")
 
 
@@ -147,15 +148,13 @@
                         bodyinfo.appendChild(biosignals)
 
                     }
-                    if (showguesses && unmatchedSignals) {
+                    if (showguesses && !matchedSignals) {
                         //if (showguesses) {
                         let bioguesses = document.createElement("p")
                         bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
-                        if (bioguesses) {
-                            bodyinfo.appendChild(bioguesses)
-                        }
+                        bodyinfo.appendChild(bioguesses)
                     }
-                    if (body.signals.signals["$SAA_SignalType_Thargoid;"]) {
+                    if (body.signals.signals && body.signals.signals["$SAA_SignalType_Thargoid;"]) {
                         let thargoidsignals = document.createElement("p")
                         if (body.signals.thargoid) {
                             thargoidsignals.innerText = "Thargoid signals: " + body.signals.signals["$SAA_SignalType_Thargoid;"] + "\n" + String(body.signals.thargoid).replace(/,/g, '\n')
@@ -164,7 +163,7 @@
                         }
                         bodyinfo.appendChild(thargoidsignals)
                     }
-                    if (body.signals.signals["$SAA_SignalType_Guardian;"]) {
+                    if (body.signals.signals && body.signals.signals["$SAA_SignalType_Guardian;"]) {
                         let guardiansignals = document.createElement("p")
                         if (body.signals.guardian) {
                             guardiansignals.innerText = "Guardian signals: " + body.signals.signals["$SAA_SignalType_Guardian;"] + "\n" + String(body.signals.guardian).replace(/,/g, '\n')
