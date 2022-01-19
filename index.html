@@ -131,19 +131,26 @@
                         }
                         bodyinfo.appendChild(geosignals)
                     }
+                    unmatchedSignals = (body.signals.biology && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])
+                    showguesses = (body.signals.guesses)
                     if (body.signals.signals["$SAA_SignalType_Biological;"]) {
                         let biosignals = document.createElement("p")
-                        let bioguesses = document.createElement("p")
+
+
+
                         if (body.signals.biology) {
                             biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/" + body.signals.signals["$SAA_SignalType_Biological;"] + "\n" + String(body.signals.biology).replace(/,/g, '\n')
-                            if (body.signals.guesses && (body.signals.biology.length < body.signals.signals["$SAA_SignalType_Biological;"])) {
-                                bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
-                            }
                         } else {
                             biosignals.innerText = "Biological signals: 0/" + body.signals.signals["$SAA_SignalType_Biological;"]
-                            bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
                         }
+
                         bodyinfo.appendChild(biosignals)
+
+                    }
+                    if (showguesses && unmatchedSignals) {
+                        //if (showguesses) {
+                        let bioguesses = document.createElement("p")
+                        bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
                         if (bioguesses) {
                             bodyinfo.appendChild(bioguesses)
                         }
