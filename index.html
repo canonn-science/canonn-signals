@@ -151,7 +151,7 @@
                     if (showguesses && !matchedSignals) {
                         //if (showguesses) {
                         let bioguesses = document.createElement("p")
-                        bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses).replace(/,/g, '\n')
+                        bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses.sort()).replace(/,/g, '\n')
                         bodyinfo.appendChild(bioguesses)
                     }
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Thargoid;"]) {
