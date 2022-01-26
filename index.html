@@ -68,7 +68,7 @@
             }
         }
         function makePage(system) {
-            
+
             // make sure the "no such system" box is being shown
             if (system == undefined) {
                 showNoSuchSystem()
@@ -151,7 +151,8 @@
 
 
                         if (body.signals.biology) {
-                            biosignals.innerText = "Biological signals: " + body.signals.biology.length + "/" + body.signals.signals["$SAA_SignalType_Biological;"] + "\n" + String(body.signals.biology).replace(/,/g, '\n')
+                            biosignals.innerHTML = "Biological signals: " + body.signals.biology.length + "/" + body.signals.signals["$SAA_SignalType_Biological;"] + "<br>"
+                            body.signals.biology.sort().forEach((x, i) => biosignals.innerHTML = biosignals.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a><br>');
                         } else {
                             biosignals.innerText = "Biological signals: 0/" + body.signals.signals["$SAA_SignalType_Biological;"]
                         }
@@ -162,7 +163,9 @@
                     if (showguesses && !matchedSignals) {
                         //if (showguesses) {
                         let bioguesses = document.createElement("p")
-                        bioguesses.innerText = "Potential biology types:\n" + String(body.signals.guesses.sort()).replace(/,/g, '\n')
+                        bioguesses.innerHTML = "Potential biology types:<br>";
+                        // + String(body.signals.guesses.sort()).replace(/,/g, '\n')
+                        body.signals.guesses.sort().forEach((x, i) => bioguesses.innerHTML = bioguesses.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a><br>');
                         bodyinfo.appendChild(bioguesses)
                     }
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Thargoid;"]) {
