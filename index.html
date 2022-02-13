@@ -158,10 +158,20 @@
                         body.signals.guardians.forEach(signalset.add, signalset)
                     }
 
+
+
                     //subtract found signals from the guesses 
                     if(body.signals.guesses && body.signals.biology){
                         gset=new Set(body.signals.guesses)
-                        body.signals.biology.forEach(elem => gset.delete(elem))
+                        body.signals.biology.forEach(function(elem){
+                            genus=elem.split(' ')[0]
+                            Array.from(gset).forEach(function(guess){
+                                if (guess.startsWith(genus)){
+                                    gset.delete(guess)
+                                }
+                            })
+                            
+                        })
                         body.signals.guesses=Array.from(gset)
                     }
                 
