@@ -157,6 +157,15 @@
                     if (body.signals.guardians){
                         body.signals.guardians.forEach(signalset.add, signalset)
                     }
+
+                    //subtract found signals from the guesses 
+                    if(body.signals.guesses && body.signals.biology){
+                        gset=new Set(body.signals.guesses)
+                        body.signals.biology.forEach(elem => gset.delete(elem))
+                        body.signals.guesses=Array.from(gset)
+                    }
+                
+
                     bioforge=Array.from(signalset).join(",")
 
                     matchedSignals = (body.signals.biology && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length == parseInt(body.signals.signals["$SAA_SignalType_Biological;"]))
