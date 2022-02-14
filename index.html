@@ -143,40 +143,41 @@
                         }
                         bodyinfo.appendChild(geosignals)
                     }
-                    var signalset=new Set();
+                    var signalset = new Set();
 
-                    if (body.signals.biology){
+                    if (body.signals.biology) {
                         body.signals.biology.forEach(signalset.add, signalset)
                     }
-                    if (body.signals.guesses){
+                    if (body.signals.guesses) {
                         body.signals.guesses.forEach(signalset.add, signalset)
                     }
-                    if (body.signals.thargoids){
+                    if (body.signals.thargoids) {
                         body.signals.thargoids.forEach(signalset.add, signalset)
                     }
-                    if (body.signals.guardians){
+                    if (body.signals.guardians) {
                         body.signals.guardians.forEach(signalset.add, signalset)
                     }
 
 
 
                     //subtract found signals from the guesses 
-                    if(body.signals.guesses && body.signals.biology){
-                        gset=new Set(body.signals.guesses)
-                        body.signals.biology.forEach(function(elem){
-                            genus=elem.split(' ')[0]
-                            Array.from(gset).forEach(function(guess){
-                                if (guess.startsWith(genus)){
+                    if (body.signals.guesses && body.signals.biology) {
+                        gset = new Set(body.signals.guesses)
+                        body.signals.biology.forEach(function (elem) {
+                            genus = elem.split(' ')[0]
+                            Array.from(gset).forEach(function (guess) {
+                                if (guess.startsWith(genus)) {
                                     gset.delete(guess)
                                 }
                             })
-                            
-                        })
-                        body.signals.guesses=Array.from(gset)
-                    }
-                
 
-                    bioforge=Array.from(signalset).join(",")
+                        })
+                        body.signals.guesses = Array.from(gset)
+                    }
+                }
+                if (body.signals) {
+
+                    bioforge = Array.from(signalset).join(",")
 
                     matchedSignals = (body.signals.biology && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length == parseInt(body.signals.signals["$SAA_SignalType_Biological;"]))
                     showguesses = (body.signals.guesses || body.signals.biology || (body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"]))
@@ -186,7 +187,7 @@
 
 
                         if (body.signals.biology) {
-                            biosignals.innerHTML = "Biological signals: " +body.signals.biology.length + "/" + body.signals.signals["$SAA_SignalType_Biological;"] + '&nbsp;<a href="https://canonn-science.github.io/bioforge/?entryid=' + bioforge + '" title="View Guesses">?' + "</a><br>"
+                            biosignals.innerHTML = "Biological signals: " + body.signals.biology.length + "/" + body.signals.signals["$SAA_SignalType_Biological;"] + '&nbsp;<a href="https://canonn-science.github.io/bioforge/?entryid=' + bioforge + '" title="View Guesses">?' + "</a><br>"
                             body.signals.biology.sort().forEach((x, i) => biosignals.innerHTML = biosignals.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a><br>');
                         } else {
                             biosignals.innerText = "Biological signals: 0/" + body.signals.signals["$SAA_SignalType_Biological;"]
