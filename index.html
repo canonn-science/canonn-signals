@@ -19,11 +19,25 @@
         }
     </script>
     <div class="inputfield">
-        <h1>System Signals</h1>
+        <table>
+            <tr>
+                <td>
+                    <h1>System Signals</h1>
+                    <p>Enter a system name or id64 to view signals recorded by Canonn field researchers</p>
+                    <input type="text">
+                    <button onclick="submitsysname()">Submit</button>
+                    <p class="nosuchsystem"></p>
+
+                </td>
+                <td><img id="spinner" src="Canonn-Logo_transparent_50_f1.gif" width="100" height="100"></td>
+            </tr>
+
+        </table>
+        <!--h1>System Signals<img id="spinner" src="Canonn-Logo_transparent_50_f1.gif" width="50" height="50"></h1>
         <p>Enter a system name or id64 to view signals recorded by Canonn field researchers</p>
         <input type="text">
         <button onclick="submitsysname()">Submit</button>
-        <p class="nosuchsystem"></p>
+        <p class="nosuchsystem"></p-->
     </div>
     <script>
         //section for the input box
@@ -62,15 +76,18 @@
                 showNoSuchSystem()
             }
             else {
+                const spinner = document.querySelector("#spinner")
+                spinner.src = "Canonn-Logo_transparent_50.gif"
                 Promise.all([
                     fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=" + id64).then(response => response.json()),
-                    fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref").then(response => response.json())
+                    fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref").then(response => response.json()),
+
                 ]).then(allResponses => {
                     const data = allResponses[0]
                     const codex = allResponses[1]
 
                     makePage(data.system, codex)
-
+                    spinner.src = "Canonn-Logo_transparent_50_f1.gif"
                 })
             }
         }
@@ -94,10 +111,14 @@
 
         function makePage(system, codex) {
 
+
             // make sure the "no such system" box is being shown
             if (system == undefined) {
                 showNoSuchSystem()
             }
+
+
+
             // make sure page title and inputfield have system name in them, even if the page was visited using id
             document.title = "System Signals - " + system.name
             document.querySelector("input").value = system.name
