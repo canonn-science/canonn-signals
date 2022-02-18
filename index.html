@@ -62,12 +62,37 @@
                 showNoSuchSystem()
             }
             else {
-                fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=" + id64)
-                    .then(response => response.json())
-                    .then(data => makePage(data.system))
+                Promise.all([
+                    fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=" + id64).then(response => response.json()),
+                    fetch("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref").then(response => response.json())
+                ]).then(allResponses => {
+                    const data = allResponses[0]
+                    const codex = allResponses[1]
+
+                    makePage(data.system, codex)
+
+                })
             }
         }
-        function makePage(system) {
+
+        function getPrice(item, codex) {
+
+            var value
+            Object.values(codex).forEach(val => {
+
+                if (val["english_name"] == item) {
+                    value = val["reward"]
+                }
+            });
+
+            if (value) {
+                return " $" + value.toLocaleString()
+            } else {
+                return ""
+            }
+        }
+
+        function makePage(system, codex) {
 
             // make sure the "no such system" box is being shown
             if (system == undefined) {
@@ -76,7 +101,7 @@
             // make sure page title and inputfield have system name in them, even if the page was visited using id
             document.title = "System Signals - " + system.name
             document.querySelector("input").value = system.name
-            console.log(system)
+
             const main = document.querySelector(".main")
             let systeminfo = document.createElement("div")
             systeminfo.classList.add("systeminfo")
@@ -189,7 +214,7 @@
 
                         if (body.signals.biology) {
                             biosignals.innerHTML = "Biological signals: " + body.signals.biology.length + "/" + body.signals.signals["$SAA_SignalType_Biological;"] + '&nbsp;<a href="https://canonn-science.github.io/bioforge/?entryid=' + bioforge + '" title="View Guesses">?' + "</a><br>"
-                            body.signals.biology.sort().forEach((x, i) => biosignals.innerHTML = biosignals.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a><br>');
+                            body.signals.biology.sort().forEach((x, i) => biosignals.innerHTML = biosignals.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a> ' + getPrice(x, codex) + '<br>');
                         } else {
                             biosignals.innerText = "Biological signals: 0/" + body.signals.signals["$SAA_SignalType_Biological;"]
                         }
@@ -202,7 +227,7 @@
                         let bioguesses = document.createElement("p")
                         bioguesses.innerHTML = "Potential biology types:<br>";
                         // + String(body.signals.guesses.sort()).replace(/,/g, '\n')
-                        body.signals.guesses.sort().forEach((x, i) => bioguesses.innerHTML = bioguesses.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a><br>');
+                        body.signals.guesses.sort().forEach((x, i) => bioguesses.innerHTML = bioguesses.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a> ' + getPrice(x, codex) + '<br>');
                         bodyinfo.appendChild(bioguesses)
                     }
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Thargoid;"]) {
