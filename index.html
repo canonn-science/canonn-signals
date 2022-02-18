@@ -179,7 +179,8 @@
 
                     bioforge = Array.from(signalset).join(",")
 
-                    matchedSignals = (body.signals.biology && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length == parseInt(body.signals.signals["$SAA_SignalType_Biological;"]))
+                    matchedSignals = (body.signals.biology && body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length == parseInt(body.signals.signals["$SAA_SignalType_Biological;"]))
+
                     showguesses = (body.signals.guesses)
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"]) {
                         let biosignals = document.createElement("p")
