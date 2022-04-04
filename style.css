@@ -45,9 +45,6 @@ button:hover,
 button:focus {
     background: #a15203;
 }
-button:focus {
-    outline: 2px solid black;
-}
 .nosuchsystem{
     display: none;
 }
@@ -63,10 +60,11 @@ button:focus {
     margin: 10px;
     padding-top: 5px;
     padding-bottom: 5px;
-    width: 30vw;
+    width: 35vw;
     text-align: left;
     margin-left: auto;
     margin-right: auto;
+    overflow: hidden;
 }
 
 .bodyname{
@@ -94,6 +92,20 @@ body{
 }
 .bodyinfo p a:hover{
     text-decoration-thickness: 2px;
+}
+.collapsed :nth-child(n+5) {
+    display: none;
+}
+.collapsebutton {
+    width: fit-content;
+    margin-inline: 10px;
+    background: none;
+    border: 2px black solid;
+    font-size: 0.8rem;
+    float: right;
+}
+.collapsebutton:hover, .collapsebutton:focus{
+    background: none;
 }
 @media (max-width:1000px) {
     .systeminfo, .bodyinfo, .nosuchsystem{

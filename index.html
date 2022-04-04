@@ -27,6 +27,24 @@
                     <p>Enter a system name or id64 to view signals recorded by Canonn field researchers</p>
                     <input type="text">
                     <button onclick="submitsysname()">Submit</button>
+                    <div>
+                    <button class="collapseall" style="display: none;">Collapse all</button>
+                    <button class="expandall" style="display: none;">Expand all</button>
+                    <script>
+                        // Code for the collapse/expand all buttons
+                        document.querySelector(".collapseall").addEventListener("click", function() {
+                            document.querySelectorAll(".bodyinfo").forEach(function(element) {
+                                element.classList.add("collapsed")
+                            })
+                        })
+                        document.querySelector(".expandall").addEventListener("click", function() {
+                            document.querySelectorAll(".bodyinfo").forEach(function(element) {
+                                element.classList.remove("collapsed")
+                            })
+                        })
+                    </script>
+
+                    </div>
                     <p class="nosuchsystem"></p>
 
                 </td>
@@ -163,12 +181,26 @@
                 bodytype.classList.add("bodynametag")
                 bodytype.innerText = body.subType
                 bodyinfo.appendChild(bodytype)
+                let landabletag = document.createElement("p")
+                landabletag.classList.add("bodynametag")
                 if (body.isLandable === true) {
-                    let landabletag = document.createElement("p")
-                    landabletag.classList.add("bodynametag")
                     landabletag.innerText = "(Landable)"
-                    bodyinfo.appendChild(landabletag)
                 }
+                else {
+                    landabletag.innerText = ""
+                }
+                bodyinfo.appendChild(landabletag)
+                collapseButton = document.createElement("button")
+                collapseButton.classList.add("collapsebutton")
+                collapseButton.innerText = "Collapse/Expand"
+                collapseButton.addEventListener("click", function () {
+                    if (bodyinfo.classList.contains("collapsed")) {
+                        bodyinfo.classList.remove("collapsed")
+                    } else {
+                        bodyinfo.classList.add("collapsed")
+                    }
+                })
+                bodyinfo.appendChild(collapseButton)
                 //if (body.signals && body.signals.signals) {
                 if (body.signals) {
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Human;"]) {
@@ -296,7 +328,12 @@
                     radius.innerText = "Radius: " + body.radius.toFixed(2) + "km"
                     bodyinfo.appendChild(radius)
                 }
+                if (!(body.signals && ((body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) || body.signals.guesses))) {
+                    bodyinfo.classList.add("collapsed")
+                }
                 main.appendChild(bodyinfo)
+                document.querySelector(".expandall").style.display = "inline-block"
+                document.querySelector(".collapseall").style.display = "inline-block"
                 //}
             }
             if (document.querySelectorAll('.bodyinfo').length === 0) {
