@@ -107,6 +107,10 @@ body{
 .collapsebutton:hover, .collapsebutton:focus{
     background: none;
 }
+#spinner{
+    width: 200px;
+    height: auto;
+}
 @media (max-width:1000px) {
     .systeminfo, .bodyinfo, .nosuchsystem{
         margin-top: 10px;
