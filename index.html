@@ -28,21 +28,21 @@
                     <input type="text">
                     <button onclick="submitsysname()">Submit</button>
                     <div>
-                    <button class="collapseall" style="display: none;">Collapse all</button>
-                    <button class="expandall" style="display: none;">Expand all</button>
-                    <script>
-                        // Code for the collapse/expand all buttons
-                        document.querySelector(".collapseall").addEventListener("click", function() {
-                            document.querySelectorAll(".bodyinfo").forEach(function(element) {
-                                element.classList.add("collapsed")
+                        <button class="collapseall" style="display: none;">Collapse all</button>
+                        <button class="expandall" style="display: none;">Expand all</button>
+                        <script>
+                            // Code for the collapse/expand all buttons
+                            document.querySelector(".collapseall").addEventListener("click", function () {
+                                document.querySelectorAll(".bodyinfo").forEach(function (element) {
+                                    element.classList.add("collapsed")
+                                })
                             })
-                        })
-                        document.querySelector(".expandall").addEventListener("click", function() {
-                            document.querySelectorAll(".bodyinfo").forEach(function(element) {
-                                element.classList.remove("collapsed")
+                            document.querySelector(".expandall").addEventListener("click", function () {
+                                document.querySelectorAll(".bodyinfo").forEach(function (element) {
+                                    element.classList.remove("collapsed")
+                                })
                             })
-                        })
-                    </script>
+                        </script>
 
                     </div>
                     <p class="nosuchsystem"></p>
@@ -171,6 +171,11 @@
                 // spansh may not be up to date so we need to include things missing from spansh
 
                 //if (body.signals && body.signals.signals && (body.signals.signals["$SAA_SignalType_Human;"] || body.signals.signals["$SAA_SignalType_Geological;"] || body.signals.signals["$SAA_SignalType_Biological;"] || body.signals.signals["$SAA_SignalType_Other;"] || body.signals.signals["$SAA_SignalType_Thargoid;"] || body.signals.signals["$SAA_SignalType_Guardian;"])) {
+
+                if (body.type == "Barycentre") {
+                    continue;
+                }
+
                 let bodyinfo = document.createElement("div")
                 bodyinfo.classList.add("bodyinfo")
                 let bodyname = document.createElement("p")
@@ -303,7 +308,7 @@
                         bodyinfo.appendChild(guardiansignals)
                     }
                 }
-                if (body.atmosphereType) {
+                if (body.atmosphereType && body.type != "Barycentre") {
                     let atmosphere = document.createElement("p")
                     if (body.atmosphereType) {
                         atmosphere.innerText = "Atmosphere: " + body.atmosphereType
@@ -315,14 +320,17 @@
                     }
                     bodyinfo.appendChild(atmosphere)
                 }
-                if (body.gravity) {
+                if (body.gravity && body.type != "Barycentre") {
                     let gravity = document.createElement("p")
                     gravity.innerText = "Gravity: " + body.gravity.toFixed(2) + " G"
                     bodyinfo.appendChild(gravity)
                 }
-                let surfaceTemperature = document.createElement("p")
-                surfaceTemperature.innerText = "Surface temperature: " + body.surfaceTemperature.toFixed(2) + " K"
-                bodyinfo.appendChild(surfaceTemperature)
+                if (body.surfaceTemperature) {
+                    let surfaceTemperature = document.createElement("p")
+                    surfaceTemperature.innerText = "Surface temperature: " + body.surfaceTemperature.toFixed(2) + " K"
+                    bodyinfo.appendChild(surfaceTemperature)
+                }
+
                 if (body.radius) {
                     let radius = document.createElement("p")
                     radius.innerText = "Radius: " + body.radius.toFixed(2) + "km"
