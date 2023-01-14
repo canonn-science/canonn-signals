@@ -313,7 +313,7 @@
                     if (body.atmosphereType) {
                         atmosphere.innerText = "Atmosphere: " + body.atmosphereType
                         let surfacePressure = document.createElement("p")
-                        surfacePressure.innerText = "Surface pressure: " + body.surfacePressure.toFixed(2) + " atmospheres"
+                        surfacePressure.innerText = "Surface pressure: " + body.surfacePressure.toFixed(4) + " atmospheres"
                         bodyinfo.appendChild(surfacePressure)
                     } else {
                         atmosphere.innerText = "Atmosphere: None"
