@@ -265,7 +265,8 @@
 
                     matchedSignals = (body.signals.biology && body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"] && body.signals.biology.length == parseInt(body.signals.signals["$SAA_SignalType_Biological;"]))
 
-                    showguesses = (body.signals.guesses)
+                    // only want to show guesses when there is a biosignal in spansh
+                    showguesses = (body.signals.guesses && body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"])
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"]) {
                         let biosignals = document.createElement("p")
 
@@ -281,7 +282,8 @@
                         bodyinfo.appendChild(biosignals)
 
                     }
-                    if (showguesses && !matchedSignals) {
+                    // We have biology but its not fully matched
+                    if (showguesses && !matchedSignals && body.signals.signals && body.signals.signals["$SAA_SignalType_Biological;"]) {
                         //if (showguesses) {
                         let bioguesses = document.createElement("p")
                         bioguesses.innerHTML = "Potential biology types:<br>";
@@ -289,6 +291,7 @@
                         body.signals.guesses.sort().forEach((x, i) => bioguesses.innerHTML = bioguesses.innerHTML + '<a href="https://canonn-science.github.io/bioforge/?entryid=' + x + '">' + x + '</a> ' + getPrice(x, codex) + '<br>');
                         bodyinfo.appendChild(bioguesses)
                     }
+                    // Do the same for Thargoids
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Thargoid;"]) {
                         let thargoidsignals = document.createElement("p")
                         if (body.signals.thargoid) {
@@ -298,6 +301,7 @@
                         }
                         bodyinfo.appendChild(thargoidsignals)
                     }
+                    // Do the same for Guardians
                     if (body.signals.signals && body.signals.signals["$SAA_SignalType_Guardian;"]) {
                         let guardiansignals = document.createElement("p")
                         if (body.signals.guardian) {
