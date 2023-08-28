@@ -1,0 +1,170 @@
+<div class="body-container">
+    <div class="system-body">
+        <div class="body-image">
+            <img *ngIf="bodyImage" src="assets/bodies/{{ bodyImage }}" style="width: 64px; height: 64px;" />
+            <span *ngIf="!bodyImage">[ Image ]</span>
+        </div>
+        <div class="body-content">
+            <div class="body-title">
+                <b>{{ body.bodyData.name }}</b>
+                <span *ngIf="body.bodyData.subType">{{ body.bodyData.subType }}</span> {{ body.bodyData.type == 'Star' ?
+                body.bodyData.type : "" }}
+                <span *ngIf="body.bodyData.isLandable" class="badge badge-orange">Landable</span>
+                <span>BodyId: {{ body.bodyData.bodyId }}</span>
+            </div>
+            <div class="body-data">
+                <div *ngIf="body.bodyData.atmosphereType">
+                    <div>
+                        Atmosphere
+                    </div>
+                    <div>
+                        {{ body.bodyData.atmosphereType }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.surfacePressure">
+                    <div>
+                        Surface pressure
+                    </div>
+                    <div>
+                        {{ body.bodyData.surfacePressure | number:'0.2-2' }} atmospheres
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.gravity">
+                    <div>
+                        Gravity
+                    </div>
+                    <div>
+                        {{ body.bodyData.gravity | number:'0.2-2' }} G
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.radius">
+                    <div>
+                        Radius
+                    </div>
+                    <div>
+                        {{ body.bodyData.radius | number:'0.2-2' }} km
+                    </div>
+                </div>
+            </div>
+            <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
+                <div *ngFor="let parent of body.bodyData.parents; index as i"
+                    style="font-style: italic; font-size: 80%;">
+                    Parent {{ i }}:
+                    <span *ngIf="parent.Null != undefined">Barycentre: {{ parent.Null }}</span>
+                    <span *ngIf="parent.Planet != undefined">Planet: {{ parent.Planet }}</span>
+                    <span *ngIf="parent.Star != undefined">Star: {{ parent.Star }}</span>
+                </div>
+            </div>
+            <div *ngIf="hasSignals" class="body-signals">
+                <b>Signals</b>
+                <div *ngIf="humanSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Human.gif" />
+                        Human: {{ humanSignalCount }}
+                    </div>
+                </div>
+                <div *ngIf="otherSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Other.gif" />
+                        Other: {{ otherSignalCount }}
+                    </div>
+                </div>
+                <div *ngIf="geologySignals.length || geologySignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Geology.gif" />
+                        <b>Geology</b>
+                    </div>
+                    <div class="body-signal-data">
+                        <div>
+                            <div>Signals reported</div>
+                            <div>{{ geologySignalCount }}</div>
+                        </div>
+                        <div>
+                            <div>Details</div>
+                            <div class="body-signal-data-details">
+                                <div *ngFor="let geologySignal of geologySignals">
+                                    {{ geologySignal }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="biologySignals.length || biologySignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Biology.gif" />
+                        <b>Biology</b>
+                    </div>
+                    <div class="body-signal-data">
+                        <div>
+                            <div>Signals reported</div>
+                            <div>{{ biologySignalCount }}</div>
+                        </div>
+                        <div>
+                            <div>Details</div>
+                            <div class="body-signal-data-details">
+                                <div *ngFor="let biologySignal of biologySignals">
+                                    {{ biologySignal }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="genusesSignals.length" class="body-signal">
+                    <div class="body-signal-name">
+                        ?
+                    </div>
+                    <div class="body-signal-data">
+                        <div>
+                            <div *ngFor="let genusesSignal of genusesSignals">
+                                {{ genusesSignal }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="thargoidSignals.length || thargoidSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Thargoid.gif" />
+                        <b>Thargoid</b>
+                    </div>
+                    <div class="body-signal-data">
+                        <div>
+                            <div>Signals reported</div>
+                            <div>{{ thargoidSignalCount }}</div>
+                        </div>
+                        <div>
+                            <div>Details</div>
+                            <div class="body-signal-data-details">
+                                <div *ngFor="let thargoidSignal of thargoidSignals">
+                                    {{ thargoidSignal }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="thargoidSignals.length || guardianSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Guardian.gif" />
+                        <b>Guardian</b>
+                    </div>
+                    <div class="body-signal-data">
+                        <div>
+                            <div>Signals reported</div>
+                            <div>{{ guardianSignalCount }}</div>
+                        </div>
+                        <div>
+                            <div>Details</div>
+                            <div class="body-signal-data-details">
+                                <div *ngFor="let guardianSignal of guardianSignals">
+                                    {{ guardianSignal }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="child-bodies">
+        <app-system-body *ngFor="let body of body.subBodies" [body]="body"></app-system-body>
+    </div>
+</div>

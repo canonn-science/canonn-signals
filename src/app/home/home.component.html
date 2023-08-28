@@ -1,0 +1,28 @@
+<div class="home-container">
+    <div class="search-container">
+        <h2>System Signals</h2>
+        <p>Search system signals recorded by Canonn field researchers.</p>
+        <div class="search-field">
+            <mat-form-field class="input-full-width">
+                <mat-label>Search by system name or system address</mat-label>
+                <input matInput [(ngModel)]="searchInput" #message maxlength="128">
+                <mat-error >System not found</mat-error>
+            </mat-form-field>
+            <button mat-flat-button color="primary" (click)="search()"><mat-icon>search</mat-icon></button>
+        </div>
+    </div>
+    <div>
+        <img src="assets/Canonn-Logo_transparent_50_f1.gif" style="width: 200px; height: 200px;" />
+    </div>
+</div>
+<div class="system-container" *ngIf="data">
+    <div class="system-container-data">
+        <div class="system-data">
+            System:
+            <b>{{ data.system.name }}</b>
+        </div>
+        <div class="child-bodies">
+            <app-system-body *ngFor="let body of bodies" [body]="body"></app-system-body>
+        </div>
+    </div>
+</div>

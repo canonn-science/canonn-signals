@@ -1,0 +1,11 @@
+.mat-drawer-container::before {
+    content: " ";
+    background: url("/assets/bg1.jpg") no-repeat;
+    background-size: cover;
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    left: 0px;
+    opacity: 0.5;
+}

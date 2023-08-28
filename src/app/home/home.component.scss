@@ -1,0 +1,43 @@
+.home-container {
+    display: flex;
+    justify-content: center;
+}
+
+.search-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.search-field {
+    display: flex;
+    gap: 8px;
+
+    button {
+        min-height: 56px;
+        min-width: 56px;
+    }
+}
+
+.input-full-width {
+    width: 100%;
+    min-width: 400px;
+}
+
+.system-container {
+    display: flex;
+    justify-content: center;
+
+    .system-container-data {
+        width: 80%;
+
+        .system-data {
+            background-color: rgba(44, 44, 44, 0.33);
+        }
+    }
+}
+
+.child-bodies {
+    margin-left: 72px;
+}

@@ -1,0 +1,300 @@
+import { HttpClient } from '@angular/common/http';
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.scss']
+})
+export class HomeComponent {
+  public searching = false;
+  public searchInput: string = "";
+  public searchError = false;
+  public data: CanonnBiostats | null = null;
+  public bodies: SystemBody[] = [];
+
+  public constructor(private readonly httpClient: HttpClient) {
+  }
+
+  public search(): void {
+    if (this.searching || !this.searchInput) {
+      return;
+    }
+    this.searchInput = this.searchInput.trim();
+    if (this.searchInput.length <= 1) {
+      return;
+    }
+    this.searching = true;
+    this.searchError = false;
+    if (this.isNumeric(this.searchInput)) {
+      const systemAddress = parseInt(this.searchInput);
+      this.searchBySystemAddress(systemAddress);
+      return;
+    }
+    this.httpClient.get<EDSMSystemV1>(`https://www.edsm.net/api-v1/system?showId=1&systemName=${encodeURIComponent(this.searchInput)}`)
+      .subscribe(
+        data => {
+          if (!data || !data.id64) {
+            this.searchFailed();
+            return;
+          }
+          this.searchBySystemAddress(data.id64);
+        },
+        error => {
+          this.searchFailed();
+        }
+      );
+  }
+
+  private searchFailed(): void {
+    this.searching = false;
+    this.searchError = true;
+    console.error("searchFailed");
+  }
+
+  private searchBySystemAddress(systemAddress: number): void {
+    console.log("searchBySystemAddress", systemAddress);
+    this.httpClient.get<CanonnBiostats>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=${systemAddress}`)
+      .subscribe(
+        data => {
+          if (!data) {
+            this.searchFailed();
+            return;
+          }
+          this.processBodies(data);
+          this.searching = false;
+        },
+        error => {
+          this.searchFailed();
+        }
+      );
+    // this.httpClient.get<CanonnCodex>("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref");
+  }
+
+  private processBodies(data: CanonnBiostats): void {
+    this.data = data;
+    this.bodies = [];
+
+    console.log(data);
+
+    const bodiesFlat: SystemBody[] = [];
+
+    for (const systemBody of data.system.bodies) {
+      const body: SystemBody = {
+        bodyData: systemBody,
+        subBodies: [],
+        parent: null,
+      };
+      bodiesFlat.push(body);
+    }
+
+    for (const body of [...bodiesFlat]) {
+      if (!body.bodyData.parents) {
+        continue;
+      }
+      for (const parent of body.bodyData.parents) {
+        if (typeof parent.Planet != 'undefined') {
+          let parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Planet);
+          if (!parentBody) {
+            parentBody = {
+              bodyData: {
+                bodyId: parent.Planet,
+                name: `Unknown planet (${parent.Planet})`,
+                id64: 0,
+                subType: "",
+                type: "Planet",
+              },
+              subBodies: [],
+              parent: null,
+            };
+            bodiesFlat.push(parentBody);
+          }
+        }
+        if (typeof parent.Star != 'undefined') {
+          let parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Star);
+          if (!parentBody) {
+            parentBody = {
+              bodyData: {
+                bodyId: parent.Star,
+                name: `Unknown star (${parent.Star})`,
+                id64: 0,
+                subType: "",
+                type: "Star",
+              },
+              subBodies: [],
+              parent: null,
+            };
+            bodiesFlat.push(parentBody);
+          }
+        }
+        if (typeof parent.Null != 'undefined') {
+          let parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Null);
+          if (!parentBody) {
+            parentBody = {
+              bodyData: {
+                bodyId: parent.Null,
+                name: `Unknown barycentre (${parent.Null})`,
+                id64: 0,
+                subType: "",
+                type: "Barycentre",
+              },
+              subBodies: [],
+              parent: null,
+            };
+            bodiesFlat.push(parentBody);
+          }
+        }
+      }
+    }
+
+    for (const body of bodiesFlat) {
+      if (body.bodyData.parents && body.bodyData.parents.length > 0) {
+        let currentBody = body;
+        for (const parent of body.bodyData.parents) {
+          const parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Planet || b.bodyData.bodyId === parent.Star || b.bodyData.bodyId === parent.Null);
+          if (parentBody) {
+            if (!parentBody.subBodies.includes(currentBody)) {
+              parentBody.subBodies.push(currentBody);
+            }
+            if (!currentBody.parent) {
+              currentBody.parent = parentBody;
+            }
+            currentBody = parentBody;
+          }
+          else {
+            break;
+          }
+        }
+        continue;
+      }
+    }
+
+    this.bodies = bodiesFlat.filter(b => b.parent === null);
+
+    console.log(this.bodies);
+  }
+
+  private isNumeric(value: string) {
+    return /^\d+$/.test(value);
+  }
+}
+
+interface EDSMSystemV1 {
+  name: string;
+  id: number;
+  id64: number;
+}
+
+interface CanonnBiostats {
+  system: {
+    allegiance: string;
+    bodies: CanonnBiostatsBody[];
+    bodyCount: number;
+    // controllingFaction
+    coords: {
+      x: number;
+      y: number;
+      z: number;
+    };
+    date: string;
+    government: string | null;
+    id64: number;
+    name: string;
+    population: number;
+    // powerState
+    // powers
+    // primaryEconomy
+    // region
+    // secondaryEconomy
+    // security
+  }
+}
+
+export interface CanonnBiostatsBody {
+  absoluteMagnitude?: number;
+  age?: number;
+  argOfPeriapsis?: number;
+  ascendingNode?: number;
+  atmosphereType?: string | null;
+  axialTilt?: number;
+  belts?: {
+    innerRadius: number;
+    mass: number;
+    name: string;
+    outerRadius: number;
+    type: string;
+  }[];
+  bodyId: number;
+  distanceToArrival?: number;
+  earthMasses?: number;
+  gravity?: number;
+  id64: number;
+  isLandable?: boolean;
+  luminosity?: string;
+  mainStar?: boolean;
+  materials?: {
+    Carbon: number;
+    Chromium: number;
+    Germanium: number;
+    Iron: number;
+    Manganese: number;
+    Mercury: number;
+    Nickel: number;
+    Phosphorus: number;
+    Ruthenium: number;
+    Sulphur: number;
+    Tin: number;
+  };
+  meanAnomaly?: number;
+  name: string;
+  orbitalEccentricity?: number;
+  orbitalInclination?: number;
+  orbitalPeriod?: number;
+  parents?: {
+    Null?: number;
+    Planet?: number;
+    Star: number;
+  }[];
+  radius?: number;
+  rotationalPeriod?: number;
+  rotationalPeriodTidallyLocked?: boolean;
+  semiMajorAxis?: number;
+  signals?: {
+    genuses?: string[];
+    geology?: string[];
+    biology?: string[];
+    thargoids?: string[];
+    guardians?: string[];
+    signals?: {
+      [key: string]: number;
+    };
+    updateTime: string;
+  };
+  solarMasses?: number;
+  solarRadius?: number;
+  solidComposition?: {
+    Ice: number;
+    Metal: number;
+    Rock: number;
+  },
+  spectralClass?: string;
+  stations?: {
+    /* */
+  }[];
+  subType: string;
+  surfacePressure?: number;
+  surfaceTemperature?: number;
+  terraformingState?: string;
+  timestamps?: {
+    distanceToArrival: string;
+    meanAnomaly?: string;
+  };
+  type: string;
+  updateTime?: string;
+}
+
+export interface SystemBody {
+  bodyData: CanonnBiostatsBody;
+  subBodies: SystemBody[];
+  parent: SystemBody | null;
+}
