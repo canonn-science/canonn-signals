@@ -33,7 +33,7 @@ body {
 
 body {
   margin: 0;
-  font-family: Tahoma, sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 .badge {
@@ -45,4 +45,69 @@ body {
   white-space: nowrap;
   vertical-align: baseline;
   border-radius: 4px;
+}
+
+a {
+  text-decoration: none;
+}
+
+a,
+.link {
+  color: #fbd7b4;
+}
+
+.child-bodies {
+  padding-left: 104px;
+}
+
+.body-container {
+  position: relative;
+}
+
+.child-container-default::after,
+.child-container-barycentre::after {
+  position: absolute;
+  content: " ";
+  border-left: 4px solid #fbd7b4;
+  height: 100%;
+  width: 0px;
+  top: 0px;
+  left: -56px;
+}
+
+.child-container-default::before {
+  position: absolute;
+  content: " ";
+  height: 0px;
+  width: 56px;
+  top: 89px;
+  left: -56px;
+  border-bottom: 4px solid #fbd7b4;
+}
+
+.child-container-barycentre::before {
+  position: absolute;
+  content: " ";
+  height: 0px;
+  width: 56px;
+  top: 18px;
+  left: -56px;
+  border-bottom: 4px solid #fbd7b4;
+}
+
+.child-container-last::after {
+  position: absolute;
+  content: " ";
+  border-left: 4px solid #fbd7b4;
+  top: 0px;
+  left: -56px;
+  height: 89px;
+  border-bottom: 4px solid #fbd7b4;
+  width: 52px;
+  border-radius: 0px 0px 0px 4px;
+}
+
+hr {
+  margin-top: 2px;
+  margin-bottom: 2px;
 }

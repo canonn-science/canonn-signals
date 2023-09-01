@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
+import { AppService } from '../app.service';
 
 @Component({
   selector: 'app-home',
@@ -13,7 +14,8 @@ export class HomeComponent {
   public data: CanonnBiostats | null = null;
   public bodies: SystemBody[] = [];
 
-  public constructor(private readonly httpClient: HttpClient) {
+  public constructor(private readonly httpClient: HttpClient,
+    private readonly appService: AppService) {
   }
 
   public search(): void {
@@ -262,6 +264,7 @@ export interface CanonnBiostatsBody {
   signals?: {
     genuses?: string[];
     geology?: string[];
+    guesses?: string[];
     biology?: string[];
     thargoids?: string[];
     guardians?: string[];

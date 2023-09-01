@@ -14,6 +14,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { SystemBodyComponent } from './system-body/system-body.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatBadgeModule } from '@angular/material/badge';
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @NgModule({
   declarations: [
@@ -34,6 +36,8 @@ import { MatBadgeModule } from '@angular/material/badge';
     MatButtonModule,
     MatIconModule,
     MatBadgeModule,
+    FontAwesomeModule,
+    MatTooltipModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

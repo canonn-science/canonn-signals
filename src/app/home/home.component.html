@@ -21,8 +21,8 @@
             System:
             <b>{{ data.system.name }}</b>
         </div>
-        <div class="child-bodies">
-            <app-system-body *ngFor="let body of bodies" [body]="body"></app-system-body>
+        <div>
+            <app-system-body *ngFor="let body of bodies; last as isLast" [body]="body" [isRoot]="true" [isLast]="isLast"></app-system-body>
         </div>
     </div>
 </div>
