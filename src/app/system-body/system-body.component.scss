@@ -24,10 +24,12 @@
         justify-content: center;
         align-items: center;
         background-color: black;
+        position: relative;
 
         img {
             width: 90px;
             height: 90px;
+            position: absolute;
         }
     }
 
@@ -72,7 +74,7 @@
 }
 
 .badge-orange {
-    background-color: orange;
+    background-color: #ff9800;
 }
 
 .badge-blue {

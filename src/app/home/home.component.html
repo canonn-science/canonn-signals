@@ -5,7 +5,7 @@
         <div class="search-field">
             <mat-form-field class="input-full-width">
                 <mat-label>Search by system name or system address</mat-label>
-                <input matInput [(ngModel)]="searchInput" #message maxlength="128">
+                <input matInput [(ngModel)]="searchInput" #message maxlength="128" [disabled]="searching" (keyup.enter)="search()">
                 <mat-error>System not found</mat-error>
             </mat-form-field>
             <button mat-flat-button color="primary" (click)="search()"
@@ -23,8 +23,10 @@
             {{ data.system.name }}
         </div>
         <div class="system-data">
-            <div>
-                Coordinates:
+            <div class="system-data-row">
+                <span>
+                    Coordinates
+                </span>
                 <div class="system-coordinates">
                     <div>
                         <div>{{ data.system.coords.x | number: '0.5-5' }}</div>
@@ -44,6 +46,9 @@
         <div>
             <app-system-body *ngFor="let body of bodies; last as isLast" [body]="body" [isRoot]="true"
                 [isLast]="isLast"></app-system-body>
+        </div>
+        <div>
+            <br>
         </div>
     </div>
 </div>

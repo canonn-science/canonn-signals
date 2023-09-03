@@ -37,7 +37,7 @@
             gap: 4px;
             padding: 8px;
             align-items: center;
-            background-color: #fbd7b4;
+            background-color: #ff9800;
             color: #000000;
             font-weight: bold;
             font-size: 150%;
@@ -46,21 +46,26 @@
         .system-data {
             background-color: #000000;
             display: flex;
-            padding: 4px;
+            padding: 4px 8px;
 
-            .system-coordinates {
+            .system-data-row {
                 display: flex;
                 gap: 32px;
 
-                div {
+                .system-coordinates {
                     display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-
-                    div:last-child {
-                        font-style: italic;
-                        font-size: 60%;
+                    gap: 32px;
+    
+                    div {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+    
+                        div:last-child {
+                            font-style: italic;
+                            font-size: 60%;
+                        }
                     }
                 }
             }

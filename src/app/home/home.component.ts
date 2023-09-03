@@ -1,13 +1,16 @@
 import { HttpClient } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AppService } from '../app.service';
+import { ActivatedRoute, Params, Router } from '@angular/router';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 
+@UntilDestroy()
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
   public searching = false;
   public searchInput: string = "";
   public searchError = false;
@@ -15,7 +18,24 @@ export class HomeComponent {
   public bodies: SystemBody[] = [];
 
   public constructor(private readonly httpClient: HttpClient,
-    private readonly appService: AppService) {
+    private readonly appService: AppService,
+    private readonly router: Router,
+    private readonly activatedRoute: ActivatedRoute
+  ) {
+  }
+
+  public ngOnInit(): void {
+    this.activatedRoute.queryParams
+      .pipe(untilDestroyed(this))
+      .subscribe(q => {
+        if (this.searching) {
+          return;
+        }
+        if (q["system"] && (!this.bodies || this.data?.system.name != q["system"])) {
+          this.searchInput = q["system"];
+          this.search();
+        }
+      });
   }
 
   public search(): void {
@@ -33,6 +53,7 @@ export class HomeComponent {
       this.searchBySystemAddress(systemAddress);
       return;
     }
+
     this.httpClient.get<EDSMSystemV1>(`https://www.edsm.net/api-v1/system?showId=1&systemName=${encodeURIComponent(this.searchInput)}`)
       .subscribe(
         data => {
@@ -51,11 +72,9 @@ export class HomeComponent {
   private searchFailed(): void {
     this.searching = false;
     this.searchError = true;
-    console.error("searchFailed");
   }
 
   private searchBySystemAddress(systemAddress: number): void {
-    console.log("searchBySystemAddress", systemAddress);
     this.httpClient.get<CanonnBiostats>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=${systemAddress}`)
       .subscribe(
         data => {
@@ -70,14 +89,22 @@ export class HomeComponent {
           this.searchFailed();
         }
       );
-    // this.httpClient.get<CanonnCodex>("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref");
   }
 
   private processBodies(data: CanonnBiostats): void {
+    const queryParams: Params = { system: data.system.name };
+
+    this.router.navigate(
+      [], 
+      {
+        relativeTo: this.activatedRoute,
+        queryParams, 
+        queryParamsHandling: 'merge', // remove to replace all query params by provided
+      });
+    this.searchInput = data.system.name;
+
     this.data = data;
     this.bodies = [];
-
-    console.log(data);
 
     const bodiesFlat: SystemBody[] = [];
 
@@ -172,8 +199,6 @@ export class HomeComponent {
     }
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
-
-    console.log(this.bodies);
   }
 
   private isNumeric(value: string) {

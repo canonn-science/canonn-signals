@@ -6,42 +6,17 @@
 
 import { CanonnBiostatsBody } from "../home/home.component";
 
-interface BodyImageData {
-    path: string;
-}
-
-interface StarImageData extends BodyImageData {
-    spectralClass: string | null;
-    subType?: string | RegExp;
-    solarMasses?: (p: number) => boolean;
-}
-
-interface GasGiantImageData extends BodyImageData {
-    giantClass: number | "ammonia-based life" | "water-based life" | "helium" | "water";
-    maxSurfaceTemperature?: number;
-    atmosphere?: string[];
-}
-
-interface TerrestrialBodyImageData extends BodyImageData {
-    subType: string;
-    maxSurfaceTemperature?: number;
-    terraformable?: boolean;
-    atmosphere?: string[] | boolean;
-    landable?: boolean;
-    tidallyLocked?: boolean;
-    isApplicable?: (body: CanonnBiostatsBody) => boolean;
-    maxEarthMasses?: number;
-}
-
 export class BodyImage {
     private static starImages: StarImageData[] = [
         {
             path: "A",
             spectralClass: "A",
+            coronaPath: "Corona_A",
         },
         {
             path: "B",
             spectralClass: "B",
+            coronaPath: "Corona_B",
         },
         {
             path: "C",
@@ -74,10 +49,12 @@ export class BodyImage {
         {
             path: "F",
             spectralClass: "F",
+            coronaPath: "Corona_F",
         },
         {
             path: "G",
             spectralClass: "G",
+            coronaPath: "Corona_G",
         },
         {
             path: "SuperMassiveBlackHole",
@@ -92,6 +69,7 @@ export class BodyImage {
         {
             path: "K",
             spectralClass: "K",
+            coronaPath: "Corona_K",
         },
         {
             path: "L",
@@ -100,6 +78,7 @@ export class BodyImage {
         {
             path: "M",
             spectralClass: "M",
+            coronaPath: "Corona_M",
         },
         {
             path: "N",
@@ -122,6 +101,7 @@ export class BodyImage {
         {
             path: "O",
             spectralClass: "O",
+            coronaPath: "Corona_O",
         },
         {
             path: "T",
@@ -1277,7 +1257,7 @@ export class BodyImage {
         },
     ];
 
-    public static getBodyImagePath(body: CanonnBiostatsBody): string {
+    public static getBodyImagePath(body: CanonnBiostatsBody): BodyImageData | null {
         if (body.type === "Star") {
             const spectralClass = body.spectralClass?.substring(0, 1) ?? null;
             for (const starImage of this.starImages) {
@@ -1297,7 +1277,10 @@ export class BodyImage {
                 if (starImage.solarMasses && !starImage.solarMasses(body.solarMasses ?? 0)) {
                     continue;
                 }
-                return "stars/" + starImage.path;
+                return {
+                    path: "stars/" + starImage.path,
+                    coronaPath: starImage.coronaPath ? "stars/" + starImage.coronaPath : undefined,
+                };
             }
         }
         else if (body.type === "Planet") {
@@ -1356,7 +1339,9 @@ export class BodyImage {
                             continue;
                         }
                     }
-                    return "planets/giant/" + gasGiantImage.path;
+                    return {
+                        path: "planets/giant/" + gasGiantImage.path,
+                    };
                 }
             }
             else {
@@ -1395,10 +1380,40 @@ export class BodyImage {
                     if (terrestrialBodyImage.isApplicable && !terrestrialBodyImage.isApplicable(body)) {
                         continue;
                     }
-                    return "planets/terrestrial/" + terrestrialBodyImage.path;
+                    return {
+                        path: "planets/terrestrial/" + terrestrialBodyImage.path,
+                    };
                 }
             }
         }
-        return "";
+        return null;
     }
+}
+
+interface BodyImageData {
+    path: string;
+    coronaPath?: string;
+}
+
+interface StarImageData extends BodyImageData {
+    spectralClass: string | null;
+    subType?: string | RegExp;
+    solarMasses?: (p: number) => boolean;
+}
+
+interface GasGiantImageData extends BodyImageData {
+    giantClass: number | "ammonia-based life" | "water-based life" | "helium" | "water";
+    maxSurfaceTemperature?: number;
+    atmosphere?: string[];
+}
+
+interface TerrestrialBodyImageData extends BodyImageData {
+    subType: string;
+    maxSurfaceTemperature?: number;
+    terraformable?: boolean;
+    atmosphere?: string[] | boolean;
+    landable?: boolean;
+    tidallyLocked?: boolean;
+    isApplicable?: (body: CanonnBiostatsBody) => boolean;
+    maxEarthMasses?: number;
 }

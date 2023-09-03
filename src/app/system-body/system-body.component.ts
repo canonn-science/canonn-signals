@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, OnInit } from '@angular/core';
-import { CanonnBiostatsBody, SystemBody } from '../home/home.component';
+import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
@@ -37,6 +37,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   public guardianSignals: string[] = [];
 
   public bodyImage: string = "";
+  public bodyCoronaImage: string = "";
 
   public constructor(private readonly appService: AppService) {
   }
@@ -75,7 +76,10 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       }
     }
 
-    this.bodyImage = BodyImage.getBodyImagePath(this.body.bodyData);
+    const bodyImageResult = BodyImage.getBodyImagePath(this.body.bodyData);
+
+    this.bodyImage = bodyImageResult?.path ?? "";
+    this.bodyCoronaImage = bodyImageResult?.coronaPath ?? "";
 
     if (this.body.bodyData.signals) {
       this.humanSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;

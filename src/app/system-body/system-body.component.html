@@ -10,6 +10,7 @@
     <div class="system-body" *ngIf="body.bodyData.type != 'Barycentre'">
         <div class="body-image">
             <img *ngIf="bodyImage" src="assets/bodies/{{ bodyImage }}.png" />
+            <img *ngIf="bodyCoronaImage" src="assets/bodies/{{ bodyCoronaImage }}.png" class="body-image-corona" />
         </div>
         <div class="body-content">
             <div class="body-data">
