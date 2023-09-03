@@ -1,8 +1,9 @@
 import { Component, Input, OnChanges, OnInit } from '@angular/core';
-import { SystemBody } from '../home/home.component';
+import { CanonnBiostatsBody, SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { BodyImage } from '../data/body-images';
 
 @UntilDestroy()
 @Component({
@@ -58,7 +59,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       this.styleClass = "";
     }
     else if (!this.isLast) {
-      if ( this.body.bodyData.type == 'Barycentre') {
+      if (this.body.bodyData.type == 'Barycentre') {
         this.styleClass = "child-container-barycentre";
       }
       else {
@@ -66,27 +67,16 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       }
     }
     else {
-      this.styleClass = "child-container-last";
-    }
-    switch (this.body.bodyData.type) {
-      case "Star": {
-        switch (this.body.bodyData.spectralClass) {
-          case "G2": {
-            this.bodyImage = "G Star.png";
-            break;
-          }
-          default: {
-            this.bodyImage = "";
-            break;
-          }
-        }
-        break;
+      if (this.body.bodyData.type == 'Barycentre') {
+        this.styleClass = "child-container-barycentre-last";
       }
-      default: {
-        this.bodyImage = "";
-        break;
+      else {
+        this.styleClass = "child-container-default-last";
       }
     }
+
+    this.bodyImage = BodyImage.getBodyImagePath(this.body.bodyData);
+
     if (this.body.bodyData.signals) {
       this.humanSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;
       this.otherSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Other;'] : 0;
@@ -134,3 +124,4 @@ interface BiologySignal {
   codex: CanonnCodexEntry | null | undefined;
   isGuess: boolean;
 }
+

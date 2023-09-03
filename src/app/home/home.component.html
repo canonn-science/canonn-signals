@@ -6,23 +6,44 @@
             <mat-form-field class="input-full-width">
                 <mat-label>Search by system name or system address</mat-label>
                 <input matInput [(ngModel)]="searchInput" #message maxlength="128">
-                <mat-error >System not found</mat-error>
+                <mat-error>System not found</mat-error>
             </mat-form-field>
-            <button mat-flat-button color="primary" (click)="search()"><mat-icon>search</mat-icon></button>
+            <button mat-flat-button color="primary" (click)="search()"
+                [disabled]="searching"><mat-icon>search</mat-icon></button>
         </div>
     </div>
     <div>
-        <img src="assets/Canonn-Logo_transparent_50_f1.gif" style="width: 200px; height: 200px;" />
+        <img [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
+            style="width: 200px; height: 200px;" />
     </div>
 </div>
 <div class="system-container" *ngIf="data">
     <div class="system-container-data">
+        <div class="system-title">
+            {{ data.system.name }}
+        </div>
         <div class="system-data">
-            System:
-            <b>{{ data.system.name }}</b>
+            <div>
+                Coordinates:
+                <div class="system-coordinates">
+                    <div>
+                        <div>{{ data.system.coords.x | number: '0.5-5' }}</div>
+                        <div>X</div>
+                    </div>
+                    <div>
+                        <div>{{ data.system.coords.y | number: '0.5-5' }}</div>
+                        <div>Y</div>
+                    </div>
+                    <div>
+                        <div>{{ data.system.coords.z | number: '0.5-5' }}</div>
+                        <div>Z</div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div>
-            <app-system-body *ngFor="let body of bodies; last as isLast" [body]="body" [isRoot]="true" [isLast]="isLast"></app-system-body>
+            <app-system-body *ngFor="let body of bodies; last as isLast" [body]="body" [isRoot]="true"
+                [isLast]="isLast"></app-system-body>
         </div>
     </div>
 </div>

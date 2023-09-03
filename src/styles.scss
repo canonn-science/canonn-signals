@@ -90,21 +90,29 @@ a,
   content: " ";
   height: 0px;
   width: 56px;
-  top: 18px;
+  top: 19.5px;
   left: -56px;
   border-bottom: 4px solid #fbd7b4;
 }
 
-.child-container-last::after {
+.child-container-default-last::after,
+.child-container-barycentre-last::after {
   position: absolute;
   content: " ";
   border-left: 4px solid #fbd7b4;
   top: 0px;
   left: -56px;
-  height: 89px;
   border-bottom: 4px solid #fbd7b4;
   width: 52px;
   border-radius: 0px 0px 0px 4px;
+}
+
+.child-container-default-last::after {
+  height: 89px;
+}
+
+.child-container-barycentre-last::after {
+  height: 19.5px;
 }
 
 hr {

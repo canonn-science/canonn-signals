@@ -32,8 +32,38 @@
     .system-container-data {
         width: 80%;
 
+        .system-title {
+            display: flex;
+            gap: 4px;
+            padding: 8px;
+            align-items: center;
+            background-color: #fbd7b4;
+            color: #000000;
+            font-weight: bold;
+            font-size: 150%;
+        }
+
         .system-data {
-            background-color: rgba(44, 44, 44, 0.33);
+            background-color: #000000;
+            display: flex;
+            padding: 4px;
+
+            .system-coordinates {
+                display: flex;
+                gap: 32px;
+
+                div {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+
+                    div:last-child {
+                        font-style: italic;
+                        font-size: 60%;
+                    }
+                }
+            }
         }
     }
 }
