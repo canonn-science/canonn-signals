@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: 16
       - run: npm i
-      - run: npm run build
+      - run: ng build canonn-signals --base-href "/canonn-signals/"
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
