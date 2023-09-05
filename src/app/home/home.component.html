@@ -1,15 +1,17 @@
 <div class="home-container">
     <div class="search-container">
         <h2>System Signals</h2>
-        <p>Search system signals recorded by Canonn field researchers.</p>
+        <p>Search to review system signals recorded by Canonn field researchers.</p>
         <div class="search-field">
             <mat-form-field class="input-full-width">
                 <mat-label>Search by system name or system address</mat-label>
-                <input matInput [(ngModel)]="searchInput" #message maxlength="128" [disabled]="searching" (keyup.enter)="search()">
+                <input matInput [(ngModel)]="searchInput" #message maxlength="128" [disabled]="searching"
+                    (keyup.enter)="search()">
                 <mat-error>System not found</mat-error>
             </mat-form-field>
-            <button mat-flat-button color="primary" (click)="search()"
-                [disabled]="searching"><mat-icon>search</mat-icon></button>
+            <button mat-flat-button color="primary" (click)="search()" [disabled]="searching">
+                <mat-icon>search</mat-icon>
+            </button>
         </div>
     </div>
     <div>
@@ -17,7 +19,7 @@
             style="width: 200px; height: 200px;" />
     </div>
 </div>
-<div class="system-container" *ngIf="data">
+<div class="system-container" *ngIf="data" @visibilityTrigger>
     <div class="system-container-data">
         <div class="system-title">
             {{ data.system.name }}
@@ -42,13 +44,18 @@
                     </div>
                 </div>
             </div>
+            <div class="system-data-row">
+                <span>
+                    Region
+                </span>
+                <span>
+                    {{ data.system.region.name }}
+                </span>
+            </div>
         </div>
-        <div>
+        <div class="bodies">
             <app-system-body *ngFor="let body of bodies; last as isLast" [body]="body" [isRoot]="true"
                 [isLast]="isLast"></app-system-body>
-        </div>
-        <div>
-            <br>
         </div>
     </div>
 </div>

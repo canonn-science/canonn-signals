@@ -3,12 +3,24 @@ import { Component, OnInit } from '@angular/core';
 import { AppService } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { animate, style, transition, trigger } from '@angular/animations';
 
 @UntilDestroy()
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss']
+  styleUrls: ['./home.component.scss'],
+  animations: [
+    trigger('visibilityTrigger', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('400ms', style({ opacity: "1" })),
+      ]),
+      transition(':leave', [
+        animate('200ms', style({ opacity: 0 }))
+      ])
+    ]),
+  ]
 })
 export class HomeComponent implements OnInit {
   public searching = false;
@@ -46,6 +58,8 @@ export class HomeComponent implements OnInit {
     if (this.searchInput.length <= 1) {
       return;
     }
+    this.data = null;
+    this.bodies = [];
     this.searching = true;
     this.searchError = false;
     if (this.isNumeric(this.searchInput)) {
@@ -199,6 +213,7 @@ export class HomeComponent implements OnInit {
     }
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
+    console.log(this.data);
   }
 
   private isNumeric(value: string) {
@@ -231,7 +246,10 @@ interface CanonnBiostats {
     // powerState
     // powers
     // primaryEconomy
-    // region
+    region: {
+      name: string;
+      region: number;
+    };
     // secondaryEconomy
     // security
   }

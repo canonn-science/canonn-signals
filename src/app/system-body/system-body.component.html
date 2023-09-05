@@ -1,7 +1,7 @@
 <div class="body-container" [ngClass]="styleClass">
     <div class="body-title">
         <b>{{ body.bodyData.name }}</b>
-        <span *ngIf="body.bodyData.subType">{{ body.bodyData.subType }}</span>
+        <span *ngIf="body.bodyData.subType"> - {{ body.bodyData.subType }}</span>
         <span *ngIf="body.bodyData.isLandable" class="badge badge-orange">Landable</span>
         <span *ngIf="body.bodyData.isLandable &&  body.bodyData.atmosphereType && body.bodyData.atmosphereType != ''"
             class="badge badge-blue">Odyssey</span>
@@ -9,8 +9,8 @@
     </div>
     <div class="system-body" *ngIf="body.bodyData.type != 'Barycentre'">
         <div class="body-image">
-            <img *ngIf="bodyImage" src="assets/bodies/{{ bodyImage }}.png" />
             <img *ngIf="bodyCoronaImage" src="assets/bodies/{{ bodyCoronaImage }}.png" class="body-image-corona" />
+            <img *ngIf="bodyImage" src="assets/bodies/{{ bodyImage }}.png" />
         </div>
         <div class="body-content">
             <div class="body-data">
@@ -136,16 +136,19 @@
                         <fa-icon [icon]="faChevronRight"></fa-icon>
                         <div>
                             <div *ngFor="let biologySignal of biologySignals" class="body-signal-data">
-                                <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
-                                    matTooltip="Guess"></fa-icon>
-                                <span *ngIf="!biologySignal.entryId">{{ biologySignal.signal }}</span>
-                                <span *ngIf="biologySignal.entryId">
-                                    <a
-                                        href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
-                                        {{ biologySignal.signal }}
-                                    </a>
-                                    <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
-                                </span>
+                                <div>
+                                    <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
+                                        matTooltip="Guess"></fa-icon>
+                                    <span *ngIf="!biologySignal.entryId">
+                                        {{ biologySignal.signal }}</span>
+                                    <span *ngIf="biologySignal.entryId">
+                                        <a
+                                            href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
+                                            {{ biologySignal.signal }}
+                                        </a>
+                                        <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
+                                    </span>
+                                </div>
                                 <span *ngIf="biologySignal.codex?.reward">{{ biologySignal.codex?.reward | number }}
                                     cr</span>
                             </div>
@@ -187,6 +190,7 @@
             </div>
         </div>
     </div>
+    <div class="system-body-end"></div>
     <div class="child-bodies">
         <app-system-body *ngFor="let body of body.subBodies; last as isLast" [body]="body"
             [isLast]="isLast"></app-system-body>

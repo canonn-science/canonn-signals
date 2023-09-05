@@ -71,7 +71,7 @@ a,
   border-left: 4px solid #fbd7b4;
   height: 100%;
   width: 0px;
-  top: 0px;
+  top: -4px;
   left: -56px;
 }
 
@@ -80,7 +80,7 @@ a,
   content: " ";
   height: 0px;
   width: 56px;
-  top: 89px;
+  top: 85px;
   left: -56px;
   border-bottom: 4px solid #fbd7b4;
 }
@@ -90,7 +90,7 @@ a,
   content: " ";
   height: 0px;
   width: 56px;
-  top: 19.5px;
+  top: 15.5px;
   left: -56px;
   border-bottom: 4px solid #fbd7b4;
 }
@@ -100,7 +100,7 @@ a,
   position: absolute;
   content: " ";
   border-left: 4px solid #fbd7b4;
-  top: 0px;
+  top: -4px;
   left: -56px;
   border-bottom: 4px solid #fbd7b4;
   width: 52px;
@@ -108,11 +108,11 @@ a,
 }
 
 .child-container-default-last::after {
-  height: 89px;
+  height: 85px;
 }
 
 .child-container-barycentre-last::after {
-  height: 19.5px;
+  height: 15.5px;
 }
 
 hr {
