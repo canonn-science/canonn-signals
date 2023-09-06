@@ -17,6 +17,9 @@
     gap: 8px;
     background-color: #797979;
     padding: 4px;
+    border-right: 1px solid #393939;
+    border-left: 1px solid #393939;
+    border-bottom: 1px solid #393939;
 
     .body-image {
         display: flex;
@@ -26,6 +29,9 @@
         align-items: center;
         background-color: black;
         position: relative;
+        border-radius: 4px;
+        flex-grow: 0;
+        flex-shrink: 0;
 
         img {
             width: 90px;
@@ -42,15 +48,15 @@
     .body-data {
         display: flex;
         flex-wrap: wrap;
-        column-gap: 24px;
+        column-gap: 32px;
         max-width: 700px;
 
         .body-data-entry {
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            flex-basis: calc(50% - 12px);
-            min-width: 250px;
+            flex-basis: calc(50% - 20px);
+            min-width: 300px;
         }
     }
 
