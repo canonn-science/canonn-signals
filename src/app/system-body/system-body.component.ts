@@ -89,8 +89,8 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       this.thargoidSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Thargoid;'] : 0;
       this.guardianSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Guardian;'] : 0;
       this.geologySignals = this.body.bodyData.signals.geology ?? [];
-      this.thargoidSignals = this.body.bodyData.signals.thargoids ?? [];
-      this.guardianSignals = this.body.bodyData.signals.guardians ?? [];
+      this.thargoidSignals = this.body.bodyData.signals.thargoid ?? [];
+      this.guardianSignals = this.body.bodyData.signals.guardian ?? [];
       this.biologySignals = [];
       if (this.body.bodyData.signals.biology) {
         for (const biologySignal of this.body.bodyData.signals.biology) {

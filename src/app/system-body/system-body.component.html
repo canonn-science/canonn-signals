@@ -12,6 +12,12 @@
         <div *ngIf="biologySignals.length || biologySignalCount" matTooltip="Biological signals">
             <img src="assets/icons/Biology.png" />
         </div>
+        <div *ngIf="thargoidSignals.length || thargoidSignalCount" matTooltip="Thargoid signals">
+            <img src="assets/icons/Thargoid.png" />
+        </div>
+        <div *ngIf="guardianSignals.length || guardianSignalCount" matTooltip="Guardian signals">
+            <img src="assets/icons/Guardian.png" />
+        </div>
     </div>
     <div class="system-body" *ngIf="body.bodyData.type != 'Barycentre'">
         <div class="body-image">
@@ -86,7 +92,7 @@
                 </div>
             </div>
             <!--
-                           <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
+            <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
                 <div *ngFor="let parent of body.bodyData.parents; index as i"
                     style="font-style: italic; font-size: 80%;">
                     Parent {{ i }}:
@@ -177,7 +183,7 @@
                         </div>
                     </ng-container>
                 </div>
-                <div *ngIf="thargoidSignals.length || guardianSignalCount" class="body-signal">
+                <div *ngIf="guardianSignals.length || guardianSignalCount" class="body-signal">
                     <div class="body-signal-name">
                         <img src="assets/icons/Guardian.png" />
                         <span>

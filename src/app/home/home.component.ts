@@ -215,6 +215,8 @@ export class HomeComponent implements OnInit {
     }
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
+
+    console.log(this.data);
   }
 
   private isNumeric(value: string) {
@@ -250,6 +252,10 @@ interface CanonnBiostats {
     region: {
       name: string;
       region: number;
+    };
+    signals?: {
+      anomaly?: string[];
+      cloud?: string[];
     };
     // secondaryEconomy
     // security
@@ -310,8 +316,8 @@ export interface CanonnBiostatsBody {
     geology?: string[];
     guesses?: string[];
     biology?: string[];
-    thargoids?: string[];
-    guardians?: string[];
+    thargoid?: string[];
+    guardian?: string[];
     signals?: {
       [key: string]: number;
     };

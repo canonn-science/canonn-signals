@@ -22,11 +22,12 @@
 <div class="system-container" *ngIf="data" @visibilityTrigger>
     <div class="system-container-data">
         <div class="system-title">
-            {{ data.system.name }} - ID64: <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank">{{ data.system.id64 }} <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a>
+            {{ data.system.name }} - ID64: <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}"
+                target="_blank">{{ data.system.id64 }} <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a>
         </div>
         <div class="system-data">
             <div class="system-data-row">
-                <span>
+                <span class="row-label">
                     Coordinates
                 </span>
                 <div class="system-coordinates">
@@ -45,11 +46,33 @@
                 </div>
             </div>
             <div class="system-data-row">
-                <span>
+                <span class="row-label">
                     Region
                 </span>
                 <span>
                     {{ data.system.region.name }}
+                </span>
+            </div>
+            <div class="system-data-row" *ngIf="data.system.signals?.cloud?.length">
+                <span class="row-label">
+                    Clouds
+                </span>
+                <span>
+                    <div *ngFor="let cloud of data.system.signals!.cloud">
+                        {{ cloud }}
+                    </div>
+                </span>
+            </div>
+            <div class="system-data-row" *ngIf="data.system.signals?.anomaly?.length">
+                <span class="row-label">
+                    Anomalies
+                </span>
+                <span>
+                    <span>
+                        <div *ngFor="let anomaly of data.system.signals!.anomaly">
+                            {{ anomaly }}
+                        </div>
+                    </span>
                 </span>
             </div>
         </div>
