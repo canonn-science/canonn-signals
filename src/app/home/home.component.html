@@ -22,7 +22,7 @@
 <div class="system-container" *ngIf="data" @visibilityTrigger>
     <div class="system-container-data">
         <div class="system-title">
-            {{ data.system.name }}
+            {{ data.system.name }} - ID64: <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank">{{ data.system.id64 }} <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a>
         </div>
         <div class="system-data">
             <div class="system-data-row">

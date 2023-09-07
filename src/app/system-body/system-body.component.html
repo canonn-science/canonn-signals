@@ -6,6 +6,12 @@
         <span *ngIf="body.bodyData.isLandable &&  body.bodyData.atmosphereType && body.bodyData.atmosphereType != ''"
             class="badge badge-blue">Odyssey</span>
         <span *ngIf="body.bodyData.terraformingState == 'Terraformable'" class="badge badge-gray">Terraformable</span>
+        <div *ngIf="geologySignals.length || geologySignalCount" matTooltip="Geological signals">
+            <img src="assets/icons/Geology.png" />
+        </div>
+        <div *ngIf="biologySignals.length || biologySignalCount" matTooltip="Biological signals">
+            <img src="assets/icons/Biology.png" />
+        </div>
     </div>
     <div class="system-body" *ngIf="body.bodyData.type != 'Barycentre'">
         <div class="body-image">

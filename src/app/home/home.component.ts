@@ -4,6 +4,7 @@ import { AppService } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
+import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 
 @UntilDestroy()
 @Component({
@@ -23,6 +24,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
   ]
 })
 export class HomeComponent implements OnInit {
+  public readonly faUpRightFromSquare = faUpRightFromSquare;
   public searching = false;
   public searchInput: string = "";
   public searchError = false;
@@ -213,7 +215,6 @@ export class HomeComponent implements OnInit {
     }
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
-    console.log(this.data);
   }
 
   private isNumeric(value: string) {
