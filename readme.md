@@ -15,3 +15,8 @@ Run `ng generate component component-name` to generate a new component. You can 
 ## Build
 
 Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+
+## Licenses
+This application is [licensed](License.txt) under the MIT license.
+
+The body asset images used from https://github.com/EDDiscovery/ImageRepository/ and are licensed under the [Apache 2.0 license](src/assets/bodies/LICENSE).
