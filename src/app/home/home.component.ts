@@ -215,8 +215,6 @@ export class HomeComponent implements OnInit {
     }
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
-
-    console.log(this.data);
   }
 
   private isNumeric(value: string) {

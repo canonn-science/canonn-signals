@@ -118,7 +118,8 @@ export class SystemBodyComponent implements OnInit, OnChanges {
         }
       }
     }
-    this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
+    this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
+                      this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
   }
 }
 
