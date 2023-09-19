@@ -1,20 +1,36 @@
 import { Component, Input, OnChanges, OnInit } from '@angular/core';
 import { SystemBody } from '../home/home.component';
-import { faCircleChevronRight, faCircleQuestion, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
+import { animate, style, transition, trigger } from '@angular/animations';
 
 @UntilDestroy()
 @Component({
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
-  styleUrls: ['./system-body.component.scss']
+  styleUrls: ['./system-body.component.scss'],
+  animations: [
+    trigger("grow", [ // Note the trigger name
+      transition(":enter", [
+        // :enter is alias to 'void => *'
+        style({ height: "0", overflow: "hidden" }),
+        animate(250, style({ height: "*" }))
+      ]),
+      transition(":leave", [
+        // :leave is alias to '* => void'
+        animate(250, style({ height: 0, overflow: "hidden" }))
+      ])
+    ])
+  ]
 })
 export class SystemBodyComponent implements OnInit, OnChanges {
   public readonly faChevronRight = faCircleChevronRight;
   public readonly faCircleQuestion = faCircleQuestion;
   public readonly faUpRightFromSquare = faUpRightFromSquare;
+  public readonly faSquareCaretDown = faSquareCaretDown;
+  public readonly faSquareCaretUp = faSquareCaretUp;
   @Input() body!: SystemBody;
   @Input() isRoot: boolean = false;
   @Input() isLast: boolean = false;
@@ -39,6 +55,10 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   public bodyImage: string = "";
   public bodyCoronaImage: string = "";
 
+  public exandable = false;
+  public expanded = false;
+  public isExpanded = false;
+
   public constructor(private readonly appService: AppService) {
   }
 
@@ -54,26 +74,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   public ngOnChanges(): void {
     if (!this.body) {
       return;
-    }
-
-    if (this.isRoot) {
-      this.styleClass = "";
-    }
-    else if (!this.isLast) {
-      if (this.body.bodyData.type == 'Barycentre') {
-        this.styleClass = "child-container-barycentre";
-      }
-      else {
-        this.styleClass = "child-container-default";
-      }
-    }
-    else {
-      if (this.body.bodyData.type == 'Barycentre') {
-        this.styleClass = "child-container-barycentre-last";
-      }
-      else {
-        this.styleClass = "child-container-default-last";
-      }
     }
 
     const bodyImageResult = BodyImage.getBodyImagePath(this.body.bodyData);
@@ -119,7 +119,34 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       }
     }
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
-                      this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
+      this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
+    this.exandable = !this.hasSignals;
+    this.isExpanded = !this.exandable || this.expanded;
+
+    if (this.isRoot) {
+      this.styleClass = "";
+    }
+    else if (!this.isLast) {
+      if (!this.isExpanded) {
+        this.styleClass = "child-container-title-only";
+      }
+      else {
+        this.styleClass = "child-container-default";
+      }
+    }
+    else {
+      if (!this.isExpanded) {
+        this.styleClass = "child-container-title-only-last";
+      }
+      else {
+        this.styleClass = "child-container-default-last";
+      }
+    }
+  }
+
+  public toggleExpand(): void {
+    this.expanded = !this.expanded;
+    this.ngOnChanges();
   }
 }
 

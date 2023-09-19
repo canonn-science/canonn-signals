@@ -5,6 +5,7 @@ import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { environment } from 'src/environments/environment';
 
 @UntilDestroy()
 @Component({
@@ -111,10 +112,10 @@ export class HomeComponent implements OnInit {
     const queryParams: Params = { system: data.system.name };
 
     this.router.navigate(
-      [], 
+      [],
       {
         relativeTo: this.activatedRoute,
-        queryParams, 
+        queryParams,
         queryParamsHandling: 'merge', // remove to replace all query params by provided
       });
     this.searchInput = data.system.name;
@@ -192,29 +193,42 @@ export class HomeComponent implements OnInit {
       }
     }
 
-    for (const body of bodiesFlat) {
-      if (body.bodyData.parents && body.bodyData.parents.length > 0) {
-        let currentBody = body;
-        for (const parent of body.bodyData.parents) {
-          const parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Planet || b.bodyData.bodyId === parent.Star || b.bodyData.bodyId === parent.Null);
-          if (parentBody) {
-            if (!parentBody.subBodies.includes(currentBody)) {
-              parentBody.subBodies.push(currentBody);
+    for (let i = 0; i <= 1; i++) {
+      for (const body of bodiesFlat) {
+        if (body.bodyData.parents && body.bodyData.parents.length > 0) {
+          let currentBody = body;
+          for (const parent of body.bodyData.parents) {
+            const parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Planet) ||
+              bodiesFlat.find(b => b.bodyData.bodyId === parent.Star) ||
+              bodiesFlat.find(b => b.bodyData.bodyId === parent.Null);
+            if (parentBody) {
+              if (!parentBody.subBodies.includes(currentBody)) {
+                parentBody.subBodies.push(currentBody);
+                if (!environment.production) {
+                  console.log(`${currentBody.bodyData.name} -> ${parentBody.bodyData.name}`, currentBody, parentBody, body);
+                }
+              }
+              if (!currentBody.parent) {
+                currentBody.parent = parentBody;
+              }
+              currentBody = parentBody;
+              if (i === 0 || currentBody.parent) {
+                break;
+              }
             }
-            if (!currentBody.parent) {
-              currentBody.parent = parentBody;
+            else {
+              break;
             }
-            currentBody = parentBody;
           }
-          else {
-            break;
-          }
+          continue;
         }
-        continue;
       }
     }
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
+    if (!environment.production) {
+      console.log(this.bodies, bodiesFlat);
+    }
   }
 
   private isNumeric(value: string) {

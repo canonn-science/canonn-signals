@@ -71,7 +71,7 @@ a:hover,
 }
 
 .child-container-default::after,
-.child-container-barycentre::after {
+.child-container-title-only::after {
   position: absolute;
   content: " ";
   border-left: 4px solid #393939;
@@ -91,7 +91,7 @@ a:hover,
   border-bottom: 4px solid #393939;
 }
 
-.child-container-barycentre::before {
+.child-container-title-only::before {
   position: absolute;
   content: " ";
   height: 0px;
@@ -102,7 +102,7 @@ a:hover,
 }
 
 .child-container-default-last::after,
-.child-container-barycentre-last::after {
+.child-container-title-only-last::after {
   position: absolute;
   content: " ";
   border-left: 4px solid #393939;
@@ -117,11 +117,15 @@ a:hover,
   height: 85px;
 }
 
-.child-container-barycentre-last::after {
+.child-container-title-only-last::after {
   height: 20px;
 }
 
 hr {
   margin-top: 2px;
   margin-bottom: 2px;
+}
+
+.clickable {
+  cursor: pointer;
 }
