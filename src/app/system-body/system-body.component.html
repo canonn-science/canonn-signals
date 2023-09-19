@@ -28,8 +28,8 @@
     </div>
     <div class="system-body" *ngIf="isExpanded" [@grow]>
         <div class="body-image">
-            <img *ngIf="bodyCoronaImage" src="assets/bodies/{{ bodyCoronaImage }}.png" class="body-image-corona" />
-            <img *ngIf="bodyImage" src="assets/bodies/{{ bodyImage }}.png" />
+            <img *ngIf="bodyCoronaImage" src="assets/{{ bodyCoronaImage }}" class="body-image-corona" />
+            <img *ngIf="bodyImage" src="assets/{{ bodyImage }}" />
         </div>
         <div class="body-content">
             <div class="body-data">
@@ -39,6 +39,22 @@
                     </div>
                     <div>
                         {{ body.bodyData.orbitalPeriod | number:'0.2-2' }} days
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.semiMajorAxis" class="body-data-entry">
+                    <div>
+                        Semi-major axis
+                    </div>
+                    <div>
+                        {{ body.bodyData.semiMajorAxis | number:'0.4-4' }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.orbitalEccentricity" class="body-data-entry">
+                    <div>
+                        Orbital eccentricity
+                    </div>
+                    <div>
+                        {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }}
                     </div>
                 </div>
                 <div *ngIf="body.bodyData.atmosphereType" class="body-data-entry">

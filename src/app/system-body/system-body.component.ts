@@ -76,10 +76,19 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       return;
     }
 
-    const bodyImageResult = BodyImage.getBodyImagePath(this.body.bodyData);
+    this.bodyCoronaImage = "";
+    this.bodyImage = "";
 
-    this.bodyImage = bodyImageResult?.path ?? "";
-    this.bodyCoronaImage = bodyImageResult?.coronaPath ?? "";
+    const bodyImageResult = BodyImage.getBodyImagePath(this.body.bodyData);
+    if (bodyImageResult) {
+      this.bodyImage = `bodies/${bodyImageResult.path}.png`;
+      if (bodyImageResult.coronaPath) {
+        this.bodyCoronaImage = `bodies/${bodyImageResult.coronaPath}.png`;
+      }
+    }
+    else if (this.body.bodyData.type === "Barycentre") {
+      this.bodyImage = `Orbit2.gif`;
+    }
 
     if (this.body.bodyData.signals) {
       this.humanSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;
