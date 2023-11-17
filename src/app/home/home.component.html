@@ -1,0 +1,84 @@
+<div class="home-container">
+    <div class="search-container">
+        <h2>System Signals</h2>
+        <p>Search to review system signals recorded by Canonn field researchers.</p>
+        <div class="search-field">
+            <mat-form-field class="input-full-width">
+                <mat-label>Search by system name or system address</mat-label>
+                <input matInput [(ngModel)]="searchInput" #message maxlength="128" [disabled]="searching"
+                    (keyup.enter)="search()">
+                <mat-error>System not found</mat-error>
+            </mat-form-field>
+            <button mat-flat-button color="primary" (click)="search()" [disabled]="searching">
+                <mat-icon>search</mat-icon>
+            </button>
+        </div>
+    </div>
+    <div>
+        <img [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
+            style="width: 200px; height: 200px;" />
+    </div>
+</div>
+<div class="system-container" *ngIf="data" @visibilityTrigger>
+    <div class="system-container-data">
+        <div class="system-title">
+            {{ data.system.name }} - ID64: <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}"
+                target="_blank">{{ data.system.id64 }} <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a>
+        </div>
+        <div class="system-data">
+            <div class="system-data-row">
+                <span class="row-label">
+                    Coordinates
+                </span>
+                <div class="system-coordinates">
+                    <div>
+                        <div>{{ data.system.coords.x | number: '0.5-5' }}</div>
+                        <div>X</div>
+                    </div>
+                    <div>
+                        <div>{{ data.system.coords.y | number: '0.5-5' }}</div>
+                        <div>Y</div>
+                    </div>
+                    <div>
+                        <div>{{ data.system.coords.z | number: '0.5-5' }}</div>
+                        <div>Z</div>
+                    </div>
+                </div>
+            </div>
+            <div class="system-data-row">
+                <span class="row-label">
+                    Region
+                </span>
+                <span>
+                    {{ data.system.region.name }}
+                </span>
+            </div>
+            <div class="system-data-row" *ngIf="data.system.signals?.cloud?.length">
+                <span class="row-label">
+                    Clouds
+                </span>
+                <span>
+                    <div *ngFor="let cloud of data.system.signals!.cloud">
+                        {{ cloud }}
+                    </div>
+                </span>
+            </div>
+            <div class="system-data-row" *ngIf="data.system.signals?.anomaly?.length">
+                <span class="row-label">
+                    Anomalies
+                </span>
+                <span>
+                    <span>
+                        <div *ngFor="let anomaly of data.system.signals!.anomaly">
+                            {{ anomaly }}
+                        </div>
+                    </span>
+                </span>
+            </div>
+        </div>
+        <div class="bodies">
+            <app-system-body *ngFor="let body of bodies; last as isLast" [body]="body" [isRoot]="true"
+                [isLast]="isLast"></app-system-body>
+        </div>
+    </div>
+</div>
