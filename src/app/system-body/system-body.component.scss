@@ -1,0 +1,102 @@
+.system-body-end {
+    padding-bottom: 4px;
+}
+
+.body-title {
+    display: flex;
+    column-gap: 8px;
+    padding: 8px;
+    align-items: center;
+    background-color: #393939;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.system-body {
+    display: flex;
+    gap: 8px;
+    background-color: #797979;
+    padding: 4px;
+    border-right: 1px solid #393939;
+    border-left: 1px solid #393939;
+    border-bottom: 1px solid #393939;
+
+    .body-image {
+        display: flex;
+        width: 96px;
+        height: 96px;
+        justify-content: center;
+        align-items: center;
+        background-color: #000000;
+        position: relative;
+        border-radius: 4px;
+        flex-grow: 0;
+        flex-shrink: 0;
+
+        img {
+            width: 90px;
+            height: 90px;
+            position: absolute;
+        }
+    }
+
+    .body-content {
+        flex-grow: 1;
+        padding: 8px;
+    }
+
+    .body-data {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: 32px;
+        max-width: 700px;
+
+        .body-data-entry {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-basis: calc(50% - 20px);
+            min-width: 300px;
+        }
+    }
+
+    .body-signals {
+        .body-signal {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+
+            .body-signal-name {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                min-width: 150px;
+            }
+
+            img {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    }
+}
+
+.badge-orange {
+    background-color: #ff9800;
+}
+
+.badge-blue {
+    color: #1c1c1c;
+    background-color: #9bb9cb;
+}
+
+.badge-gray {
+    color: #1c1c1c;
+    background-color: #d7d7d7;
+}
+
+.body-signal-data {
+    display: flex;
+    column-gap: 16px;
+    justify-content: space-between;
+}

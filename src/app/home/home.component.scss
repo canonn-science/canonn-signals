@@ -1,0 +1,108 @@
+.home-container {
+    display: flex;
+    justify-content: center;
+}
+
+.bodies {
+    background-color: rgba(150, 150, 150, 0.7);
+    backdrop-filter: blur(6px);
+    padding: 4px;
+}
+
+.mdc-button {
+    backdrop-filter: blur(6px);
+}
+
+.mat-mdc-unelevated-button>.mat-icon {
+    margin: 0;
+}
+
+.search-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.search-field {
+    display: flex;
+    gap: 8px;
+
+    button {
+        min-height: 56px;
+        min-width: 56px;
+    }
+}
+
+.input-full-width {
+    width: 100%;
+    min-width: 400px;
+}
+
+.system-container {
+    display: flex;
+    justify-content: center;
+
+    .system-container-data {
+        width: 80%;
+
+        .system-title {
+            display: flex;
+            gap: 4px;
+            padding: 8px;
+            align-items: center;
+            background-color: #ff9800;
+            color: #000000;
+            font-weight: bold;
+            font-size: 150%;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+
+            a {
+                color: #000000;
+            }
+
+            a:hover {
+                color: #797979;
+            }
+        }
+
+        .system-data {
+            background-color: #000000;
+            display: flex;
+            flex-direction: column;
+            padding: 4px 8px;
+            row-gap: 12px;
+
+            .system-data-row {
+                display: flex;
+                gap: 32px;
+
+                span {
+                    min-width: 150px;
+                }
+
+                .row-label {
+                    font-weight: bold;
+                }
+
+                .system-coordinates {
+                    display: flex;
+                    gap: 32px;
+
+                    div {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+
+                        div:last-child {
+                            font-style: italic;
+                            font-size: 60%;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

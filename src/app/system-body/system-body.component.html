@@ -1,0 +1,241 @@
+<div class="body-container" [ngClass]="styleClass">
+    <div class="body-title">
+        <b>{{ body.bodyData.name }}</b>
+        <span *ngIf="body.bodyData.subType">-</span>
+        <span *ngIf="body.bodyData.subType">{{ body.bodyData.subType }}</span>
+        <span *ngIf="body.bodyData.isLandable" class="badge badge-orange">Landable</span>
+        <span *ngIf="body.bodyData.isLandable &&  body.bodyData.atmosphereType && body.bodyData.atmosphereType != ''"
+            class="badge badge-blue">Odyssey</span>
+        <span *ngIf="body.bodyData.terraformingState == 'Terraformable'" class="badge badge-gray">Terraformable</span>
+        <div *ngIf="geologySignals.length || geologySignalCount" matTooltip="Geological signals">
+            <img src="assets/icons/Geology.png" />
+        </div>
+        <div *ngIf="biologySignals.length || biologySignalCount" matTooltip="Biological signals">
+            <img src="assets/icons/Biology.png" />
+        </div>
+        <div *ngIf="thargoidSignals.length || thargoidSignalCount" matTooltip="Thargoid signals">
+            <img src="assets/icons/Thargoid.png" />
+        </div>
+        <div *ngIf="guardianSignals.length || guardianSignalCount" matTooltip="Guardian signals">
+            <img src="assets/icons/Guardian.png" />
+        </div>
+        <div *ngIf="exandable && !expanded" (click)="toggleExpand()" class="clickable" matTooltip="Expand">
+            <fa-icon [icon]="faSquareCaretDown"></fa-icon>
+        </div>
+        <div *ngIf="exandable && expanded" (click)="toggleExpand()" class="clickable" matTooltip="Collapse">
+            <fa-icon [icon]="faSquareCaretUp"></fa-icon>
+        </div>
+    </div>
+    <div class="system-body" *ngIf="isExpanded" [@grow]>
+        <div class="body-image">
+            <img *ngIf="bodyCoronaImage" src="assets/{{ bodyCoronaImage }}" class="body-image-corona" />
+            <img *ngIf="bodyImage" src="assets/{{ bodyImage }}" />
+        </div>
+        <div class="body-content">
+            <div class="body-data">
+                <div *ngIf="body.bodyData.orbitalPeriod" class="body-data-entry">
+                    <div>
+                        Orbital period
+                    </div>
+                    <div>
+                        {{ body.bodyData.orbitalPeriod | number:'0.2-2' }} days
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.semiMajorAxis" class="body-data-entry">
+                    <div>
+                        Semi-major axis
+                    </div>
+                    <div>
+                        {{ body.bodyData.semiMajorAxis | number:'0.4-4' }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.orbitalEccentricity" class="body-data-entry">
+                    <div>
+                        Orbital eccentricity
+                    </div>
+                    <div>
+                        {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.atmosphereType" class="body-data-entry">
+                    <div>
+                        Atmosphere
+                    </div>
+                    <div>
+                        {{ body.bodyData.atmosphereType }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.surfacePressure" class="body-data-entry">
+                    <div>
+                        Surface pressure
+                    </div>
+                    <div>
+                        {{ body.bodyData.surfacePressure | number:'0.2-2' }} atmospheres
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.gravity" class="body-data-entry">
+                    <div>
+                        Gravity
+                    </div>
+                    <div>
+                        {{ body.bodyData.gravity | number:'0.2-2' }} G
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.radius" class="body-data-entry">
+                    <div>
+                        Radius
+                    </div>
+                    <div>
+                        {{ body.bodyData.radius | number:'0.2-2' }} km
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.age" class="body-data-entry">
+                    <div>
+                        Age
+                    </div>
+                    <div>
+                        {{ body.bodyData.age }} million years
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.solarMasses" class="body-data-entry">
+                    <div>
+                        Solar masses
+                    </div>
+                    <div>
+                        {{ body.bodyData.solarMasses | number:'0.2-2' }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.solarRadius" class="body-data-entry">
+                    <div>
+                        Solar radius
+                    </div>
+                    <div>
+                        {{ body.bodyData.solarRadius | number:'0.2-2' }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.surfaceTemperature" class="body-data-entry">
+                    <div>
+                        Surface temperature
+                    </div>
+                    <div>
+                        {{ body.bodyData.surfaceTemperature | number:'0.2-2' }} K
+                    </div>
+                </div>
+            </div>
+            <!--
+            <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
+                <div *ngFor="let parent of body.bodyData.parents; index as i"
+                    style="font-style: italic; font-size: 80%;">
+                    Parent {{ i }}:
+                    <span *ngIf="parent.Null != undefined">Barycentre: {{ parent.Null }}</span>
+                    <span *ngIf="parent.Planet != undefined">Planet: {{ parent.Planet }}</span>
+                    <span *ngIf="parent.Star != undefined">Star: {{ parent.Star }}</span>
+                </div>
+            </div> 
+            -->
+            <div *ngIf="hasSignals" class="body-signals">
+                <hr>
+                <b>Signals</b>
+                <div *ngIf="humanSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Human.png" />
+                        <span>
+                            Human: {{ humanSignalCount }}
+                        </span>
+                    </div>
+                </div>
+                <div *ngIf="otherSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Other.png" />
+                        <span>
+                            Other: {{ otherSignalCount }}
+                        </span>
+                    </div>
+                </div>
+                <div *ngIf="geologySignals.length || geologySignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Geology.png" />
+                        <span>
+                            Geology: {{ geologySignalCount }}
+                        </span>
+                    </div>
+                    <ng-container *ngIf="geologySignals.length">
+                        <fa-icon [icon]="faChevronRight"></fa-icon>
+                        <div>
+                            <div *ngFor="let geologySignal of geologySignals" class="body-signal-data">
+                                {{ geologySignal }}
+                            </div>
+                        </div>
+                    </ng-container>
+                </div>
+                <div *ngIf="biologySignals.length || biologySignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Biology.png" />
+                        <span>
+                            Biology: {{ biologySignalCount }}
+                        </span>
+                    </div>
+                    <ng-container *ngIf="biologySignals.length">
+                        <fa-icon [icon]="faChevronRight"></fa-icon>
+                        <div>
+                            <div *ngFor="let biologySignal of biologySignals" class="body-signal-data">
+                                <div>
+                                    <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
+                                        matTooltip="Guess"></fa-icon>
+                                    <span *ngIf="!biologySignal.entryId">
+                                        {{ biologySignal.signal }}</span>
+                                    <span *ngIf="biologySignal.entryId">
+                                        <a
+                                            href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
+                                            {{ biologySignal.signal }}
+                                        </a>
+                                        <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
+                                    </span>
+                                </div>
+                                <span *ngIf="biologySignal.codex?.reward">{{ biologySignal.codex?.reward | number }}
+                                    cr</span>
+                            </div>
+                        </div>
+                    </ng-container>
+                </div>
+                <div *ngIf="thargoidSignals.length || thargoidSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Thargoid.png" />
+                        <span>
+                            Thargoid: {{ thargoidSignalCount }}
+                        </span>
+                    </div>
+                    <ng-container *ngIf="thargoidSignals.length">
+                        <fa-icon [icon]="faChevronRight"></fa-icon>
+                        <div>
+                            <div *ngFor="let thargoidSignal of thargoidSignals" class="body-signal-data">
+                                {{ thargoidSignal }}
+                            </div>
+                        </div>
+                    </ng-container>
+                </div>
+                <div *ngIf="guardianSignals.length || guardianSignalCount" class="body-signal">
+                    <div class="body-signal-name">
+                        <img src="assets/icons/Guardian.png" />
+                        <span>
+                            Guardian: {{ guardianSignalCount }}
+                        </span>
+                    </div>
+                    <ng-container *ngIf="guardianSignals.length">
+                        <fa-icon [icon]="faChevronRight"></fa-icon>
+                        <div>
+                            <div *ngFor="let guardianSignal of guardianSignals" class="body-signal-data">
+                                {{ guardianSignal }}
+                            </div>
+                        </div>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="system-body-end"></div>
+    <div class="child-bodies">
+        <app-system-body *ngFor="let body of body.subBodies; last as isLast" [body]="body"
+            [isLast]="isLast"></app-system-body>
+    </div>
+</div>

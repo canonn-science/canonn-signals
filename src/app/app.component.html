@@ -1,0 +1,11 @@
+<router-outlet></router-outlet>
+
+<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100" *ngIf="loading">
+  <img src="assets/EDLoader1.svg" style="width: 100px; height: 100px;" />
+</div>
+
+<mat-sidenav-container style="min-height: 100vh">
+  <mat-sidenav-content>
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
