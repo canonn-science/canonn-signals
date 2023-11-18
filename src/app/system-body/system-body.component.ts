@@ -90,6 +90,10 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       this.bodyImage = `Orbit2.gif`;
     }
 
+    if (this.body.bodyData.volcanismType) {
+      console.log(this.body.bodyData);
+    }
+
     if (this.body.bodyData.signals) {
       this.humanSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;
       this.otherSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Other;'] : 0;
@@ -112,15 +116,34 @@ export class SystemBodyComponent implements OnInit, OnChanges {
           });
         }
       }
-      if (this.body.bodyData.signals.guesses && this.biologySignals.length < this.biologySignalCount) {
+      const addGuessesAndGenuses = this.biologySignals.length < this.biologySignalCount;
+      if (this.body.bodyData.signals.guesses && addGuessesAndGenuses) {
         for (const guessedSignal of this.body.bodyData.signals.guesses) {
           if (this.biologySignals.findIndex(b => b.signal == guessedSignal) !== -1) {
             continue;
           }
           const codexEntry = this.codex?.find(c => c.english_name == guessedSignal);
+          if (codexEntry && this.biologySignals.findIndex(b => b.codex?.sub_class == codexEntry.sub_class) !== -1) {
+            continue;
+          }
           this.biologySignals.push({
             entryId: codexEntry?.entryid ?? 0,
             signal: guessedSignal,
+            codex: codexEntry,
+            isGuess: true,
+          });
+        }
+      }
+      if (this.body.bodyData.signals.genuses && addGuessesAndGenuses) {
+        for (const genusSiggnal of this.body.bodyData.signals.genuses) {
+          const genusName = genus[genusSiggnal] ?? genusSiggnal;
+          if (this.biologySignals.findIndex(b => b.signal.includes(genusName)) !== -1) {
+            continue;
+          }
+          const codexEntry = this.codex?.find(c => c.category == genusName);
+          this.biologySignals.push({
+            entryId: codexEntry?.entryid ?? 0,
+            signal: genusName,
             codex: codexEntry,
             isGuess: true,
           });
@@ -166,3 +189,28 @@ interface BiologySignal {
   isGuess: boolean;
 }
 
+const genus: { [key: string]: string } = {
+  "$Codex_Ent_Aleoids_Genus_Name;": "Aleoida",
+  "$Codex_Ent_Bacterial_Genus_Name;": "Bacterium",
+  "$Codex_Ent_Brancae_Name;": "Brain Tree",
+  "$Codex_Ent_Cactoid_Genus_Name;": "Cactoida",
+  "$Codex_Ent_Clepeus_Genus_Name;": "Clypeus",
+  "$Codex_Ent_Clypeus_Genus_Name;": "Clypeus",
+  "$Codex_Ent_Conchas_Genus_Name;": "Concha",
+  "$Codex_Ent_Cone_Name;": "Bark Mounds",
+  "$Codex_Ent_Electricae_Genus_Name;": "Electricae",
+  "$Codex_Ent_Fonticulus_Genus_Name;": "Fonticulua",
+  "$Codex_Ent_Fumerolas_Genus_Name;": "Fumerola",
+  "$Codex_Ent_Fungoids_Genus_Name;": "Fungoida",
+  "$Codex_Ent_Ground_Struct_Ice_Name;": "Crystalline Shards",
+  "$Codex_Ent_Osseus_Genus_Name;": "Osseus",
+  "$Codex_Ent_Recepta_Genus_Name;": "Recepta",
+  "$Codex_Ent_Seed_Name;": "Brain Trees",
+  "$Codex_Ent_Shrubs_Genus_Name;": "Frutexa",
+  "$Codex_Ent_Sphere_Name;": "Anemone",
+  "$Codex_Ent_Stratum_Genus_Name;": "Stratum",
+  "$Codex_Ent_Tube_Name;": "Sinuous Tubers",
+  "$Codex_Ent_Tubus_Genus_Name;": "Tubus",
+  "$Codex_Ent_Tussocks_Genus_Name;": "Tussock",
+  "$Codex_Ent_Vents_Name;": "Amphora Plant",
+}
