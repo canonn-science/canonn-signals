@@ -356,6 +356,7 @@ export interface CanonnBiostatsBody {
   };
   type: string;
   updateTime?: string;
+  volcanismType?: string;
 }
 
 export interface SystemBody {

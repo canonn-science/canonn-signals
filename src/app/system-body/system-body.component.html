@@ -121,6 +121,14 @@
                         {{ body.bodyData.surfaceTemperature | number:'0.2-2' }} K
                     </div>
                 </div>
+                <div *ngIf="body.bodyData.volcanismType" class="body-data-entry">
+                    <div>
+                        Volcanism
+                    </div>
+                    <div>
+                        {{ body.bodyData.volcanismType }} K
+                    </div>
+                </div>
             </div>
             <!--
             <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
