@@ -90,10 +90,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       this.bodyImage = `Orbit2.gif`;
     }
 
-    if (this.body.bodyData.volcanismType) {
-      console.log(this.body.bodyData);
-    }
-
     if (this.body.bodyData.signals) {
       this.humanSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;
       this.otherSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Other;'] : 0;
