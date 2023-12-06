@@ -225,6 +225,11 @@ export class HomeComponent implements OnInit {
       }
     }
 
+    for (const body of bodiesFlat) {
+      body.subBodies.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
+    }
+    bodiesFlat.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
+
     this.bodies = bodiesFlat.filter(b => b.parent === null);
     if (!environment.production) {
       console.log(this.bodies, bodiesFlat);
