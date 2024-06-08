@@ -20,3 +20,4 @@ Run `ng build` to build the project. The build artifacts will be stored in the `
 This application is [licensed](License.txt) under the MIT license.
 
 The body asset images used from https://github.com/EDDiscovery/ImageRepository/ and are licensed under the [Apache 2.0 license](src/assets/bodies/LICENSE).
+
