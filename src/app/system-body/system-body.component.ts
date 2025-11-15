@@ -244,6 +244,15 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     const width = this.getRingWidth();
     return density < 0.1 && width > 1000000;
   }
+
+  public getSolidCompositionTooltip(): string {
+    if (!this.body.bodyData.solidComposition) {
+      return '';
+    }
+    return Object.entries(this.body.bodyData.solidComposition)
+      .map(([component, percentage]) => `${component}: ${percentage.toFixed(2)}%`)
+      .join('\n');
+  }
 }
 
 interface BiologySignal {

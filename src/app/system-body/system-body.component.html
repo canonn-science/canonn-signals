@@ -2,7 +2,7 @@
     <div class="body-title">
         <b>{{ body.bodyData.name }}</b>
         <span *ngIf="body.bodyData.subType">-</span>
-        <span *ngIf="body.bodyData.subType">{{ body.bodyData.subType }}</span>
+        <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()" matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}</span>
         <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition" [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip" class="atmosphere-type">
             - {{ getAtmosphereDisplay() }}
         </span>
@@ -75,6 +75,54 @@
                     </div>
                     <div [matTooltip]="body.bodyData.orbitalEccentricity?.toString() ?? ''">
                         {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{ getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.orbitalInclination" class="body-data-entry">
+                    <div>
+                        Orbital inclination
+                    </div>
+                    <div [matTooltip]="(body.bodyData.orbitalInclination?.toString() ?? '') + '°'">
+                        {{ body.bodyData.orbitalInclination | number:'0.2-2' }}°
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.argOfPeriapsis" class="body-data-entry">
+                    <div>
+                        Argument of periapsis
+                    </div>
+                    <div [matTooltip]="(body.bodyData.argOfPeriapsis?.toString() ?? '') + '°'">
+                        {{ body.bodyData.argOfPeriapsis | number:'0.2-2' }}°
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.ascendingNode" class="body-data-entry">
+                    <div>
+                        Ascending node
+                    </div>
+                    <div [matTooltip]="(body.bodyData.ascendingNode?.toString() ?? '') + '°'">
+                        {{ body.bodyData.ascendingNode | number:'0.2-2' }}°
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.axialTilt" class="body-data-entry">
+                    <div>
+                        Axial tilt
+                    </div>
+                    <div [matTooltip]="(body.bodyData.axialTilt?.toString() ?? '') + '°'">
+                        {{ body.bodyData.axialTilt | number:'0.2-2' }}°
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.distanceToArrival" class="body-data-entry">
+                    <div>
+                        Distance to arrival
+                    </div>
+                    <div [matTooltip]="(body.bodyData.distanceToArrival?.toString() ?? '') + ' ls'">
+                        {{ body.bodyData.distanceToArrival | number:'0.2-2' }} ls
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.rotationalPeriod" class="body-data-entry">
+                    <div>
+                        Rotational period
+                    </div>
+                    <div [matTooltip]="(body.bodyData.rotationalPeriod?.toString() ?? '') + ' days'">
+                        {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
                     </div>
                 </div>
 
