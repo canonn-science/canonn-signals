@@ -52,6 +52,22 @@
                         {{ (body.bodyData.semiMajorAxis * 149597870.7) | number:'0.2-2' }} km
                     </div>
                 </div>
+                <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0" class="body-data-entry">
+                    <div>
+                        Apoapsis
+                    </div>
+                    <div [matTooltip]="getApoapsis() + ' km'">
+                        {{ getApoapsis() | number:'0.2-2' }} km
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0" class="body-data-entry">
+                    <div>
+                        Periapsis
+                    </div>
+                    <div [matTooltip]="getPeriapsis() + ' km'">
+                        {{ getPeriapsis() | number:'0.2-2' }} km
+                    </div>
+                </div>
                 <div *ngIf="body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null" class="body-data-entry">
                     <div>
                         Orbital eccentricity
@@ -60,14 +76,7 @@
                         {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{ getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
                     </div>
                 </div>
-                <div *ngIf="body.bodyData.atmosphereType" class="body-data-entry">
-                    <div>
-                        Atmosphere
-                    </div>
-                    <div>
-                        {{ body.bodyData.atmosphereType }}
-                    </div>
-                </div>
+
                 <div *ngIf="body.bodyData.surfacePressure" class="body-data-entry">
                     <div>
                         Surface pressure

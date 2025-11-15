@@ -205,6 +205,18 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     }
     return '';
   }
+
+  public getApoapsis(): number {
+    const semiMajorAxisKm = (this.body.bodyData.semiMajorAxis ?? 0) * 149597870.7;
+    const eccentricity = this.body.bodyData.orbitalEccentricity ?? 0;
+    return semiMajorAxisKm * (1 + eccentricity);
+  }
+
+  public getPeriapsis(): number {
+    const semiMajorAxisKm = (this.body.bodyData.semiMajorAxis ?? 0) * 149597870.7;
+    const eccentricity = this.body.bodyData.orbitalEccentricity ?? 0;
+    return semiMajorAxisKm * (1 - eccentricity);
+  }
 }
 
 interface BiologySignal {
