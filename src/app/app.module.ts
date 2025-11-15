@@ -16,6 +16,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatBadgeModule } from '@angular/material/badge';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 @NgModule({
   declarations: [
@@ -38,6 +39,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatBadgeModule,
     FontAwesomeModule,
     MatTooltipModule,
+    MatAutocompleteModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

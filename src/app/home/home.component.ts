@@ -6,6 +6,8 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { environment } from 'src/environments/environment';
+import { Observable, of, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { FormControl } from '@angular/forms';
 
 @UntilDestroy()
 @Component({
@@ -31,6 +33,8 @@ export class HomeComponent implements OnInit {
   public searchError = false;
   public data: CanonnBiostats | null = null;
   public bodies: SystemBody[] = [];
+  public searchControl = new FormControl('');
+  public filteredSystems: Observable<string[]> = of([]);
 
   public constructor(private readonly httpClient: HttpClient,
     private readonly appService: AppService,
@@ -48,16 +52,29 @@ export class HomeComponent implements OnInit {
         }
         if (q["system"] && (!this.bodies || this.data?.system.name != q["system"])) {
           this.searchInput = q["system"];
+          this.searchControl.setValue(q["system"]);
           this.search();
         }
       });
+
+    this.filteredSystems = this.searchControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(value => {
+        if (value && value.length > 3) {
+          return this.getSystemSuggestions(value);
+        }
+        return of([]);
+      })
+    );
   }
 
   public search(): void {
-    if (this.searching || !this.searchInput) {
+    const input = this.searchControl.value || this.searchInput;
+    if (this.searching || !input) {
       return;
     }
-    this.searchInput = this.searchInput.trim();
+    this.searchInput = input.trim();
     if (this.searchInput.length <= 1) {
       return;
     }
@@ -238,6 +255,19 @@ export class HomeComponent implements OnInit {
 
   private isNumeric(value: string) {
     return /^\d+$/.test(value);
+  }
+
+  private getSystemSuggestions(query: string): Observable<string[]> {
+    return this.httpClient.get<{values: string[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
+      .pipe(
+        switchMap(response => of(response.values || [])),
+        untilDestroyed(this)
+      );
+  }
+
+  public onSystemSelected(systemName: string): void {
+    this.searchInput = systemName;
+    this.search();
   }
 }
 
