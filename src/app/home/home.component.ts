@@ -62,7 +62,7 @@ export class HomeComponent implements OnInit {
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(value => {
-        if (value && value.length > 3) {
+        if (value && value.length >= 3) {
           return this.getSystemSuggestions(value);
         }
         return of([]);
