@@ -35,6 +35,9 @@
             <span *ngFor="let material of getMaterialBadges(); let i = index" 
                   [class]="'badge ' + material.class" 
                   (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ? material.tooltip : material.name }}</span>
+            <button class="json-button" (click)="copyBodyJson()" matTooltip="Copy body JSON to clipboard">
+                <fa-icon [icon]="faCode"></fa-icon>
+            </button>
         </div>
     </div>
     <div class="system-body" *ngIf="isExpanded" [@grow]>

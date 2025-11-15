@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { SystemBody } from '../home/home.component';
-import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
@@ -33,6 +33,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public readonly faUpRightFromSquare = faUpRightFromSquare;
   public readonly faSquareCaretDown = faSquareCaretDown;
   public readonly faSquareCaretUp = faSquareCaretUp;
+  public readonly faCode = faCode;
   @Input() body!: SystemBody;
   @Input() isRoot: boolean = false;
   @Input() isLast: boolean = false;
@@ -270,6 +271,21 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public onMouseEnter(index: number): void {
     this.hoveredIndex = index;
+  }
+
+  public copyBodyJson(): void {
+    const jsonText = JSON.stringify(this.body.bodyData, null, 2);
+    const textArea = document.createElement('textarea');
+    textArea.value = jsonText;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    console.log('Copy success:', success, 'JSON length:', jsonText.length);
   }
 
   public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
