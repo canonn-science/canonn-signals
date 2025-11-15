@@ -144,6 +144,7 @@ export class HomeComponent implements OnInit {
     this.data = data;
     this.bodies = [];
     this.edastroData = null;
+    this.appService.setBackgroundImage('assets/bg1.jpg');
 
     // Fetch edastro data
     this.appService.getEdastroData(data.system.id64)
@@ -151,7 +152,9 @@ export class HomeComponent implements OnInit {
         edastroData => {
           if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
             this.edastroData = edastroData;
-            this.appService.setBackgroundImage(edastroData.mainImage || 'assets/bg1.jpg');
+            if (edastroData.mainImage) {
+              this.appService.setBackgroundImage(edastroData.mainImage);
+            }
           }
         },
         error => {
