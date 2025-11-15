@@ -239,7 +239,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   public isRingNotVisible(): boolean {
-    if (this.body.bodyData.type !== 'Ring' && this.body.bodyData.type !== 'Belt') {
+    if (this.body.bodyData.type !== 'Ring') {
       return false;
     }
     const density = this.getRingDensity();
