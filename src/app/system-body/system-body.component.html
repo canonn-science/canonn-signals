@@ -45,8 +45,8 @@
                     <div>
                         Semi-major axis
                     </div>
-                    <div [matTooltip]="body.bodyData.semiMajorAxis?.toString() ?? ''">
-                        {{ body.bodyData.semiMajorAxis | number:'0.4-4' }}
+                    <div [matTooltip]="(body.bodyData.semiMajorAxis?.toString() ?? '') + ' au'">
+                        {{ (body.bodyData.semiMajorAxis * 149597870.7) | number:'0.2-2' }} km
                     </div>
                 </div>
                 <div *ngIf="body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null" class="body-data-entry">
