@@ -17,6 +17,10 @@ export class AppService {
         this._codexEntries.next(Object.values(c));
       });
   }
+
+  public getEdastroData(id64: number): Observable<EdastroData> {
+    return this.httpClient.get<EdastroData>(`/api/edastro/gec/json/id64/${id64}`);
+  }
 }
 
 export interface CanonnCodex {
@@ -33,4 +37,10 @@ export interface CanonnCodexEntry {
   reward?: number | null;
   sub_category: string;
   sub_class: string;
+}
+
+export interface EdastroData {
+  name?: string;
+  summary?: string;
+  poiUrl?: string;
 }

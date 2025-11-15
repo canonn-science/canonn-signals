@@ -67,8 +67,41 @@
                 color: #797979;
             }
 
+            .edastro-name-link {
+                color: #000000;
+                text-decoration: none;
+
+                &:hover {
+                    color: #797979;
+                }
+            }
+
+            .edastro-icon-inline {
+                height: 1em;
+                width: auto;
+                margin-left: 4px;
+                vertical-align: middle;
+            }
+
             .population {
                 font-size: 80%;
+            }
+        }
+
+        .edastro-summary {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background-color: #ff9800;
+            color: #000000;
+            font-size: 150%;
+            font-weight: bold;
+
+
+
+            .summary-text {
+                flex: 1;
             }
         }
 

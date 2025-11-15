@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { AppService } from '../app.service';
+import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
@@ -35,6 +35,7 @@ export class HomeComponent implements OnInit {
   public bodies: SystemBody[] = [];
   public searchControl = new FormControl('');
   public filteredSystems: Observable<string[]> = of([]);
+  public edastroData: EdastroData | null = null;
 
   public constructor(private readonly httpClient: HttpClient,
     private readonly appService: AppService,
@@ -142,6 +143,20 @@ export class HomeComponent implements OnInit {
 
     this.data = data;
     this.bodies = [];
+    this.edastroData = null;
+
+    // Fetch edastro data
+    this.appService.getEdastroData(data.system.id64)
+      .subscribe(
+        edastroData => {
+          if (edastroData && (edastroData.name || edastroData.summary)) {
+            this.edastroData = edastroData;
+          }
+        },
+        error => {
+          // Silently handle error - edastro data is optional
+        }
+      );
 
     const bodiesFlat: SystemBody[] = [];
 

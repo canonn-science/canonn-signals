@@ -1,0 +1,11 @@
+{
+  "/api/edastro/*": {
+    "target": "https://edastro.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/api/edastro": ""
+    }
+  }
+}
