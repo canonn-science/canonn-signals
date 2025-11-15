@@ -217,6 +217,33 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     const eccentricity = this.body.bodyData.orbitalEccentricity ?? 0;
     return semiMajorAxisKm * (1 - eccentricity);
   }
+
+  public getRingWidth(): number {
+    const outer = this.body.bodyData.outerRadius ?? 0;
+    const inner = this.body.bodyData.innerRadius ?? 0;
+    return outer - inner;
+  }
+
+  public getRingArea(): number {
+    const outer = this.body.bodyData.outerRadius ?? 0;
+    const inner = this.body.bodyData.innerRadius ?? 0;
+    return Math.PI * (outer * outer - inner * inner);
+  }
+
+  public getRingDensity(): number {
+    const mass = this.body.bodyData.mass ?? 0;
+    const area = this.getRingArea();
+    return area > 0 ? mass / area : 0;
+  }
+
+  public isRingNotVisible(): boolean {
+    if (this.body.bodyData.type !== 'Ring' && this.body.bodyData.type !== 'Belt') {
+      return false;
+    }
+    const density = this.getRingDensity();
+    const width = this.getRingWidth();
+    return density < 0.1 && width > 1000000;
+  }
 }
 
 interface BiologySignal {
