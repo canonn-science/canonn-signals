@@ -149,6 +149,48 @@ export class HomeComponent implements OnInit {
         parent: null,
       };
       bodiesFlat.push(body);
+
+      // Add belts as child bodies
+      if (systemBody.belts) {
+        for (const belt of systemBody.belts) {
+          const beltBody: SystemBody = {
+            bodyData: {
+              bodyId: -1, // Temporary ID for belts
+              name: belt.name,
+              id64: 0,
+              subType: belt.type,
+              type: "Belt",
+              innerRadius: belt.innerRadius / 1000, // Convert m to km
+              outerRadius: belt.outerRadius / 1000, // Convert m to km
+              mass: belt.mass
+            },
+            subBodies: [],
+            parent: body
+          };
+          body.subBodies.push(beltBody);
+        }
+      }
+
+      // Add rings as child bodies
+      if (systemBody.rings) {
+        for (const ring of systemBody.rings) {
+          const ringBody: SystemBody = {
+            bodyData: {
+              bodyId: -1, // Temporary ID for rings
+              name: ring.name,
+              id64: 0,
+              subType: ring.type,
+              type: "Ring",
+              innerRadius: ring.innerRadius / 1000, // Convert m to km
+              outerRadius: ring.outerRadius / 1000, // Convert m to km
+              mass: ring.mass
+            },
+            subBodies: [],
+            parent: body
+          };
+          body.subBodies.push(ringBody);
+        }
+      }
     }
 
     for (const body of [...bodiesFlat]) {
@@ -243,7 +285,14 @@ export class HomeComponent implements OnInit {
     }
 
     for (const body of bodiesFlat) {
-      body.subBodies.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
+      body.subBodies.sort((a, b) => {
+        const getDistance = (bodyData: CanonnBiostatsBody) => {
+          if (bodyData.semiMajorAxis) return bodyData.semiMajorAxis * 149597870.7; // Convert AU to km
+          if (bodyData.innerRadius) return bodyData.innerRadius; // Ring/belt inner radius
+          return Number.MAX_SAFE_INTEGER; // Place bodies without orbital data at the end
+        };
+        return getDistance(a.bodyData) - getDistance(b.bodyData);
+      });
     }
     bodiesFlat.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
 
@@ -324,11 +373,19 @@ export interface CanonnBiostatsBody {
     outerRadius: number;
     type: string;
   }[];
+  rings?: {
+    innerRadius: number;
+    mass: number;
+    name: string;
+    outerRadius: number;
+    type: string;
+  }[];
   bodyId: number;
   distanceToArrival?: number;
   earthMasses?: number;
   gravity?: number;
   id64: number;
+  innerRadius?: number;
   isLandable?: boolean;
   luminosity?: string;
   mainStar?: boolean;
@@ -345,11 +402,13 @@ export interface CanonnBiostatsBody {
     Sulphur: number;
     Tin: number;
   };
+  mass?: number;
   meanAnomaly?: number;
   name: string;
   orbitalEccentricity?: number;
   orbitalInclination?: number;
   orbitalPeriod?: number;
+  outerRadius?: number;
   parents?: {
     Null?: number;
     Planet?: number;

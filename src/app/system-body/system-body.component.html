@@ -141,6 +141,30 @@
                         {{ body.bodyData.volcanismType }}
                     </div>
                 </div>
+                <div *ngIf="body.bodyData.innerRadius" class="body-data-entry">
+                    <div>
+                        Inner radius
+                    </div>
+                    <div [matTooltip]="(body.bodyData.innerRadius?.toString() ?? '') + ' km'">
+                        {{ body.bodyData.innerRadius | number:'0.2-2' }} km
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.outerRadius" class="body-data-entry">
+                    <div>
+                        Outer radius
+                    </div>
+                    <div [matTooltip]="(body.bodyData.outerRadius?.toString() ?? '') + ' km'">
+                        {{ body.bodyData.outerRadius | number:'0.2-2' }} km
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.mass" class="body-data-entry">
+                    <div>
+                        Mass
+                    </div>
+                    <div [matTooltip]="(body.bodyData.mass?.toString() ?? '') + ' Mt'">
+                        {{ body.bodyData.mass | number:'0.2-2' }} Mt
+                    </div>
+                </div>
             </div>
             <!--
             <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
