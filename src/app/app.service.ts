@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -19,7 +20,10 @@ export class AppService {
   }
 
   public getEdastroData(id64: number): Observable<EdastroData> {
-    return this.httpClient.get<EdastroData>(`/api/edastro/gec/json/id64/${id64}`);
+    const url = environment.production 
+      ? `https://edastro.com/gec/json/id64/${id64}`
+      : `/api/edastro/gec/json/id64/${id64}`;
+    return this.httpClient.get<EdastroData>(url);
   }
 }
 
