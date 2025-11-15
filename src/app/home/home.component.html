@@ -27,8 +27,9 @@
 <div class="system-container" *ngIf="data" @visibilityTrigger>
     <div class="system-container-data">
         <div class="system-title">
-            {{ data.system.name }} - ID64: <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}"
-                target="_blank">{{ data.system.id64 }} <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a>
+            <span>{{ data.system.name }} - ID64: <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}"
+                target="_blank">{{ data.system.id64 }} <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a></span>
+            <span *ngIf="data.system.population !== null && data.system.population !== undefined" class="population">Population: {{ data.system.population | number }}</span>
         </div>
         <div class="system-data">
             <div class="system-data-row">

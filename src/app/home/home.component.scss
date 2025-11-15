@@ -48,6 +48,7 @@
 
         .system-title {
             display: flex;
+            justify-content: space-between;
             gap: 4px;
             padding: 8px;
             align-items: center;
@@ -64,6 +65,10 @@
 
             a:hover {
                 color: #797979;
+            }
+
+            .population {
+                font-size: 80%;
             }
         }
 
