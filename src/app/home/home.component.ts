@@ -149,8 +149,9 @@ export class HomeComponent implements OnInit {
     this.appService.getEdastroData(data.system.id64)
       .subscribe(
         edastroData => {
-          if (edastroData && (edastroData.name || edastroData.summary)) {
+          if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
             this.edastroData = edastroData;
+            this.appService.setBackgroundImage(edastroData.mainImage || 'assets/bg1.jpg');
           }
         },
         error => {

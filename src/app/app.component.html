@@ -4,7 +4,7 @@
   <img src="assets/EDLoader1.svg" style="width: 100px; height: 100px;" />
 </div>
 
-<mat-sidenav-container style="min-height: 100vh">
+<mat-sidenav-container style="min-height: 100vh" [style.background-image]="'url(' + backgroundImage + ')'" [style.background-size]="'cover'" [style.background-position]="'center'">
   <mat-sidenav-content>
     <router-outlet></router-outlet>
   </mat-sidenav-content>

@@ -9,6 +9,9 @@ import { environment } from 'src/environments/environment';
 export class AppService {
   private _codexEntries: BehaviorSubject<CanonnCodexEntry[]> = new BehaviorSubject<CanonnCodexEntry[]>([]);
   public codexEntries: Observable<CanonnCodexEntry[]> = this._codexEntries.asObservable();
+  
+  private _backgroundImage: BehaviorSubject<string> = new BehaviorSubject<string>('assets/bg1.jpg');
+  public backgroundImage$: Observable<string> = this._backgroundImage.asObservable();
 
   constructor(
     private readonly httpClient: HttpClient
@@ -24,6 +27,10 @@ export class AppService {
       ? `https://edastro.com/gec/json/id64/${id64}`
       : `/api/edastro/gec/json/id64/${id64}`;
     return this.httpClient.get<EdastroData>(url);
+  }
+
+  public setBackgroundImage(imageUrl: string): void {
+    this._backgroundImage.next(imageUrl);
   }
 }
 
@@ -47,4 +54,5 @@ export interface EdastroData {
   name?: string;
   summary?: string;
   poiUrl?: string;
+  mainImage?: string;
 }
