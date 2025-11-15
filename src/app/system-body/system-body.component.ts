@@ -285,6 +285,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       'Selenium': { grade: 'badge-mat1', abbrev: 'Se' },
       'Technetium': { grade: 'badge-mat1', abbrev: 'Tc' },
       'Tellurium': { grade: 'badge-mat1', abbrev: 'Te' },
+      'Yttrium': { grade: 'badge-mat1', abbrev: 'Y' },
       // Grade 2 (Rare)
       'Cadmium': { grade: 'badge-mat2', abbrev: 'Cd' },
       'Mercury': { grade: 'badge-mat2', abbrev: 'Hg' },
