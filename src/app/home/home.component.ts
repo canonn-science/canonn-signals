@@ -156,7 +156,7 @@ export class HomeComponent implements OnInit {
           const beltBody: SystemBody = {
             bodyData: {
               bodyId: -1, // Temporary ID for belts
-              name: belt.name,
+              name: this.stripParentName(belt.name, systemBody.name),
               id64: 0,
               subType: belt.type,
               type: "Belt",
@@ -177,7 +177,7 @@ export class HomeComponent implements OnInit {
           const ringBody: SystemBody = {
             bodyData: {
               bodyId: -1, // Temporary ID for rings
-              name: ring.name,
+              name: this.stripParentName(ring.name, systemBody.name),
               id64: 0,
               subType: ring.type,
               type: "Ring",
@@ -317,6 +317,12 @@ export class HomeComponent implements OnInit {
   public onSystemSelected(systemName: string): void {
     this.searchInput = systemName;
     this.search();
+  }
+
+  private stripParentName(ringName: string, parentName: string): string {
+    // Remove parent name from ring name, keeping only the ring identifier
+    const pattern = new RegExp(`^${parentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i');
+    return ringName.replace(pattern, '').trim();
   }
 }
 
