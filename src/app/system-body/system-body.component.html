@@ -49,12 +49,12 @@
                         {{ body.bodyData.semiMajorAxis | number:'0.4-4' }}
                     </div>
                 </div>
-                <div *ngIf="body.bodyData.orbitalEccentricity" class="body-data-entry">
+                <div *ngIf="body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null" class="body-data-entry">
                     <div>
                         Orbital eccentricity
                     </div>
                     <div [matTooltip]="body.bodyData.orbitalEccentricity?.toString() ?? ''">
-                        {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }}
+                        {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{ getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
                     </div>
                 </div>
                 <div *ngIf="body.bodyData.atmosphereType" class="body-data-entry">

@@ -176,6 +176,13 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     this.expanded = !this.expanded;
     this.ngOnChanges();
   }
+
+  public getEccentricityAnalysis(eccentricity: number): string {
+    if (eccentricity === 0) return 'Circular';
+    if (eccentricity < 0.4) return 'Nearly Circular';
+    if (eccentricity < 0.8) return 'Eccentric';
+    return 'Highly Eccentric';
+  }
 }
 
 interface BiologySignal {
