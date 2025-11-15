@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, ViewEncapsulation } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -11,6 +11,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
+  encapsulation: ViewEncapsulation.None,
   animations: [
     trigger("grow", [ // Note the trigger name
       transition(":enter", [
@@ -182,6 +183,27 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     if (eccentricity < 0.4) return 'Nearly Circular';
     if (eccentricity < 0.8) return 'Eccentric';
     return 'Highly Eccentric';
+  }
+
+  public getAtmosphereCompositionTooltip(): string {
+    if (!this.body.bodyData.atmosphereComposition) {
+      return '';
+    }
+    return Object.entries(this.body.bodyData.atmosphereComposition)
+      .map(([gas, percentage]) => `${gas}: ${percentage.toFixed(2)}%`)
+      .join('\n');
+  }
+
+  public getAtmosphereDisplay(): string {
+    if (this.body.bodyData.atmosphereType) {
+      return this.body.bodyData.atmosphereType;
+    }
+    if (this.body.bodyData.atmosphereComposition) {
+      const largest = Object.entries(this.body.bodyData.atmosphereComposition)
+        .reduce((max, [gas, percentage]) => percentage > max[1] ? [gas, percentage] : max);
+      return `${largest[0]} ${largest[1].toFixed(2)}%`;
+    }
+    return '';
   }
 }
 

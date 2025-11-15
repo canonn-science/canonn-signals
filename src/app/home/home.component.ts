@@ -315,6 +315,7 @@ export interface CanonnBiostatsBody {
   argOfPeriapsis?: number;
   ascendingNode?: number;
   atmosphereType?: string | null;
+  atmosphereComposition?: { [key: string]: number };
   axialTilt?: number;
   belts?: {
     innerRadius: number;
