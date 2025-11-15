@@ -1,17 +1,18 @@
-import { Component, Input, OnChanges, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
 import { animate, style, transition, trigger } from '@angular/animations';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @UntilDestroy()
 @Component({
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
-  encapsulation: ViewEncapsulation.None,
+
   animations: [
     trigger("grow", [ // Note the trigger name
       transition(":enter", [
@@ -26,7 +27,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
     ])
   ]
 })
-export class SystemBodyComponent implements OnInit, OnChanges {
+export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public readonly faChevronRight = faCircleChevronRight;
   public readonly faCircleQuestion = faCircleQuestion;
   public readonly faUpRightFromSquare = faUpRightFromSquare;
@@ -59,6 +60,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   public exandable = false;
   public expanded = false;
   public isExpanded = false;
+  public hoveredIndex: number = -1;
 
   public constructor(private readonly appService: AppService) {
   }
@@ -253,6 +255,70 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       .map(([component, percentage]) => `${component}: ${percentage.toFixed(2)}%`)
       .join('\n');
   }
+
+
+
+  public ngAfterViewInit(): void {
+    // Additional debug after view init
+  }
+
+  public trackByMaterial(index: number, material: { name: string, class: string, tooltip: string }): string {
+    return material.name;
+  }
+
+
+
+  public onMouseEnter(index: number): void {
+    this.hoveredIndex = index;
+  }
+
+  public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
+    if (!this.body.bodyData.materials) {
+      return [];
+    }
+    
+    const materialData: { [key: string]: { grade: string, abbrev: string } } = {
+      // Grade 1 (Very Rare)
+      'Antimony': { grade: 'badge-mat1', abbrev: 'Sb' },
+      'Polonium': { grade: 'badge-mat1', abbrev: 'Po' },
+      'Ruthenium': { grade: 'badge-mat1', abbrev: 'Ru' },
+      'Selenium': { grade: 'badge-mat1', abbrev: 'Se' },
+      'Technetium': { grade: 'badge-mat1', abbrev: 'Tc' },
+      'Tellurium': { grade: 'badge-mat1', abbrev: 'Te' },
+      // Grade 2 (Rare)
+      'Cadmium': { grade: 'badge-mat2', abbrev: 'Cd' },
+      'Mercury': { grade: 'badge-mat2', abbrev: 'Hg' },
+      'Molybdenum': { grade: 'badge-mat2', abbrev: 'Mo' },
+      'Niobium': { grade: 'badge-mat2', abbrev: 'Nb' },
+      'Tin': { grade: 'badge-mat2', abbrev: 'Sn' },
+      'Vanadium': { grade: 'badge-mat2', abbrev: 'V' },
+      // Grade 3 (Uncommon)
+      'Arsenic': { grade: 'badge-mat3', abbrev: 'As' },
+      'Chromium': { grade: 'badge-mat3', abbrev: 'Cr' },
+      'Germanium': { grade: 'badge-mat3', abbrev: 'Ge' },
+      'Manganese': { grade: 'badge-mat3', abbrev: 'Mn' },
+      'Phosphorus': { grade: 'badge-mat3', abbrev: 'P' },
+      'Tungsten': { grade: 'badge-mat3', abbrev: 'W' },
+      'Zinc': { grade: 'badge-mat3', abbrev: 'Zn' },
+      'Zirconium': { grade: 'badge-mat3', abbrev: 'Zr' },
+      // Grade 4 (Common)
+      'Carbon': { grade: 'badge-mat4', abbrev: 'C' },
+      'Iron': { grade: 'badge-mat4', abbrev: 'Fe' },
+      'Nickel': { grade: 'badge-mat4', abbrev: 'Ni' },
+      'Sulphur': { grade: 'badge-mat4', abbrev: 'S' }
+    };
+
+    return Object.entries(this.body.bodyData.materials)
+      .filter(([material, percentage]) => percentage > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([material, percentage]) => ({
+        name: materialData[material]?.abbrev || material,
+        class: materialData[material]?.grade || 'badge-gray',
+        tooltip: `${material}: ${percentage.toFixed(2)}%`
+      }));
+  }
+
+
 }
 
 interface BiologySignal {

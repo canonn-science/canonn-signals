@@ -4,12 +4,33 @@
 
 .body-title {
     display: flex;
-    column-gap: 8px;
+    justify-content: space-between;
     padding: 8px;
     align-items: center;
     background-color: #393939;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
+
+    .title-left {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .materials-badges {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        
+        span {
+            cursor: pointer;
+            pointer-events: auto;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+    }
+
+
 }
 
 .system-body {
@@ -104,12 +125,31 @@
     background-color: #f44336;
 }
 
+.badge-mat1 {
+    color: #ffffff;
+    background-color: #f44336; /* Red for Grade 1 */
+}
+
+.badge-mat2 {
+    color: #1c1c1c;
+    background-color: #ffc107; /* Amber for Grade 2 */
+}
+
+.badge-mat3 {
+    color: #ffffff;
+    background-color: #4caf50; /* Green for Grade 3 */
+}
+
+.badge-mat4 {
+    color: #1c1c1c;
+    background-color: #87ceeb; /* Pale blue for Grade 4 */
+}
+
 .body-signal-data {
     display: flex;
     column-gap: 16px;
     justify-content: space-between;
 }
 
-.multiline-tooltip {
-    white-space: pre-line;
-}
+
+

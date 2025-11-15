@@ -82,6 +82,7 @@ export class HomeComponent implements OnInit {
     this.bodies = [];
     this.searching = true;
     this.searchError = false;
+    this.searchControl.disable();
     if (this.isNumeric(this.searchInput)) {
       const systemAddress = parseInt(this.searchInput);
       this.searchBySystemAddress(systemAddress);
@@ -106,6 +107,7 @@ export class HomeComponent implements OnInit {
   private searchFailed(): void {
     this.searching = false;
     this.searchError = true;
+    this.searchControl.enable();
   }
 
   private searchBySystemAddress(systemAddress: number): void {
@@ -118,6 +120,7 @@ export class HomeComponent implements OnInit {
           }
           this.processBodies(data);
           this.searching = false;
+          this.searchControl.enable();
         },
         error => {
           this.searchFailed();

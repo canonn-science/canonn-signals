@@ -5,7 +5,7 @@
         <div class="search-field">
             <mat-form-field class="input-full-width">
                 <mat-label>Search by system name or system address</mat-label>
-                <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128" [disabled]="searching"
+                <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128"
                     (keyup.enter)="search()">
                 <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">
                     <mat-option *ngFor="let system of filteredSystems | async" [value]="system">

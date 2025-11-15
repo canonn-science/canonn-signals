@@ -1,33 +1,40 @@
 <div class="body-container" [ngClass]="styleClass">
     <div class="body-title">
-        <b>{{ body.bodyData.name }}</b>
-        <span *ngIf="body.bodyData.subType">-</span>
-        <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()" matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}</span>
-        <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition" [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip" class="atmosphere-type">
-            - {{ getAtmosphereDisplay() }}
-        </span>
-        <span *ngIf="isRingNotVisible()" class="badge badge-red">Invisible</span>
-        <span *ngIf="body.bodyData.isLandable" class="badge badge-orange">Landable</span>
-        <span *ngIf="body.bodyData.isLandable &&  body.bodyData.atmosphereType && body.bodyData.atmosphereType != ''"
-            class="badge badge-blue">Odyssey</span>
-        <span *ngIf="body.bodyData.terraformingState == 'Terraformable'" class="badge badge-gray">Terraformable</span>
-        <div *ngIf="geologySignals.length || geologySignalCount" matTooltip="Geological signals">
-            <img src="assets/icons/Geology.png" />
+        <div class="title-left">
+            <b>{{ body.bodyData.name }}</b>
+            <span *ngIf="body.bodyData.subType">-</span>
+            <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()" matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}</span>
+            <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition" [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip" class="atmosphere-type">
+                - {{ getAtmosphereDisplay() }}
+            </span>
+            <span *ngIf="isRingNotVisible()" class="badge badge-red">Invisible</span>
+            <span *ngIf="body.bodyData.isLandable" class="badge badge-orange">Landable</span>
+            <span *ngIf="body.bodyData.isLandable &&  body.bodyData.atmosphereType && body.bodyData.atmosphereType != ''"
+                class="badge badge-blue">Odyssey</span>
+            <span *ngIf="body.bodyData.terraformingState == 'Terraformable'" class="badge badge-gray">Terraformable</span>
+            <div *ngIf="geologySignals.length || geologySignalCount" matTooltip="Geological signals">
+                <img src="assets/icons/Geology.png" />
+            </div>
+            <div *ngIf="biologySignals.length || biologySignalCount" matTooltip="Biological signals">
+                <img src="assets/icons/Biology.png" />
+            </div>
+            <div *ngIf="thargoidSignals.length || thargoidSignalCount" matTooltip="Thargoid signals">
+                <img src="assets/icons/Thargoid.png" />
+            </div>
+            <div *ngIf="guardianSignals.length || guardianSignalCount" matTooltip="Guardian signals">
+                <img src="assets/icons/Guardian.png" />
+            </div>
+            <div *ngIf="exandable && !expanded" (click)="toggleExpand()" class="clickable" matTooltip="Expand">
+                <fa-icon [icon]="faSquareCaretDown"></fa-icon>
+            </div>
+            <div *ngIf="exandable && expanded" (click)="toggleExpand()" class="clickable" matTooltip="Collapse">
+                <fa-icon [icon]="faSquareCaretUp"></fa-icon>
+            </div>
         </div>
-        <div *ngIf="biologySignals.length || biologySignalCount" matTooltip="Biological signals">
-            <img src="assets/icons/Biology.png" />
-        </div>
-        <div *ngIf="thargoidSignals.length || thargoidSignalCount" matTooltip="Thargoid signals">
-            <img src="assets/icons/Thargoid.png" />
-        </div>
-        <div *ngIf="guardianSignals.length || guardianSignalCount" matTooltip="Guardian signals">
-            <img src="assets/icons/Guardian.png" />
-        </div>
-        <div *ngIf="exandable && !expanded" (click)="toggleExpand()" class="clickable" matTooltip="Expand">
-            <fa-icon [icon]="faSquareCaretDown"></fa-icon>
-        </div>
-        <div *ngIf="exandable && expanded" (click)="toggleExpand()" class="clickable" matTooltip="Collapse">
-            <fa-icon [icon]="faSquareCaretUp"></fa-icon>
+        <div class="materials-badges" (mouseleave)="hoveredIndex = -1">
+            <span *ngFor="let material of getMaterialBadges(); let i = index" 
+                  [class]="'badge ' + material.class" 
+                  (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ? material.tooltip : material.name }}</span>
         </div>
     </div>
     <div class="system-body" *ngIf="isExpanded" [@grow]>
@@ -41,7 +48,7 @@
                     <div>
                         Orbital period
                     </div>
-                    <div [matTooltip]="(body.bodyData.orbitalPeriod?.toString() ?? '') + ' days'">
+                    <div [matTooltip]="body.bodyData.orbitalPeriod + ' days'">
                         {{ body.bodyData.orbitalPeriod | number:'0.2-2' }} days
                     </div>
                 </div>
@@ -49,7 +56,7 @@
                     <div>
                         Semi-major axis
                     </div>
-                    <div [matTooltip]="(body.bodyData.semiMajorAxis?.toString() ?? '') + ' au'">
+                    <div [matTooltip]="body.bodyData.semiMajorAxis + ' au'">
                         {{ (body.bodyData.semiMajorAxis * 149597870.7) | number:'0.2-2' }} km
                     </div>
                 </div>
@@ -73,7 +80,7 @@
                     <div>
                         Orbital eccentricity
                     </div>
-                    <div [matTooltip]="body.bodyData.orbitalEccentricity?.toString() ?? ''">
+                    <div [matTooltip]="body.bodyData.orbitalEccentricity.toString()">
                         {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{ getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
                     </div>
                 </div>
@@ -81,7 +88,7 @@
                     <div>
                         Orbital inclination
                     </div>
-                    <div [matTooltip]="(body.bodyData.orbitalInclination?.toString() ?? '') + '°'">
+                    <div [matTooltip]="body.bodyData.orbitalInclination + '°'">
                         {{ body.bodyData.orbitalInclination | number:'0.2-2' }}°
                     </div>
                 </div>
@@ -89,7 +96,7 @@
                     <div>
                         Argument of periapsis
                     </div>
-                    <div [matTooltip]="(body.bodyData.argOfPeriapsis?.toString() ?? '') + '°'">
+                    <div [matTooltip]="body.bodyData.argOfPeriapsis + '°'">
                         {{ body.bodyData.argOfPeriapsis | number:'0.2-2' }}°
                     </div>
                 </div>
@@ -97,7 +104,7 @@
                     <div>
                         Ascending node
                     </div>
-                    <div [matTooltip]="(body.bodyData.ascendingNode?.toString() ?? '') + '°'">
+                    <div [matTooltip]="body.bodyData.ascendingNode + '°'">
                         {{ body.bodyData.ascendingNode | number:'0.2-2' }}°
                     </div>
                 </div>
@@ -105,7 +112,7 @@
                     <div>
                         Axial tilt
                     </div>
-                    <div [matTooltip]="(body.bodyData.axialTilt?.toString() ?? '') + '°'">
+                    <div [matTooltip]="body.bodyData.axialTilt + '°'">
                         {{ body.bodyData.axialTilt | number:'0.2-2' }}°
                     </div>
                 </div>
@@ -113,7 +120,7 @@
                     <div>
                         Distance to arrival
                     </div>
-                    <div [matTooltip]="(body.bodyData.distanceToArrival?.toString() ?? '') + ' ls'">
+                    <div [matTooltip]="body.bodyData.distanceToArrival + ' ls'">
                         {{ body.bodyData.distanceToArrival | number:'0.2-2' }} ls
                     </div>
                 </div>
@@ -121,7 +128,7 @@
                     <div>
                         Rotational period
                     </div>
-                    <div [matTooltip]="(body.bodyData.rotationalPeriod?.toString() ?? '') + ' days'">
+                    <div [matTooltip]="body.bodyData.rotationalPeriod + ' days'">
                         {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
                     </div>
                 </div>
@@ -130,7 +137,7 @@
                     <div>
                         Surface pressure
                     </div>
-                    <div [matTooltip]="(body.bodyData.surfacePressure?.toString() ?? '') + ' atmospheres'">
+                    <div [matTooltip]="body.bodyData.surfacePressure + ' atmospheres'">
                         {{ body.bodyData.surfacePressure | number:'0.2-2' }} atmospheres
                     </div>
                 </div>
@@ -138,7 +145,7 @@
                     <div>
                         Gravity
                     </div>
-                    <div [matTooltip]="(body.bodyData.gravity?.toString() ?? '') + ' G'">
+                    <div [matTooltip]="body.bodyData.gravity + ' G'">
                         {{ body.bodyData.gravity | number:'0.2-2' }} G
                     </div>
                 </div>
@@ -146,7 +153,7 @@
                     <div>
                         Radius
                     </div>
-                    <div [matTooltip]="(body.bodyData.radius?.toString() ?? '') + ' km'">
+                    <div [matTooltip]="body.bodyData.radius + ' km'">
                         {{ body.bodyData.radius | number:'0.2-2' }} km
                     </div>
                 </div>
@@ -162,7 +169,7 @@
                     <div>
                         Solar masses
                     </div>
-                    <div [matTooltip]="body.bodyData.solarMasses?.toString() ?? ''">
+                    <div [matTooltip]="body.bodyData.solarMasses.toString()">
                         {{ body.bodyData.solarMasses | number:'0.2-2' }}
                     </div>
                 </div>
@@ -170,7 +177,7 @@
                     <div>
                         Solar radius
                     </div>
-                    <div [matTooltip]="body.bodyData.solarRadius?.toString() ?? ''">
+                    <div [matTooltip]="body.bodyData.solarRadius.toString()">
                         {{ body.bodyData.solarRadius | number:'0.2-2' }}
                     </div>
                 </div>
@@ -178,7 +185,7 @@
                     <div>
                         Surface temperature
                     </div>
-                    <div [matTooltip]="(body.bodyData.surfaceTemperature?.toString() ?? '') + ' K'">
+                    <div [matTooltip]="body.bodyData.surfaceTemperature + ' K'">
                         {{ body.bodyData.surfaceTemperature | number:'0.2-2' }} K
                     </div>
                 </div>
@@ -194,7 +201,7 @@
                     <div>
                         Inner radius
                     </div>
-                    <div [matTooltip]="(body.bodyData.innerRadius?.toString() ?? '') + ' km'">
+                    <div [matTooltip]="body.bodyData.innerRadius + ' km'">
                         {{ body.bodyData.innerRadius | number:'0.2-2' }} km
                     </div>
                 </div>
@@ -202,7 +209,7 @@
                     <div>
                         Outer radius
                     </div>
-                    <div [matTooltip]="(body.bodyData.outerRadius?.toString() ?? '') + ' km'">
+                    <div [matTooltip]="body.bodyData.outerRadius + ' km'">
                         {{ body.bodyData.outerRadius | number:'0.2-2' }} km
                     </div>
                 </div>
@@ -210,7 +217,7 @@
                     <div>
                         Mass
                     </div>
-                    <div [matTooltip]="(body.bodyData.mass?.toString() ?? '') + ' Mt'">
+                    <div [matTooltip]="body.bodyData.mass + ' Mt'">
                         {{ body.bodyData.mass | number:'0.2-2' }} Mt
                     </div>
                 </div>
