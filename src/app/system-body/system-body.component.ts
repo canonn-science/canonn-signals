@@ -38,6 +38,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() body!: SystemBody;
   @Input() isRoot: boolean = false;
   @Input() isLast: boolean = false;
+  @Input() forceExpanded: boolean = false;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
   public hasSignals = false;
@@ -166,7 +167,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         this.body.bodyData.subType === 'Water world' ||
         this.body.bodyData.subType === 'Ammonia world' ||
         !!this.body.bodyData.isLandable;
-      this.expanded = isInteresting;
+      this.expanded = this.forceExpanded || isInteresting;
     }
     this.isExpanded = this.expanded;
 

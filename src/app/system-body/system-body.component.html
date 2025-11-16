@@ -382,6 +382,6 @@
     <div class="system-body-end"></div>
     <div class="child-bodies">
         <app-system-body *ngFor="let body of body.subBodies; last as isLast" [body]="body"
-            [isLast]="isLast"></app-system-body>
+            [isLast]="isLast" [forceExpanded]="forceExpanded"></app-system-body>
     </div>
 </div>

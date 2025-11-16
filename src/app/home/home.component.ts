@@ -346,6 +346,15 @@ export class HomeComponent implements OnInit {
     const pattern = new RegExp(`^${parentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i');
     return ringName.replace(pattern, '').trim();
   }
+
+  public getTotalBodyCount(): number {
+    const countBodies = (bodies: SystemBody[]): number => {
+      return bodies.reduce((count, body) => {
+        return count + 1 + countBodies(body.subBodies);
+      }, 0);
+    };
+    return countBodies(this.bodies);
+  }
 }
 
 interface EDSMSystemV1 {
