@@ -395,6 +395,34 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
             this.body.bodyData.subType === 'Neutron Star');
   }
 
+  public getJetConeAngle(): number | null {
+    if (this.body.bodyData.type !== 'Star' || !this.body.bodyData.subType?.includes('Neutron Star') || 
+        !this.body.bodyData.rotationalPeriod || !this.body.bodyData.solarMasses || 
+        !this.body.bodyData.solarRadius || !this.body.bodyData.surfaceTemperature || !this.body.bodyData.age) {
+      return null;
+    }
+    
+    const mass = this.body.bodyData.solarMasses;
+    const radius = this.body.bodyData.solarRadius;
+    const rotPeriod = this.body.bodyData.rotationalPeriod;
+    const surfaceTemp = this.body.bodyData.surfaceTemperature;
+    const age = this.body.bodyData.age;
+    
+    if (mass <= 0 || radius <= 0 || rotPeriod <= 0 || surfaceTemp <= 0 || age <= 0) {
+      return null;
+    }
+    
+    const rotEnergy = (mass * radius * radius) / (rotPeriod * rotPeriod);
+    const tempPerMass = surfaceTemp / mass;
+    
+    const logPred = 0.8785 + 
+                   0.1185 * Math.log(rotEnergy) + 
+                   0.1362 * Math.log(tempPerMass) + 
+                   -0.0787 * Math.log(age);
+    
+    return Math.exp(logPred);
+  }
+
   public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
     if (!this.body.bodyData.materials) {
       return [];

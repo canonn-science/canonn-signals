@@ -146,6 +146,14 @@
                         {{ getTangentialVelocityDisplay() }}
                     </div>
                 </div>
+                <div *ngIf="getJetConeAngle() !== null" class="body-data-entry">
+                    <div>
+                        Jet cone half angle
+                    </div>
+                    <div matTooltip="Estimate">
+                        {{ getJetConeAngle() | number:'0.2-2' }}°
+                    </div>
+                </div>
 
                 <div *ngIf="body.bodyData.surfacePressure" class="body-data-entry">
                     <div>
