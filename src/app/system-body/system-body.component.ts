@@ -82,6 +82,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       return;
     }
 
+    this.detectTrojanStatus();
+
     this.bodyCoronaImage = "";
     this.bodyImage = "";
 
@@ -394,6 +396,36 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return this.body.bodyData.type === 'Star' && 
            (this.body.bodyData.subType === 'Black Hole' || 
             this.body.bodyData.subType === 'Neutron Star');
+  }
+
+  public trojanStatus: string | null = null;
+
+  private detectTrojanStatus(): void {
+    this.trojanStatus = null;
+    
+    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis || 
+        this.body.bodyData.argOfPeriapsis === undefined) {
+      return;
+    }
+
+    const siblings = this.body.parent.subBodies.filter(sibling => 
+      sibling !== this.body &&
+      sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
+      sibling.bodyData.semiMajorAxis === this.body.bodyData.semiMajorAxis &&
+      sibling.bodyData.argOfPeriapsis !== undefined
+    );
+
+    if (siblings.length === 0) return;
+    
+    for (const sibling of siblings) {
+      const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
+      const normalizedDiff = Math.min(argDiff, 360 - argDiff);
+      
+      if (Math.abs(normalizedDiff - 60) < 1) {
+        this.trojanStatus = this.body.bodyData.argOfPeriapsis! > sibling.bodyData.argOfPeriapsis! ? 'L4' : 'L5';
+        break;
+      }
+    }
   }
 
   public getJetConeAngle(): number | null {
