@@ -138,6 +138,14 @@
                         {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
                     </div>
                 </div>
+                <div *ngIf="getTangentialVelocity() !== null" class="body-data-entry">
+                    <div>
+                        Tangential velocity
+                    </div>
+                    <div [matTooltip]="getTangentialVelocityTooltip()">
+                        {{ getTangentialVelocityDisplay() }}
+                    </div>
+                </div>
 
                 <div *ngIf="body.bodyData.surfacePressure" class="body-data-entry">
                     <div>

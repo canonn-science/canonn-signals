@@ -344,6 +344,57 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return resonance + ' spin resonance';
   }
 
+  public getTangentialVelocity(): number | null {
+    if (!this.isBlackHoleOrNeutronStar() || !this.body.bodyData.rotationalPeriod) {
+      return null;
+    }
+    
+    let radiusKm: number;
+    if (this.body.bodyData.radius) {
+      radiusKm = this.body.bodyData.radius;
+    } else if (this.body.bodyData.solarRadius) {
+      radiusKm = this.body.bodyData.solarRadius * 695700; // Convert solar radii to km
+    } else {
+      return null;
+    }
+    
+    const rotationalPeriodDays = this.body.bodyData.rotationalPeriod;
+    const rotationalPeriodSeconds = rotationalPeriodDays * 24 * 3600;
+    
+    const circumference = 2 * Math.PI * radiusKm * 1000; // Convert km to m
+    const velocityMs = circumference / rotationalPeriodSeconds;
+    
+    return velocityMs / 1000; // Convert m/s to km/s
+  }
+
+  public getTangentialVelocityDisplay(): string {
+    const velocityKms = this.getTangentialVelocity();
+    if (velocityKms === null) return '';
+    
+    const speedOfLight = 299792458; // m/s
+    const velocityMs = velocityKms * 1000;
+    const fractionOfC = velocityMs / speedOfLight;
+    
+    if (fractionOfC >= 0.01) {
+      return `${fractionOfC.toFixed(3)}c`;
+    }
+    
+    return `${velocityKms.toFixed(0)} km/s`;
+  }
+
+  public getTangentialVelocityTooltip(): string {
+    const velocityKms = this.getTangentialVelocity();
+    if (velocityKms === null) return '';
+    
+    return `${velocityKms.toFixed(3)} km/s`;
+  }
+
+  public isBlackHoleOrNeutronStar(): boolean {
+    return this.body.bodyData.type === 'Star' && 
+           (this.body.bodyData.subType === 'Black Hole' || 
+            this.body.bodyData.subType === 'Neutron Star');
+  }
+
   public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
     if (!this.body.bodyData.materials) {
       return [];
