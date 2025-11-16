@@ -90,14 +90,16 @@ export class HomeComponent implements OnInit {
       return;
     }
 
-    this.httpClient.get<EDSMSystemV1>(`https://www.edsm.net/api-v1/system?showId=1&systemName=${encodeURIComponent(this.searchInput)}`)
+    this.httpClient.get<{min_max: {name: string, id64: number}[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
       .subscribe(
         data => {
-          if (!data || !data.id64) {
+          const systems = data.min_max || [];
+          const system = systems.find(s => s.name === this.searchInput);
+          if (!system || !system.id64) {
             this.searchFailed();
             return;
           }
-          this.searchBySystemAddress(data.id64);
+          this.searchBySystemAddress(system.id64);
         },
         error => {
           this.searchFailed();
