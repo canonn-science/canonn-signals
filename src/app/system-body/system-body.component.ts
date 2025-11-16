@@ -313,6 +313,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public getSpinResonanceTooltip(): string {
     const resonance = this.getSpinResonance();
+    if (resonance === 'none' && this.body.bodyData.rotationalPeriodTidallyLocked) {
+      return 'Rotational Period Tidally Locked';
+    }
     if (resonance === '1:1' && this.body.bodyData.rotationalPeriodTidallyLocked) {
       if (this.body.bodyData.subType === 'Earth-like world') {
         return 'Eyeball Earth';

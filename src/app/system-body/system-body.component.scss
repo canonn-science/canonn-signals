@@ -165,6 +165,9 @@
 .badge-purple {
     color: #1c1c1c;
     background-color: #99cc99; /* Same as mat3 green */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     .lock-icon {
         margin-left: 4px;
