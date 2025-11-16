@@ -410,22 +410,47 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       return;
     }
 
-    const siblings = this.body.parent.subBodies.filter(sibling => 
+    // Check L3, L4, L5 (same orbital distance)
+    const sameSMABodies = this.body.parent.subBodies.filter(sibling => 
       sibling !== this.body &&
       sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
       sibling.bodyData.semiMajorAxis === this.body.bodyData.semiMajorAxis &&
       sibling.bodyData.argOfPeriapsis !== undefined
     );
-
-    if (siblings.length === 0) return;
     
-    for (const sibling of siblings) {
+    for (const sibling of sameSMABodies) {
       const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
       const normalizedDiff = Math.min(argDiff, 360 - argDiff);
       
       if (Math.abs(normalizedDiff - 60) < 1) {
         this.trojanStatus = this.body.bodyData.argOfPeriapsis! > sibling.bodyData.argOfPeriapsis! ? 'L4' : 'L5';
-        break;
+        return;
+      } else if (Math.abs(normalizedDiff - 180) < 1) {
+        this.trojanStatus = 'L3';
+        return;
+      }
+    }
+
+    // Check L1, L2 (different orbital distances, same period)
+    const samePeriodBodies = this.body.parent.subBodies.filter(sibling => 
+      sibling !== this.body &&
+      sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
+      sibling.bodyData.semiMajorAxis !== this.body.bodyData.semiMajorAxis &&
+      sibling.bodyData.argOfPeriapsis !== undefined &&
+      sibling.bodyData.ascendingNode !== undefined
+    );
+
+    for (const sibling of samePeriodBodies) {
+      const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
+      const nodeDiff = Math.abs((this.body.bodyData.ascendingNode || 0) - (sibling.bodyData.ascendingNode || 0));
+      
+      if (argDiff < 5 && nodeDiff < 5) {
+        if (this.body.bodyData.semiMajorAxis! < sibling.bodyData.semiMajorAxis!) {
+          this.trojanStatus = 'L1';
+        } else {
+          this.trojanStatus = 'L2';
+        }
+        return;
       }
     }
   }
