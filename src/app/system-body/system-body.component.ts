@@ -331,7 +331,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       return 'Rotational Period Tidally Locked';
     }
     if (resonance === '1:1' && this.body.bodyData.rotationalPeriodTidallyLocked) {
-      if (this.body.bodyData.subType === 'Earth-like world') {
+      if (this.body.bodyData.subType === 'Earth-like world' && this.body.parent?.bodyData.type === 'Star') {
         return 'Eyeball Earth';
       }
       return 'Synchronised';
