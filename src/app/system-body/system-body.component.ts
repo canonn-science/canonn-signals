@@ -91,6 +91,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         this.bodyCoronaImage = `bodies/${bodyImageResult.coronaPath}.png`;
       }
     }
+    else if (this.body.bodyData.type === "Ring") {
+      this.bodyImage = `bodies/planets/terrestrial/Rings.png`;
+    }
+    else if (this.body.bodyData.type === "Belt") {
+      this.bodyImage = `bodies/planets/terrestrial/Belts.png`;
+    }
     else if (this.body.bodyData.type === "Barycentre") {
       this.bodyImage = `Orbit2.gif`;
     }
@@ -153,8 +159,16 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
       this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
-    this.exandable = !this.hasSignals;
-    this.isExpanded = !this.exandable || this.expanded;
+    this.exandable = true;
+    if (this.expanded === false || this.expanded === undefined) {
+      const isInteresting = this.hasSignals || 
+        this.body.bodyData.subType === 'Earth-like world' ||
+        this.body.bodyData.subType === 'Water world' ||
+        this.body.bodyData.subType === 'Ammonia world' ||
+        !!this.body.bodyData.isLandable;
+      this.expanded = isInteresting;
+    }
+    this.isExpanded = this.expanded;
 
     if (this.isRoot) {
       this.styleClass = "";
@@ -179,7 +193,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public toggleExpand(): void {
     this.expanded = !this.expanded;
-    this.ngOnChanges();
+    this.isExpanded = this.expanded;
   }
 
   public getEccentricityAnalysis(eccentricity: number): string {
