@@ -161,6 +161,16 @@
     background-color: #99ccff; /* Soft blue for Grade 4 */
 }
 
+.badge-purple {
+    color: #ffffff;
+    background-color: #9c27b0;
+
+    .lock-icon {
+        margin-left: 4px;
+        font-size: 0.8em;
+    }
+}
+
 .body-signal-data {
     display: flex;
     column-gap: 16px;

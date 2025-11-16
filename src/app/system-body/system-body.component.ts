@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { SystemBody } from '../home/home.component';
-import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode } from '@fortawesome/free-solid-svg-icons';
+import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
@@ -34,6 +34,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public readonly faSquareCaretDown = faSquareCaretDown;
   public readonly faSquareCaretUp = faSquareCaretUp;
   public readonly faCode = faCode;
+  public readonly faLock = faLock;
   @Input() body!: SystemBody;
   @Input() isRoot: boolean = false;
   @Input() isLast: boolean = false;
@@ -286,6 +287,28 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     const success = document.execCommand('copy');
     document.body.removeChild(textArea);
     console.log('Copy success:', success, 'JSON length:', jsonText.length);
+  }
+
+  public getSpinResonance(): string {
+    if (!this.body.bodyData.rotationalPeriod || !this.body.bodyData.orbitalPeriod) {
+      return 'none';
+    }
+    
+    const rotationsPerOrbit = this.body.bodyData.orbitalPeriod / this.body.bodyData.rotationalPeriod;
+    const maxDenominator = 5;
+    const tolerance = 0.01;
+    
+    for (let denom = 1; denom <= maxDenominator; denom++) {
+      for (let num = 1; num <= maxDenominator; num++) {
+        const candidate = num / denom;
+        const relError = Math.abs(candidate - rotationsPerOrbit) / candidate;
+        if (relError <= tolerance) {
+          return `${num}:${denom}`;
+        }
+      }
+    }
+    
+    return 'none';
   }
 
   public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
