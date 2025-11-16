@@ -123,12 +123,13 @@
 }
 
 .badge-orange {
-    background-color: #ff9800;
+    color: #1c1c1c;
+    background-color: #ffcc33; /* Same as mat2 */
 }
 
 .badge-blue {
     color: #1c1c1c;
-    background-color: #9bb9cb;
+    background-color: #99ccff; /* Same as mat4 */
 }
 
 .badge-gray {
@@ -162,8 +163,8 @@
 }
 
 .badge-purple {
-    color: #ffffff;
-    background-color: #9c27b0;
+    color: #1c1c1c;
+    background-color: #99cc99; /* Same as mat3 green */
 
     .lock-icon {
         margin-left: 4px;

@@ -311,6 +311,17 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return 'none';
   }
 
+  public getSpinResonanceTooltip(): string {
+    const resonance = this.getSpinResonance();
+    if (resonance === '1:1' && this.body.bodyData.rotationalPeriodTidallyLocked) {
+      if (this.body.bodyData.subType === 'Earth-like world') {
+        return 'Eyeball Earth';
+      }
+      return 'Synchronised';
+    }
+    return resonance + ' spin resonance';
+  }
+
   public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
     if (!this.body.bodyData.materials) {
       return [];
