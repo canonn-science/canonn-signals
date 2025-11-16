@@ -83,6 +83,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     this.detectTrojanStatus();
+    this.detectRosetteStatus();
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
@@ -399,6 +400,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   public trojanStatus: string | null = null;
+  public rosetteStatus: string | null = null;
 
   private detectTrojanStatus(): void {
     this.trojanStatus = null;
@@ -425,6 +427,42 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         this.trojanStatus = this.body.bodyData.argOfPeriapsis! > sibling.bodyData.argOfPeriapsis! ? 'L4' : 'L5';
         break;
       }
+    }
+  }
+
+  private detectRosetteStatus(): void {
+    this.rosetteStatus = null;
+    
+    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis || 
+        this.body.bodyData.argOfPeriapsis === undefined) {
+      return;
+    }
+
+    const rosetteGroup = this.body.parent.subBodies.filter(sibling => 
+      sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
+      sibling.bodyData.semiMajorAxis === this.body.bodyData.semiMajorAxis &&
+      sibling.bodyData.argOfPeriapsis !== undefined
+    );
+
+    if (rosetteGroup.length < 4) return;
+
+    const angles = rosetteGroup.map(body => body.bodyData.argOfPeriapsis!).sort((a, b) => a - b);
+    const expectedSpacing = 360 / rosetteGroup.length;
+    
+    let isRosette = true;
+    for (let i = 0; i < angles.length; i++) {
+      const nextIndex = (i + 1) % angles.length;
+      let spacing = angles[nextIndex] - angles[i];
+      if (spacing < 0) spacing += 360;
+      
+      if (Math.abs(spacing - expectedSpacing) > 5) {
+        isRosette = false;
+        break;
+      }
+    }
+    
+    if (isRosette) {
+      this.rosetteStatus = `Rosette (${rosetteGroup.length})`;
     }
   }
 

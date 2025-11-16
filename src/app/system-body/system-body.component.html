@@ -16,6 +16,7 @@
                 class="badge badge-blue">Odyssey</span>
             <span *ngIf="body.bodyData.terraformingState == 'Terraformable'" class="badge badge-gray">Terraformable</span>
             <span *ngIf="trojanStatus" class="badge badge-blue" [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{ trojanStatus }}</span>
+            <span *ngIf="rosetteStatus" class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{ rosetteStatus }}</span>
             <div *ngIf="geologySignals.length || geologySignalCount" matTooltip="Geological signals">
                 <img src="assets/icons/Geology.png" />
             </div>
