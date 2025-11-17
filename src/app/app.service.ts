@@ -44,6 +44,10 @@ export class AppService {
   public setBackgroundImage(imageUrl: string): void {
     this._backgroundImage.next(imageUrl);
   }
+
+  public galMapSearch(systemName: string): Observable<{min_max: {name: string, id64: number}[]}> {
+    return this.httpClient.get<{min_max: {name: string, id64: number}[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(systemName)}`);
+  }
 }
 
 export interface CanonnCodex {
@@ -72,4 +76,5 @@ export interface EdastroData {
 export interface EdastroSystem {
   name: string;
   id64: number;
+  galMapSearch?: string;
 }

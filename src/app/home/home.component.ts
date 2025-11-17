@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { AppService, EdastroData } from '../app.service';
+import { AppService, EdastroData, EdastroSystem } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
@@ -36,6 +36,7 @@ export class HomeComponent implements OnInit {
   public searchControl = new FormControl('');
   public filteredSystems: Observable<string[]> = of([]);
   public edastroData: EdastroData | null = null;
+  private systemMapping: Map<string, {systemName?: string, id64?: number}> = new Map();
 
   public constructor(private readonly httpClient: HttpClient,
     private readonly appService: AppService,
@@ -72,10 +73,12 @@ export class HomeComponent implements OnInit {
 
   public search(): void {
     const input = this.searchControl.value || this.searchInput;
+    console.log('DEBUG: search() called with input:', input, 'searchInput:', this.searchInput);
     if (this.searching || !input) {
       return;
     }
     this.searchInput = input.trim();
+    console.log('DEBUG: trimmed searchInput:', this.searchInput);
     if (this.searchInput.length <= 1) {
       return;
     }
@@ -107,31 +110,39 @@ export class HomeComponent implements OnInit {
       return;
     }
 
-    // Try Spansh first
-    this.httpClient.get<{min_max: {name: string, id64: number}[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
-      .subscribe(
-        data => {
-          const systems = data.min_max || [];
-          const system = systems.find(s => s.name === this.searchInput);
-          if (system && system.id64) {
-            this.searchBySystemAddress(system.id64);
-            return;
-          }
-          
-          // Try Edastro if not found in Spansh
-          this.appService.edastroSystems.subscribe(edastroSystems => {
-            const edastroSystem = edastroSystems.find(s => s.name === this.searchInput);
-            if (edastroSystem && edastroSystem.id64) {
-              this.searchBySystemAddress(edastroSystem.id64);
+    // Check EdAstro cache first
+    this.appService.edastroSystems.subscribe(edastroSystems => {
+      console.log('DEBUG: Checking EdAstro cache for:', this.searchInput);
+      const edastroSystem = edastroSystems.find(s => this.decodeHtmlEntities(s.name) === this.searchInput);
+      console.log('DEBUG: EdAstro system found:', edastroSystem);
+      if (edastroSystem && edastroSystem.id64) {
+        console.log('DEBUG: Using EdAstro id64:', edastroSystem.id64);
+        this.searchBySystemAddress(edastroSystem.id64);
+        return;
+      }
+      
+      // Try Spansh if not found in EdAstro
+      const typeaheadUrl = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`;
+      console.log('DEBUG: Calling typeahead with URL:', typeaheadUrl);
+      this.httpClient.get<{min_max: {name: string, id64: number}[]}>(typeaheadUrl)
+        .subscribe(
+          data => {
+            console.log('DEBUG: Typeahead response:', data);
+            const systems = data.min_max || [];
+            const system = systems.find(s => s.name === this.searchInput);
+            console.log('DEBUG: System found in typeahead:', system);
+            if (system && system.id64) {
+              this.searchBySystemAddress(system.id64);
             } else {
               this.searchFailed();
             }
-          });
-        },
-        error => {
-          this.searchFailed();
-        }
-      );
+          },
+          error => {
+            console.log('DEBUG: Typeahead error:', error);
+            this.searchFailed();
+          }
+        );
+    });
   }
 
   private searchFailed(): void {
@@ -159,6 +170,9 @@ export class HomeComponent implements OnInit {
   }
 
   private processBodies(data: CanonnBiostats): void {
+    // Decode HTML entities in system name
+    data.system.name = this.decodeHtmlEntities(data.system.name);
+    
     const queryParams: Params = { system: data.system.name };
 
     this.router.navigate(
@@ -359,36 +373,91 @@ export class HomeComponent implements OnInit {
 
   private getSystemSuggestions(query: string): Observable<string[]> {
     const spansQuery = this.httpClient.get<{values: string[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
-      .pipe(switchMap(response => of(response.values || [])));
+      .pipe(switchMap(response => of((response.values || []).map(name => this.decodeHtmlEntities(name)))));
     
     const edastroQuery = this.appService.edastroSystems.pipe(
       switchMap(systems => {
-        const matches = systems
+        const matchingSystems = systems
           .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
-          .map(s => s.name)
           .slice(0, 10);
-        return of(matches);
+        
+        const systemsWithId64 = matchingSystems.filter(s => s.id64);
+        const systemsWithoutId64 = matchingSystems.filter(s => !s.id64);
+        
+        if (systemsWithoutId64.length === 0) {
+          return of(systemsWithId64.map(s => this.decodeHtmlEntities(s.name)));
+        }
+        
+        // Lookup id64 for systems without it
+        const lookupPromises = systemsWithoutId64.map(system => {
+          const systemName = system.galMapSearch || system.name;
+          const decodedSystemName = this.decodeHtmlEntities(systemName);
+          return this.appService.galMapSearch(decodedSystemName).toPromise()
+            .then(result => {
+              const found = result?.min_max?.find(s => s.name === decodedSystemName);
+              return found ? { ...system, id64: found.id64 } : null;
+            })
+            .catch(() => null);
+        });
+        
+        return Promise.all(lookupPromises).then(results => {
+          const systemsFoundInGalMap = results.filter(s => s !== null && s.id64) as EdastroSystem[];
+          const allValidSystems = [...systemsWithId64, ...systemsFoundInGalMap];
+          return allValidSystems.map(s => this.decodeHtmlEntities(s.name));
+        });
       })
     );
     
     return combineLatest([spansQuery, edastroQuery]).pipe(
       switchMap(([spansSuggestions, edastroSuggestions]) => {
+        // Store mapping for EdAstro systems
+        this.appService.edastroSystems.subscribe(systems => {
+          systems.forEach(system => {
+            const displayName = this.decodeHtmlEntities(system.name);
+            const systemName = system.galMapSearch ? this.decodeHtmlEntities(system.galMapSearch) : displayName;
+            this.systemMapping.set(displayName, { systemName, id64: system.id64 });
+          });
+        });
+        
         const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
-        return of(combined.slice(0, 20));
+        return of(combined.sort().slice(0, 20));
       }),
       untilDestroyed(this)
     );
   }
 
-  public onSystemSelected(systemName: string): void {
-    this.searchInput = systemName;
-    this.search();
+  public onSystemSelected(displayName: string): void {
+    console.log('DEBUG: onSystemSelected called with:', displayName);
+    const mapping = this.systemMapping.get(displayName);
+    console.log('DEBUG: mapping found:', mapping);
+    console.log('DEBUG: all mappings:', Array.from(this.systemMapping.entries()));
+    
+    if (mapping && mapping.id64) {
+      console.log('DEBUG: Using id64 directly:', mapping.id64);
+      this.searchInput = displayName;
+      this.searchBySystemAddress(mapping.id64);
+    } else if (mapping && mapping.systemName) {
+      console.log('DEBUG: Using system name:', mapping.systemName);
+      this.searchInput = mapping.systemName;
+      this.searchControl.setValue(mapping.systemName);
+      this.search();
+    } else {
+      console.log('DEBUG: Fallback to original behavior with:', displayName);
+      this.searchInput = displayName;
+      this.search();
+    }
   }
 
   private stripParentName(ringName: string, parentName: string): string {
     // Remove parent name from ring name, keeping only the ring identifier
     const pattern = new RegExp(`^${parentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i');
     return ringName.replace(pattern, '').trim();
+  }
+
+  private decodeHtmlEntities(text: string): string {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
   }
 
   public getTotalBodyCount(): number {
