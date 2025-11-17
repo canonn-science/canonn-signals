@@ -6,7 +6,7 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { environment } from 'src/environments/environment';
-import { Observable, of, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest } from 'rxjs';
 import { FormControl } from '@angular/forms';
 
 @UntilDestroy()
@@ -90,16 +90,26 @@ export class HomeComponent implements OnInit {
       return;
     }
 
+    // Try Spansh first
     this.httpClient.get<{min_max: {name: string, id64: number}[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
       .subscribe(
         data => {
           const systems = data.min_max || [];
           const system = systems.find(s => s.name === this.searchInput);
-          if (!system || !system.id64) {
-            this.searchFailed();
+          if (system && system.id64) {
+            this.searchBySystemAddress(system.id64);
             return;
           }
-          this.searchBySystemAddress(system.id64);
+          
+          // Try Edastro if not found in Spansh
+          this.appService.edastroSystems.subscribe(edastroSystems => {
+            const edastroSystem = edastroSystems.find(s => s.name === this.searchInput);
+            if (edastroSystem && edastroSystem.id64) {
+              this.searchBySystemAddress(edastroSystem.id64);
+            } else {
+              this.searchFailed();
+            }
+          });
         },
         error => {
           this.searchFailed();
@@ -331,11 +341,26 @@ export class HomeComponent implements OnInit {
   }
 
   private getSystemSuggestions(query: string): Observable<string[]> {
-    return this.httpClient.get<{values: string[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
-      .pipe(
-        switchMap(response => of(response.values || [])),
-        untilDestroyed(this)
-      );
+    const spansQuery = this.httpClient.get<{values: string[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
+      .pipe(switchMap(response => of(response.values || [])));
+    
+    const edastroQuery = this.appService.edastroSystems.pipe(
+      switchMap(systems => {
+        const matches = systems
+          .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
+          .map(s => s.name)
+          .slice(0, 10);
+        return of(matches);
+      })
+    );
+    
+    return combineLatest([spansQuery, edastroQuery]).pipe(
+      switchMap(([spansSuggestions, edastroSuggestions]) => {
+        const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
+        return of(combined.slice(0, 20));
+      }),
+      untilDestroyed(this)
+    );
   }
 
   public onSystemSelected(systemName: string): void {

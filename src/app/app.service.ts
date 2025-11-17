@@ -12,6 +12,9 @@ export class AppService {
   
   private _backgroundImage: BehaviorSubject<string> = new BehaviorSubject<string>('assets/bg1.jpg');
   public backgroundImage$: Observable<string> = this._backgroundImage.asObservable();
+  
+  private _edastroSystems: BehaviorSubject<EdastroSystem[]> = new BehaviorSubject<EdastroSystem[]>([]);
+  public edastroSystems: Observable<EdastroSystem[]> = this._edastroSystems.asObservable();
 
   constructor(
     private readonly httpClient: HttpClient
@@ -19,6 +22,15 @@ export class AppService {
     this.httpClient.get<CanonnCodex>("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref")
       .subscribe(c => {
         this._codexEntries.next(Object.values(c));
+      });
+    
+    const edastroUrl = environment.production 
+      ? "https://edastro.com/gec/json/combined"
+      : "/api/edastro/gec/json/combined";
+    
+    this.httpClient.get<EdastroSystem[]>(edastroUrl)
+      .subscribe(systems => {
+        this._edastroSystems.next(systems);
       });
   }
 
@@ -55,4 +67,9 @@ export interface EdastroData {
   summary?: string;
   poiUrl?: string;
   mainImage?: string;
+}
+
+export interface EdastroSystem {
+  name: string;
+  id64: number;
 }

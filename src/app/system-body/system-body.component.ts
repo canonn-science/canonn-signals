@@ -41,6 +41,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() forceExpanded: boolean = false;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
+
   public hasSignals = false;
   public humanSignalCount: number = 0;
   public otherSignalCount: number = 0;
