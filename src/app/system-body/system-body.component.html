@@ -49,8 +49,8 @@
     </div>
     <div class="system-body" *ngIf="isExpanded" [@grow]>
         <div class="body-image">
-            <img *ngIf="bodyCoronaImage" src="assets/{{ bodyCoronaImage }}" class="body-image-corona" />
-            <img *ngIf="bodyImage" src="assets/{{ bodyImage }}" />
+            <img *ngIf="bodyCoronaImage" src="assets/{{ bodyCoronaImage }}" class="body-image-corona" (error)="bodyCoronaImage = ''" loading="lazy" />
+            <img *ngIf="bodyImage" src="assets/{{ bodyImage }}" (error)="bodyImage = ''" loading="lazy" />
         </div>
         <div class="body-content">
             <div class="body-data">
