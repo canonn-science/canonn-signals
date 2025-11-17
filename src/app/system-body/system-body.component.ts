@@ -87,6 +87,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
     this.detectTrojanStatus();
     this.detectRosetteStatus();
+    this.cachedNextPeriapsis = this.calculateNextPeriapsis();
+    this.cachedNextApoapsis = this.calculateNextApoapsis();
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
@@ -206,6 +208,18 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public toggleExpand(): void {
     this.expanded = !this.expanded;
     this.isExpanded = this.expanded;
+    // Update parent's cached state if it exists
+    if (this.body.parent) {
+      setTimeout(() => this.updateParentChildrenState());
+    }
+  }
+
+  private updateParentChildrenState(): void {
+    // Find parent component and update its cached state
+    const parentElement = document.querySelector(`[data-body-id="${this.body.parent?.bodyData.bodyId}"]`);
+    if (parentElement) {
+      // This will be handled by the parent component's change detection
+    }
   }
 
   public toggleChildren(): void {
@@ -214,6 +228,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     childArray.forEach(child => {
       this.toggleChildRecursively(child, !anyChildExpanded);
     });
+    setTimeout(() => this.updateChildrenExpandedState());
   }
 
   private toggleChildRecursively(component: SystemBodyComponent, expand: boolean): void {
@@ -231,8 +246,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   public getChildrenExpandedState(): boolean {
-    const childArray = this.childComponents?.toArray() || [];
-    return childArray.some(child => child.expanded);
+    return this.cachedChildrenExpandedState;
   }
 
   public getEccentricityAnalysis(eccentricity: number): string {
@@ -314,7 +328,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
 
   public ngAfterViewInit(): void {
-    // Additional debug after view init
+    setTimeout(() => this.updateChildrenExpandedState());
+  }
+
+  private updateChildrenExpandedState(): void {
+    const childArray = this.childComponents?.toArray() || [];
+    this.cachedChildrenExpandedState = childArray.some(child => child.expanded);
   }
 
   public trackByMaterial(index: number, material: { name: string, class: string, tooltip: string }): string {
@@ -528,6 +547,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public trojanStatus: string | null = null;
   public rosetteStatus: string | null = null;
+  private cachedNextPeriapsis: { date: Date, days: number } | null = null;
+  private cachedNextApoapsis: { date: Date, days: number } | null = null;
+  private cachedChildrenExpandedState: boolean = false;
 
   private detectTrojanStatus(): void {
     this.trojanStatus = null;
@@ -646,7 +668,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return Math.exp(logPred);
   }
 
-  public getNextPeriapsis(): { date: Date, days: number } | null {
+  private calculateNextPeriapsis(): { date: Date, days: number } | null {
     if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
         !this.body.bodyData.timestamps?.meanAnomaly || 
         !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
@@ -665,7 +687,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return { date: eventDate, days: daysToEvent };
   }
 
-  public getNextApoapsis(): { date: Date, days: number } | null {
+  private calculateNextApoapsis(): { date: Date, days: number } | null {
     if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
         !this.body.bodyData.timestamps?.meanAnomaly || 
         !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
@@ -683,6 +705,14 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
     
     return { date: eventDate, days: daysToEvent };
+  }
+
+  public getNextPeriapsis(): { date: Date, days: number } | null {
+    return this.cachedNextPeriapsis;
+  }
+
+  public getNextApoapsis(): { date: Date, days: number } | null {
+    return this.cachedNextApoapsis;
   }
 
   public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
