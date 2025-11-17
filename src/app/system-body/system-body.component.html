@@ -4,6 +4,7 @@
             <b>{{ body.bodyData.name }}</b>
             <span *ngIf="body.bodyData.subType">-</span>
             <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()" matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}</span>
+            <span *ngIf="classifyNeutronStar()" [class]="classifyNeutronStar()!.classification === 'Anomalous' ? 'badge badge-red' : 'neutron-star-classification'" [matTooltip]="classifyNeutronStar()!.tooltip">{{ classifyNeutronStar()!.classification === 'Anomalous' ? classifyNeutronStar()!.classification : '- ' + classifyNeutronStar()!.classification }}</span>
             <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition" [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip" class="atmosphere-type">
                 - {{ getAtmosphereDisplay() }}
             </span>

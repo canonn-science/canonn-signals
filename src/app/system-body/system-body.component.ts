@@ -429,6 +429,53 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
             this.body.bodyData.subType === 'Neutron Star');
   }
 
+  public classifyNeutronStar(): { classification: string; tooltip: string } | null {
+    if (this.body.bodyData.type !== 'Star' || this.body.bodyData.subType !== 'Neutron Star') {
+      return null;
+    }
+    
+    const mass = this.body.bodyData.solarMasses;
+    const age = this.body.bodyData.age;
+    const temp = this.body.bodyData.surfaceTemperature;
+    const periodDays = this.body.bodyData.rotationalPeriod;
+    
+    if (mass === undefined || age === undefined || periodDays === undefined || temp === undefined) {
+      return null;
+    }
+
+    const period = periodDays * 86400;
+
+    if (mass > 3) {
+      return { classification: "Anomalous", tooltip: `Mass of ${mass.toFixed(2)} solar masses exceeds theoretical limit of ~3 solar masses` };
+    }
+
+    if (age > 100 && (period < 0.1 || temp > 1e7)) {
+      return { classification: "Anomalous", tooltip: `Old neutron star (${age}My) with impossible rotation (${(period/86400).toFixed(3)}d) or temperature (${temp.toLocaleString()}K)` };
+    }
+
+    if (mass <= 3 && age >= 0.1 && age <= 10 && period >= 0.001 && period <= 0.01) {
+      return { classification: "Millisecond Pulsar", tooltip: `Fast rotation (${(period*1000).toFixed(1)}ms) and moderate age (${age}My) indicate spin-up from companion` };
+    }
+
+    if (mass <= 3 && age <= 10 && period > 0.01 && period <= 5 && temp > 1e7) {
+      return { classification: "Normal Pulsar (Young)", tooltip: `Young age (${age}My) with expected high rotation rate and temperature (${temp.toLocaleString()}K)` };
+    }
+
+    if (mass <= 3 && age > 10 && age <= 100 && period > 0.01 && period <= 5 && temp >= 1e6 && temp <= 1e7) {
+      return { classification: "Normal Pulsar (Middle-aged)", tooltip: `Middle age (${age}My) with moderate rotation (${(period/86400).toFixed(3)}d) as pulsar spins down` };
+    }
+
+    if (mass <= 3 && age > 100 && period > 0.1 && temp <= 1e6) {
+      return { classification: "Normal Pulsar (Old)", tooltip: `Old age (${age}My) with slow rotation (${(period/86400).toFixed(3)}d) as rotational energy dissipated` };
+    }
+
+    if (mass <= 3 && age < 0.1 && period >= 2 && period <= 12 && temp > 1e8) {
+      return { classification: "Potential Magnetar", tooltip: `Very young (${age}My) with slow rotation (${(period/86400).toFixed(3)}d) and extreme temperature (${temp.toLocaleString()}K) suggests strong magnetic field` };
+    }
+
+    return null;
+  }
+
   public getLandableBadgeClass(): string {
     if (!this.body.bodyData.isLandable) {
       return 'badge-gray';
