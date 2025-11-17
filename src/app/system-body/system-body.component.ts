@@ -89,6 +89,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     this.detectRosetteStatus();
     this.cachedNextPeriapsis = this.calculateNextPeriapsis();
     this.cachedNextApoapsis = this.calculateNextApoapsis();
+    
+    // Update cached children state after expansion logic
+    setTimeout(() => this.updateChildrenExpandedState());
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
