@@ -568,7 +568,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public getNextPeriapsis(): { date: Date, days: number } | null {
     if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
-        !this.body.bodyData.timestamps?.meanAnomaly) {
+        !this.body.bodyData.timestamps?.meanAnomaly || 
+        !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
       return null;
     }
     
@@ -586,7 +587,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public getNextApoapsis(): { date: Date, days: number } | null {
     if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
-        !this.body.bodyData.timestamps?.meanAnomaly) {
+        !this.body.bodyData.timestamps?.meanAnomaly || 
+        !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
       return null;
     }
     
