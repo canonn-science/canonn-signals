@@ -337,9 +337,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-    const success = document.execCommand('copy');
+    document.execCommand('copy');
     document.body.removeChild(textArea);
-    console.log('Copy success:', success, 'JSON length:', jsonText.length);
   }
 
   public getSpinResonance(): string {

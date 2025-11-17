@@ -73,12 +73,10 @@ export class HomeComponent implements OnInit {
 
   public search(): void {
     const input = this.searchControl.value || this.searchInput;
-    console.log('DEBUG: search() called with input:', input, 'searchInput:', this.searchInput);
     if (this.searching || !input) {
       return;
     }
     this.searchInput = input.trim();
-    console.log('DEBUG: trimmed searchInput:', this.searchInput);
     if (this.searchInput.length <= 1) {
       return;
     }
@@ -112,25 +110,18 @@ export class HomeComponent implements OnInit {
 
     // Check EdAstro cache first
     this.appService.edastroSystems.subscribe(edastroSystems => {
-      console.log('DEBUG: Checking EdAstro cache for:', this.searchInput);
       const edastroSystem = edastroSystems.find(s => this.decodeHtmlEntities(s.name) === this.searchInput);
-      console.log('DEBUG: EdAstro system found:', edastroSystem);
       if (edastroSystem && edastroSystem.id64) {
-        console.log('DEBUG: Using EdAstro id64:', edastroSystem.id64);
         this.searchBySystemAddress(edastroSystem.id64);
         return;
       }
       
       // Try Spansh if not found in EdAstro
-      const typeaheadUrl = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`;
-      console.log('DEBUG: Calling typeahead with URL:', typeaheadUrl);
-      this.httpClient.get<{min_max: {name: string, id64: number}[]}>(typeaheadUrl)
+      this.httpClient.get<{min_max: {name: string, id64: number}[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
         .subscribe(
           data => {
-            console.log('DEBUG: Typeahead response:', data);
             const systems = data.min_max || [];
             const system = systems.find(s => s.name === this.searchInput);
-            console.log('DEBUG: System found in typeahead:', system);
             if (system && system.id64) {
               this.searchBySystemAddress(system.id64);
             } else {
@@ -138,7 +129,6 @@ export class HomeComponent implements OnInit {
             }
           },
           error => {
-            console.log('DEBUG: Typeahead error:', error);
             this.searchFailed();
           }
         );
@@ -328,9 +318,6 @@ export class HomeComponent implements OnInit {
             if (parentBody) {
               if (!parentBody.subBodies.includes(currentBody)) {
                 parentBody.subBodies.push(currentBody);
-                if (!environment.production) {
-                  console.log(`${currentBody.bodyData.name} -> ${parentBody.bodyData.name}`, currentBody, parentBody, body);
-                }
               }
               if (!currentBody.parent) {
                 currentBody.parent = parentBody;
@@ -362,9 +349,6 @@ export class HomeComponent implements OnInit {
     bodiesFlat.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
-    if (!environment.production) {
-      console.log(this.bodies, bodiesFlat);
-    }
   }
 
   private isNumeric(value: string) {
@@ -427,22 +411,15 @@ export class HomeComponent implements OnInit {
   }
 
   public onSystemSelected(displayName: string): void {
-    console.log('DEBUG: onSystemSelected called with:', displayName);
     const mapping = this.systemMapping.get(displayName);
-    console.log('DEBUG: mapping found:', mapping);
-    console.log('DEBUG: all mappings:', Array.from(this.systemMapping.entries()));
-    
     if (mapping && mapping.id64) {
-      console.log('DEBUG: Using id64 directly:', mapping.id64);
       this.searchInput = displayName;
       this.searchBySystemAddress(mapping.id64);
     } else if (mapping && mapping.systemName) {
-      console.log('DEBUG: Using system name:', mapping.systemName);
       this.searchInput = mapping.systemName;
       this.searchControl.setValue(mapping.systemName);
       this.search();
     } else {
-      console.log('DEBUG: Fallback to original behavior with:', displayName);
       this.searchInput = displayName;
       this.search();
     }
