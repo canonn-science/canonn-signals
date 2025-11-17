@@ -516,7 +516,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       sibling.bodyData.argOfPeriapsis !== undefined
     );
 
-    if (rosetteGroup.length < 4) return;
+    if (rosetteGroup.length < 3) return;
 
     const angles = rosetteGroup.map(body => body.bodyData.argOfPeriapsis!).sort((a, b) => a - b);
     const expectedSpacing = 360 / rosetteGroup.length;
