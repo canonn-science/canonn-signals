@@ -172,6 +172,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         this.body.bodyData.subType === 'Earth-like world' ||
         this.body.bodyData.subType === 'Water world' ||
         this.body.bodyData.subType === 'Ammonia world' ||
+        this.body.bodyData.subType === 'Black Hole' ||
+        this.body.bodyData.subType === 'Neutron Star' ||
+        this.body.bodyData.subType?.includes('White Dwarf') ||
         !!this.body.bodyData.isLandable;
       this.expanded = this.forceExpanded || isInteresting;
     }
