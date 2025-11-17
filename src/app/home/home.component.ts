@@ -84,6 +84,23 @@ export class HomeComponent implements OnInit {
     this.searching = true;
     this.searchError = false;
     this.searchControl.disable();
+    
+    // Load test system
+    if (this.searchInput.toLowerCase() === 'test') {
+      this.httpClient.get<CanonnBiostats>('assets/test-system.json')
+        .subscribe(
+          data => {
+            this.processBodies(data);
+            this.searching = false;
+            this.searchControl.enable();
+          },
+          error => {
+            this.searchFailed();
+          }
+        );
+      return;
+    }
+    
     if (this.isNumeric(this.searchInput)) {
       const systemAddress = parseInt(this.searchInput);
       this.searchBySystemAddress(systemAddress);
