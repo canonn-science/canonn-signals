@@ -110,6 +110,22 @@
                         {{ body.bodyData.argOfPeriapsis | number:'0.2-2' }}°
                     </div>
                 </div>
+                <div *ngIf="getNextPeriapsis()" class="body-data-entry">
+                    <div>
+                        Next periapsis
+                    </div>
+                    <div>
+                        {{ getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextPeriapsis()!.days | number:'0.1-1' }} days)
+                    </div>
+                </div>
+                <div *ngIf="getNextApoapsis()" class="body-data-entry">
+                    <div>
+                        Next apoapsis
+                    </div>
+                    <div>
+                        {{ getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextApoapsis()!.days | number:'0.1-1' }} days)
+                    </div>
+                </div>
                 <div *ngIf="body.bodyData.ascendingNode" class="body-data-entry">
                     <div>
                         Ascending node

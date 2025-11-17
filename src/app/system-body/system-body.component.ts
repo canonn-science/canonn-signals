@@ -566,6 +566,43 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return Math.exp(logPred);
   }
 
+  public getNextPeriapsis(): { date: Date, days: number } | null {
+    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
+        !this.body.bodyData.timestamps?.meanAnomaly) {
+      return null;
+    }
+    
+    const timestampMs = new Date(this.body.bodyData.timestamps.meanAnomaly).getTime();
+    const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
+    const orbitalCycles = elapsedDays / this.body.bodyData.orbitalPeriod;
+    const currentMeanAnomaly = (this.body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
+    
+    const degreesToPeriapsis = (360 - currentMeanAnomaly) % 360;
+    const daysToEvent = (degreesToPeriapsis / 360) * this.body.bodyData.orbitalPeriod;
+    const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
+    
+    return { date: eventDate, days: daysToEvent };
+  }
+
+  public getNextApoapsis(): { date: Date, days: number } | null {
+    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
+        !this.body.bodyData.timestamps?.meanAnomaly) {
+      return null;
+    }
+    
+    const timestampMs = new Date(this.body.bodyData.timestamps.meanAnomaly).getTime();
+    const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
+    const orbitalCycles = elapsedDays / this.body.bodyData.orbitalPeriod;
+    const currentMeanAnomaly = (this.body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
+    
+    let degreesToApoapsis = (180 - currentMeanAnomaly) % 360;
+    if (degreesToApoapsis < 0) degreesToApoapsis += 360;
+    const daysToEvent = (degreesToApoapsis / 360) * this.body.bodyData.orbitalPeriod;
+    const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
+    
+    return { date: eventDate, days: daysToEvent };
+  }
+
   public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
     if (!this.body.bodyData.materials) {
       return [];
