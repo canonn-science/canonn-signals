@@ -37,6 +37,12 @@
             <div *ngIf="exandable && expanded" (click)="toggleExpand()" class="clickable" matTooltip="Collapse">
                 <fa-icon [icon]="faSquareCaretUp"></fa-icon>
             </div>
+            <div *ngIf="hasChildren() && getChildrenExpandedState()" (click)="toggleChildren()" class="clickable" matTooltip="Collapse all children">
+                <fa-icon [icon]="faSquareCaretUp"></fa-icon>
+            </div>
+            <div *ngIf="hasChildren() && !getChildrenExpandedState()" (click)="toggleChildren()" class="clickable" matTooltip="Expand all children">
+                <fa-icon [icon]="faSquareCaretDown"></fa-icon>
+            </div>
         </div>
         <div class="materials-badges" (mouseleave)="hoveredIndex = -1">
             <span *ngFor="let material of getMaterialBadges(); let i = index" 

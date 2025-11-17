@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -39,6 +39,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() isRoot: boolean = false;
   @Input() isLast: boolean = false;
   @Input() forceExpanded: boolean = false;
+  @ViewChildren(SystemBodyComponent) childComponents!: QueryList<SystemBodyComponent>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -64,6 +65,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public exandable = false;
   public expanded = false;
   public isExpanded = false;
+
   public hoveredIndex: number = -1;
 
   public constructor(private readonly appService: AppService) {
@@ -199,6 +201,33 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public toggleExpand(): void {
     this.expanded = !this.expanded;
     this.isExpanded = this.expanded;
+  }
+
+  public toggleChildren(): void {
+    const childArray = this.childComponents.toArray();
+    const anyChildExpanded = childArray.some(child => child.expanded);
+    childArray.forEach(child => {
+      this.toggleChildRecursively(child, !anyChildExpanded);
+    });
+  }
+
+  private toggleChildRecursively(component: SystemBodyComponent, expand: boolean): void {
+    component.expanded = expand;
+    component.isExpanded = expand;
+    
+    const grandChildren = component.childComponents?.toArray() || [];
+    grandChildren.forEach(grandChild => {
+      this.toggleChildRecursively(grandChild, expand);
+    });
+  }
+
+  public hasChildren(): boolean {
+    return this.body.subBodies && this.body.subBodies.length > 0;
+  }
+
+  public getChildrenExpandedState(): boolean {
+    const childArray = this.childComponents?.toArray() || [];
+    return childArray.some(child => child.expanded);
   }
 
   public getEccentricityAnalysis(eccentricity: number): string {
