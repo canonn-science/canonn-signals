@@ -8,7 +8,9 @@
                 - {{ getAtmosphereDisplay() }}
             </span>
             <span *ngIf="isRingNotVisible()" class="badge badge-red">Invisible</span>
-            <span *ngIf="body.bodyData.isLandable" class="badge badge-orange">Landable</span>
+            <span *ngIf="body.bodyData.isLandable" [class]="'badge ' + getLandableBadgeClass()" [matTooltip]="getLandableTooltip()">
+                <img src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
+            </span>
             <span *ngIf="getSpinResonance() !== 'none' || body.bodyData.rotationalPeriodTidallyLocked" class="badge badge-purple" [matTooltip]="getSpinResonanceTooltip()">
                 <span *ngIf="getSpinResonance() !== 'none'">{{ getSpinResonance() }}</span><fa-icon *ngIf="body.bodyData.rotationalPeriodTidallyLocked" [icon]="faLock" class="lock-icon"></fa-icon>
             </span>

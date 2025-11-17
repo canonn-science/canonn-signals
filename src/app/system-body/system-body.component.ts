@@ -400,6 +400,52 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
             this.body.bodyData.subType === 'Neutron Star');
   }
 
+  public getLandableBadgeClass(): string {
+    if (!this.body.bodyData.isLandable) {
+      return 'badge-gray';
+    }
+    
+    // High gravity takes precedence
+    if (this.body.bodyData.gravity && this.body.bodyData.gravity > 2.7) {
+      return 'badge-red';
+    }
+    
+    if (!this.body.bodyData.surfaceTemperature) {
+      return 'badge-gray';
+    }
+    
+    const temp = this.body.bodyData.surfaceTemperature;
+    if (temp >= 182 && temp < 700) {
+      return 'badge-green';
+    } else if (temp < 182 || temp >= 700) {
+      return 'badge-orange';
+    } else {
+      return 'badge-red';
+    }
+  }
+
+  public getLandableTooltip(): string {
+    // High gravity takes precedence
+    if (this.body.bodyData.gravity && this.body.bodyData.gravity > 2.7) {
+      return 'Landable: High gravity. Disembarking not possible';
+    }
+    
+    if (!this.body.bodyData.surfaceTemperature) {
+      return 'Landable: No temperature data available';
+    }
+    
+    const temp = this.body.bodyData.surfaceTemperature;
+    if (temp >= 182 && temp < 700) {
+      return 'Landable: Safe to disembark';
+    } else if (temp < 182) {
+      return 'Landable: Battery drain risk';
+    } else if (temp >= 700) {
+      return 'Landable: Risk of injury or death';
+    } else {
+      return 'Landable: Disembarking not permitted';
+    }
+  }
+
   public trojanStatus: string | null = null;
   public rosetteStatus: string | null = null;
 
