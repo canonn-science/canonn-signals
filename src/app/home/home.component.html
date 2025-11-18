@@ -4,7 +4,7 @@
         <p>Search to review system signals recorded by Canonn field researchers.</p>
         <div class="search-field">
             <mat-form-field class="input-full-width">
-                <mat-label>Search by system name or system address</mat-label>
+                <mat-label>Search by system name, id64 or POI name</mat-label>
                 <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128"
                     (keyup.enter)="search()">
                 <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">

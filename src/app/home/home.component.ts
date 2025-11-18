@@ -404,7 +404,28 @@ export class HomeComponent implements OnInit {
         });
         
         const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
-        return of(combined.sort().slice(0, 20));
+        const queryLower = query.toLowerCase();
+        
+        // Sort by relevance: exact match > starts with > contains
+        const sorted = combined.sort((a, b) => {
+          const aLower = a.toLowerCase();
+          const bLower = b.toLowerCase();
+          
+          // Exact match gets highest priority
+          if (aLower === queryLower && bLower !== queryLower) return -1;
+          if (bLower === queryLower && aLower !== queryLower) return 1;
+          
+          // Starts with query gets second priority
+          const aStartsWith = aLower.startsWith(queryLower);
+          const bStartsWith = bLower.startsWith(queryLower);
+          if (aStartsWith && !bStartsWith) return -1;
+          if (bStartsWith && !aStartsWith) return 1;
+          
+          // If both start with query or both don't, sort alphabetically
+          return a.localeCompare(b);
+        });
+        
+        return of(sorted.slice(0, 20));
       }),
       untilDestroyed(this)
     );
