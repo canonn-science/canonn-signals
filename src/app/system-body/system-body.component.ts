@@ -42,6 +42,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() forceExpanded: boolean = false;
   @ViewChildren(SystemBodyComponent) childComponents!: QueryList<SystemBodyComponent>;
   @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
+  @ViewChild('invisibleRingDialogTemplate') invisibleRingDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -71,6 +72,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public hoveredIndex: number = -1;
 
   public hillLimitDialogData: any = null;
+  public invisibleRingDialogData: any = null;
 
   public constructor(private readonly appService: AppService, private readonly dialog: MatDialog) {
   }
@@ -497,6 +499,39 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       width: '700px',
       maxWidth: '90vw',
       panelClass: 'hill-limit-dialog'
+    });
+  }
+
+  public showInvisibleRingExplanation(): void {
+    if (this.body.bodyData.type !== 'Ring') {
+      return;
+    }
+
+    const innerRadius = this.body.bodyData.innerRadius || 0;
+    const outerRadius = this.body.bodyData.outerRadius || 0;
+    const mass = this.body.bodyData.mass || 0;
+    const width = this.getRingWidth();
+    const area = this.getRingArea();
+    const density = this.getRingDensity();
+    const isInvisible = density < 0.1 && width > 1000000;
+    
+    const ringName = this.body.bodyData.name.split(' ').slice(1).join(' ') || this.body.bodyData.name;
+
+    this.invisibleRingDialogData = {
+      ringName,
+      innerRadius,
+      outerRadius,
+      width,
+      area,
+      mass,
+      density,
+      isInvisible
+    };
+
+    this.dialog.open(this.invisibleRingDialogTemplate, {
+      width: '700px',
+      maxWidth: '90vw',
+      panelClass: 'invisible-ring-dialog'
     });
   }
 

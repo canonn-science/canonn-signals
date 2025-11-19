@@ -14,7 +14,7 @@
                 class="atmosphere-type">
                 - {{ getAtmosphereDisplay() }}
             </span>
-            <span *ngIf="isRingNotVisible()" class="badge badge-red">Invisible</span>
+            <span *ngIf="isRingNotVisible()" class="badge badge-red clickable" (click)="showInvisibleRingExplanation()">Invisible</span>
             <span *ngIf="getHillLimitExceeded()" class="badge badge-red clickable"
                 [matTooltip]="'Hill limit exceeded by ' + (getHillLimitExceeded()! | number:'0.0-0') + ' km'"
                 (click)="showHillLimitExplanation()">Anomalous</span>
@@ -502,6 +502,64 @@
             </p>
             <p class="conclusion-safe" *ngIf="hillLimitDialogData && !hillLimitDialogData.isExceeded">
                 This ring is well within the Hill sphere and is gravitationally stable.
+            </p>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Close</button>
+        </mat-dialog-actions>
+    </div>
+</ng-template>
+
+<ng-template #invisibleRingDialogTemplate>
+    <div class="invisible-ring-dialog">
+        <h2 mat-dialog-title>Invisible Ring Explanation</h2>
+        <mat-dialog-content>
+            <p class="intro">
+                The "Invisible" badge indicates that this ring may not be visible in-game due to extremely low density. This calculation is based on data collected in the Canonn Ring survey.
+            </p>
+
+            <div class="warning">
+                <strong>Note:</strong> There may be some inaccuracies in this determination due to loss of precision in the database compared to ship logs. The values stored in the database may have been rounded or truncated during data collection.
+            </div>
+
+            <div class="formula">
+                <strong>Calculation:</strong>
+            </div>
+
+            <div class="parameters">
+                <p>A ring is considered potentially invisible when:</p>
+                <ul>
+                    <li><strong>Density</strong> &lt; 0.1 Mt/km²</li>
+                    <li><strong>AND</strong></li>
+                    <li><strong>Ring width</strong> &gt; 1,000,000 km</li>
+                </ul>
+            </div>
+
+            <div class="values" *ngIf="invisibleRingDialogData">
+                <p><strong>Values for this ring:</strong></p>
+                <ul>
+                    <li><strong>Ring name:</strong> {{ invisibleRingDialogData.ringName }}</li>
+                    <li><strong>Inner radius:</strong> {{ invisibleRingDialogData.innerRadius.toLocaleString() }} km</li>
+                    <li><strong>Outer radius:</strong> {{ invisibleRingDialogData.outerRadius.toLocaleString() }} km</li>
+                    <li><strong>Ring width:</strong> {{ invisibleRingDialogData.width.toLocaleString() }} km</li>
+                    <li><strong>Ring area:</strong> {{ invisibleRingDialogData.area.toLocaleString() }} km²</li>
+                    <li><strong>Ring mass:</strong> {{ invisibleRingDialogData.mass.toLocaleString() }} Mt</li>
+                    <li><strong>Density:</strong> {{ invisibleRingDialogData.density.toFixed(6) }} Mt/km²</li>
+                </ul>
+            </div>
+
+            <div class="result" *ngIf="invisibleRingDialogData">
+                <p><strong>Analysis:</strong></p>
+                <p *ngIf="invisibleRingDialogData.isInvisible" class="conclusion">
+                    This ring meets both criteria (density &lt; 0.1 Mt/km² and width &gt; 1,000,000 km) and is likely invisible in-game. The extremely low density means there is insufficient material to scatter light and create a visible ring structure.
+                </p>
+                <p *ngIf="!invisibleRingDialogData.isInvisible" class="conclusion-safe">
+                    This ring does not meet the invisibility criteria and should be visible in-game.
+                </p>
+            </div>
+
+            <p class="disclaimer">
+                <strong>Disclaimer:</strong> Ring visibility in Elite Dangerous depends on multiple factors including camera position, lighting conditions, and game rendering settings. This calculation provides only an estimate based on density and size.
             </p>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
