@@ -492,12 +492,16 @@
                 <ul>
                     <li><strong>Hill limit:</strong> {{ hillLimitDialogData.hillLimit.toLocaleString() }} km</li>
                     <li><strong>Ring outer radius:</strong> {{ hillLimitDialogData.outerRadius.toLocaleString() }} km</li>
-                    <li><strong>Exceeded by:</strong> {{ hillLimitDialogData.exceeded.toLocaleString() }} km</li>
+                    <li *ngIf="hillLimitDialogData.isExceeded"><strong>Exceeded by:</strong> {{ hillLimitDialogData.difference.toLocaleString() }} km</li>
+                    <li *ngIf="!hillLimitDialogData.isExceeded"><strong>Margin:</strong> {{ hillLimitDialogData.difference.toLocaleString() }} km</li>
                 </ul>
             </div>
 
-            <p class="conclusion">
+            <p class="conclusion" *ngIf="hillLimitDialogData?.isExceeded">
                 This ring configuration is anomalous because the outer edge extends beyond the Hill sphere, where the ring material would be gravitationally unstable and likely couldn't exist in reality.
+            </p>
+            <p class="conclusion-safe" *ngIf="hillLimitDialogData && !hillLimitDialogData.isExceeded">
+                This ring is well within the Hill sphere and is gravitationally stable.
             </p>
         </mat-dialog-content>
         <mat-dialog-actions align="end">

@@ -470,7 +470,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     const hillLimit = semiMajorAxisKm * Math.pow(massRatio, 1 / 3);
 
     const outerRadius = this.body.bodyData.outerRadius || 0;
-    const exceeded = outerRadius - hillLimit;
+    const difference = outerRadius - hillLimit;
+    const isExceeded = difference > 0;
 
     const parentBodyName = parentBody.name.split(' ').slice(1).join(' ') || parentBody.name;
     const primaryStarName = primaryName.split(' ').slice(1).join(' ') || primaryName;
@@ -487,7 +488,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       massRatio,
       hillLimit,
       outerRadius,
-      exceeded,
+      difference: Math.abs(difference),
+      isExceeded,
       ringName
     };
 
