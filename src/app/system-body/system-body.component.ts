@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -6,6 +6,7 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatTooltip } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 
 @UntilDestroy()
 @Component({
@@ -40,6 +41,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() isLast: boolean = false;
   @Input() forceExpanded: boolean = false;
   @ViewChildren(SystemBodyComponent) childComponents!: QueryList<SystemBodyComponent>;
+  @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -68,7 +70,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public hoveredIndex: number = -1;
 
-  public constructor(private readonly appService: AppService) {
+  public hillLimitDialogData: any = null;
+
+  public constructor(private readonly appService: AppService, private readonly dialog: MatDialog) {
   }
 
   public ngOnInit(): void {
@@ -90,7 +94,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     this.cachedNextPeriapsis = this.calculateNextPeriapsis();
     this.cachedNextApoapsis = this.calculateNextApoapsis();
     this.cachedRocheExcess = this.calculateRocheExcess();
-    
+
     // Update cached children state after expansion logic
     setTimeout(() => this.updateChildrenExpandedState());
 
@@ -174,7 +178,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
     this.exandable = true;
     if (this.expanded === false || this.expanded === undefined) {
-      const isInteresting = this.hasSignals || 
+      const isInteresting = this.hasSignals ||
         this.body.bodyData.subType === 'Earth-like world' ||
         this.body.bodyData.subType === 'Water world' ||
         this.body.bodyData.subType === 'Ammonia world' ||
@@ -238,7 +242,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   private toggleChildRecursively(component: SystemBodyComponent, expand: boolean): void {
     component.expanded = expand;
     component.isExpanded = expand;
-    
+
     const grandChildren = component.childComponents?.toArray() || [];
     grandChildren.forEach(grandChild => {
       this.toggleChildRecursively(grandChild, expand);
@@ -320,6 +324,68 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return density < 0.1 && width > 1000000;
   }
 
+  public getHillLimitExceeded(): number | null {
+    if (this.body.bodyData.type !== 'Ring') {
+      return null;
+    }
+
+    const outerRadius = this.body.bodyData.outerRadius;
+    if (!outerRadius || !this.body.parent) {
+      return null;
+    }
+
+    const hillLimit = this.calculateHillLimit();
+    if (hillLimit === null) {
+      return null;
+    }
+
+    const exceeded = outerRadius - hillLimit;
+    return exceeded > 0 ? exceeded : null;
+  }
+
+  public calculateHillLimit(): number | null {
+    if (!this.body.parent) {
+      return null;
+    }
+
+    const parentBody = this.body.parent.bodyData;
+    const semiMajorAxis = parentBody.semiMajorAxis;
+    const parentMass = parentBody.earthMasses || parentBody.solarMasses;
+
+    if (!semiMajorAxis || !parentMass) {
+      return null;
+    }
+
+    // Find the primary body (star or parent planet)
+    let primaryMass: number | null = null;
+    let currentParent = this.body.parent.parent;
+
+    while (currentParent) {
+      if (currentParent.bodyData.solarMasses) {
+        primaryMass = currentParent.bodyData.solarMasses;
+        break;
+      }
+      if (currentParent.bodyData.earthMasses) {
+        // Convert Earth masses to solar masses (1 solar mass = ~332,950 Earth masses)
+        primaryMass = currentParent.bodyData.earthMasses / 332950;
+        break;
+      }
+      currentParent = currentParent.parent;
+    }
+
+    if (!primaryMass) {
+      return null;
+    }
+
+    // Hill sphere radius formula: a * (m / (3 * M))^(1/3)
+    // where a = semi-major axis, m = satellite mass, M = primary mass
+    const semiMajorAxisKm = semiMajorAxis * 149597870.7; // Convert AU to km
+    const massRatio = parentMass / (3 * primaryMass);
+    const hillLimit = semiMajorAxisKm * Math.pow(massRatio, 1 / 3);
+
+    return hillLimit;
+  }
+
   public getSolidCompositionTooltip(): string {
     if (!this.body.bodyData.solidComposition) {
       return '';
@@ -364,15 +430,83 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     document.body.removeChild(textArea);
   }
 
+  public showHillLimitExplanation(): void {
+    if (!this.body.parent) {
+      return;
+    }
+
+    const parentBody = this.body.parent.bodyData;
+    const semiMajorAxis = parentBody.semiMajorAxis;
+    const parentMass = parentBody.earthMasses || parentBody.solarMasses;
+
+    if (!semiMajorAxis || !parentMass) {
+      return;
+    }
+
+    let primaryMass: number | null = null;
+    let primaryName: string = '';
+    let currentParent = this.body.parent.parent;
+
+    while (currentParent) {
+      if (currentParent.bodyData.solarMasses) {
+        primaryMass = currentParent.bodyData.solarMasses;
+        primaryName = currentParent.bodyData.name;
+        break;
+      }
+      if (currentParent.bodyData.earthMasses) {
+        primaryMass = currentParent.bodyData.earthMasses / 332950;
+        primaryName = currentParent.bodyData.name;
+        break;
+      }
+      currentParent = currentParent.parent;
+    }
+
+    if (!primaryMass) {
+      return;
+    }
+
+    const semiMajorAxisKm = semiMajorAxis * 149597870.7;
+    const massRatio = parentMass / (3 * primaryMass);
+    const hillLimit = semiMajorAxisKm * Math.pow(massRatio, 1 / 3);
+
+    const outerRadius = this.body.bodyData.outerRadius || 0;
+    const exceeded = outerRadius - hillLimit;
+
+    const parentBodyName = parentBody.name.split(' ').slice(1).join(' ') || parentBody.name;
+    const primaryStarName = primaryName.split(' ').slice(1).join(' ') || primaryName;
+    const ringName = this.body.bodyData.name.split(' ').slice(1).join(' ') || this.body.bodyData.name;
+
+    this.hillLimitDialogData = {
+      parentBodyName,
+      semiMajorAxis,
+      semiMajorAxisKm,
+      parentMass,
+      isEarthMasses: !!parentBody.earthMasses,
+      primaryStarName,
+      primaryMass,
+      massRatio,
+      hillLimit,
+      outerRadius,
+      exceeded,
+      ringName
+    };
+
+    this.dialog.open(this.hillLimitDialogTemplate, {
+      width: '700px',
+      maxWidth: '90vw',
+      panelClass: 'hill-limit-dialog'
+    });
+  }
+
   public getSpinResonance(): string {
     if (!this.body.bodyData.rotationalPeriod || !this.body.bodyData.orbitalPeriod) {
       return 'none';
     }
-    
+
     const rotationsPerOrbit = this.body.bodyData.orbitalPeriod / this.body.bodyData.rotationalPeriod;
     const maxDenominator = 5;
     const tolerance = 0.01;
-    
+
     for (let denom = 1; denom <= maxDenominator; denom++) {
       for (let num = 1; num <= maxDenominator; num++) {
         const candidate = num / denom;
@@ -382,7 +516,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         }
       }
     }
-    
+
     return 'none';
   }
 
@@ -409,7 +543,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     if (!this.isBlackHoleOrNeutronStar() || !this.body.bodyData.rotationalPeriod) {
       return null;
     }
-    
+
     let radiusKm: number;
     if (this.body.bodyData.radius) {
       radiusKm = this.body.bodyData.radius;
@@ -418,54 +552,54 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     } else {
       return null;
     }
-    
+
     const rotationalPeriodDays = this.body.bodyData.rotationalPeriod;
     const rotationalPeriodSeconds = rotationalPeriodDays * 24 * 3600;
-    
+
     const circumference = 2 * Math.PI * radiusKm * 1000; // Convert km to m
     const velocityMs = circumference / rotationalPeriodSeconds;
-    
+
     return velocityMs / 1000; // Convert m/s to km/s
   }
 
   public getTangentialVelocityDisplay(): string {
     const velocityKms = this.getTangentialVelocity();
     if (velocityKms === null) return '';
-    
+
     const speedOfLight = 299792458; // m/s
     const velocityMs = velocityKms * 1000;
     const fractionOfC = velocityMs / speedOfLight;
-    
+
     if (fractionOfC >= 0.01) {
       return `${fractionOfC.toFixed(3)}c`;
     }
-    
+
     return `${velocityKms.toFixed(0)} km/s`;
   }
 
   public getTangentialVelocityTooltip(): string {
     const velocityKms = this.getTangentialVelocity();
     if (velocityKms === null) return '';
-    
+
     return `${velocityKms.toFixed(3)} km/s`;
   }
 
   public isBlackHoleOrNeutronStar(): boolean {
-    return this.body.bodyData.type === 'Star' && 
-           (this.body.bodyData.subType === 'Black Hole' || 
-            this.body.bodyData.subType === 'Neutron Star');
+    return this.body.bodyData.type === 'Star' &&
+      (this.body.bodyData.subType === 'Black Hole' ||
+        this.body.bodyData.subType === 'Neutron Star');
   }
 
   public classifyNeutronStar(): { classification: string; tooltip: string } | null {
     if (this.body.bodyData.type !== 'Star' || this.body.bodyData.subType !== 'Neutron Star') {
       return null;
     }
-    
+
     const mass = this.body.bodyData.solarMasses;
     const age = this.body.bodyData.age;
     const temp = this.body.bodyData.surfaceTemperature;
     const periodDays = this.body.bodyData.rotationalPeriod;
-    
+
     if (mass === undefined || age === undefined || periodDays === undefined || temp === undefined) {
       return null;
     }
@@ -477,11 +611,11 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     if (age > 100 && (period < 0.1 || temp > 1e7)) {
-      return { classification: "Anomalous", tooltip: `Old neutron star (${age}My) with impossible rotation (${(period/86400).toFixed(3)}d) or temperature (${temp.toLocaleString()}K)` };
+      return { classification: "Anomalous", tooltip: `Old neutron star (${age}My) with impossible rotation (${(period / 86400).toFixed(3)}d) or temperature (${temp.toLocaleString()}K)` };
     }
 
     if (mass <= 3 && age >= 0.1 && age <= 10 && period >= 0.001 && period <= 0.01) {
-      return { classification: "Millisecond Pulsar", tooltip: `Fast rotation (${(period*1000).toFixed(1)}ms) and moderate age (${age}My) indicate spin-up from companion` };
+      return { classification: "Millisecond Pulsar", tooltip: `Fast rotation (${(period * 1000).toFixed(1)}ms) and moderate age (${age}My) indicate spin-up from companion` };
     }
 
     if (mass <= 3 && age <= 10 && period > 0.01 && period <= 5 && temp > 1e7) {
@@ -489,15 +623,15 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     if (mass <= 3 && age > 10 && age <= 100 && period > 0.01 && period <= 5 && temp >= 1e6 && temp <= 1e7) {
-      return { classification: "Normal Pulsar (Middle-aged)", tooltip: `Middle age (${age}My) with moderate rotation (${(period/86400).toFixed(3)}d) as pulsar spins down` };
+      return { classification: "Normal Pulsar (Middle-aged)", tooltip: `Middle age (${age}My) with moderate rotation (${(period / 86400).toFixed(3)}d) as pulsar spins down` };
     }
 
     if (mass <= 3 && age > 100 && period > 0.1 && temp <= 1e6) {
-      return { classification: "Normal Pulsar (Old)", tooltip: `Old age (${age}My) with slow rotation (${(period/86400).toFixed(3)}d) as rotational energy dissipated` };
+      return { classification: "Normal Pulsar (Old)", tooltip: `Old age (${age}My) with slow rotation (${(period / 86400).toFixed(3)}d) as rotational energy dissipated` };
     }
 
     if (mass <= 3 && age < 0.1 && period >= 2 && period <= 12 && temp > 1e8) {
-      return { classification: "Potential Magnetar", tooltip: `Very young (${age}My) with slow rotation (${(period/86400).toFixed(3)}d) and extreme temperature (${temp.toLocaleString()}K) suggests strong magnetic field` };
+      return { classification: "Potential Magnetar", tooltip: `Very young (${age}My) with slow rotation (${(period / 86400).toFixed(3)}d) and extreme temperature (${temp.toLocaleString()}K) suggests strong magnetic field` };
     }
 
     return null;
@@ -507,16 +641,16 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     if (!this.body.bodyData.isLandable) {
       return 'badge-gray';
     }
-    
+
     // High gravity takes precedence
     if (this.body.bodyData.gravity && this.body.bodyData.gravity > 2.7) {
       return 'badge-red';
     }
-    
+
     if (!this.body.bodyData.surfaceTemperature) {
       return 'badge-gray';
     }
-    
+
     const temp = this.body.bodyData.surfaceTemperature;
     if (temp >= 182 && temp < 700) {
       return 'badge-green';
@@ -532,11 +666,11 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     if (this.body.bodyData.gravity && this.body.bodyData.gravity > 2.7) {
       return 'Landable: High gravity. Disembarking not possible';
     }
-    
+
     if (!this.body.bodyData.surfaceTemperature) {
       return 'Landable: No temperature data available';
     }
-    
+
     const temp = this.body.bodyData.surfaceTemperature;
     if (temp >= 182 && temp < 700) {
       return 'Landable: Safe to disembark';
@@ -558,24 +692,24 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   private detectTrojanStatus(): void {
     this.trojanStatus = null;
-    
-    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis || 
-        this.body.bodyData.argOfPeriapsis === undefined) {
+
+    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis ||
+      this.body.bodyData.argOfPeriapsis === undefined) {
       return;
     }
 
     // Check L3, L4, L5 (same orbital distance)
-    const sameSMABodies = this.body.parent.subBodies.filter(sibling => 
+    const sameSMABodies = this.body.parent.subBodies.filter(sibling =>
       sibling !== this.body &&
       sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
       sibling.bodyData.semiMajorAxis === this.body.bodyData.semiMajorAxis &&
       sibling.bodyData.argOfPeriapsis !== undefined
     );
-    
+
     for (const sibling of sameSMABodies) {
       const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
       const normalizedDiff = Math.min(argDiff, 360 - argDiff);
-      
+
       if (Math.abs(normalizedDiff - 60) < 1) {
         this.trojanStatus = this.body.bodyData.argOfPeriapsis! > sibling.bodyData.argOfPeriapsis! ? 'L4' : 'L5';
         return;
@@ -586,7 +720,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     // Check L1, L2 (different orbital distances, same period)
-    const samePeriodBodies = this.body.parent.subBodies.filter(sibling => 
+    const samePeriodBodies = this.body.parent.subBodies.filter(sibling =>
       sibling !== this.body &&
       sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
       sibling.bodyData.semiMajorAxis !== this.body.bodyData.semiMajorAxis &&
@@ -597,7 +731,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     for (const sibling of samePeriodBodies) {
       const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
       const nodeDiff = Math.abs((this.body.bodyData.ascendingNode || 0) - (sibling.bodyData.ascendingNode || 0));
-      
+
       if (argDiff < 5 && nodeDiff < 5) {
         if (this.body.bodyData.semiMajorAxis! < sibling.bodyData.semiMajorAxis!) {
           this.trojanStatus = 'L1';
@@ -611,13 +745,13 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   private detectRosetteStatus(): void {
     this.rosetteStatus = null;
-    
-    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis || 
-        this.body.bodyData.argOfPeriapsis === undefined) {
+
+    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis ||
+      this.body.bodyData.argOfPeriapsis === undefined) {
       return;
     }
 
-    const rosetteGroup = this.body.parent.subBodies.filter(sibling => 
+    const rosetteGroup = this.body.parent.subBodies.filter(sibling =>
       sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
       sibling.bodyData.semiMajorAxis === this.body.bodyData.semiMajorAxis &&
       sibling.bodyData.argOfPeriapsis !== undefined
@@ -627,88 +761,88 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
     const angles = rosetteGroup.map(body => body.bodyData.argOfPeriapsis!).sort((a, b) => a - b);
     const expectedSpacing = 360 / rosetteGroup.length;
-    
+
     let isRosette = true;
     for (let i = 0; i < angles.length; i++) {
       const nextIndex = (i + 1) % angles.length;
       let spacing = angles[nextIndex] - angles[i];
       if (spacing < 0) spacing += 360;
-      
+
       if (Math.abs(spacing - expectedSpacing) > 5) {
         isRosette = false;
         break;
       }
     }
-    
+
     if (isRosette) {
       this.rosetteStatus = `Rosette (${rosetteGroup.length})`;
     }
   }
 
   public getJetConeAngle(): number | null {
-    if (this.body.bodyData.type !== 'Star' || !this.body.bodyData.subType?.includes('Neutron Star') || 
-        !this.body.bodyData.rotationalPeriod || !this.body.bodyData.solarMasses || 
-        !this.body.bodyData.solarRadius || !this.body.bodyData.surfaceTemperature || !this.body.bodyData.age) {
+    if (this.body.bodyData.type !== 'Star' || !this.body.bodyData.subType?.includes('Neutron Star') ||
+      !this.body.bodyData.rotationalPeriod || !this.body.bodyData.solarMasses ||
+      !this.body.bodyData.solarRadius || !this.body.bodyData.surfaceTemperature || !this.body.bodyData.age) {
       return null;
     }
-    
+
     const mass = this.body.bodyData.solarMasses;
     const radius = this.body.bodyData.solarRadius;
     const rotPeriod = this.body.bodyData.rotationalPeriod;
     const surfaceTemp = this.body.bodyData.surfaceTemperature;
     const age = this.body.bodyData.age;
-    
+
     if (mass <= 0 || radius <= 0 || rotPeriod <= 0 || surfaceTemp <= 0 || age <= 0) {
       return null;
     }
-    
+
     const rotEnergy = (mass * radius * radius) / (rotPeriod * rotPeriod);
     const tempPerMass = surfaceTemp / mass;
-    
-    const logPred = 0.8785 + 
-                   0.1185 * Math.log(rotEnergy) + 
-                   0.1362 * Math.log(tempPerMass) + 
-                   -0.0787 * Math.log(age);
-    
+
+    const logPred = 0.8785 +
+      0.1185 * Math.log(rotEnergy) +
+      0.1362 * Math.log(tempPerMass) +
+      -0.0787 * Math.log(age);
+
     return Math.exp(logPred);
   }
 
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
-    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
-        !this.body.bodyData.timestamps?.meanAnomaly || 
-        !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
+    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod ||
+      !this.body.bodyData.timestamps?.meanAnomaly ||
+      !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
       return null;
     }
-    
+
     const timestampMs = new Date(this.body.bodyData.timestamps.meanAnomaly).getTime();
     const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
     const orbitalCycles = elapsedDays / this.body.bodyData.orbitalPeriod;
     const currentMeanAnomaly = (this.body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
-    
+
     const degreesToPeriapsis = (360 - currentMeanAnomaly) % 360;
     const daysToEvent = (degreesToPeriapsis / 360) * this.body.bodyData.orbitalPeriod;
     const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
-    
+
     return { date: eventDate, days: daysToEvent };
   }
 
   private calculateNextApoapsis(): { date: Date, days: number } | null {
-    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod || 
-        !this.body.bodyData.timestamps?.meanAnomaly || 
-        !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
+    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod ||
+      !this.body.bodyData.timestamps?.meanAnomaly ||
+      !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
       return null;
     }
-    
+
     const timestampMs = new Date(this.body.bodyData.timestamps.meanAnomaly).getTime();
     const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
     const orbitalCycles = elapsedDays / this.body.bodyData.orbitalPeriod;
     const currentMeanAnomaly = (this.body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
-    
+
     let degreesToApoapsis = (180 - currentMeanAnomaly) % 360;
     if (degreesToApoapsis < 0) degreesToApoapsis += 360;
     const daysToEvent = (degreesToApoapsis / 360) * this.body.bodyData.orbitalPeriod;
     const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
-    
+
     return { date: eventDate, days: daysToEvent };
   }
 
@@ -724,7 +858,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     if (!this.body.bodyData.materials) {
       return [];
     }
-    
+
     const materialData: { [key: string]: { grade: string, abbrev: string } } = {
       // Grade 1 (Very Rare)
       'Antimony': { grade: 'badge-mat1', abbrev: 'Sb' },
@@ -774,7 +908,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     // Count direct child bodies (excluding rings and belts)
-    const childBodies = this.body.subBodies.filter(child => 
+    const childBodies = this.body.subBodies.filter(child =>
       child.bodyData.type !== 'Ring' && child.bodyData.type !== 'Belt'
     );
 
@@ -785,7 +919,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
     const labels: { [key: number]: string } = {
       3: 'Trinary',
-      4: 'Quaternary', 
+      4: 'Quaternary',
       5: 'Quinary',
       6: 'Senary',
       7: 'Septenary',
@@ -857,14 +991,14 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     satelliteRadiusM: number,
     semiMajorAxisM: number
   ): { rocheLimitM: number, violates: boolean } {
-    const rhoParent = parentMassKg / ((4/3) * Math.PI * Math.pow(parentRadiusM, 3));
-    const rhoSatellite = satelliteMassKg / ((4/3) * Math.PI * Math.pow(satelliteRadiusM, 3));
+    const rhoParent = parentMassKg / ((4 / 3) * Math.PI * Math.pow(parentRadiusM, 3));
+    const rhoSatellite = satelliteMassKg / ((4 / 3) * Math.PI * Math.pow(satelliteRadiusM, 3));
 
-    const rocheLimit = 1.26 * parentRadiusM * Math.pow(rhoParent / rhoSatellite, 1/3);
+    const rocheLimit = 1.26 * parentRadiusM * Math.pow(rhoParent / rhoSatellite, 1 / 3);
     const violates = semiMajorAxisM < rocheLimit;
-    
 
-    
+
+
 
     return { rocheLimitM: rocheLimit, violates };
   }

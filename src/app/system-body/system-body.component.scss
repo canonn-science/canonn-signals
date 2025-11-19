@@ -21,7 +21,7 @@
         display: flex;
         gap: 4px;
         align-items: center;
-        
+
         span {
             cursor: pointer;
             pointer-events: auto;
@@ -98,6 +98,14 @@
             div {
                 white-space: nowrap;
             }
+
+            &.clickable {
+                cursor: pointer;
+
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+            }
         }
     }
 
@@ -124,12 +132,14 @@
 
 .badge-orange {
     color: #1c1c1c;
-    background-color: #ffcc33; /* Same as mat2 */
+    background-color: #ffcc33;
+    /* Same as mat2 */
 }
 
 .badge-blue {
     color: #1c1c1c;
-    background-color: #99ccff; /* Same as mat4 */
+    background-color: #99ccff;
+    /* Same as mat4 */
 }
 
 .badge-gray {
@@ -139,32 +149,38 @@
 
 .badge-red {
     color: #1c1c1c;
-    background-color: #ff9999; /* Same as mat1 red */
+    background-color: #ff9999;
+    /* Same as mat1 red */
 }
 
 .badge-mat1 {
     color: #1c1c1c;
-    background-color: #ff9999; /* Soft red for Grade 1 */
+    background-color: #ff9999;
+    /* Soft red for Grade 1 */
 }
 
 .badge-mat2 {
     color: #1c1c1c;
-    background-color: #ffcc33; /* Soft amber for Grade 2 */
+    background-color: #ffcc33;
+    /* Soft amber for Grade 2 */
 }
 
 .badge-mat3 {
     color: #1c1c1c;
-    background-color: #99cc99; /* Soft green for Grade 3 */
+    background-color: #99cc99;
+    /* Soft green for Grade 3 */
 }
 
 .badge-mat4 {
     color: #1c1c1c;
-    background-color: #99ccff; /* Soft blue for Grade 4 */
+    background-color: #99ccff;
+    /* Soft blue for Grade 4 */
 }
 
 .badge-purple {
     color: #1c1c1c;
-    background-color: #99cc99; /* Same as mat3 green */
+    background-color: #99cc99;
+    /* Same as mat3 green */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -177,7 +193,14 @@
 
 .badge-green {
     color: #1c1c1c;
-    background-color: #99cc99; /* Same as mat3 green */
+    background-color: #99cc99;
+    /* Same as mat3 green */
+}
+
+.badge-cyan {
+    color: #1c1c1c;
+    background-color: #00ffff;
+    /* Cyan for anomalies like Neutron Stars */
 }
 
 .body-signal-data {
@@ -186,5 +209,69 @@
     justify-content: space-between;
 }
 
+.hill-limit-dialog {
+    h2 {
+        margin: 0;
+        padding: 16px 24px;
+        background: #1e1e1e;
+        color: #fff;
+    }
 
+    mat-dialog-content {
+        padding: 24px;
+        color: #e0e0e0;
 
+        .intro {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .formula {
+            background: #2a2a2a;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .parameters,
+        .values,
+        .result {
+            margin-bottom: 20px;
+
+            p {
+                margin-bottom: 8px;
+            }
+
+            ul {
+                list-style: none;
+                padding-left: 0;
+                margin: 0;
+
+                li {
+                    padding: 4px 0;
+                    line-height: 1.5;
+                }
+            }
+        }
+
+        .conclusion {
+            margin-top: 20px;
+            padding: 12px;
+            background: #3a2a2a;
+            border-left: 4px solid #ff6b6b;
+            border-radius: 4px;
+            font-style: italic;
+            line-height: 1.6;
+        }
+    }
+
+    mat-dialog-actions {
+        padding: 16px 24px;
+        border-top: 1px solid #333;
+
+        button {
+            min-width: 80px;
+        }
+    }
+}

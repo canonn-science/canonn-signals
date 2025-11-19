@@ -17,6 +17,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @NgModule({
   declarations: [
@@ -40,6 +41,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
     FontAwesomeModule,
     MatTooltipModule,
     MatAutocompleteModule,
+    MatDialogModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
