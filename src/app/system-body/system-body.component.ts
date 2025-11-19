@@ -89,6 +89,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     this.detectRosetteStatus();
     this.cachedNextPeriapsis = this.calculateNextPeriapsis();
     this.cachedNextApoapsis = this.calculateNextApoapsis();
+    this.cachedRocheExcess = this.calculateRocheExcess();
     
     // Update cached children state after expansion logic
     setTimeout(() => this.updateChildrenExpandedState());
@@ -553,6 +554,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   private cachedNextPeriapsis: { date: Date, days: number } | null = null;
   private cachedNextApoapsis: { date: Date, days: number } | null = null;
   private cachedChildrenExpandedState: boolean = false;
+  private cachedRocheExcess: number | null = null;
 
   private detectTrojanStatus(): void {
     this.trojanStatus = null;
@@ -796,6 +798,75 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       label: labels[bodyCount] || `${bodyCount}-body system`,
       count: bodyCount
     };
+  }
+
+  public getRocheExcess(): number | null {
+    return this.cachedRocheExcess;
+  }
+
+  private calculateRocheExcess(): number | null {
+    if (!this.body.parent || !this.body.bodyData.semiMajorAxis || !this.body.bodyData.radius) {
+      return null;
+    }
+
+    let parentRadius: number;
+    if (this.body.parent.bodyData.radius) {
+      parentRadius = this.body.parent.bodyData.radius * 1000; // Convert km to m
+    } else if (this.body.parent.bodyData.solarRadius) {
+      parentRadius = this.body.parent.bodyData.solarRadius * 695700000; // Convert solar radii to m
+    } else {
+      return null;
+    }
+
+    let parentMass: number;
+    if (this.body.parent.bodyData.solarMasses) {
+      parentMass = this.body.parent.bodyData.solarMasses * 1.989e30;
+    } else if (this.body.parent.bodyData.earthMasses) {
+      parentMass = this.body.parent.bodyData.earthMasses * 5.972e24;
+    } else {
+      return null;
+    }
+
+    let bodyMass: number;
+    if (this.body.bodyData.solarMasses) {
+      bodyMass = this.body.bodyData.solarMasses * 1.989e30;
+    } else if (this.body.bodyData.earthMasses) {
+      bodyMass = this.body.bodyData.earthMasses * 5.972e24;
+
+    } else {
+      return null;
+    }
+
+    const result = this.checkRigidRocheLimit(
+      parentMass,
+      parentRadius,
+      bodyMass,
+      this.body.bodyData.radius * 1000, // Convert km to m
+      this.body.bodyData.semiMajorAxis * 149597870700 // Convert AU to m
+    );
+
+
+
+    return result.violates ? (result.rocheLimitM - this.body.bodyData.semiMajorAxis * 149597870700) / 1000 : null; // Convert back to km
+  }
+
+  private checkRigidRocheLimit(
+    parentMassKg: number,
+    parentRadiusM: number,
+    satelliteMassKg: number,
+    satelliteRadiusM: number,
+    semiMajorAxisM: number
+  ): { rocheLimitM: number, violates: boolean } {
+    const rhoParent = parentMassKg / ((4/3) * Math.PI * Math.pow(parentRadiusM, 3));
+    const rhoSatellite = satelliteMassKg / ((4/3) * Math.PI * Math.pow(satelliteRadiusM, 3));
+
+    const rocheLimit = 1.26 * parentRadiusM * Math.pow(rhoParent / rhoSatellite, 1/3);
+    const violates = semiMajorAxisM < rocheLimit;
+    
+
+    
+
+    return { rocheLimitM: rocheLimit, violates };
   }
 
 

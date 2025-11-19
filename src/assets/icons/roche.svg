@@ -1,0 +1,55 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(100, 100) rotate(90)">
+    <!-- Top Hemisphere -->
+    <path fill="black" transform="translate(0, 0) rotate(-15)" 
+          d="M 100 0 
+             A 100 100 0 1 1 -100 0 
+             L -100 0 
+             L -90 5
+             L -82 -20
+             L -73 14
+             L -61 -10
+             L -52 22
+             L -41 -8
+             L -34 12
+             L -25 -18
+             L -12 17
+             L 0 -12
+             L 11 20
+             L 23 -14
+             L 32 10
+             L 42 -19
+             L 53 14
+             L 63 -9
+             L 72 21
+             L 83 -13
+             L 91 12
+             L 100 0 Z"/>
+    
+    <!-- Bottom Hemisphere (interlocking) -->
+    <path fill="black" transform="translate(0, -60) rotate(20)" 
+          d="M 100 0 
+             A 100 100 0 0 0 -100 0 
+             L -100 0 
+             L -90 5
+             L -82 -20
+             L -73 14
+             L -61 -10
+             L -52 22
+             L -41 -8
+             L -34 12
+             L -25 -18
+             L -12 17
+             L 0 -12
+             L 11 20
+             L 23 -14
+             L 32 10
+             L 42 -19
+             L 53 14
+             L 63 -9
+             L 72 21
+             L 83 -13
+             L 91 12
+             L 100 0 Z"/>
+  </g>
+</svg>

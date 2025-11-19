@@ -21,6 +21,9 @@
             <span *ngIf="trojanStatus" class="badge badge-blue" [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{ trojanStatus }}</span>
             <span *ngIf="rosetteStatus" class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{ rosetteStatus }}</span>
             <span *ngIf="getMultiBodySystemBadge()" class="badge badge-orange" [matTooltip]="getMultiBodySystemBadge()!.count + ' bodies: ' + getMultiBodySystemBadge()!.label">{{ getMultiBodySystemBadge()!.label }}</span>
+            <span *ngIf="getRocheExcess()" class="badge badge-red" [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
+                <img src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
+            </span>
             <div *ngIf="geologySignals.length || geologySignalCount" matTooltip="Geological signals">
                 <img src="assets/icons/Geology.png" />
             </div>
