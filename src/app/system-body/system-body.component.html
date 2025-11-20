@@ -250,16 +250,16 @@
                     <div>
                         Mass
                     </div>
-                    <div [matTooltip]="body.bodyData.earthMasses + ' Earth masses'">
-                        {{ body.bodyData.earthMasses | number:'0.1-1' }} Earth masses
+                    <div [matTooltip]="formattedEarthMass?.tooltip || ''">
+                        {{ formattedEarthMass?.display }}
                     </div>
                 </div>
                 <div *ngIf="body.bodyData.solarMasses" class="body-data-entry">
                     <div>
                         Solar masses
                     </div>
-                    <div [matTooltip]="body.bodyData.solarMasses.toString()">
-                        {{ body.bodyData.solarMasses | number:'0.2-2' }}
+                    <div [matTooltip]="formattedSolarMass?.tooltip || ''">
+                        {{ formattedSolarMass?.display }}
                     </div>
                 </div>
                 <div *ngIf="body.bodyData.solarRadius" class="body-data-entry">
@@ -556,9 +556,12 @@
                 <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #555;">
-                            <th style="text-align: left; padding: 8px; font-weight: 600; color: #e0e0e0;">Nearby Body</th>
-                            <th style="text-align: right; padding: 8px; font-weight: 600; color: #e0e0e0;">Average Distance (km)</th>
-                            <th style="text-align: right; padding: 8px; font-weight: 600; color: #e0e0e0;">Local Hill Radius (km)</th>
+                            <th style="text-align: left; padding: 8px; font-weight: 600; color: #e0e0e0;">Nearby Body
+                            </th>
+                            <th style="text-align: right; padding: 8px; font-weight: 600; color: #e0e0e0;">Average
+                                Distance (km)</th>
+                            <th style="text-align: right; padding: 8px; font-weight: 600; color: #e0e0e0;">Local Hill
+                                Radius (km)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -568,7 +571,8 @@
                             <td style="padding: 8px; color: #e0e0e0;">{{ perturber.name }}</td>
                             <td style="text-align: right; padding: 8px; color: #e0e0e0;">{{
                                 perturber.minDistance.toLocaleString('en-US', {maximumFractionDigits: 0}) }}</td>
-                            <td style="text-align: right; padding: 8px; color: #e0e0e0;">{{ perturber.hillRadius.toLocaleString('en-US',
+                            <td style="text-align: right; padding: 8px; color: #e0e0e0;">{{
+                                perturber.hillRadius.toLocaleString('en-US',
                                 {maximumFractionDigits: 0}) }}</td>
                         </tr>
                     </tbody>
@@ -576,7 +580,8 @@
                 <div *ngIf="hillLimitDialogData.limitingPerturber"
                     style="margin-top: 12px; padding: 10px; background: #2a2a2a; border-radius: 4px; border-left: 4px solid #ffcc33;">
                     <p style="margin: 0; color: #e0e0e0;"><strong>Dominant Stability-Limiting Body:</strong></p>
-                    <p style="margin: 5px 0 0 0; color: #ffcc33;"><strong>{{ hillLimitDialogData.limitingPerturber }}</strong></p>
+                    <p style="margin: 5px 0 0 0; color: #ffcc33;"><strong>{{ hillLimitDialogData.limitingPerturber
+                            }}</strong></p>
                     <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #b0b0b0;">
                         Its proximity restricts the stability zone to {{
                         hillLimitDialogData.minHillRadius.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km{{

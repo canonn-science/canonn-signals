@@ -74,6 +74,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public hillLimitDialogData: any = null;
   public invisibleRingDialogData: any = null;
 
+  public formattedEarthMass: { display: string; tooltip: string } | null = null;
+  public formattedSolarMass: { display: string; tooltip: string } | null = null;
+
   public constructor(private readonly appService: AppService, private readonly dialog: MatDialog) {
   }
 
@@ -96,6 +99,14 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     this.cachedNextPeriapsis = this.calculateNextPeriapsis();
     this.cachedNextApoapsis = this.calculateNextApoapsis();
     this.cachedRocheExcess = this.calculateRocheExcess();
+
+    // Calculate formatted mass values once when body changes
+    this.formattedEarthMass = this.body.bodyData.earthMasses 
+      ? this.formatEarthMass(this.body.bodyData.earthMasses) 
+      : null;
+    this.formattedSolarMass = this.body.bodyData.solarMasses 
+      ? this.formatSolarMass(this.body.bodyData.solarMasses) 
+      : null;
 
     // Update cached children state after expansion logic
     setTimeout(() => this.updateChildrenExpandedState());
@@ -345,6 +356,20 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return exceeded > 0 ? exceeded : null;
   }
 
+  public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
+    return {
+      display: `${earthMasses.toFixed(2)} Earth masses`,
+      tooltip: `${earthMasses} Earth masses`
+    };
+  }
+
+  public formatSolarMass(solarMasses: number): { display: string; tooltip: string } {
+    return {
+      display: `${solarMasses.toFixed(2)}`,
+      tooltip: `${solarMasses} Solar masses`
+    };
+  }
+
   public calculateHillLimit(): number | null {
     if (!this.body.parent) {
       return null;
@@ -408,7 +433,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   // Each body in the chain uses its current orbital position (meanAnomalyDeg parameter)
   private getBodyPositionInSystemFrame(body: SystemBody, meanAnomalyDeg: number): { x: number; y: number; z: number } | null {
     const bodyData = body.bodyData;
-    
+
     // If no parent, this is the root body (at origin)
     if (!body.parent) {
       return { x: 0, y: 0, z: 0 };
@@ -426,9 +451,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
     // Check if all required orbital parameters are present
     if (bodyData.orbitalEccentricity === null || bodyData.orbitalEccentricity === undefined ||
-        bodyData.orbitalInclination === null || bodyData.orbitalInclination === undefined ||
-        bodyData.argOfPeriapsis === null || bodyData.argOfPeriapsis === undefined ||
-        bodyData.ascendingNode === null || bodyData.ascendingNode === undefined) {
+      bodyData.orbitalInclination === null || bodyData.orbitalInclination === undefined ||
+      bodyData.argOfPeriapsis === null || bodyData.argOfPeriapsis === undefined ||
+      bodyData.ascendingNode === null || bodyData.ascendingNode === undefined) {
       // Special case: bodyId 0 can be at origin even with missing parameters
       if (bodyData.bodyId === 0) {
         return { x: 0, y: 0, z: 0 };
@@ -451,7 +476,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     // Parent uses its own current mean anomaly (from its bodyData or 0 if not orbiting)
     const parentMeanAnomaly = body.parent.bodyData.meanAnomaly || 0;
     const parentPos = this.getBodyPositionInSystemFrame(body.parent, parentMeanAnomaly);
-    
+
     if (!parentPos) {
       // Parent chain has missing data - cannot calculate absolute position
       return null;
@@ -789,18 +814,18 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
       // Check if this body is a sibling (shares same parent as the ring's parent)
       const isSibling = otherBody.parent === this.body.parent.parent;
-      
+
       // For siblings orbiting the same body as the ring's parent, they're in the same reference frame
       if (isSibling && otherSMA) {
         // Calculate average distance directly since both orbit the same central body
         const otherSMAKm = otherSMA * 149597870.7;
-        
+
         // Ring is essentially at the parent's location (very small orbit around parent)
         // So distance to sibling is approximately the sibling's orbital radius
         // For siblings, use a more generous screening: consider them if they're within 100x ring radius
         // (gravitational effects extend much further than physical proximity)
         const siblingScreeningDistance = ringOuterRadius * 100;
-        
+
         if (otherSMAKm <= siblingScreeningDistance) {
           const massRatio = parentMass / (3 * otherMass);
           const hillRadius = otherSMAKm * Math.pow(massRatio, 1 / 3);
@@ -1009,8 +1034,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       return;
     }
 
-    const primaryMass = primaryBodyObj.bodyData.solarMasses 
-      ? primaryBodyObj.bodyData.solarMasses * 332950 
+    const primaryMass = primaryBodyObj.bodyData.solarMasses
+      ? primaryBodyObj.bodyData.solarMasses * 332950
       : primaryBodyObj.bodyData.earthMasses || null;
 
     if (!primaryMass) {

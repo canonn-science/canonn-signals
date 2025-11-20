@@ -66,7 +66,11 @@
         "orbitalEccentricity": 0.1,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 365.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 6371.0,
         "rotationalPeriod": 1.0,
         "rotationalPeriodTidallyLocked": false,
@@ -99,7 +103,11 @@
         "orbitalEccentricity": 0.1,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 365.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 6371.0,
         "rotationalPeriod": 1.0,
         "rotationalPeriodTidallyLocked": false,
@@ -132,7 +140,11 @@
         "orbitalEccentricity": 0.1,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 365.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 6371.0,
         "rotationalPeriod": 1.0,
         "rotationalPeriodTidallyLocked": false,
@@ -165,7 +177,11 @@
         "orbitalEccentricity": 0.1,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 365.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 6371.0,
         "rotationalPeriod": 1.0,
         "rotationalPeriodTidallyLocked": false,
@@ -198,7 +214,11 @@
         "orbitalEccentricity": 0.05,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 500.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 3000.0,
         "rotationalPeriod": 24.0,
         "rotationalPeriodTidallyLocked": false,
@@ -231,7 +251,11 @@
         "orbitalEccentricity": 0.05,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 500.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 3000.0,
         "rotationalPeriod": 24.0,
         "rotationalPeriodTidallyLocked": false,
@@ -264,7 +288,11 @@
         "orbitalEccentricity": 0.05,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 500.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 3000.0,
         "rotationalPeriod": 24.0,
         "rotationalPeriodTidallyLocked": false,
@@ -297,7 +325,11 @@
         "orbitalEccentricity": 0.05,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 500.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2500.0,
         "rotationalPeriod": 24.0,
         "rotationalPeriodTidallyLocked": false,
@@ -330,7 +362,11 @@
         "orbitalEccentricity": 0.05,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 500.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2500.0,
         "rotationalPeriod": 24.0,
         "rotationalPeriodTidallyLocked": false,
@@ -357,7 +393,11 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 600.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "semiMajorAxis": 3.0,
         "stations": [],
         "timestamps": {
@@ -382,7 +422,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 29}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 29
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -415,7 +462,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 29}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 29
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -448,7 +502,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 29}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 29
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -475,7 +536,11 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 700.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "semiMajorAxis": 4.0,
         "stations": [],
         "timestamps": {
@@ -500,7 +565,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 39}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 39
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -533,7 +605,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 39}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 39
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -566,7 +645,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 39}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 39
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -599,7 +685,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 39}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 39
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -626,7 +719,11 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 800.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "semiMajorAxis": 5.0,
         "stations": [],
         "timestamps": {
@@ -651,7 +748,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 49}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 49
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -684,7 +788,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 49}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 49
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -717,7 +828,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 49}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 49
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -750,7 +868,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 49}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 49
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -783,7 +908,14 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Null": 49}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 49
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 2000.0,
         "rotationalPeriod": 12.0,
         "rotationalPeriodTidallyLocked": false,
@@ -816,7 +948,11 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 0.05,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 500.0,
         "rotationalPeriod": 0.05,
         "rotationalPeriodTidallyLocked": true,
@@ -849,7 +985,11 @@
         "orbitalEccentricity": 0.05,
         "orbitalInclination": 2.0,
         "orbitalPeriod": 800.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 12000.0,
         "rings": [
           {
@@ -885,7 +1025,11 @@
         "orbitalEccentricity": 0.1,
         "orbitalInclination": 5.0,
         "orbitalPeriod": 1200.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "semiMajorAxis": 10.0,
         "stations": [],
         "timestamps": {
@@ -910,7 +1054,14 @@
         "orbitalEccentricity": 0.01,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 10.0,
-        "parents": [{"Null": 75}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 75
+          },
+          {
+            "Star": 0
+          }
+        ],
         "rotationalPeriod": 2.5,
         "rotationalPeriodTidallyLocked": false,
         "semiMajorAxis": 0.05,
@@ -943,7 +1094,14 @@
         "orbitalEccentricity": 0.01,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 10.0,
-        "parents": [{"Null": 75}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 75
+          },
+          {
+            "Star": 0
+          }
+        ],
         "rotationalPeriod": 3.2,
         "rotationalPeriodTidallyLocked": false,
         "semiMajorAxis": 0.05,
@@ -976,7 +1134,17 @@
         "orbitalEccentricity": 0.02,
         "orbitalInclination": 1.5,
         "orbitalPeriod": 50.0,
-        "parents": [{"Star": 76}, {"Null": 75}, {"Star": 0}],
+        "parents": [
+          {
+            "Star": 76
+          },
+          {
+            "Null": 75
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 9500.0,
         "rings": [
           {
@@ -1011,7 +1179,11 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1500.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "semiMajorAxis": 15.0,
         "stations": [],
         "timestamps": {},
@@ -1033,7 +1205,14 @@
         "orbitalEccentricity": 0.05,
         "orbitalInclination": 2.5,
         "orbitalPeriod": 100.0,
-        "parents": [{"Null": 80}, {"Star": 0}],
+        "parents": [
+          {
+            "Null": 80
+          },
+          {
+            "Star": 0
+          }
+        ],
         "radius": 11000.0,
         "rings": [
           {
@@ -1074,7 +1253,11 @@
         "orbitalEccentricity": 0.08,
         "orbitalInclination": 3.0,
         "orbitalPeriod": 850.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 8000.0,
         "rotationalPeriod": 22.0,
         "rotationalPeriodTidallyLocked": false,
@@ -1107,7 +1290,11 @@
         "orbitalEccentricity": 0.1,
         "orbitalInclination": 4.0,
         "orbitalPeriod": 750.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 8500.0,
         "rotationalPeriod": 20.0,
         "rotationalPeriodTidallyLocked": false,
@@ -1140,7 +1327,11 @@
         "orbitalEccentricity": 0.6,
         "orbitalInclination": 15.0,
         "orbitalPeriod": 3000.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 15000.0,
         "rings": [
           {
@@ -1189,7 +1380,11 @@
         "orbitalEccentricity": 0.15,
         "orbitalInclination": 3.5,
         "orbitalPeriod": 600.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 5500.0,
         "rings": [
           {
@@ -1231,7 +1426,11 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 100.0,
-        "parents": [{"Star": 0}],
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
         "radius": 7982.185,
         "rotationalPeriod": 1.0,
         "rotationalPeriodTidallyLocked": false,
@@ -1264,7 +1463,11 @@
         "orbitalEccentricity": 0.0,
         "orbitalInclination": 0.0,
         "orbitalPeriod": 1.0,
-        "parents": [{"Planet": 100}],
+        "parents": [
+          {
+            "Planet": 100
+          }
+        ],
         "radius": 684.213,
         "rotationalPeriod": 1.0,
         "rotationalPeriodTidallyLocked": true,
@@ -1283,7 +1486,11 @@
       }
     ],
     "bodyCount": 20,
-    "coords": {"x": 0.0, "y": 0.0, "z": 0.0},
+    "coords": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
     "date": "2024-11-19 17:15:50+00",
     "government": "None",
     "id64": 999999999,
