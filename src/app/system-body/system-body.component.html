@@ -529,19 +529,15 @@
                         remain in stable orbit around the parent body.</p>
                 </div>
                 <div *ngIf="!hillLimitDialogData.isExceeded"
-                    style="margin-top: 15px; padding: 12px; background: #e8f5e9; border-radius: 4px; border-left: 4px solid #388e3c;">
+                    style="margin-top: 15px; padding: 12px; background: #99cc99; border-radius: 4px; border-left: 4px solid #388e3c; color: #1c1c1c;">
                     <p style="margin: 0;"><strong>Stability Verdict:</strong></p>
                     <p style="margin: 8px 0 0 0; font-size: 1.1em;"><strong>STABLE</strong> — The ring is {{
                         hillLimitDialogData.difference.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km inside
                         the effective Hill radius.</p>
-                    <p style="margin: 8px 0 0 0; font-size: 0.95em; color: #555;">The ring lies within the
+                    <p style="margin: 8px 0 0 0; font-size: 0.95em;">The ring lies within the
                         gravitationally stable zone{{
                         hillLimitDialogData.perturbers && hillLimitDialogData.perturbers.length > 0 ? ', even accounting
                         for nearby perturbing bodies' : '' }}.</p>
-                </div>
-
-                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107; color: #856404;">
-                    <p style="margin: 0; font-size: 0.9em;"><strong>Note:</strong> The method used for calculating the absolute positions of the stars is not yet perfect but is a good approximation. The more parent-child relationships in a chain, the less accurate the positions.</p>
                 </div>
             </div>
 
@@ -596,6 +592,10 @@
                     m is the parent mass, and M is the perturber mass. The smallest computed Hill radius defines the
                     effective stability limit.
                 </p>
+
+                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107; color: #856404;">
+                    <p style="margin: 0; font-size: 0.9em;"><strong>Note:</strong> The method used for calculating the absolute positions of the stars is not yet perfect but is a good approximation. The more parent-child relationships in a chain, the less accurate the positions.</p>
+                </div>
             </div>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
