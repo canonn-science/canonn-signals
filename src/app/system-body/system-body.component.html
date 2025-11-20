@@ -246,6 +246,14 @@
                         {{ body.bodyData.age }} million years
                     </div>
                 </div>
+                <div *ngIf="body.bodyData.earthMasses && body.bodyData.type === 'Planet'" class="body-data-entry">
+                    <div>
+                        Mass
+                    </div>
+                    <div [matTooltip]="body.bodyData.earthMasses + ' Earth masses'">
+                        {{ body.bodyData.earthMasses | number:'0.1-1' }} Earth masses
+                    </div>
+                </div>
                 <div *ngIf="body.bodyData.solarMasses" class="body-data-entry">
                     <div>
                         Solar masses
