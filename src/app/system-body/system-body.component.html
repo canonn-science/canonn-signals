@@ -520,12 +520,12 @@
                 </ul>
 
                 <div *ngIf="hillLimitDialogData.isExceeded"
-                    style="margin-top: 15px; padding: 12px; background: #ffebee; border-radius: 4px; border-left: 4px solid #d32f2f;">
+                    style="margin-top: 15px; padding: 12px; background: #ff9999; border-radius: 4px; border-left: 4px solid #d32f2f; color: #1c1c1c;">
                     <p style="margin: 0;"><strong>Stability Verdict:</strong></p>
                     <p style="margin: 8px 0 0 0; font-size: 1.1em;"><strong>UNSTABLE</strong> — The ring extends {{
                         hillLimitDialogData.difference.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km beyond
                         the effective Hill radius.</p>
-                    <p style="margin: 8px 0 0 0; font-size: 0.95em; color: #555;">Material at this distance cannot
+                    <p style="margin: 8px 0 0 0; font-size: 0.95em;">Material at this distance cannot
                         remain in stable orbit around the parent body.</p>
                 </div>
                 <div *ngIf="!hillLimitDialogData.isExceeded"
@@ -538,6 +538,10 @@
                         gravitationally stable zone{{
                         hillLimitDialogData.perturbers && hillLimitDialogData.perturbers.length > 0 ? ', even accounting
                         for nearby perturbing bodies' : '' }}.</p>
+                </div>
+
+                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107; color: #856404;">
+                    <p style="margin: 0; font-size: 0.9em;"><strong>Note:</strong> The method used for calculating the absolute positions of the stars is not yet perfect but is a good approximation. The more parent-child relationships in a chain, the less accurate the positions.</p>
                 </div>
             </div>
 
@@ -592,112 +596,6 @@
                     m is the parent mass, and M is the perturber mass. The smallest computed Hill radius defines the
                     effective stability limit.
                 </p>
-            </div>
-
-            <div *ngIf="hillLimitDialogData?.debugInfo"
-                style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
-                <p><strong>Debug Information (Distance Calculation Verification):</strong></p>
-
-                <div
-                    style="margin-top: 10px; font-family: monospace; font-size: 0.85em; background: #f5f5f5; padding: 12px; border-radius: 4px;">
-                    <p style="margin: 0 0 8px 0;"><strong>Parent Body Chain:</strong></p>
-                    <ul style="margin: 0 0 12px 0; padding-left: 20px;">
-                        <li *ngFor="let item of hillLimitDialogData.debugInfo.parentChain">{{ item }}</li>
-                    </ul>
-
-                    <p style="margin: 12px 0 8px 0;"><strong>Primary Body Chain:</strong></p>
-                    <ul style="margin: 0 0 12px 0; padding-left: 20px;">
-                        <li *ngFor="let item of hillLimitDialogData.debugInfo.primaryChain">{{ item }}</li>
-                    </ul>
-
-                    <p style="margin: 12px 0 8px 0;"><strong>Orbital Parameters:</strong></p>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Parent SMA:</strong></td>
-                            <td style="padding: 4px; text-align: right;">{{
-                                hillLimitDialogData.debugInfo.parentSMA.toLocaleString('en-US', {maximumFractionDigits:
-                                0}) }} km</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Parent Periapsis:</strong></td>
-                            <td style="padding: 4px; text-align: right;">{{
-                                hillLimitDialogData.debugInfo.parentPeriapsis.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }} km</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Parent Apoapsis:</strong></td>
-                            <td style="padding: 4px; text-align: right;">{{
-                                hillLimitDialogData.debugInfo.parentApoapsis.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }} km</td>
-                        </tr>
-                        <tr *ngIf="hillLimitDialogData.debugInfo.primarySMA !== null"
-                            style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Primary SMA:</strong></td>
-                            <td style="padding: 4px; text-align: right;">{{
-                                hillLimitDialogData.debugInfo.primarySMA.toLocaleString('en-US', {maximumFractionDigits:
-                                0}) }} km</td>
-                        </tr>
-                        <tr *ngIf="hillLimitDialogData.debugInfo.primaryPeriapsis !== null"
-                            style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Primary Periapsis:</strong></td>
-                            <td style="padding: 4px; text-align: right;">{{
-                                hillLimitDialogData.debugInfo.primaryPeriapsis.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }} km</td>
-                        </tr>
-                        <tr *ngIf="hillLimitDialogData.debugInfo.primaryApoapsis !== null"
-                            style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Primary Apoapsis:</strong></td>
-                            <td style="padding: 4px; text-align: right;">{{
-                                hillLimitDialogData.debugInfo.primaryApoapsis.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }} km</td>
-                        </tr>
-                    </table>
-
-                    <p style="margin: 12px 0 8px 0;"><strong>Distance Calculation Results:</strong></p>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Calculated Average Distance:</strong></td>
-                            <td style="padding: 4px; text-align: right; font-weight: bold; color: #1976d2;">{{
-                                hillLimitDialogData.debugInfo.distanceToPrimary.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }} km</td>
-                        </tr>
-                        <tr *ngIf="hillLimitDialogData.debugInfo.theoreticalMinDist !== null"
-                            style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 4px;"><strong>Theoretical Minimum Distance:</strong></td>
-                            <td style="padding: 4px; text-align: right;"
-                                [style.color]="hillLimitDialogData.debugInfo.distanceToPrimary < hillLimitDialogData.debugInfo.theoreticalMinDist * 0.9 ? '#d32f2f' : '#388e3c'">
-                                {{ hillLimitDialogData.debugInfo.theoreticalMinDist.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }} km
-                            </td>
-                        </tr>
-                        <tr *ngIf="hillLimitDialogData.debugInfo.theoreticalMaxDist !== null">
-                            <td style="padding: 4px;"><strong>Theoretical Maximum Distance:</strong></td>
-                            <td style="padding: 4px; text-align: right;"
-                                [style.color]="hillLimitDialogData.debugInfo.distanceToPrimary > hillLimitDialogData.debugInfo.theoreticalMaxDist * 1.1 ? '#d32f2f' : '#388e3c'">
-                                {{ hillLimitDialogData.debugInfo.theoreticalMaxDist.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }} km
-                            </td>
-                        </tr>
-                    </table>
-
-                    <div *ngIf="hillLimitDialogData.debugInfo.theoreticalMinDist !== null && hillLimitDialogData.debugInfo.distanceToPrimary < hillLimitDialogData.debugInfo.theoreticalMinDist * 0.9"
-                        style="margin-top: 12px; padding: 10px; background: #ffebee; border-radius: 4px; border-left: 4px solid #d32f2f;">
-                        <p style="margin: 0; font-weight: bold; color: #d32f2f;">⚠️ WARNING: Distance calculation
-                            violation detected!</p>
-                        <p style="margin: 5px 0 0 0; font-size: 0.9em;">The calculated distance is less than the
-                            theoretical minimum possible distance based on orbital mechanics. This indicates a
-                            calculation error.</p>
-                    </div>
-
-                    <div *ngIf="hillLimitDialogData.debugInfo.theoreticalMaxDist !== null && hillLimitDialogData.debugInfo.distanceToPrimary > hillLimitDialogData.debugInfo.theoreticalMaxDist * 1.1"
-                        style="margin-top: 12px; padding: 10px; background: #ffebee; border-radius: 4px; border-left: 4px solid #d32f2f;">
-                        <p style="margin: 0; font-weight: bold; color: #d32f2f;">⚠️ WARNING: Distance calculation
-                            violation detected!</p>
-                        <p style="margin: 5px 0 0 0; font-size: 0.9em;">The calculated distance exceeds the theoretical
-                            maximum possible distance based on orbital mechanics. This indicates a calculation error.
-                        </p>
-                    </div>
-                </div>
             </div>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
