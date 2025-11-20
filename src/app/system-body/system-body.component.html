@@ -537,7 +537,8 @@
                 </div>
             </div>
 
-            <div class="parameters" *ngIf="hillLimitDialogData?.perturbers && hillLimitDialogData.perturbers.length > 0">
+            <div class="parameters"
+                *ngIf="hillLimitDialogData?.perturbers && hillLimitDialogData.perturbers.length > 0">
                 <p><strong>Nearby Bodies Affecting Gravitational Stability</strong></p>
                 <p>
                     These are bodies within 3× the ring radius whose gravitational influence constrains the parent
@@ -578,20 +579,25 @@
 
             <div class="formula">
                 <strong>Calculation Method:</strong>
-            </div>
 
-            <div class="parameters">
-                <p>
-                    The algorithm samples orbital positions accounting for eccentricity, inclination, argument of
-                    periapsis, and ascending node. For each potential perturber within range, it computes the Hill
-                    radius at average separation: r<sub>H</sub> = d × (m / (3 × M))<sup>1/3</sup>, where d is the average distance
-                    to the perturber, m is the parent mass, and M is the perturber mass. The smallest computed Hill radius defines the
-                    effective stability limit.
-                </p>
+
+                <div class="parameters">
+                    <p>
+                        The algorithm samples orbital positions accounting for eccentricity, inclination, argument of
+                        periapsis, and ascending node. For each potential perturber within range, it computes the Hill
+                        radius at average separation: r<sub>H</sub> = d × (m / (3 × M))<sup>1/3</sup>, where d is the
+                        average distance
+                        to the perturber, m is the parent mass, and M is the perturber mass. The smallest computed Hill
+                        radius defines the
+                        effective stability limit.
+                    </p>
+                </div>
             </div>
 
             <div class="disclaimer">
-                <p><strong>Note:</strong> The method used for calculating the absolute positions of the stars is not yet perfect but is a good approximation. The more parent-child relationships in a chain, the less accurate the positions.</p>
+                <p><strong>Note:</strong> The method used for calculating the absolute positions of the stars is not yet
+                    perfect but is a good approximation. The more parent-child relationships in a chain, the less
+                    accurate the positions.</p>
             </div>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
