@@ -350,42 +350,559 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       return null;
     }
 
-    const parentBody = this.body.parent.bodyData;
-    const semiMajorAxis = parentBody.semiMajorAxis;
-    const parentMass = parentBody.earthMasses || parentBody.solarMasses;
+    const result = this.calculateHillLimitWithPerturbers();
+    return result ? result.minHillRadius : null;
+  }
 
-    if (!semiMajorAxis || !parentMass) {
+  // Orbital mechanics helper: Convert Keplerian elements to 3D Cartesian position
+  private orbitalElementsToCartesian(
+    semiMajorAxisAU: number,
+    eccentricity: number,
+    inclinationDeg: number,
+    argPeriapsisDeg: number,
+    ascendingNodeDeg: number,
+    meanAnomalyDeg: number
+  ): { x: number; y: number; z: number } {
+    const a = semiMajorAxisAU * 149597870.7; // AU to km
+    const e = eccentricity;
+    const i = inclinationDeg * Math.PI / 180;
+    const w = argPeriapsisDeg * Math.PI / 180;
+    const omega = ascendingNodeDeg * Math.PI / 180;
+    const M = meanAnomalyDeg * Math.PI / 180;
+
+    // Solve Kepler's equation for eccentric anomaly E
+    let E = M;
+    for (let iter = 0; iter < 10; iter++) {
+      E = M + e * Math.sin(E);
+    }
+
+    // True anomaly
+    const nu = 2 * Math.atan2(
+      Math.sqrt(1 + e) * Math.sin(E / 2),
+      Math.sqrt(1 - e) * Math.cos(E / 2)
+    );
+
+    // Distance from focus
+    const r = a * (1 - e * Math.cos(E));
+
+    // Position in orbital plane
+    const xOrb = r * Math.cos(nu);
+    const yOrb = r * Math.sin(nu);
+
+    // Rotate to reference frame
+    const cosW = Math.cos(w);
+    const sinW = Math.sin(w);
+    const cosO = Math.cos(omega);
+    const sinO = Math.sin(omega);
+    const cosI = Math.cos(i);
+    const sinI = Math.sin(i);
+
+    const x = (cosO * cosW - sinO * sinW * cosI) * xOrb + (-cosO * sinW - sinO * cosW * cosI) * yOrb;
+    const y = (sinO * cosW + cosO * sinW * cosI) * xOrb + (-sinO * sinW + cosO * cosW * cosI) * yOrb;
+    const z = (sinW * sinI) * xOrb + (cosW * sinI) * yOrb;
+
+    return { x, y, z };
+  }
+
+  // Get position of a body in system coordinates, accounting for hierarchical parent-child relationships
+  // Each body in the chain uses its current orbital position (meanAnomalyDeg parameter)
+  private getBodyPositionInSystemFrame(body: SystemBody, meanAnomalyDeg: number): { x: number; y: number; z: number } | null {
+    const bodyData = body.bodyData;
+    
+    // If no parent, this is the root body (at origin)
+    if (!body.parent) {
+      return { x: 0, y: 0, z: 0 };
+    }
+
+    // If no orbital data for a body that has a parent
+    if (!bodyData.semiMajorAxis) {
+      // Special case: bodyId 0 can be at origin even with a parent (primary star/barycentre)
+      if (bodyData.bodyId === 0) {
+        return { x: 0, y: 0, z: 0 };
+      }
+      // For any other body (including unknown barycentres), missing semiMajorAxis means we can't calculate position
+      return null;
+    }
+
+    // Check if all required orbital parameters are present
+    if (bodyData.orbitalEccentricity === null || bodyData.orbitalEccentricity === undefined ||
+        bodyData.orbitalInclination === null || bodyData.orbitalInclination === undefined ||
+        bodyData.argOfPeriapsis === null || bodyData.argOfPeriapsis === undefined ||
+        bodyData.ascendingNode === null || bodyData.ascendingNode === undefined) {
+      // Special case: bodyId 0 can be at origin even with missing parameters
+      if (bodyData.bodyId === 0) {
+        return { x: 0, y: 0, z: 0 };
+      }
+      // Missing orbital parameters for non-primary body (like unknown barycentres)
+      return null;
+    }
+
+    // Get orbital elements (convert from Elite Dangerous convention)
+    const sma = bodyData.semiMajorAxis;
+    const ecc = bodyData.orbitalEccentricity;
+    const inc = bodyData.orbitalInclination;
+    const argP = -bodyData.argOfPeriapsis;
+    const node = -bodyData.ascendingNode;
+
+    // Compute position relative to parent using this body's mean anomaly
+    const localPos = this.orbitalElementsToCartesian(sma, ecc, inc, argP, node, meanAnomalyDeg);
+
+    // Recursively get parent's position in system frame
+    // Parent uses its own current mean anomaly (from its bodyData or 0 if not orbiting)
+    const parentMeanAnomaly = body.parent.bodyData.meanAnomaly || 0;
+    const parentPos = this.getBodyPositionInSystemFrame(body.parent, parentMeanAnomaly);
+    
+    if (!parentPos) {
+      // Parent chain has missing data - cannot calculate absolute position
+      return null;
+    }
+
+    // Transform to system coordinates by adding parent's position
+    return {
+      x: localPos.x + parentPos.x,
+      y: localPos.y + parentPos.y,
+      z: localPos.z + parentPos.z
+    };
+  }  // Calculate distance between two 3D points
+  private distance3D(p1: { x: number; y: number; z: number }, p2: { x: number; y: number; z: number }): number {
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    const dz = p1.z - p2.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+
+  // Validate calculated distance against orbital mechanics constraints
+  private validateDistanceCalculation(body1: SystemBody, body2: SystemBody, calculatedDistance: number): void {
+    // Walk up the parent chain to find common ancestor and calculate theoretical min/max distances
+    const getParentChain = (body: SystemBody): SystemBody[] => {
+      const chain: SystemBody[] = [];
+      let current: SystemBody | null = body;
+      while (current) {
+        chain.push(current);
+        current = current.parent;
+      }
+      return chain;
+    };
+
+    const chain1 = getParentChain(body1);
+    const chain2 = getParentChain(body2);
+
+    // Find common ancestor (barycentre or star)
+    let commonAncestor: SystemBody | null = null;
+    for (const ancestor1 of chain1) {
+      if (chain2.includes(ancestor1)) {
+        commonAncestor = ancestor1;
+        break;
+      }
+    }
+
+    if (!commonAncestor) return; // No common ancestor found
+
+    // Calculate theoretical minimum distance: |periapsis1 - apoapsis2|
+    // For bodies orbiting a common parent, minimum distance occurs when one is at periapsis
+    // facing the other at apoapsis
+    const getOrbitalExtents = (body: SystemBody): { periapsis: number; apoapsis: number } | null => {
+      const data = body.bodyData;
+      if (!data.semiMajorAxis) return null;
+
+      const sma = data.semiMajorAxis * 149597870.7; // Convert AU to km
+      const ecc = data.orbitalEccentricity || 0;
+      const periapsis = sma * (1 - ecc);
+      const apoapsis = sma * (1 + ecc);
+
+      return { periapsis, apoapsis };
+    };
+
+    // Check each body in the chains up to common ancestor
+    const extents1 = getOrbitalExtents(body1);
+    const extents2 = getOrbitalExtents(body2);
+
+    if (extents1 && extents2) {
+      // Theoretical absolute minimum: difference between closest approaches
+      const theoreticalMin = Math.abs(extents1.periapsis - extents2.apoapsis);
+      const theoreticalMax = extents1.apoapsis + extents2.apoapsis;
+
+      // Silently validate - errors will be shown in debug info dialog if enabled
+    }
+  }
+
+  // Get all bodies in the system (traverse to root and collect all)
+  private getAllSystemBodies(): SystemBody[] {
+    let root = this.body;
+    while (root.parent) {
+      root = root.parent;
+    }
+
+    const allBodies: SystemBody[] = [];
+    const traverse = (body: SystemBody) => {
+      allBodies.push(body);
+      for (const child of body.subBodies) {
+        traverse(child);
+      }
+    };
+    traverse(root);
+    return allBodies;
+  }
+
+  // Calculate Hill limit considering all potential perturbers
+  public calculateHillLimitWithPerturbers(): {
+    minHillRadius: number;
+    limitingPerturber: string | null;
+    perturberDistance: number | null;
+    baselineHillRadius: number;
+    perturbers: Array<{ name: string; minDistance: number; hillRadius: number }>;
+    debugInfo?: {
+      parentBodyName: string;
+      parentChain: string[];
+      primaryBodyName: string;
+      primaryChain: string[];
+      distanceToPrimary: number;
+      parentSMA: number;
+      primarySMA: number | null;
+      parentPeriapsis: number;
+      parentApoapsis: number;
+      primaryPeriapsis: number | null;
+      primaryApoapsis: number | null;
+      theoreticalMinDist: number | null;
+      theoreticalMaxDist: number | null;
+    };
+  } | null {
+    if (!this.body.parent) {
+      return null;
+    }
+
+    const parentBody = this.body.parent.bodyData;
+    const ringOuterRadius = this.body.bodyData.outerRadius || 0;
+    const parentMass = parentBody.earthMasses || (parentBody.solarMasses ? parentBody.solarMasses * 332950 : null);
+    const semiMajorAxis = parentBody.semiMajorAxis;
+    const parentEcc = parentBody.orbitalEccentricity;
+    const parentInc = parentBody.orbitalInclination;
+    const parentArgP = parentBody.argOfPeriapsis;
+    const parentNode = parentBody.ascendingNode;
+
+    // Check if all required orbital parameters are present
+    if (!semiMajorAxis || !parentMass || !ringOuterRadius ||
+      parentEcc === null || parentEcc === undefined ||
+      parentInc === null || parentInc === undefined ||
+      parentArgP === null || parentArgP === undefined ||
+      parentNode === null || parentNode === undefined) {
+      const missing: string[] = [];
+      if (!semiMajorAxis) missing.push('semiMajorAxis');
+      if (!parentMass) missing.push('parentMass');
+      if (!ringOuterRadius) missing.push('ringOuterRadius');
+      if (parentEcc === null || parentEcc === undefined) missing.push('orbitalEccentricity');
+      if (parentInc === null || parentInc === undefined) missing.push('orbitalInclination');
+      if (parentArgP === null || parentArgP === undefined) missing.push('argOfPeriapsis');
+      if (parentNode === null || parentNode === undefined) missing.push('ascendingNode');
       return null;
     }
 
     // Find the primary body (star or parent planet)
+    // First try walking up the parent chain
     let primaryMass: number | null = null;
+    let primaryBody: SystemBody | null = null;
     let currentParent = this.body.parent.parent;
 
     while (currentParent) {
       if (currentParent.bodyData.solarMasses) {
-        primaryMass = currentParent.bodyData.solarMasses;
+        primaryMass = currentParent.bodyData.solarMasses * 332950; // Convert to Earth masses
+        primaryBody = currentParent;
         break;
       }
       if (currentParent.bodyData.earthMasses) {
-        // Convert Earth masses to solar masses (1 solar mass = ~332,950 Earth masses)
-        primaryMass = currentParent.bodyData.earthMasses / 332950;
+        primaryMass = currentParent.bodyData.earthMasses;
+        primaryBody = currentParent;
         break;
       }
       currentParent = currentParent.parent;
     }
 
+    // If no primary found in parent chain (e.g., parent orbits barycentre),
+    // search all system bodies for a star or the main body
     if (!primaryMass) {
+      const allBodies = this.getAllSystemBodies();
+      for (const body of allBodies) {
+        // Look for a star (has solarMasses)
+        if (body.bodyData.solarMasses) {
+          primaryMass = body.bodyData.solarMasses * 332950;
+          primaryBody = body;
+          break;
+        }
+      }
+    }
+
+    if (!primaryMass || !primaryBody) {
       return null;
     }
 
-    // Hill sphere radius formula: a * (m / (3 * M))^(1/3)
-    // where a = semi-major axis, m = satellite mass, M = primary mass
-    const semiMajorAxisKm = semiMajorAxis * 149597870.7; // Convert AU to km
-    const massRatio = parentMass / (3 * primaryMass);
-    const hillLimit = semiMajorAxisKm * Math.pow(massRatio, 1 / 3);
+    // Calculate the actual distance from parent's orbit to the primary body
+    // If the primary is at the origin (Body 0), calculate distance to origin
+    // Otherwise, calculate minimum distance between the two orbits
+    let distanceToPrimary: number;
+    const semiMajorAxisKm = semiMajorAxis * 149597870.7;
 
-    return hillLimit;
+    if (!primaryBody.bodyData.semiMajorAxis) {
+      // Primary is at origin (Body 0)
+      // Need to calculate parent's position in system coordinates, accounting for intermediate barycentres
+      let totalDist = 0;
+      let sampleCount = 24;
+      let validSamples = 0;
+
+      for (let i = 0; i < sampleCount; i++) {
+        const meanAnomaly = (360 * i) / sampleCount;
+        // Get parent's position in system frame (handles hierarchical orbits)
+        const parentPos = this.getBodyPositionInSystemFrame(this.body.parent, meanAnomaly);
+
+        if (!parentPos) {
+          // Missing orbital parameters in parent chain - cannot calculate Hill limit
+          return null;
+        }
+
+        const distToOrigin = Math.sqrt(parentPos.x * parentPos.x + parentPos.y * parentPos.y + parentPos.z * parentPos.z);
+        totalDist += distToOrigin;
+        validSamples++;
+      }
+      distanceToPrimary = validSamples > 0 ? totalDist / validSamples : semiMajorAxisKm;
+    } else {
+      // Primary has an orbit (could be in a binary system or orbit a barycentre)
+      // Calculate average distance using hierarchical positions
+      let totalDist = 0;
+      let validSamples = 0;
+      const sampleCount = 24;
+
+      // Sample both orbits using system frame positions (handles barycentres)
+      for (let i = 0; i < sampleCount; i++) {
+        const meanAnomaly1 = (360 * i) / sampleCount;
+        const pos1 = this.getBodyPositionInSystemFrame(this.body.parent, meanAnomaly1);
+
+        if (!pos1) {
+          // Missing orbital parameters in parent chain - cannot calculate Hill limit
+          return null;
+        }
+
+        for (let j = 0; j < sampleCount; j++) {
+          const meanAnomaly2 = (360 * j) / sampleCount;
+          const pos2 = this.getBodyPositionInSystemFrame(primaryBody, meanAnomaly2);
+
+          if (!pos2) {
+            // Missing orbital parameters in primary chain - cannot calculate Hill limit
+            return null;
+          }
+
+          const dist = this.distance3D(pos1, pos2);
+          totalDist += dist;
+          validSamples++;
+        }
+      }
+      distanceToPrimary = validSamples > 0 ? totalDist / validSamples : semiMajorAxisKm;
+    }
+
+    // Calculate baseline Hill radius using the actual distance to primary
+    const baselineMassRatio = parentMass / (3 * primaryMass);
+    const baselineHillRadius = distanceToPrimary * Math.pow(baselineMassRatio, 1 / 3);
+
+    // Build debug info for dialog
+    const getParentChain = (body: SystemBody): string[] => {
+      const chain: string[] = [];
+      let current: SystemBody | null = body;
+      while (current) {
+        chain.push(`${current.bodyData.name} (${current.bodyData.type})`);
+        current = current.parent;
+      }
+      return chain;
+    };
+
+    const parentEccValue = parentEcc || 0;
+    const parentPeriapsis = semiMajorAxisKm * (1 - parentEccValue);
+    const parentApoapsis = semiMajorAxisKm * (1 + parentEccValue);
+
+    let primaryPeriapsis: number | null = null;
+    let primaryApoapsis: number | null = null;
+    let theoreticalMinDist: number | null = null;
+    let theoreticalMaxDist: number | null = null;
+
+    if (primaryBody.bodyData.semiMajorAxis) {
+      const primarySMAKm = primaryBody.bodyData.semiMajorAxis * 149597870.7;
+      const primaryEccValue = primaryBody.bodyData.orbitalEccentricity || 0;
+      primaryPeriapsis = primarySMAKm * (1 - primaryEccValue);
+      primaryApoapsis = primarySMAKm * (1 + primaryEccValue);
+      theoreticalMinDist = Math.abs(parentPeriapsis - primaryApoapsis);
+      theoreticalMaxDist = parentApoapsis + primaryApoapsis;
+    }
+
+    const debugInfo = {
+      parentBodyName: parentBody.name,
+      parentChain: getParentChain(this.body.parent),
+      primaryBodyName: primaryBody.bodyData.name,
+      primaryChain: getParentChain(primaryBody),
+      distanceToPrimary,
+      parentSMA: semiMajorAxisKm,
+      primarySMA: primaryBody.bodyData.semiMajorAxis ? primaryBody.bodyData.semiMajorAxis * 149597870.7 : null,
+      parentPeriapsis,
+      parentApoapsis,
+      primaryPeriapsis,
+      primaryApoapsis,
+      theoreticalMinDist,
+      theoreticalMaxDist
+    };
+
+    // Convert orbital elements (already validated as non-null above)
+    const convertedParentEcc = parentEcc;
+    const convertedParentInc = parentInc;
+    const convertedParentArgP = -parentArgP;
+    const convertedParentNode = -parentNode;
+
+    // Screening distance: consider bodies within 3× ring outer radius
+    const screeningDistance = ringOuterRadius * 3;
+
+    // Get all bodies in system
+    const allBodies = this.getAllSystemBodies();
+
+    // Find potential perturbers
+    const perturbers: Array<{ name: string; minDistance: number; hillRadius: number }> = [];
+    let minHillRadius = baselineHillRadius;
+    let limitingPerturber: string | null = null;
+    let perturberDistance: number | null = null;
+
+    // Sample count for orbit positions (balance performance vs accuracy)
+    const sampleCount = 24; // 15-degree intervals
+
+    for (const otherBody of allBodies) {
+      // Skip self and parent
+      if (otherBody === this.body || otherBody === this.body.parent) {
+        continue;
+      }
+
+      // Skip rings and belts
+      if (otherBody.bodyData.type === 'Ring' || otherBody.bodyData.type === 'Belt') {
+        continue;
+      }
+
+      const otherData = otherBody.bodyData;
+      const otherSMA = otherData.semiMajorAxis;
+      const otherMass = otherData.earthMasses || (otherData.solarMasses ? otherData.solarMasses * 332950 : null);
+
+      // Skip if no mass data
+      if (!otherMass) {
+        continue;
+      }
+
+      // Body 0 (origin) won't have orbital parameters but is at position (0,0,0)
+      if (!otherSMA) {
+        // This is likely Body 0 at the origin - handle it separately
+        // Calculate average distance from parent's orbit to origin using system frame positions
+        let totalDist = 0;
+        let validSamples = 0;
+
+        for (let i = 0; i < sampleCount; i++) {
+          const meanAnomaly = (360 * i) / sampleCount;
+          const parentPos = this.getBodyPositionInSystemFrame(this.body.parent, meanAnomaly);
+
+          if (parentPos) {
+            const distToOrigin = Math.sqrt(parentPos.x * parentPos.x + parentPos.y * parentPos.y + parentPos.z * parentPos.z);
+            totalDist += distToOrigin;
+            validSamples++;
+          }
+        }
+        const avgDistToOrigin = validSamples > 0 ? totalDist / validSamples : semiMajorAxisKm;
+
+        // If within screening range, calculate Hill radius at that distance
+        if (avgDistToOrigin <= screeningDistance) {
+          const massRatio = parentMass / (3 * otherMass);
+          const hillRadius = avgDistToOrigin * Math.pow(massRatio, 1 / 3);
+
+          perturbers.push({
+            name: otherData.name,
+            minDistance: avgDistToOrigin,
+            hillRadius: hillRadius
+          });
+
+          if (hillRadius < minHillRadius) {
+            minHillRadius = hillRadius;
+            limitingPerturber = otherData.name;
+            perturberDistance = avgDistToOrigin;
+          }
+        }
+
+        continue;
+      }
+
+      // Quick screening: check if orbits could possibly come close
+      const otherEcc = otherData.orbitalEccentricity || 0;
+      const otherSMAKm = otherSMA * 149597870.7;
+      const parentPeriapsis = semiMajorAxisKm * (1 - convertedParentEcc);
+      const parentApoapsis = semiMajorAxisKm * (1 + convertedParentEcc);
+      const otherPeriapsis = otherSMAKm * (1 - otherEcc);
+      const otherApoapsis = otherSMAKm * (1 + otherEcc);
+
+      // Skip if orbits can't possibly come within screening distance
+      const maxPossibleApproach = Math.max(
+        Math.abs(parentPeriapsis - otherApoapsis),
+        Math.abs(parentApoapsis - otherPeriapsis)
+      );
+
+      if (Math.min(otherPeriapsis, otherApoapsis) > parentApoapsis + screeningDistance ||
+        Math.max(otherPeriapsis, otherApoapsis) < parentPeriapsis - screeningDistance) {
+        continue;
+      }
+
+      // Get orbital elements for other body
+      const otherInc = otherData.orbitalInclination || 0;
+      const otherArgP = otherData.argOfPeriapsis !== undefined ? -otherData.argOfPeriapsis : 0;
+      const otherNode = otherData.ascendingNode !== undefined ? -otherData.ascendingNode : 0;
+
+      // Sample positions along both orbits to calculate average distance using system frame
+      let totalDist = 0;
+      let validSamples = 0;
+
+      for (let i = 0; i < sampleCount; i++) {
+        const meanAnomaly1 = (360 * i) / sampleCount;
+        const pos1 = this.getBodyPositionInSystemFrame(this.body.parent, meanAnomaly1);
+
+        if (!pos1) continue;
+
+        for (let j = 0; j < sampleCount; j++) {
+          const meanAnomaly2 = (360 * j) / sampleCount;
+          const pos2 = this.getBodyPositionInSystemFrame(otherBody, meanAnomaly2);
+
+          if (!pos2) continue;
+
+          const dist = this.distance3D(pos1, pos2);
+          totalDist += dist;
+          validSamples++;
+        }
+      }
+      const avgDist = validSamples > 0 ? totalDist / validSamples : Math.abs(semiMajorAxisKm - otherSMAKm);
+
+      // If average distance is within screening range, calculate Hill radius at that distance
+      if (avgDist <= screeningDistance) {
+        // Hill radius formula: r_H = d * (m / (3 * M))^(1/3)
+        // where d = distance to perturber, m = parent mass, M = perturber mass
+        const massRatio = parentMass / (3 * otherMass);
+        const hillRadius = avgDist * Math.pow(massRatio, 1 / 3);
+
+        perturbers.push({
+          name: otherData.name,
+          minDistance: avgDist,
+          hillRadius: hillRadius
+        });
+
+        if (hillRadius < minHillRadius) {
+          minHillRadius = hillRadius;
+          limitingPerturber = otherData.name;
+          perturberDistance = avgDist;
+        }
+      }
+    }
+
+    return {
+      minHillRadius,
+      limitingPerturber,
+      perturberDistance,
+      baselineHillRadius,
+      perturbers,
+      debugInfo
+    };
   }
 
   public getSolidCompositionTooltip(): string {
@@ -437,13 +954,14 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       return;
     }
 
-    const parentBody = this.body.parent.bodyData;
-    const semiMajorAxis = parentBody.semiMajorAxis;
-    const parentMass = parentBody.earthMasses || parentBody.solarMasses;
-
-    if (!semiMajorAxis || !parentMass) {
+    const result = this.calculateHillLimitWithPerturbers();
+    if (!result) {
       return;
     }
+
+    const parentBody = this.body.parent.bodyData;
+    const semiMajorAxis = parentBody.semiMajorAxis!;
+    const parentMass = parentBody.earthMasses || (parentBody.solarMasses ? parentBody.solarMasses * 332950 : null);
 
     let primaryMass: number | null = null;
     let primaryName: string = '';
@@ -451,12 +969,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
     while (currentParent) {
       if (currentParent.bodyData.solarMasses) {
-        primaryMass = currentParent.bodyData.solarMasses;
+        primaryMass = currentParent.bodyData.solarMasses * 332950;
         primaryName = currentParent.bodyData.name;
         break;
       }
       if (currentParent.bodyData.earthMasses) {
-        primaryMass = currentParent.bodyData.earthMasses / 332950;
+        primaryMass = currentParent.bodyData.earthMasses;
         primaryName = currentParent.bodyData.name;
         break;
       }
@@ -468,11 +986,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     const semiMajorAxisKm = semiMajorAxis * 149597870.7;
-    const massRatio = parentMass / (3 * primaryMass);
-    const hillLimit = semiMajorAxisKm * Math.pow(massRatio, 1 / 3);
-
     const outerRadius = this.body.bodyData.outerRadius || 0;
-    const difference = outerRadius - hillLimit;
+    const difference = outerRadius - result.minHillRadius;
     const isExceeded = difference > 0;
 
     const parentBodyName = parentBody.name.split(' ').slice(1).join(' ') || parentBody.name;
@@ -483,16 +998,20 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       parentBodyName,
       semiMajorAxis,
       semiMajorAxisKm,
-      parentMass,
+      parentMass: parentMass!,
       isEarthMasses: !!parentBody.earthMasses,
       primaryStarName,
-      primaryMass,
-      massRatio,
-      hillLimit,
+      primaryMass: primaryMass!,
+      baselineHillRadius: result.baselineHillRadius,
+      minHillRadius: result.minHillRadius,
+      limitingPerturber: result.limitingPerturber,
+      perturberDistance: result.perturberDistance,
+      perturbers: result.perturbers,
       outerRadius,
       difference: Math.abs(difference),
       isExceeded,
-      ringName
+      ringName,
+      debugInfo: result.debugInfo
     };
 
     this.dialog.open(this.hillLimitDialogTemplate, {
@@ -514,7 +1033,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     const area = this.getRingArea();
     const density = this.getRingDensity();
     const isInvisible = density < 0.1 && width > 1000000;
-    
+
     const ringName = this.body.bodyData.name.split(' ').slice(1).join(' ') || this.body.bodyData.name;
 
     this.invisibleRingDialogData = {

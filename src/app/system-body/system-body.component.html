@@ -14,7 +14,8 @@
                 class="atmosphere-type">
                 - {{ getAtmosphereDisplay() }}
             </span>
-            <span *ngIf="isRingNotVisible()" class="badge badge-red clickable" (click)="showInvisibleRingExplanation()">Invisible</span>
+            <span *ngIf="isRingNotVisible()" class="badge badge-red clickable"
+                (click)="showInvisibleRingExplanation()">Invisible</span>
             <span *ngIf="getHillLimitExceeded()" class="badge badge-red clickable"
                 [matTooltip]="'Hill limit exceeded by ' + (getHillLimitExceeded()! | number:'0.0-0') + ' km'"
                 (click)="showHillLimitExplanation()">Anomalous</span>
@@ -335,6 +336,15 @@
                         {{ calculateHillLimit()! | number:'0.2-2' }} km
                     </div>
                 </div>
+                <div *ngIf="body.bodyData.type === 'Ring' && calculateHillLimit() === null" class="body-data-entry"
+                    [matTooltip]="'The Hill limit cannot be calculated because the data from Spansh is incomplete'">
+                    <div>
+                        Hill limit
+                    </div>
+                    <div>
+                        n/a
+                    </div>
+                </div>
             </div>
             <!--
             <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
@@ -456,53 +466,239 @@
 
 <ng-template #hillLimitDialogTemplate>
     <div class="hill-limit-dialog">
-        <h2 mat-dialog-title>Hill Sphere Calculation</h2>
+        <h2 mat-dialog-title>Ring Stability Assessment (Hill Sphere Method)</h2>
         <mat-dialog-content>
             <p class="intro">
-                The Hill sphere represents the region around a moon or planet where its gravity is dominant over the parent star's gravity. This calculation determines how far a ring system can extend before the star's gravity would tear it apart.
+                This report evaluates whether the ring lies within the parent body's theoretically stable gravitational
+                zone.
+                Stability is determined by the effective Hill radius, which represents the outermost distance at which
+                the parent
+                body can retain orbiting material.
+            </p>
+            <p class="intro" style="margin-top: 10px;">
+                Nearby bodies with significant gravitational influence can reduce this stable region far below the
+                baseline Hill sphere.
             </p>
 
-            <div class="formula">
-                <strong>Formula:</strong> Hill Limit = a × (m / (3 × M))<sup>1/3</sup>
-            </div>
+            <div class="values" *ngIf="hillLimitDialogData" style="margin-top: 20px;">
+                <p><strong>System Overview</strong></p>
 
-            <div class="parameters">
-                <p><strong>Where:</strong></p>
+                <p style="margin-top: 15px; margin-bottom: 5px;"><strong>Parent Body</strong></p>
                 <ul>
-                    <li><strong>a</strong> = parent body's semi-major axis (orbital distance from star)</li>
-                    <li><strong>m</strong> = parent body's mass</li>
-                    <li><strong>M</strong> = primary star's mass</li>
+                    <li><strong>Name:</strong> {{ hillLimitDialogData.parentBodyName }}</li>
+                    <li><strong>Mass:</strong> {{ hillLimitDialogData.parentMass.toLocaleString('en-US',
+                        {minimumFractionDigits: 6, maximumFractionDigits: 6}) }} Earth masses</li>
+                </ul>
+
+                <p style="margin-top: 15px; margin-bottom: 5px;"><strong>Primary Star</strong></p>
+                <ul>
+                    <li><strong>Name:</strong> {{ hillLimitDialogData.primaryStarName }}</li>
+                    <li><strong>Mass:</strong> {{ hillLimitDialogData.primaryMass.toLocaleString('en-US',
+                        {minimumFractionDigits: 6, maximumFractionDigits: 6}) }} Earth masses</li>
                 </ul>
             </div>
 
-            <div class="values" *ngIf="hillLimitDialogData">
-                <p><strong>Values used:</strong></p>
+            <div class="result" *ngIf="hillLimitDialogData" style="margin-top: 20px;">
+                <p><strong>Hill Radius & Ring Stability Results</strong></p>
                 <ul>
-                    <li><strong>Parent body:</strong> {{ hillLimitDialogData.parentBodyName }}</li>
-                    <li><strong>Parent semi-major axis (a):</strong> {{ hillLimitDialogData.semiMajorAxis.toFixed(6) }} AU ({{ hillLimitDialogData.semiMajorAxisKm.toLocaleString() }} km)</li>
-                    <li><strong>Parent mass (m):</strong> {{ hillLimitDialogData.parentMass.toFixed(6) }} {{ hillLimitDialogData.isEarthMasses ? 'Earth masses' : 'Solar masses' }}</li>
-                    <li><strong>Primary star:</strong> {{ hillLimitDialogData.primaryStarName }}</li>
-                    <li><strong>Primary mass (M):</strong> {{ hillLimitDialogData.primaryMass.toFixed(6) }} Solar masses</li>
-                    <li><strong>Mass ratio (m / 3M):</strong> {{ hillLimitDialogData.massRatio.toFixed(6) }}</li>
+                    <li style="margin-bottom: 8px;">
+                        <strong>Baseline Hill Radius (star only):</strong> {{
+                        hillLimitDialogData.baselineHillRadius.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km
+                        <div style="font-size: 0.9em; color: #666; margin-top: 2px;">Maximum theoretical stability in
+                            isolation.</div>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        <strong>Effective Hill Radius (including nearby gravitational influences):</strong> {{
+                        hillLimitDialogData.minHillRadius.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km
+                        <div style="font-size: 0.9em; color: #666; margin-top: 2px;">Determined by the closest and most
+                            disruptive nearby bodies.</div>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        <strong>Ring Outer Radius:</strong> {{ hillLimitDialogData.outerRadius.toLocaleString('en-US',
+                        {maximumFractionDigits: 0}) }} km
+                    </li>
                 </ul>
+
+                <div *ngIf="hillLimitDialogData.isExceeded"
+                    style="margin-top: 15px; padding: 12px; background: #ffebee; border-radius: 4px; border-left: 4px solid #d32f2f;">
+                    <p style="margin: 0;"><strong>Stability Verdict:</strong></p>
+                    <p style="margin: 8px 0 0 0; font-size: 1.1em;"><strong>UNSTABLE</strong> — The ring extends {{
+                        hillLimitDialogData.difference.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km beyond
+                        the effective Hill radius.</p>
+                    <p style="margin: 8px 0 0 0; font-size: 0.95em; color: #555;">Material at this distance cannot
+                        remain in stable orbit around the parent body.</p>
+                </div>
+                <div *ngIf="!hillLimitDialogData.isExceeded"
+                    style="margin-top: 15px; padding: 12px; background: #e8f5e9; border-radius: 4px; border-left: 4px solid #388e3c;">
+                    <p style="margin: 0;"><strong>Stability Verdict:</strong></p>
+                    <p style="margin: 8px 0 0 0; font-size: 1.1em;"><strong>STABLE</strong> — The ring is {{
+                        hillLimitDialogData.difference.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km inside
+                        the effective Hill radius.</p>
+                    <p style="margin: 8px 0 0 0; font-size: 0.95em; color: #555;">The ring lies within the
+                        gravitationally stable zone{{
+                        hillLimitDialogData.perturbers && hillLimitDialogData.perturbers.length > 0 ? ', even accounting
+                        for nearby perturbing bodies' : '' }}.</p>
+                </div>
             </div>
 
-            <div class="result" *ngIf="hillLimitDialogData">
-                <p><strong>Result:</strong></p>
-                <ul>
-                    <li><strong>Hill limit:</strong> {{ hillLimitDialogData.hillLimit.toLocaleString() }} km</li>
-                    <li><strong>Ring outer radius:</strong> {{ hillLimitDialogData.outerRadius.toLocaleString() }} km</li>
-                    <li *ngIf="hillLimitDialogData.isExceeded"><strong>Exceeded by:</strong> {{ hillLimitDialogData.difference.toLocaleString() }} km</li>
-                    <li *ngIf="!hillLimitDialogData.isExceeded"><strong>Margin:</strong> {{ hillLimitDialogData.difference.toLocaleString() }} km</li>
-                </ul>
+            <div *ngIf="hillLimitDialogData?.perturbers && hillLimitDialogData.perturbers.length > 0"
+                style="margin-top: 20px;">
+                <p><strong>Nearby Bodies Affecting Gravitational Stability</strong></p>
+                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    These are bodies within 3× the ring radius whose gravitational influence constrains the parent
+                    body's stable zone.
+                    The smallest resulting Hill radius among them defines the effective Hill limit.
+                </p>
+                <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #ddd;">
+                            <th style="text-align: left; padding: 8px; font-weight: 600;">Nearby Body</th>
+                            <th style="text-align: right; padding: 8px; font-weight: 600;">Average Distance (km)</th>
+                            <th style="text-align: right; padding: 8px; font-weight: 600;">Local Hill Radius (km)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let perturber of hillLimitDialogData.perturbers"
+                            [style.background]="perturber.name === hillLimitDialogData.limitingPerturber ? '#fff3e0' : 'transparent'"
+                            style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 8px;">{{ perturber.name }}</td>
+                            <td style="text-align: right; padding: 8px;">{{
+                                perturber.minDistance.toLocaleString('en-US', {maximumFractionDigits: 0}) }}</td>
+                            <td style="text-align: right; padding: 8px;">{{ perturber.hillRadius.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div *ngIf="hillLimitDialogData.limitingPerturber"
+                    style="margin-top: 12px; padding: 10px; background: #fff3e0; border-radius: 4px;">
+                    <p style="margin: 0;"><strong>Dominant Stability-Limiting Body:</strong></p>
+                    <p style="margin: 5px 0 0 0;"><strong>{{ hillLimitDialogData.limitingPerturber }}</strong></p>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #555;">
+                        Its proximity restricts the stability zone to {{
+                        hillLimitDialogData.minHillRadius.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km{{
+                        hillLimitDialogData.isExceeded ? ', far inside the ring' : '' }}.
+                    </p>
+                </div>
             </div>
 
-            <p class="conclusion" *ngIf="hillLimitDialogData?.isExceeded">
-                This ring configuration is anomalous because the outer edge extends beyond the Hill sphere, where the ring material would be gravitationally unstable and likely couldn't exist in reality.
-            </p>
-            <p class="conclusion-safe" *ngIf="hillLimitDialogData && !hillLimitDialogData.isExceeded">
-                This ring is well within the Hill sphere and is gravitationally stable.
-            </p>
+            <div class="formula" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <p><strong>Calculation Method:</strong></p>
+                <p style="font-size: 0.9em; margin-top: 5px; color: #666;">
+                    The algorithm samples orbital positions accounting for eccentricity, inclination, argument of
+                    periapsis, and ascending node. For each potential perturber within range, it computes the Hill
+                    radius at
+                    average separation: r<sub>H</sub> = d × (m / (3 × M))<sup>1/3</sup>, where d is the average distance
+                    to the perturber,
+                    m is the parent mass, and M is the perturber mass. The smallest computed Hill radius defines the
+                    effective stability limit.
+                </p>
+            </div>
+
+            <div *ngIf="hillLimitDialogData?.debugInfo"
+                style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <p><strong>Debug Information (Distance Calculation Verification):</strong></p>
+
+                <div
+                    style="margin-top: 10px; font-family: monospace; font-size: 0.85em; background: #f5f5f5; padding: 12px; border-radius: 4px;">
+                    <p style="margin: 0 0 8px 0;"><strong>Parent Body Chain:</strong></p>
+                    <ul style="margin: 0 0 12px 0; padding-left: 20px;">
+                        <li *ngFor="let item of hillLimitDialogData.debugInfo.parentChain">{{ item }}</li>
+                    </ul>
+
+                    <p style="margin: 12px 0 8px 0;"><strong>Primary Body Chain:</strong></p>
+                    <ul style="margin: 0 0 12px 0; padding-left: 20px;">
+                        <li *ngFor="let item of hillLimitDialogData.debugInfo.primaryChain">{{ item }}</li>
+                    </ul>
+
+                    <p style="margin: 12px 0 8px 0;"><strong>Orbital Parameters:</strong></p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Parent SMA:</strong></td>
+                            <td style="padding: 4px; text-align: right;">{{
+                                hillLimitDialogData.debugInfo.parentSMA.toLocaleString('en-US', {maximumFractionDigits:
+                                0}) }} km</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Parent Periapsis:</strong></td>
+                            <td style="padding: 4px; text-align: right;">{{
+                                hillLimitDialogData.debugInfo.parentPeriapsis.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }} km</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Parent Apoapsis:</strong></td>
+                            <td style="padding: 4px; text-align: right;">{{
+                                hillLimitDialogData.debugInfo.parentApoapsis.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }} km</td>
+                        </tr>
+                        <tr *ngIf="hillLimitDialogData.debugInfo.primarySMA !== null"
+                            style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Primary SMA:</strong></td>
+                            <td style="padding: 4px; text-align: right;">{{
+                                hillLimitDialogData.debugInfo.primarySMA.toLocaleString('en-US', {maximumFractionDigits:
+                                0}) }} km</td>
+                        </tr>
+                        <tr *ngIf="hillLimitDialogData.debugInfo.primaryPeriapsis !== null"
+                            style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Primary Periapsis:</strong></td>
+                            <td style="padding: 4px; text-align: right;">{{
+                                hillLimitDialogData.debugInfo.primaryPeriapsis.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }} km</td>
+                        </tr>
+                        <tr *ngIf="hillLimitDialogData.debugInfo.primaryApoapsis !== null"
+                            style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Primary Apoapsis:</strong></td>
+                            <td style="padding: 4px; text-align: right;">{{
+                                hillLimitDialogData.debugInfo.primaryApoapsis.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }} km</td>
+                        </tr>
+                    </table>
+
+                    <p style="margin: 12px 0 8px 0;"><strong>Distance Calculation Results:</strong></p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Calculated Average Distance:</strong></td>
+                            <td style="padding: 4px; text-align: right; font-weight: bold; color: #1976d2;">{{
+                                hillLimitDialogData.debugInfo.distanceToPrimary.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }} km</td>
+                        </tr>
+                        <tr *ngIf="hillLimitDialogData.debugInfo.theoreticalMinDist !== null"
+                            style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 4px;"><strong>Theoretical Minimum Distance:</strong></td>
+                            <td style="padding: 4px; text-align: right;"
+                                [style.color]="hillLimitDialogData.debugInfo.distanceToPrimary < hillLimitDialogData.debugInfo.theoreticalMinDist * 0.9 ? '#d32f2f' : '#388e3c'">
+                                {{ hillLimitDialogData.debugInfo.theoreticalMinDist.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }} km
+                            </td>
+                        </tr>
+                        <tr *ngIf="hillLimitDialogData.debugInfo.theoreticalMaxDist !== null">
+                            <td style="padding: 4px;"><strong>Theoretical Maximum Distance:</strong></td>
+                            <td style="padding: 4px; text-align: right;"
+                                [style.color]="hillLimitDialogData.debugInfo.distanceToPrimary > hillLimitDialogData.debugInfo.theoreticalMaxDist * 1.1 ? '#d32f2f' : '#388e3c'">
+                                {{ hillLimitDialogData.debugInfo.theoreticalMaxDist.toLocaleString('en-US',
+                                {maximumFractionDigits: 0}) }} km
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div *ngIf="hillLimitDialogData.debugInfo.theoreticalMinDist !== null && hillLimitDialogData.debugInfo.distanceToPrimary < hillLimitDialogData.debugInfo.theoreticalMinDist * 0.9"
+                        style="margin-top: 12px; padding: 10px; background: #ffebee; border-radius: 4px; border-left: 4px solid #d32f2f;">
+                        <p style="margin: 0; font-weight: bold; color: #d32f2f;">⚠️ WARNING: Distance calculation
+                            violation detected!</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9em;">The calculated distance is less than the
+                            theoretical minimum possible distance based on orbital mechanics. This indicates a
+                            calculation error.</p>
+                    </div>
+
+                    <div *ngIf="hillLimitDialogData.debugInfo.theoreticalMaxDist !== null && hillLimitDialogData.debugInfo.distanceToPrimary > hillLimitDialogData.debugInfo.theoreticalMaxDist * 1.1"
+                        style="margin-top: 12px; padding: 10px; background: #ffebee; border-radius: 4px; border-left: 4px solid #d32f2f;">
+                        <p style="margin: 0; font-weight: bold; color: #d32f2f;">⚠️ WARNING: Distance calculation
+                            violation detected!</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9em;">The calculated distance exceeds the theoretical
+                            maximum possible distance based on orbital mechanics. This indicates a calculation error.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>
@@ -515,12 +711,9 @@
         <h2 mat-dialog-title>Invisible Ring Explanation</h2>
         <mat-dialog-content>
             <p class="intro">
-                The "Invisible" badge indicates that this ring may not be visible in-game due to extremely low density. This calculation is based on data collected in the Canonn Ring survey.
+                The "Invisible" badge indicates that this ring may not be visible in-game due to extremely low density.
+                This calculation is based on data collected in the Canonn Ring survey.
             </p>
-
-            <div class="warning">
-                <strong>Note:</strong> There may be some inaccuracies in this determination due to loss of precision in the database compared to ship logs. The values stored in the database may have been rounded or truncated during data collection.
-            </div>
 
             <div class="formula">
                 <strong>Calculation:</strong>
@@ -539,8 +732,10 @@
                 <p><strong>Values for this ring:</strong></p>
                 <ul>
                     <li><strong>Ring name:</strong> {{ invisibleRingDialogData.ringName }}</li>
-                    <li><strong>Inner radius:</strong> {{ invisibleRingDialogData.innerRadius.toLocaleString() }} km</li>
-                    <li><strong>Outer radius:</strong> {{ invisibleRingDialogData.outerRadius.toLocaleString() }} km</li>
+                    <li><strong>Inner radius:</strong> {{ invisibleRingDialogData.innerRadius.toLocaleString() }} km
+                    </li>
+                    <li><strong>Outer radius:</strong> {{ invisibleRingDialogData.outerRadius.toLocaleString() }} km
+                    </li>
                     <li><strong>Ring width:</strong> {{ invisibleRingDialogData.width.toLocaleString() }} km</li>
                     <li><strong>Ring area:</strong> {{ invisibleRingDialogData.area.toLocaleString() }} km²</li>
                     <li><strong>Ring mass:</strong> {{ invisibleRingDialogData.mass.toLocaleString() }} Mt</li>
@@ -551,7 +746,9 @@
             <div class="result" *ngIf="invisibleRingDialogData">
                 <p><strong>Analysis:</strong></p>
                 <p *ngIf="invisibleRingDialogData.isInvisible" class="conclusion">
-                    This ring meets both criteria (density &lt; 0.1 Mt/km² and width &gt; 1,000,000 km) and is likely invisible in-game. The extremely low density means there is insufficient material to scatter light and create a visible ring structure.
+                    This ring meets both criteria (density &lt; 0.1 Mt/km² and width &gt; 1,000,000 km) and is likely
+                    invisible in-game. The extremely low density means there is insufficient material to scatter light
+                    and create a visible ring structure.
                 </p>
                 <p *ngIf="!invisibleRingDialogData.isInvisible" class="conclusion-safe">
                     This ring does not meet the invisibility criteria and should be visible in-game.
@@ -559,7 +756,14 @@
             </div>
 
             <p class="disclaimer">
-                <strong>Disclaimer:</strong> Ring visibility in Elite Dangerous depends on multiple factors including camera position, lighting conditions, and game rendering settings. This calculation provides only an estimate based on density and size.
+                <strong>Disclaimer:</strong> Ring visibility in Elite Dangerous depends on multiple factors including
+                camera position, lighting conditions, and game rendering settings. This calculation provides only an
+                estimate based on density and size.
+
+                There may be some inaccuracies in this determination due to loss of precision in
+                the database compared to ship logs. The values stored in the database may have been rounded or truncated
+                during data collection.
+
             </p>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
