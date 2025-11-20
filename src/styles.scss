@@ -134,3 +134,10 @@ hr {
   white-space: pre-line;
 }
 
+.hill-limit-dialog-panel {
+  z-index: 1000 !important;
+}
+
+.cdk-overlay-dark-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}

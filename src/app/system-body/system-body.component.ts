@@ -787,6 +787,39 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         continue;
       }
 
+      // Check if this body is a sibling (shares same parent as the ring's parent)
+      const isSibling = otherBody.parent === this.body.parent.parent;
+      
+      // For siblings orbiting the same body as the ring's parent, they're in the same reference frame
+      if (isSibling && otherSMA) {
+        // Calculate average distance directly since both orbit the same central body
+        const otherSMAKm = otherSMA * 149597870.7;
+        
+        // Ring is essentially at the parent's location (very small orbit around parent)
+        // So distance to sibling is approximately the sibling's orbital radius
+        // For siblings, use a more generous screening: consider them if they're within 100x ring radius
+        // (gravitational effects extend much further than physical proximity)
+        const siblingScreeningDistance = ringOuterRadius * 100;
+        
+        if (otherSMAKm <= siblingScreeningDistance) {
+          const massRatio = parentMass / (3 * otherMass);
+          const hillRadius = otherSMAKm * Math.pow(massRatio, 1 / 3);
+
+          perturbers.push({
+            name: otherData.name,
+            minDistance: otherSMAKm,
+            hillRadius: hillRadius
+          });
+
+          if (hillRadius < minHillRadius) {
+            minHillRadius = hillRadius;
+            limitingPerturber = otherData.name;
+            perturberDistance = otherSMAKm;
+          }
+        }
+        continue;
+      }
+
       // Body 0 (origin) won't have orbital parameters but is at position (0,0,0)
       if (!otherSMA) {
         // This is likely Body 0 at the origin - handle it separately
@@ -963,23 +996,22 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     const semiMajorAxis = parentBody.semiMajorAxis!;
     const parentMass = parentBody.earthMasses || (parentBody.solarMasses ? parentBody.solarMasses * 332950 : null);
 
-    let primaryMass: number | null = null;
-    let primaryName: string = '';
-    let currentParent = this.body.parent.parent;
-
-    while (currentParent) {
-      if (currentParent.bodyData.solarMasses) {
-        primaryMass = currentParent.bodyData.solarMasses * 332950;
-        primaryName = currentParent.bodyData.name;
-        break;
-      }
-      if (currentParent.bodyData.earthMasses) {
-        primaryMass = currentParent.bodyData.earthMasses;
-        primaryName = currentParent.bodyData.name;
-        break;
-      }
-      currentParent = currentParent.parent;
+    // Get primary body name from debugInfo and find it to get its mass
+    const primaryName = result.debugInfo?.primaryBodyName || '';
+    if (!primaryName) {
+      return;
     }
+
+    // Find the primary body to get its mass
+    const allBodies = this.getAllSystemBodies();
+    const primaryBodyObj = allBodies.find(b => b.bodyData.name === primaryName);
+    if (!primaryBodyObj) {
+      return;
+    }
+
+    const primaryMass = primaryBodyObj.bodyData.solarMasses 
+      ? primaryBodyObj.bodyData.solarMasses * 332950 
+      : primaryBodyObj.bodyData.earthMasses || null;
 
     if (!primaryMass) {
       return;
@@ -1014,10 +1046,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       debugInfo: result.debugInfo
     };
 
-    this.dialog.open(this.hillLimitDialogTemplate, {
+    const dialogRef = this.dialog.open(this.hillLimitDialogTemplate, {
       width: '700px',
       maxWidth: '90vw',
-      panelClass: 'hill-limit-dialog'
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      panelClass: 'hill-limit-dialog-panel'
     });
   }
 
