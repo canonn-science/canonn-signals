@@ -233,12 +233,16 @@ export class HomeComponent implements OnInit {
             bodyData: {
               bodyId: -1, // Temporary ID for rings
               name: this.stripParentName(ring.name, systemBody.name),
-              id64: 0,
+              id64: ring.id64 || 0,
               subType: ring.type,
               type: "Ring",
               innerRadius: ring.innerRadius / 1000, // Convert m to km
               outerRadius: ring.outerRadius / 1000, // Convert m to km
-              mass: ring.mass
+              mass: ring.mass,
+              signals: ring.signals ? {
+                signals: ring.signals.signals,
+                updateTime: ring.signals.updateTime || ''
+              } : undefined
             },
             subBodies: [],
             parent: body
@@ -522,11 +526,18 @@ export interface CanonnBiostatsBody {
     type: string;
   }[];
   rings?: {
+    id64?: number;
     innerRadius: number;
     mass: number;
     name: string;
     outerRadius: number;
     type: string;
+    signals?: {
+      signals?: {
+        [key: string]: number;
+      };
+      updateTime?: string;
+    };
   }[];
   bodyId: number;
   distanceToArrival?: number;
@@ -563,6 +574,7 @@ export interface CanonnBiostatsBody {
     Star: number;
   }[];
   radius?: number;
+  reserveLevel?: string;
   rotationalPeriod?: number;
   rotationalPeriodTidallyLocked?: boolean;
   semiMajorAxis?: number;

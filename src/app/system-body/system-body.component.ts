@@ -370,6 +370,45 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     };
   }
 
+  public getSignalsCount(): number {
+    // First check if the ring body itself has signals
+    if (this.body.bodyData.signals?.signals) {
+      return Object.keys(this.body.bodyData.signals.signals).length;
+    }
+    
+    // For ring bodies, check the parent's rings array
+    if (this.body.bodyData.type === 'Ring' && this.body.parent?.bodyData.rings) {
+      const ringData = this.body.parent.bodyData.rings.find(r => r.name === this.body.bodyData.name);
+      if (ringData?.signals?.signals) {
+        return Object.keys(ringData.signals.signals).length;
+      }
+    }
+    
+    return 0;
+  }
+
+  public getSignalsTooltip(): string {
+    let signals: { [key: string]: number } | undefined;
+    
+    // First check if the ring body itself has signals
+    if (this.body.bodyData.signals?.signals) {
+      signals = this.body.bodyData.signals.signals;
+    }
+    // For ring bodies, check the parent's rings array
+    else if (this.body.bodyData.type === 'Ring' && this.body.parent?.bodyData.rings) {
+      const ringData = this.body.parent.bodyData.rings.find(r => r.name === this.body.bodyData.name);
+      if (ringData?.signals?.signals) {
+        signals = ringData.signals.signals;
+      }
+    }
+    
+    if (!signals) return '';
+    
+    return Object.entries(signals)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n');
+  }
+
   public calculateHillLimit(): number | null {
     if (!this.body.parent) {
       return null;

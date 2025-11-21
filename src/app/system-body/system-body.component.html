@@ -270,6 +270,30 @@
                         {{ body.bodyData.solarRadius | number:'0.2-2' }}
                     </div>
                 </div>
+                <div *ngIf="body.bodyData.luminosity && body.bodyData.type === 'Star'" class="body-data-entry">
+                    <div>
+                        Luminosity class
+                    </div>
+                    <div>
+                        {{ body.bodyData.luminosity }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.absoluteMagnitude !== undefined && body.bodyData.absoluteMagnitude !== null && body.bodyData.type === 'Star'" class="body-data-entry">
+                    <div>
+                        Absolute magnitude
+                    </div>
+                    <div [matTooltip]="body.bodyData.absoluteMagnitude.toString()">
+                        {{ body.bodyData.absoluteMagnitude | number:'0.2-2' }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.spectralClass && body.bodyData.type === 'Star'" class="body-data-entry">
+                    <div>
+                        Spectral class
+                    </div>
+                    <div>
+                        {{ body.bodyData.spectralClass }}
+                    </div>
+                </div>
                 <div *ngIf="body.bodyData.surfaceTemperature" class="body-data-entry">
                     <div>
                         Surface temperature
@@ -284,6 +308,22 @@
                     </div>
                     <div>
                         {{ body.bodyData.volcanismType }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.reserveLevel" class="body-data-entry">
+                    <div>
+                        Reserve level
+                    </div>
+                    <div>
+                        {{ body.bodyData.reserveLevel }}
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.innerRadius" class="body-data-entry">
+                    <div>
+                        Reserve level
+                    </div>
+                    <div>
+                        {{ body.bodyData.reserveLevel }}
                     </div>
                 </div>
                 <div *ngIf="body.bodyData.innerRadius" class="body-data-entry">
@@ -351,6 +391,14 @@
                     </div>
                     <div>
                         n/a
+                    </div>
+                </div>
+                <div *ngIf="body.bodyData.type === 'Ring' && getSignalsCount() > 0" class="body-data-entry">
+                    <div>
+                        Hotspots
+                    </div>
+                    <div [matTooltip]="getSignalsTooltip()" matTooltipClass="multiline-tooltip">
+                        {{ getSignalsCount() }} hotspot(s)
                     </div>
                 </div>
             </div>
