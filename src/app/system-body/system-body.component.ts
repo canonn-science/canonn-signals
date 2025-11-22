@@ -101,11 +101,11 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     this.cachedRocheExcess = this.calculateRocheExcess();
 
     // Calculate formatted mass values once when body changes
-    this.formattedEarthMass = this.body.bodyData.earthMasses 
-      ? this.formatEarthMass(this.body.bodyData.earthMasses) 
+    this.formattedEarthMass = this.body.bodyData.earthMasses
+      ? this.formatEarthMass(this.body.bodyData.earthMasses)
       : null;
-    this.formattedSolarMass = this.body.bodyData.solarMasses 
-      ? this.formatSolarMass(this.body.bodyData.solarMasses) 
+    this.formattedSolarMass = this.body.bodyData.solarMasses
+      ? this.formatSolarMass(this.body.bodyData.solarMasses)
       : null;
 
     // Update cached children state after expansion logic
@@ -122,10 +122,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       }
     }
     else if (this.body.bodyData.type === "Ring") {
-      this.bodyImage = `bodies/planets/terrestrial/Rings.png`;
+      const asteroidIcon = this.getAsteroidIcon();
+      this.bodyImage = asteroidIcon || `bodies/planets/terrestrial/Rings.png`;
     }
     else if (this.body.bodyData.type === "Belt") {
-      this.bodyImage = `bodies/planets/terrestrial/Belts.png`;
+      const asteroidIcon = this.getAsteroidIcon();
+      this.bodyImage = asteroidIcon || `bodies/planets/terrestrial/Belts.png`;
     }
     else if (this.body.bodyData.type === "Barycentre") {
       this.bodyImage = `Orbit2.gif`;
@@ -375,7 +377,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     if (this.body.bodyData.signals?.signals) {
       return Object.keys(this.body.bodyData.signals.signals).length;
     }
-    
+
     // For ring bodies, check the parent's rings array
     if (this.body.bodyData.type === 'Ring' && this.body.parent?.bodyData.rings) {
       const ringData = this.body.parent.bodyData.rings.find(r => r.name === this.body.bodyData.name);
@@ -383,13 +385,13 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         return Object.keys(ringData.signals.signals).length;
       }
     }
-    
+
     return 0;
   }
 
   public getSignalsTooltip(): string {
     let signals: { [key: string]: number } | undefined;
-    
+
     // First check if the ring body itself has signals
     if (this.body.bodyData.signals?.signals) {
       signals = this.body.bodyData.signals.signals;
@@ -401,9 +403,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         signals = ringData.signals.signals;
       }
     }
-    
+
     if (!signals) return '';
-    
+
     return Object.entries(signals)
       .map(([key, value]) => `${key}: ${value}`)
       .join('\n');
@@ -1011,7 +1013,30 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       .join('\n');
   }
 
+  private getAsteroidIcon(): string | null {
+    // Only show icon for rings and belts
+    if (this.body.bodyData.type !== 'Ring' && this.body.bodyData.type !== 'Belt') {
+      return null;
+    }
 
+    // Get the subType (e.g., "Icy", "Metallic", "Metal Rich", "Rocky")
+    const subType = this.body.bodyData.subType;
+    if (!subType) {
+      return null;
+    }
+
+    // Convert subType to lowercase and replace spaces with underscores
+    // "Metal Rich" -> "metal_rich"
+    const iconName = subType.toLowerCase().replace(/ /g, '_');
+
+    // Construct the filename based on type (without 'assets/' prefix as it's added in template)
+    if (this.body.bodyData.type === 'Belt') {
+      return `asteroids/cluster_${iconName}_01.png`;
+    } else {
+      // Ring
+      return `asteroids/${iconName}_01.png`;
+    }
+  }
 
   public ngAfterViewInit(): void {
     setTimeout(() => this.updateChildrenExpandedState());
