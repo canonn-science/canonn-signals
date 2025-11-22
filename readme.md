@@ -21,3 +21,14 @@ This application is [licensed](License.txt) under the MIT license.
 
 The body asset images used from https://github.com/EDDiscovery/ImageRepository/ and are licensed under the [Apache 2.0 license](src/assets/bodies/LICENSE).
 
+## Credits
+* CMDR Elfener for the original implementation
+* CMDR DarkSession for the Angular implementation
+* CMDR [Spansh](https://spansh.co.uk) for use of his APIs and galaxy dumps
+* The [EDCD Community](https://edcd.github.io/) for help and advice over the years
+* The [EDDN Network](https://eddn.edcd.io/) and the commanders who contribute to it
+* CMDR Eahlstan for his consultancy on astronomical matters
+* CMDR Orvidius for use of the [Galactic Exploration Catalog](https://edastro.com/gec) apis.
+* CMDR Steven Green for supplying the icons for Belts and Rings
+* CMDR LCU No Fool Like One for cloud functions and ongoing enhancements
+
