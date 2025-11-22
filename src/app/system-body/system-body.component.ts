@@ -1555,39 +1555,6 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       }));
   }
 
-  public getMultiBodySystemBadge(): { label: string, count: number } | null {
-    // Only show badge for barycentres that have multiple child bodies
-    if (this.body.bodyData.type !== 'Barycentre' || !this.body.subBodies || this.body.subBodies.length < 3) {
-      return null;
-    }
-
-    // Count direct child bodies (excluding rings and belts)
-    const childBodies = this.body.subBodies.filter(child =>
-      child.bodyData.type !== 'Ring' && child.bodyData.type !== 'Belt'
-    );
-
-    const bodyCount = childBodies.length;
-    if (bodyCount < 3) {
-      return null;
-    }
-
-    const labels: { [key: number]: string } = {
-      3: 'Trinary',
-      4: 'Quaternary',
-      5: 'Quinary',
-      6: 'Senary',
-      7: 'Septenary',
-      8: 'Octonary',
-      9: 'Nonary',
-      10: 'Denary'
-    };
-
-    return {
-      label: labels[bodyCount] || `${bodyCount}-body system`,
-      count: bodyCount
-    };
-  }
-
   public getRocheExcess(): number | null {
     return this.cachedRocheExcess;
   }
