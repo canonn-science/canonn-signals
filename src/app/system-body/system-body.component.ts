@@ -333,7 +333,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public getPlanetaryDensity(): { value: number; unit: string; tooltip: string } | null {
     // Only calculate for planets and stars with both mass and radius
     let radiusKm: number = 0;
-    
+
     // Get radius in km
     if (this.body.bodyData.radius) {
       radiusKm = this.body.bodyData.radius;
@@ -345,7 +345,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     let massKg: number = 0;
-    
+
     // Get mass in kg
     if (this.body.bodyData.earthMasses) {
       massKg = this.body.bodyData.earthMasses * 5.972e24; // Earth mass in kg
@@ -365,7 +365,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     // Choose appropriate unit based on magnitude
     let value: number;
     let unit: string;
-    
+
     if (densityKgM3 < 1) {
       // Use g/cm³ for very low densities (gas giants, some stars)
       value = densityKgM3 / 1000;
@@ -424,8 +424,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public formatSolarMass(solarMasses: number): { display: string; tooltip: string } {
     return {
-      display: `${solarMasses.toFixed(2)}`,
-      tooltip: `${solarMasses} Solar masses`
+      display: `${solarMasses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      tooltip: `${solarMasses.toLocaleString('en-US', { maximumFractionDigits: 20 })} Solar masses`
     };
   }
 
