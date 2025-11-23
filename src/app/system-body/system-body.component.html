@@ -83,431 +83,463 @@
             <img *ngIf="bodyImage" src="assets/{{ bodyImage }}" (error)="bodyImage = ''" loading="lazy" />
         </div>
         <div class="body-content">
-            <div class="body-data">
-                <div *ngIf="body.bodyData.orbitalPeriod" class="body-data-entry">
-                    <div>
-                        Orbital period
+            <div class="body-data-columns">
+                <!-- Orbit Section -->
+                <ng-container
+                    *ngIf="body.bodyData.orbitalPeriod || body.bodyData.semiMajorAxis || body.bodyData.orbitalEccentricity !== undefined || body.bodyData.orbitalInclination || body.bodyData.argOfPeriapsis || body.bodyData.ascendingNode || getNextPeriapsis() || getNextApoapsis()">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Orbit</div>
+                        <div *ngIf="body.bodyData.orbitalPeriod" class="body-data-entry">
+                            <div>
+                                Orbital period
+                            </div>
+                            <div [matTooltip]="body.bodyData.orbitalPeriod + ' days'">
+                                {{ body.bodyData.orbitalPeriod | number:'0.2-2' }} days
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.semiMajorAxis" class="body-data-entry">
+                            <div>
+                                Semi-major axis
+                            </div>
+                            <div [matTooltip]="body.bodyData.semiMajorAxis + ' au'">
+                                {{ (body.bodyData.semiMajorAxis * 149597870.7) | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
+                            class="body-data-entry">
+                            <div>
+                                Apoapsis
+                            </div>
+                            <div [matTooltip]="getApoapsis() + ' km'">
+                                {{ getApoapsis() | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
+                            class="body-data-entry">
+                            <div>
+                                Periapsis
+                            </div>
+                            <div [matTooltip]="getPeriapsis() + ' km'">
+                                {{ getPeriapsis() | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null"
+                            class="body-data-entry">
+                            <div>
+                                Orbital eccentricity
+                            </div>
+                            <div [matTooltip]="body.bodyData.orbitalEccentricity.toString()">
+                                {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{
+                                getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.orbitalInclination" class="body-data-entry">
+                            <div>
+                                Orbital inclination
+                            </div>
+                            <div [matTooltip]="body.bodyData.orbitalInclination + '°'">
+                                {{ body.bodyData.orbitalInclination | number:'0.2-2' }}°
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.argOfPeriapsis" class="body-data-entry">
+                            <div>
+                                Argument of periapsis
+                            </div>
+                            <div [matTooltip]="body.bodyData.argOfPeriapsis + '°'">
+                                {{ body.bodyData.argOfPeriapsis | number:'0.2-2' }}°
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.ascendingNode" class="body-data-entry">
+                            <div>
+                                Ascending node
+                            </div>
+                            <div [matTooltip]="body.bodyData.ascendingNode + '°'">
+                                {{ body.bodyData.ascendingNode | number:'0.2-2' }}°
+                            </div>
+                        </div>
+                        <div *ngIf="getNextPeriapsis()" class="body-data-entry">
+                            <div>
+                                Next periapsis
+                            </div>
+                            <div>
+                                {{ getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextPeriapsis()!.days |
+                                number:'0.1-1' }} days)
+                            </div>
+                        </div>
+                        <div *ngIf="getNextApoapsis()" class="body-data-entry">
+                            <div>
+                                Next apoapsis
+                            </div>
+                            <div>
+                                {{ getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextApoapsis()!.days |
+                                number:'0.1-1' }} days)
+                            </div>
+                        </div>
+                        <div *ngIf="getTangentialVelocity() !== null" class="body-data-entry">
+                            <div>
+                                Tangential velocity
+                            </div>
+                            <div [matTooltip]="getTangentialVelocityTooltip()">
+                                {{ getTangentialVelocityDisplay() }}
+                            </div>
+                        </div>
                     </div>
-                    <div [matTooltip]="body.bodyData.orbitalPeriod + ' days'">
-                        {{ body.bodyData.orbitalPeriod | number:'0.2-2' }} days
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.semiMajorAxis" class="body-data-entry">
-                    <div>
-                        Semi-major axis
-                    </div>
-                    <div [matTooltip]="body.bodyData.semiMajorAxis + ' au'">
-                        {{ (body.bodyData.semiMajorAxis * 149597870.7) | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
-                    class="body-data-entry">
-                    <div>
-                        Apoapsis
-                    </div>
-                    <div [matTooltip]="getApoapsis() + ' km'">
-                        {{ getApoapsis() | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
-                    class="body-data-entry">
-                    <div>
-                        Periapsis
-                    </div>
-                    <div [matTooltip]="getPeriapsis() + ' km'">
-                        {{ getPeriapsis() | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null"
-                    class="body-data-entry">
-                    <div>
-                        Orbital eccentricity
-                    </div>
-                    <div [matTooltip]="body.bodyData.orbitalEccentricity.toString()">
-                        {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{
-                        getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.orbitalInclination" class="body-data-entry">
-                    <div>
-                        Orbital inclination
-                    </div>
-                    <div [matTooltip]="body.bodyData.orbitalInclination + '°'">
-                        {{ body.bodyData.orbitalInclination | number:'0.2-2' }}°
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.argOfPeriapsis" class="body-data-entry">
-                    <div>
-                        Argument of periapsis
-                    </div>
-                    <div [matTooltip]="body.bodyData.argOfPeriapsis + '°'">
-                        {{ body.bodyData.argOfPeriapsis | number:'0.2-2' }}°
-                    </div>
-                </div>
-                <div *ngIf="getNextPeriapsis()" class="body-data-entry">
-                    <div>
-                        Next periapsis
-                    </div>
-                    <div>
-                        {{ getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextPeriapsis()!.days |
-                        number:'0.1-1' }} days)
-                    </div>
-                </div>
-                <div *ngIf="getNextApoapsis()" class="body-data-entry">
-                    <div>
-                        Next apoapsis
-                    </div>
-                    <div>
-                        {{ getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextApoapsis()!.days |
-                        number:'0.1-1' }} days)
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.ascendingNode" class="body-data-entry">
-                    <div>
-                        Ascending node
-                    </div>
-                    <div [matTooltip]="body.bodyData.ascendingNode + '°'">
-                        {{ body.bodyData.ascendingNode | number:'0.2-2' }}°
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.axialTilt" class="body-data-entry">
-                    <div>
-                        Axial tilt
-                    </div>
-                    <div [matTooltip]="body.bodyData.axialTilt + '°'">
-                        {{ body.bodyData.axialTilt | number:'0.2-2' }}°
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.distanceToArrival" class="body-data-entry">
-                    <div>
-                        Distance to arrival
-                    </div>
-                    <div [matTooltip]="body.bodyData.distanceToArrival + ' ls'">
-                        {{ body.bodyData.distanceToArrival | number:'0.2-2' }} ls
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.rotationalPeriod" class="body-data-entry">
-                    <div>
-                        Rotational period
-                    </div>
-                    <div [matTooltip]="body.bodyData.rotationalPeriod + ' days'">
-                        {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
-                    </div>
-                </div>
-                <div *ngIf="getTangentialVelocity() !== null" class="body-data-entry">
-                    <div>
-                        Tangential velocity
-                    </div>
-                    <div [matTooltip]="getTangentialVelocityTooltip()">
-                        {{ getTangentialVelocityDisplay() }}
-                    </div>
-                </div>
-                <div *ngIf="getJetConeAngle() !== null" class="body-data-entry">
-                    <div>
-                        Jet cone half angle
-                    </div>
-                    <div matTooltip="Estimate">
-                        {{ getJetConeAngle() | number:'0.2-2' }}°
-                    </div>
-                </div>
+                </ng-container>
 
-                <div *ngIf="body.bodyData.surfacePressure" class="body-data-entry">
-                    <div>
-                        Surface pressure
-                    </div>
-                    <div [matTooltip]="body.bodyData.surfacePressure + ' atmospheres'">
-                        {{ body.bodyData.surfacePressure | number:'0.2-2' }} atmospheres
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.gravity" class="body-data-entry">
-                    <div>
-                        Gravity
-                    </div>
-                    <div [matTooltip]="body.bodyData.gravity + ' G'">
-                        {{ body.bodyData.gravity | number:'0.2-2' }} G
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.radius" class="body-data-entry">
-                    <div>
-                        Radius
-                    </div>
-                    <div [matTooltip]="body.bodyData.radius + ' km'">
-                        {{ body.bodyData.radius | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.age" class="body-data-entry">
-                    <div>
-                        Age
-                    </div>
-                    <div>
-                        {{ body.bodyData.age }} million years
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.earthMasses && body.bodyData.type === 'Planet'" class="body-data-entry">
-                    <div>
-                        Mass
-                    </div>
-                    <div [matTooltip]="formattedEarthMass?.tooltip || ''">
-                        {{ formattedEarthMass?.display }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.solarMasses" class="body-data-entry">
-                    <div>
-                        Solar masses
-                    </div>
-                    <div [matTooltip]="formattedSolarMass?.tooltip || ''">
-                        {{ formattedSolarMass?.display }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.solarRadius" class="body-data-entry">
-                    <div>
-                        Solar radius
-                    </div>
-                    <div [matTooltip]="body.bodyData.solarRadius.toString()">
-                        {{ body.bodyData.solarRadius | number:'0.2-2' }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.luminosity && body.bodyData.type === 'Star'" class="body-data-entry">
-                    <div>
-                        Luminosity class
-                    </div>
-                    <div>
-                        {{ body.bodyData.luminosity }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.absoluteMagnitude !== undefined && body.bodyData.absoluteMagnitude !== null && body.bodyData.type === 'Star'"
-                    class="body-data-entry">
-                    <div>
-                        Absolute magnitude
-                    </div>
-                    <div [matTooltip]="body.bodyData.absoluteMagnitude.toString()">
-                        {{ body.bodyData.absoluteMagnitude | number:'0.2-2' }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.spectralClass && body.bodyData.type === 'Star'" class="body-data-entry">
-                    <div>
-                        Spectral class
-                    </div>
-                    <div>
-                        {{ body.bodyData.spectralClass }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.surfaceTemperature" class="body-data-entry">
-                    <div>
-                        Surface temperature
-                    </div>
-                    <div [matTooltip]="body.bodyData.surfaceTemperature + ' K'">
-                        {{ body.bodyData.surfaceTemperature | number:'0.2-2' }} K
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.volcanismType" class="body-data-entry">
-                    <div>
-                        Volcanism
-                    </div>
-                    <div>
-                        {{ body.bodyData.volcanismType }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.reserveLevel" class="body-data-entry">
-                    <div>
-                        Reserve level
-                    </div>
-                    <div>
-                        {{ body.bodyData.reserveLevel }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.innerRadius" class="body-data-entry">
-                    <div>
-                        Reserve level
-                    </div>
-                    <div>
-                        {{ body.bodyData.reserveLevel }}
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.innerRadius" class="body-data-entry">
-                    <div>
-                        Inner radius
-                    </div>
-                    <div [matTooltip]="body.bodyData.innerRadius + ' km'">
-                        {{ body.bodyData.innerRadius | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.outerRadius" class="body-data-entry">
-                    <div>
-                        Outer radius
-                    </div>
-                    <div [matTooltip]="body.bodyData.outerRadius + ' km'">
-                        {{ body.bodyData.outerRadius | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.mass" class="body-data-entry">
-                    <div>
-                        Mass
-                    </div>
-                    <div [matTooltip]="body.bodyData.mass + ' Mt'">
-                        {{ body.bodyData.mass | number:'0.2-2' }} Mt
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.innerRadius && body.bodyData.outerRadius" class="body-data-entry">
-                    <div>
-                        Ring width
-                    </div>
-                    <div [matTooltip]="getRingWidth() + ' km'">
-                        {{ getRingWidth() | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.innerRadius && body.bodyData.outerRadius" class="body-data-entry">
-                    <div>
-                        Ring area
-                    </div>
-                    <div [matTooltip]="getRingArea() + ' km²'">
-                        {{ getRingArea() | number:'0.2-2' }} km²
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.mass && body.bodyData.innerRadius && body.bodyData.outerRadius"
-                    class="body-data-entry">
-                    <div>
-                        Density
-                    </div>
-                    <div [matTooltip]="getRingDensity() + ' Mt/km²'">
-                        {{ getRingDensity() | number:'0.2-2' }} Mt/km²
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.type === 'Ring' && calculateHillLimit() !== null"
-                    class="body-data-entry clickable" (click)="showHillLimitExplanation()">
-                    <div>
-                        Hill limit
-                    </div>
-                    <div [matTooltip]="calculateHillLimit()! + ' km'">
-                        {{ calculateHillLimit()! | number:'0.2-2' }} km
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.type === 'Ring' && calculateHillLimit() === null" class="body-data-entry"
-                    [matTooltip]="'The Hill limit cannot be calculated because the data from Spansh is incomplete'">
-                    <div>
-                        Hill limit
-                    </div>
-                    <div>
-                        n/a
-                    </div>
-                </div>
-                <div *ngIf="body.bodyData.type === 'Ring' && getSignalsCount() > 0" class="body-data-entry">
-                    <div>
-                        Hotspots
-                    </div>
-                    <div [matTooltip]="getSignalsTooltip()" matTooltipClass="multiline-tooltip">
-                        {{ getSignalsCount() }} hotspot(s)
-                    </div>
-                </div>
-            </div>
-            <!--
-            <div *ngIf="body.bodyData.parents && body.bodyData.parents.length">
-                <div *ngFor="let parent of body.bodyData.parents; index as i"
-                    style="font-style: italic; font-size: 80%;">
-                    Parent {{ i }}:
-                    <span *ngIf="parent.Null != undefined">Barycentre: {{ parent.Null }}</span>
-                    <span *ngIf="parent.Planet != undefined">Planet: {{ parent.Planet }}</span>
-                    <span *ngIf="parent.Star != undefined">Star: {{ parent.Star }}</span>
-                </div>
-            </div> 
-            -->
-            <div *ngIf="hasSignals" class="body-signals">
-                <hr>
-                <b>Signals</b>
-                <div *ngIf="humanSignalCount" class="body-signal">
-                    <div class="body-signal-name">
-                        <img src="assets/icons/Human.png" />
-                        <span>
-                            Human: {{ humanSignalCount }}
-                        </span>
-                    </div>
-                </div>
-                <div *ngIf="otherSignalCount" class="body-signal">
-                    <div class="body-signal-name">
-                        <img src="assets/icons/Other.png" />
-                        <span>
-                            Other: {{ otherSignalCount }}
-                        </span>
-                    </div>
-                </div>
-                <div *ngIf="geologySignals.length || geologySignalCount" class="body-signal">
-                    <div class="body-signal-name">
-                        <img src="assets/icons/Geology.png" />
-                        <span>
-                            Geology: {{ geologySignalCount }}
-                        </span>
-                    </div>
-                    <ng-container *ngIf="geologySignals.length">
-                        <fa-icon [icon]="faChevronRight"></fa-icon>
-                        <div>
-                            <div *ngFor="let geologySignal of geologySignals" class="body-signal-data">
-                                {{ geologySignal }}
+                <!-- Physical Properties Section -->
+                <ng-container
+                    *ngIf="body.bodyData.radius || body.bodyData.earthMasses || body.bodyData.solarMasses || body.bodyData.solarRadius || body.bodyData.gravity || body.bodyData.axialTilt || body.bodyData.age || body.bodyData.mass || (body.bodyData.innerRadius && body.bodyData.outerRadius)">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Physical Properties</div>
+                        <div *ngIf="body.bodyData.radius" class="body-data-entry">
+                            <div>
+                                Radius
+                            </div>
+                            <div [matTooltip]="body.bodyData.radius + ' km'">
+                                {{ body.bodyData.radius | number:'0.2-2' }} km
                             </div>
                         </div>
-                    </ng-container>
-                </div>
-                <div *ngIf="biologySignals.length || biologySignalCount" class="body-signal">
-                    <div class="body-signal-name">
-                        <img src="assets/icons/Biology.png" />
-                        <span>
-                            Biology: {{ biologySignalCount }}
-                        </span>
+                        <div *ngIf="body.bodyData.solarRadius" class="body-data-entry">
+                            <div>
+                                Solar radius
+                            </div>
+                            <div [matTooltip]="body.bodyData.solarRadius.toString()">
+                                {{ body.bodyData.solarRadius | number:'0.2-2' }}
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.earthMasses && body.bodyData.type === 'Planet'"
+                            class="body-data-entry">
+                            <div>
+                                Mass
+                            </div>
+                            <div [matTooltip]="formattedEarthMass?.tooltip || ''">
+                                {{ formattedEarthMass?.display }}
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.solarMasses" class="body-data-entry">
+                            <div>
+                                Solar masses
+                            </div>
+                            <div [matTooltip]="formattedSolarMass?.tooltip || ''">
+                                {{ formattedSolarMass?.display }}
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.mass" class="body-data-entry">
+                            <div>
+                                Mass
+                            </div>
+                            <div [matTooltip]="body.bodyData.mass + ' Mt'">
+                                {{ body.bodyData.mass | number:'0.2-2' }} Mt
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.gravity" class="body-data-entry">
+                            <div>
+                                Gravity
+                            </div>
+                            <div [matTooltip]="body.bodyData.gravity + ' G'">
+                                {{ body.bodyData.gravity | number:'0.2-2' }} G
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.axialTilt" class="body-data-entry">
+                            <div>
+                                Axial tilt
+                            </div>
+                            <div [matTooltip]="body.bodyData.axialTilt + '°'">
+                                {{ body.bodyData.axialTilt | number:'0.2-2' }}°
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.age" class="body-data-entry">
+                            <div>
+                                Age
+                            </div>
+                            <div>
+                                {{ body.bodyData.age }} million years
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.innerRadius" class="body-data-entry">
+                            <div>
+                                Inner radius
+                            </div>
+                            <div [matTooltip]="body.bodyData.innerRadius + ' km'">
+                                {{ body.bodyData.innerRadius | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.outerRadius" class="body-data-entry">
+                            <div>
+                                Outer radius
+                            </div>
+                            <div [matTooltip]="body.bodyData.outerRadius + ' km'">
+                                {{ body.bodyData.outerRadius | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.innerRadius && body.bodyData.outerRadius" class="body-data-entry">
+                            <div>
+                                Ring width
+                            </div>
+                            <div [matTooltip]="getRingWidth() + ' km'">
+                                {{ getRingWidth() | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.innerRadius && body.bodyData.outerRadius" class="body-data-entry">
+                            <div>
+                                Ring area
+                            </div>
+                            <div [matTooltip]="getRingArea() + ' km²'">
+                                {{ getRingArea() | number:'0.2-2' }} km²
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.mass && body.bodyData.innerRadius && body.bodyData.outerRadius"
+                            class="body-data-entry">
+                            <div>
+                                Density
+                            </div>
+                            <div [matTooltip]="getRingDensity() + ' Mt/km²'">
+                                {{ getRingDensity() | number:'0.2-2' }} Mt/km²
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.type === 'Ring' && calculateHillLimit() !== null"
+                            class="body-data-entry clickable" (click)="showHillLimitExplanation()">
+                            <div>
+                                Hill limit
+                            </div>
+                            <div [matTooltip]="calculateHillLimit()! + ' km'">
+                                {{ calculateHillLimit()! | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.type === 'Ring' && calculateHillLimit() === null"
+                            class="body-data-entry"
+                            [matTooltip]="'The Hill limit cannot be calculated because the data from Spansh is incomplete'">
+                            <div>
+                                Hill limit
+                            </div>
+                            <div>
+                                n/a
+                            </div>
+                        </div>
                     </div>
-                    <ng-container *ngIf="biologySignals.length">
-                        <fa-icon [icon]="faChevronRight"></fa-icon>
-                        <div>
-                            <div *ngFor="let biologySignal of biologySignals" class="body-signal-data">
+                </ng-container>
+
+                <!-- Atmosphere & Environment Section -->
+                <ng-container
+                    *ngIf="body.bodyData.surfaceTemperature || body.bodyData.surfacePressure || body.bodyData.volcanismType">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Atmosphere & Environment</div>
+                        <div *ngIf="body.bodyData.surfaceTemperature" class="body-data-entry">
+                            <div>
+                                Surface temperature
+                            </div>
+                            <div [matTooltip]="body.bodyData.surfaceTemperature + ' K'">
+                                {{ body.bodyData.surfaceTemperature | number:'0.2-2' }} K
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.surfacePressure" class="body-data-entry">
+                            <div>
+                                Surface pressure
+                            </div>
+                            <div [matTooltip]="body.bodyData.surfacePressure + ' atmospheres'">
+                                {{ body.bodyData.surfacePressure | number:'0.2-2' }} atmospheres
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.volcanismType" class="body-data-entry">
+                            <div>
+                                Volcanism
+                            </div>
+                            <div>
+                                {{ body.bodyData.volcanismType }}
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- Dynamics Section -->
+                <ng-container *ngIf="body.bodyData.rotationalPeriod || body.bodyData.distanceToArrival">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Dynamics</div>
+                        <div *ngIf="body.bodyData.rotationalPeriod" class="body-data-entry">
+                            <div>
+                                Rotational period
+                            </div>
+                            <div [matTooltip]="body.bodyData.rotationalPeriod + ' days'">
+                                {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.distanceToArrival" class="body-data-entry">
+                            <div>
+                                Distance to arrival
+                            </div>
+                            <div [matTooltip]="body.bodyData.distanceToArrival + ' ls'">
+                                {{ body.bodyData.distanceToArrival | number:'0.2-2' }} ls
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- Stellar Properties Section (Stars only) -->
+                <ng-container
+                    *ngIf="body.bodyData.type === 'Star' && (body.bodyData.luminosity || body.bodyData.absoluteMagnitude !== undefined || body.bodyData.spectralClass || getJetConeAngle() !== null)">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Stellar Properties</div>
+                        <div *ngIf="body.bodyData.spectralClass" class="body-data-entry">
+                            <div>
+                                Spectral class
+                            </div>
+                            <div>
+                                {{ body.bodyData.spectralClass }}
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.luminosity" class="body-data-entry">
+                            <div>
+                                Luminosity class
+                            </div>
+                            <div>
+                                {{ body.bodyData.luminosity }}
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.absoluteMagnitude !== undefined && body.bodyData.absoluteMagnitude !== null"
+                            class="body-data-entry">
+                            <div>
+                                Absolute magnitude
+                            </div>
+                            <div [matTooltip]="body.bodyData.absoluteMagnitude.toString()">
+                                {{ body.bodyData.absoluteMagnitude | number:'0.2-2' }}
+                            </div>
+                        </div>
+                        <div *ngIf="getJetConeAngle() !== null" class="body-data-entry">
+                            <div>
+                                Jet cone half angle
+                            </div>
+                            <div matTooltip="Estimate">
+                                {{ getJetConeAngle() | number:'0.2-2' }}°
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- Resources Section (Rings/Belts) -->
+                <ng-container
+                    *ngIf="body.bodyData.reserveLevel || (body.bodyData.type === 'Ring' && getSignalsCount() > 0)">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Resources</div>
+                        <div *ngIf="body.bodyData.reserveLevel" class="body-data-entry">
+                            <div>
+                                Reserve level
+                            </div>
+                            <div>
+                                {{ body.bodyData.reserveLevel }}
+                            </div>
+                        </div>
+                        <div *ngIf="body.bodyData.type === 'Ring' && getSignalsCount() > 0" class="body-data-entry">
+                            <div>
+                                Hotspots
+                            </div>
+                            <div [matTooltip]="getSignalsTooltip()" matTooltipClass="multiline-tooltip">
+                                {{ getSignalsCount() }} hotspot(s)
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- Signals Section -->
+                <ng-container *ngIf="hasSignals">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Signals</div>
+                        <div *ngIf="humanSignalCount" class="body-signal">
+                            <div class="body-signal-name">
+                                <img src="assets/icons/Human.png" />
+                                <span>
+                                    Human: {{ humanSignalCount }}
+                                </span>
+                            </div>
+                        </div>
+                        <div *ngIf="otherSignalCount" class="body-signal">
+                            <div class="body-signal-name">
+                                <img src="assets/icons/Other.png" />
+                                <span>
+                                    Other: {{ otherSignalCount }}
+                                </span>
+                            </div>
+                        </div>
+                        <div *ngIf="geologySignals.length || geologySignalCount" class="body-signal">
+                            <div class="body-signal-name">
+                                <img src="assets/icons/Geology.png" />
+                                <span>
+                                    Geology: {{ geologySignalCount }}
+                                </span>
+                            </div>
+                            <ng-container *ngIf="geologySignals.length">
+                                <fa-icon [icon]="faChevronRight"></fa-icon>
                                 <div>
-                                    <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
-                                        matTooltip="Guess"></fa-icon>
-                                    <span *ngIf="!biologySignal.entryId">
-                                        {{ biologySignal.signal }}</span>
-                                    <span *ngIf="biologySignal.entryId">
-                                        <a
-                                            href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
-                                            {{ biologySignal.signal }}
-                                        </a>
-                                        <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
-                                    </span>
+                                    <div *ngFor="let geologySignal of geologySignals" class="body-signal-data">
+                                        {{ geologySignal }}
+                                    </div>
                                 </div>
-                                <span *ngIf="biologySignal.codex?.reward">{{ biologySignal.codex?.reward | number }}
-                                    cr</span>
-                            </div>
+                            </ng-container>
                         </div>
-                    </ng-container>
-                </div>
-                <div *ngIf="thargoidSignals.length || thargoidSignalCount" class="body-signal">
-                    <div class="body-signal-name">
-                        <img src="assets/icons/Thargoid.png" />
-                        <span>
-                            Thargoid: {{ thargoidSignalCount }}
-                        </span>
+                        <div *ngIf="biologySignals.length || biologySignalCount" class="body-signal">
+                            <div class="body-signal-name">
+                                <img src="assets/icons/Biology.png" />
+                                <span>
+                                    Biology: {{ biologySignalCount }}
+                                </span>
+                            </div>
+                            <ng-container *ngIf="biologySignals.length">
+                                <fa-icon [icon]="faChevronRight"></fa-icon>
+                                <div>
+                                    <div *ngFor="let biologySignal of biologySignals" class="body-signal-data">
+                                        <div>
+                                            <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
+                                                matTooltip="Guess"></fa-icon>
+                                            <span *ngIf="!biologySignal.entryId">
+                                                {{ biologySignal.signal }}</span>
+                                            <span *ngIf="biologySignal.entryId">
+                                                <a
+                                                    href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
+                                                    {{ biologySignal.signal }}
+                                                </a>
+                                                <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
+                                            </span>
+                                        </div>
+                                        <span *ngIf="biologySignal.codex?.reward">{{ biologySignal.codex?.reward |
+                                            number }}
+                                            cr</span>
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </div>
+                        <div *ngIf="thargoidSignals.length || thargoidSignalCount" class="body-signal">
+                            <div class="body-signal-name">
+                                <img src="assets/icons/Thargoid.png" />
+                                <span>
+                                    Thargoid: {{ thargoidSignalCount }}
+                                </span>
+                            </div>
+                            <ng-container *ngIf="thargoidSignals.length">
+                                <fa-icon [icon]="faChevronRight"></fa-icon>
+                                <div>
+                                    <div *ngFor="let thargoidSignal of thargoidSignals" class="body-signal-data">
+                                        {{ thargoidSignal }}
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </div>
+                        <div *ngIf="guardianSignals.length || guardianSignalCount" class="body-signal">
+                            <div class="body-signal-name">
+                                <img src="assets/icons/Guardian.png" />
+                                <span>
+                                    Guardian: {{ guardianSignalCount }}
+                                </span>
+                            </div>
+                            <ng-container *ngIf="guardianSignals.length">
+                                <fa-icon [icon]="faChevronRight"></fa-icon>
+                                <div>
+                                    <div *ngFor="let guardianSignal of guardianSignals" class="body-signal-data">
+                                        {{ guardianSignal }}
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </div>
                     </div>
-                    <ng-container *ngIf="thargoidSignals.length">
-                        <fa-icon [icon]="faChevronRight"></fa-icon>
-                        <div>
-                            <div *ngFor="let thargoidSignal of thargoidSignals" class="body-signal-data">
-                                {{ thargoidSignal }}
-                            </div>
-                        </div>
-                    </ng-container>
-                </div>
-                <div *ngIf="guardianSignals.length || guardianSignalCount" class="body-signal">
-                    <div class="body-signal-name">
-                        <img src="assets/icons/Guardian.png" />
-                        <span>
-                            Guardian: {{ guardianSignalCount }}
-                        </span>
-                    </div>
-                    <ng-container *ngIf="guardianSignals.length">
-                        <fa-icon [icon]="faChevronRight"></fa-icon>
-                        <div>
-                            <div *ngFor="let guardianSignal of guardianSignals" class="body-signal-data">
-                                {{ guardianSignal }}
-                            </div>
-                        </div>
-                    </ng-container>
-                </div>
+                </ng-container>
             </div>
         </div>
     </div>
