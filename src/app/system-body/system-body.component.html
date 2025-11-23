@@ -71,7 +71,9 @@
         <div class="materials-badges" (mouseleave)="hoveredIndex = -1">
             <span *ngFor="let material of getMaterialBadges(); let i = index" [class]="'badge ' + material.class"
                 (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ? material.tooltip : material.name }}</span>
-            <button class="json-button" (click)="showBodyJsonDialog($event)" (contextmenu)="copyBodyJson(); $event.preventDefault()" matTooltip="View body JSON (right-click to copy)">
+            <button class="json-button" (click)="showBodyJsonDialog($event)"
+                (contextmenu)="copyBodyJson(); $event.preventDefault()"
+                matTooltip="View body JSON (right-click to copy)">
                 <fa-icon [icon]="faCode"></fa-icon>
             </button>
         </div>
@@ -371,7 +373,8 @@
                                 {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
                             </div>
                         </div>
-                        <div *ngIf="body.bodyData.distanceToArrival !== undefined && body.bodyData.distanceToArrival !== null && (body.bodyData.bodyId !== 0 || body.bodyData.distanceToArrival > 0)" class="body-data-entry">
+                        <div *ngIf="body.bodyData.distanceToArrival !== undefined && body.bodyData.distanceToArrival !== null && (body.bodyData.bodyId !== 0 || body.bodyData.distanceToArrival > 0)"
+                            class="body-data-entry">
                             <div>
                                 Distance to arrival
                             </div>
