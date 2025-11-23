@@ -43,6 +43,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChildren(SystemBodyComponent) childComponents!: QueryList<SystemBodyComponent>;
   @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('invisibleRingDialogTemplate') invisibleRingDialogTemplate!: TemplateRef<any>;
+  @ViewChild('jsonDialogTemplate') jsonDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -1126,6 +1127,17 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     textArea.select();
     document.execCommand('copy');
     document.body.removeChild(textArea);
+  }
+
+  public getFormattedBodyJson(): string {
+    return JSON.stringify(this.body.bodyData, null, 2);
+  }
+
+  public showBodyJsonDialog(event: MouseEvent): void {
+    this.dialog.open(this.jsonDialogTemplate, {
+      width: '800px',
+      maxHeight: '80vh'
+    });
   }
 
   public showHillLimitExplanation(): void {

@@ -355,3 +355,43 @@
         }
     }
 }
+
+.json-dialog {
+    h2 {
+        margin: 0;
+        padding: 16px 24px;
+        background: #2a2a2a;
+        color: #e0e0e0;
+        font-size: 18px;
+        font-weight: 500;
+    }
+
+    mat-dialog-content {
+        padding: 0;
+        max-height: 70vh;
+        overflow: auto;
+        background: #1e1e1e;
+
+        pre {
+            margin: 0;
+            padding: 16px 24px;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre;
+            overflow-x: auto;
+            tab-size: 2;
+        }
+    }
+
+    mat-dialog-actions {
+        padding: 16px 24px;
+        border-top: 1px solid #333;
+        background: #2a2a2a;
+
+        button {
+            min-width: 100px;
+        }
+    }
+}

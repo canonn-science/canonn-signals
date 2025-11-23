@@ -71,7 +71,7 @@
         <div class="materials-badges" (mouseleave)="hoveredIndex = -1">
             <span *ngFor="let material of getMaterialBadges(); let i = index" [class]="'badge ' + material.class"
                 (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ? material.tooltip : material.name }}</span>
-            <button class="json-button" (click)="copyBodyJson()" matTooltip="Copy body JSON to clipboard">
+            <button class="json-button" (click)="showBodyJsonDialog($event)" (contextmenu)="copyBodyJson(); $event.preventDefault()" matTooltip="View body JSON (right-click to copy)">
                 <fa-icon [icon]="faCode"></fa-icon>
             </button>
         </div>
@@ -767,6 +767,19 @@
         </mat-dialog-content>
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>
+        </mat-dialog-actions>
+    </div>
+</ng-template>
+
+<ng-template #jsonDialogTemplate>
+    <div class="json-dialog">
+        <h2 mat-dialog-title>Body JSON Data</h2>
+        <mat-dialog-content>
+            <pre>{{ getFormattedBodyJson() }}</pre>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Close</button>
+            <button mat-button (click)="copyBodyJson()">Copy to Clipboard</button>
         </mat-dialog-actions>
     </div>
 </ng-template>
