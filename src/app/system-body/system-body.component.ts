@@ -4,6 +4,7 @@ import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCare
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
+import { MINING_RESOURCES, MiningResource } from '../data/mining-resources';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
@@ -445,6 +446,65 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     return 0;
+  }
+
+  public getHotspotsList(): { displayName: string; count: number; wikiUrl: string; description: string }[] {
+    let signals: { [key: string]: number } | undefined;
+
+    // First check if the ring body itself has signals
+    if (this.body.bodyData.signals?.signals) {
+      signals = this.body.bodyData.signals.signals;
+    }
+    // For ring bodies, check the parent's rings array
+    else if (this.body.bodyData.type === 'Ring' && this.body.parent?.bodyData.rings) {
+      const ringData = this.body.parent.bodyData.rings.find(r => r.name === this.body.bodyData.name);
+      if (ringData?.signals?.signals) {
+        signals = ringData.signals.signals;
+      }
+    }
+
+    if (!signals) return [];
+
+    return Object.entries(signals).map(([key, count]) => {
+      const resource = MINING_RESOURCES[key];
+      const displayName = resource?.name || key;
+      let description = resource?.description || '';
+      // Remove "— In-Game Description" suffix
+      description = description.replace(/\s*—\s*In-Game Description\s*$/i, '').trim();
+      return {
+        displayName,
+        count,
+        wikiUrl: `https://elite-dangerous.fandom.com/wiki/${encodeURIComponent(displayName)}`,
+        description
+      };
+    });
+  }
+
+  public getRingResourceTypes(): Set<string> {
+    const hotspots = this.getHotspotsList();
+    const types = new Set<string>();
+
+    hotspots.forEach(hotspot => {
+      const key = Object.keys(MINING_RESOURCES).find(
+        k => MINING_RESOURCES[k].name === hotspot.displayName
+      );
+      if (key) {
+        types.add(MINING_RESOURCES[key].type);
+      }
+    });
+
+    return types;
+  }
+
+  public logTooltip(name: string, description: string): void {
+    console.log('Tooltip hover detected:', name);
+    console.log('Description:', description);
+    console.log('Description length:', description?.length);
+    console.log('Description value:', JSON.stringify(description));
+  }
+
+  public trackByHotspot(index: number, hotspot: any): string {
+    return hotspot.displayName;
   }
 
   public getSignalsTooltip(): string {

@@ -53,6 +53,24 @@
             <div *ngIf="guardianSignals.length || guardianSignalCount" matTooltip="Guardian signals">
                 <img src="assets/icons/Guardian.png" />
             </div>
+            <div *ngIf="humanSignalCount" matTooltip="Human signals">
+                <img src="assets/icons/Human.png" />
+            </div>
+            <div *ngIf="body.bodyData.type === 'Ring' && getRingResourceTypes().has('Gemstone')"
+                matTooltip="Contains gemstones">
+                <span style="font-size: 16px;">💎</span>
+            </div>
+            <div *ngIf="body.bodyData.type === 'Ring' && getRingResourceTypes().has('Metal')"
+                matTooltip="Contains metals">
+                <span style="font-size: 16px;">⚙️</span>
+            </div>
+            <div *ngIf="body.bodyData.type === 'Ring' && getRingResourceTypes().has('Mineral')"
+                matTooltip="Contains minerals">
+                <span style="font-size: 16px;">🪨</span>
+            </div>
+            <div *ngIf="body.bodyData.type === 'Ring' && getRingResourceTypes().has('Fuel')" matTooltip="Contains fuel">
+                <span style="font-size: 16px;">⚡</span>
+            </div>
             <div *ngIf="exandable && !expanded" (click)="toggleExpand()" class="clickable" matTooltip="Expand">
                 <fa-icon [icon]="faSquareCaretDown"></fa-icon>
             </div>
@@ -427,11 +445,10 @@
                 </ng-container>
 
                 <!-- Resources Section (Rings/Belts) -->
-                <ng-container
-                    *ngIf="body.bodyData.reserveLevel || (body.bodyData.type === 'Ring' && getSignalsCount() > 0)">
+                <ng-container *ngIf="body.bodyData.reserveLevel || (body.bodyData.type === 'Ring' && getSignalsCount() > 0)">
                     <div class="body-data-section">
                         <div class="body-data-section-header">Resources</div>
-                        <div *ngIf="body.bodyData.reserveLevel" class="body-data-entry">
+                        <div *ngIf="body.bodyData.reserveLevel && body.bodyData.type !== 'Ring'" class="body-data-entry">
                             <div>
                                 Reserve level
                             </div>
@@ -439,14 +456,16 @@
                                 {{ body.bodyData.reserveLevel }}
                             </div>
                         </div>
-                        <div *ngIf="body.bodyData.type === 'Ring' && getSignalsCount() > 0" class="body-data-entry">
-                            <div>
-                                Hotspots
+                        <ng-container *ngIf="body.bodyData.type === 'Ring'">
+                            <div *ngFor="let hotspot of getHotspotsList(); trackBy: trackByHotspot" class="body-data-entry">
+                                <div [matTooltip]="hotspot.description">
+                                    {{ hotspot.displayName }}
+                                </div>
+                                <div>
+                                    {{ hotspot.count }}
+                                </div>
                             </div>
-                            <div [matTooltip]="getSignalsTooltip()" matTooltipClass="multiline-tooltip">
-                                {{ getSignalsCount() }} hotspot(s)
-                            </div>
-                        </div>
+                        </ng-container>
                     </div>
                 </ng-container>
 

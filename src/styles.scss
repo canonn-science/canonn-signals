@@ -134,6 +134,14 @@ hr {
   white-space: pre-line;
 }
 
+.resource-tooltip {
+  z-index: 10000 !important;
+  font-size: 14px !important;
+  min-width: 200px !important;
+  max-width: 400px !important;
+  white-space: normal !important;
+}
+
 .hill-limit-dialog-panel {
   z-index: 1000 !important;
 }

@@ -101,7 +101,8 @@
 .system-body .body-data-columns .body-data-section {
     break-inside: avoid;
     page-break-inside: avoid;
-    margin-bottom: 16px
+    margin-bottom: 16px;
+    overflow: visible
 }
 
 .system-body .body-data-columns .body-data-section-header {
