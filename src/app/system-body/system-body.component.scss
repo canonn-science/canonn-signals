@@ -45,8 +45,6 @@
             }
         }
     }
-
-
 }
 
 .system-body {
@@ -64,10 +62,9 @@
         height: 96px;
         justify-content: center;
         align-items: center;
-        background-color: #000000;
+        background-color: #000;
         position: relative;
         border-radius: 4px;
-        flex-grow: 0;
         flex-shrink: 0;
 
         img {
@@ -104,133 +101,61 @@
         .body-data-section-header {
             font-weight: bold;
             font-size: 14px;
-            color: #000000;
+            color: #000;
             background-color: #d7d7d7;
             margin-top: 0;
             margin-bottom: 8px;
             padding: 4px 8px;
             border-radius: 2px;
         }
-
-        .body-data-entry {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 2px;
-
-            div {
-                white-space: nowrap;
-            }
-
-            &.clickable {
-                cursor: pointer;
-
-                &:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                }
-            }
-        }
     }
 
-    .body-data {
+    .body-data-entry {
         display: flex;
-        flex-wrap: wrap;
-        column-gap: 32px;
-        max-width: 800px;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 2px;
 
-        .body-data-entry {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            flex-basis: calc(50% - 20px);
-            min-width: 340px;
+        div {
+            white-space: nowrap;
+        }
 
-            div {
-                white-space: nowrap;
-            }
+        &.clickable {
+            cursor: pointer;
 
-            &.clickable {
-                cursor: pointer;
-
-                &:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                }
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1);
             }
         }
     }
 
-    .body-signals {
-        .body-signal {
+    .body-signals .body-signal {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+
+        .body-signal-name {
             display: flex;
-            align-items: flex-start;
-            gap: 12px;
+            align-items: center;
+            gap: 4px;
+            min-width: 150px;
+        }
 
-            .body-signal-name {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                min-width: 150px;
-            }
-
-            img {
-                width: 20px;
-                height: 20px;
-            }
+        img {
+            width: 20px;
+            height: 20px;
         }
     }
 }
 
-.badge-orange {
-    color: #1c1c1c;
-    background-color: #ffcc33;
-    /* Same as mat2 */
-}
-
-.badge-blue {
-    color: #1c1c1c;
-    background-color: #99ccff;
-    /* Same as mat4 */
-}
-
-.badge-gray {
-    color: #1c1c1c;
-    background-color: #d7d7d7;
-}
-
-.badge-red {
-    color: #1c1c1c;
-    background-color: #ff9999;
-    /* Same as mat1 red */
-}
-
-.badge-mat1 {
-    color: #1c1c1c;
-    background-color: #ff9999;
-    /* Soft red for Grade 1 */
-}
-
-.badge-mat2 {
-    color: #1c1c1c;
-    background-color: #ffcc33;
-    /* Soft amber for Grade 2 */
-}
-
-.badge-mat3 {
-    color: #1c1c1c;
-    background-color: #99cc99;
-    /* Soft green for Grade 3 */
-}
-
-.badge-mat4 {
-    color: #1c1c1c;
-    background-color: #99ccff;
-    /* Soft blue for Grade 4 */
-}
+.badge-mat1, .badge-red { color: #1c1c1c; background-color: #f99; }
+.badge-mat2, .badge-orange { color: #1c1c1c; background-color: #fc3; }
+.badge-mat3, .badge-green, .badge-purple { color: #1c1c1c; background-color: #9c9; }
+.badge-mat4, .badge-blue { color: #1c1c1c; background-color: #9cf; }
+.badge-gray { color: #1c1c1c; background-color: #d7d7d7; }
+.badge-cyan { color: #1c1c1c; background-color: #0ff; }
 
 .badge-purple {
-    color: #1c1c1c;
-    background-color: #99cc99;
-    /* Same as mat3 green */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -241,108 +166,82 @@
     }
 }
 
-.badge-green {
-    color: #1c1c1c;
-    background-color: #99cc99;
-    /* Same as mat3 green */
-}
-
-.badge-cyan {
-    color: #1c1c1c;
-    background-color: #00ffff;
-    /* Cyan for anomalies like Neutron Stars */
-}
-
 .body-signal-data {
     display: flex;
     column-gap: 16px;
     justify-content: space-between;
 }
 
-.hill-limit-dialog,
-.invisible-ring-dialog {
+.hill-limit-dialog, .invisible-ring-dialog, .json-dialog {
     h2 {
         margin: 0;
         padding: 16px 24px;
         background: #1e1e1e;
         color: #fff;
+        font-size: 18px;
+        font-weight: 500;
     }
 
     mat-dialog-content {
         padding: 24px;
         color: #e0e0e0;
 
-        .intro {
+        .intro, .warning, .disclaimer, .conclusion, .conclusion-safe, .formula, .parameters, .values, .result {
             margin-bottom: 20px;
             line-height: 1.6;
         }
 
         .warning {
-            margin-bottom: 20px;
             padding: 12px;
             background: #3a3a2a;
-            border-left: 4px solid #ffcc33;
+            border-left: 4px solid #fc3;
             border-radius: 4px;
-            line-height: 1.6;
         }
 
         .disclaimer {
-            margin-top: 20px;
             padding: 12px;
             background: #2a2a2a;
             border-left: 4px solid #6b9fff;
             border-radius: 4px;
             font-size: 0.9em;
-            line-height: 1.6;
         }
 
         .formula {
             background: #2a2a2a;
             padding: 12px;
             border-radius: 4px;
-            margin-bottom: 16px;
             font-family: 'Courier New', monospace;
         }
 
-        .parameters,
-        .values,
-        .result {
-            margin-bottom: 20px;
+        .parameters p, .values p, .result p {
+            margin-bottom: 8px;
+        }
 
-            p {
-                margin-bottom: 8px;
-            }
+        .parameters ul, .values ul, .result ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
 
-            ul {
-                list-style: none;
-                padding-left: 0;
-                margin: 0;
-
-                li {
-                    padding: 4px 0;
-                    line-height: 1.5;
-                }
+            li {
+                padding: 4px 0;
+                line-height: 1.5;
             }
         }
 
         .conclusion {
-            margin-top: 20px;
             padding: 12px;
             background: #3a2a2a;
-            border-left: 4px solid #ff6b6b;
+            border-left: 4px solid #f66;
             border-radius: 4px;
             font-style: italic;
-            line-height: 1.6;
         }
 
         .conclusion-safe {
-            margin-top: 20px;
             padding: 12px;
             background: #2a3a2a;
-            border-left: 4px solid #6bff6b;
+            border-left: 4px solid #6f6;
             border-radius: 4px;
             font-style: italic;
-            line-height: 1.6;
         }
     }
 
@@ -358,12 +257,8 @@
 
 .json-dialog {
     h2 {
-        margin: 0;
-        padding: 16px 24px;
         background: #2a2a2a;
         color: #e0e0e0;
-        font-size: 18px;
-        font-weight: 500;
     }
 
     mat-dialog-content {
@@ -376,7 +271,7 @@
             margin: 0;
             padding: 16px 24px;
             color: #d4d4d4;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
             font-size: 12px;
             line-height: 1.5;
             white-space: pre;
@@ -386,8 +281,6 @@
     }
 
     mat-dialog-actions {
-        padding: 16px 24px;
-        border-top: 1px solid #333;
         background: #2a2a2a;
 
         button {
