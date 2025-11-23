@@ -105,6 +105,16 @@
                                 {{ (body.bodyData.semiMajorAxis * 149597870.7) | number:'0.2-2' }} km
                             </div>
                         </div>
+                        <div *ngIf="body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null"
+                            class="body-data-entry">
+                            <div>
+                                Orbital eccentricity
+                            </div>
+                            <div [matTooltip]="body.bodyData.orbitalEccentricity.toString()">
+                                {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{
+                                getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
+                            </div>
+                        </div>
                         <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
                             class="body-data-entry">
                             <div>
@@ -112,6 +122,15 @@
                             </div>
                             <div [matTooltip]="getApoapsis() + ' km'">
                                 {{ getApoapsis() | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="getNextApoapsis()" class="body-data-entry">
+                            <div>
+                                Next apoapsis
+                            </div>
+                            <div>
+                                {{ getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextApoapsis()!.days |
+                                number:'0.1-1' }} days)
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
@@ -123,14 +142,13 @@
                                 {{ getPeriapsis() | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div *ngIf="body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null"
-                            class="body-data-entry">
+                        <div *ngIf="getNextPeriapsis()" class="body-data-entry">
                             <div>
-                                Orbital eccentricity
+                                Next periapsis
                             </div>
-                            <div [matTooltip]="body.bodyData.orbitalEccentricity.toString()">
-                                {{ body.bodyData.orbitalEccentricity | number:'0.4-4' }} {{
-                                getEccentricityAnalysis(body.bodyData.orbitalEccentricity) }}
+                            <div>
+                                {{ getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextPeriapsis()!.days |
+                                number:'0.1-1' }} days)
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.orbitalInclination" class="body-data-entry">
@@ -155,24 +173,6 @@
                             </div>
                             <div [matTooltip]="body.bodyData.ascendingNode + '°'">
                                 {{ body.bodyData.ascendingNode | number:'0.2-2' }}°
-                            </div>
-                        </div>
-                        <div *ngIf="getNextPeriapsis()" class="body-data-entry">
-                            <div>
-                                Next periapsis
-                            </div>
-                            <div>
-                                {{ getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextPeriapsis()!.days |
-                                number:'0.1-1' }} days)
-                            </div>
-                        </div>
-                        <div *ngIf="getNextApoapsis()" class="body-data-entry">
-                            <div>
-                                Next apoapsis
-                            </div>
-                            <div>
-                                {{ getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextApoapsis()!.days |
-                                number:'0.1-1' }} days)
                             </div>
                         </div>
                         <div *ngIf="getTangentialVelocity() !== null" class="body-data-entry">
@@ -238,6 +238,14 @@
                             </div>
                             <div [matTooltip]="body.bodyData.gravity + ' G'">
                                 {{ body.bodyData.gravity | number:'0.2-2' }} G
+                            </div>
+                        </div>
+                        <div *ngIf="getPlanetaryDensity()" class="body-data-entry">
+                            <div>
+                                Density
+                            </div>
+                            <div [matTooltip]="getPlanetaryDensity()!.tooltip">
+                                {{ getPlanetaryDensity()!.value | number:'0.2-2' }} {{ getPlanetaryDensity()!.unit }}
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.axialTilt" class="body-data-entry">

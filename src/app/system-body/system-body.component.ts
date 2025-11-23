@@ -330,6 +330,63 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return area > 0 ? mass / area : 0;
   }
 
+  public getPlanetaryDensity(): { value: number; unit: string; tooltip: string } | null {
+    // Only calculate for planets and stars with both mass and radius
+    let radiusKm: number = 0;
+    
+    // Get radius in km
+    if (this.body.bodyData.radius) {
+      radiusKm = this.body.bodyData.radius;
+    } else if (this.body.bodyData.solarRadius) {
+      // Convert solar radius to km (1 solar radius = 695,700 km)
+      radiusKm = this.body.bodyData.solarRadius * 695700;
+    } else {
+      return null;
+    }
+
+    let massKg: number = 0;
+    
+    // Get mass in kg
+    if (this.body.bodyData.earthMasses) {
+      massKg = this.body.bodyData.earthMasses * 5.972e24; // Earth mass in kg
+    } else if (this.body.bodyData.solarMasses) {
+      massKg = this.body.bodyData.solarMasses * 1.989e30; // Solar mass in kg
+    } else {
+      return null;
+    }
+
+    // Calculate volume in m³ (radius is in km)
+    const radiusM = radiusKm * 1000;
+    const volumeM3 = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
+
+    // Calculate density in kg/m³
+    const densityKgM3 = massKg / volumeM3;
+
+    // Choose appropriate unit based on magnitude
+    let value: number;
+    let unit: string;
+    
+    if (densityKgM3 < 1) {
+      // Use g/cm³ for very low densities (gas giants, some stars)
+      value = densityKgM3 / 1000;
+      unit = 'g/cm³';
+    } else if (densityKgM3 < 10000) {
+      // Use g/cm³ for typical planetary densities
+      value = densityKgM3 / 1000;
+      unit = 'g/cm³';
+    } else {
+      // Use kg/m³ for very high densities (neutron stars, etc.)
+      value = densityKgM3;
+      unit = 'kg/m³';
+    }
+
+    return {
+      value: value,
+      unit: unit,
+      tooltip: `${densityKgM3} kg/m³`
+    };
+  }
+
   public isRingNotVisible(): boolean {
     if (this.body.bodyData.type !== 'Ring') {
       return false;
