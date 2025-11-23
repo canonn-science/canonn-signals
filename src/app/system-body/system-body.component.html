@@ -360,7 +360,7 @@
                 </ng-container>
 
                 <!-- Dynamics Section -->
-                <ng-container *ngIf="body.bodyData.rotationalPeriod || body.bodyData.distanceToArrival">
+                <ng-container *ngIf="body.bodyData.rotationalPeriod || body.bodyData.distanceToArrival !== undefined">
                     <div class="body-data-section">
                         <div class="body-data-section-header">Dynamics</div>
                         <div *ngIf="body.bodyData.rotationalPeriod" class="body-data-entry">
@@ -371,7 +371,7 @@
                                 {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
                             </div>
                         </div>
-                        <div *ngIf="body.bodyData.distanceToArrival" class="body-data-entry">
+                        <div *ngIf="body.bodyData.distanceToArrival !== undefined && body.bodyData.distanceToArrival !== null && (body.bodyData.bodyId !== 0 || body.bodyData.distanceToArrival > 0)" class="body-data-entry">
                             <div>
                                 Distance to arrival
                             </div>
