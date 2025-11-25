@@ -445,10 +445,12 @@
                 </ng-container>
 
                 <!-- Resources Section (Rings/Belts) -->
-                <ng-container *ngIf="body.bodyData.reserveLevel || (body.bodyData.type === 'Ring' && getSignalsCount() > 0)">
+                <ng-container
+                    *ngIf="body.bodyData.reserveLevel || (body.bodyData.type === 'Ring' && getSignalsCount() > 0)">
                     <div class="body-data-section">
                         <div class="body-data-section-header">Resources</div>
-                        <div *ngIf="body.bodyData.reserveLevel && body.bodyData.type !== 'Ring'" class="body-data-entry">
+                        <div *ngIf="body.bodyData.reserveLevel && body.bodyData.type !== 'Ring'"
+                            class="body-data-entry">
                             <div>
                                 Reserve level
                             </div>
@@ -457,7 +459,8 @@
                             </div>
                         </div>
                         <ng-container *ngIf="body.bodyData.type === 'Ring'">
-                            <div *ngFor="let hotspot of getHotspotsList(); trackBy: trackByHotspot" class="body-data-entry">
+                            <div *ngFor="let hotspot of getHotspotsList(); trackBy: trackByHotspot"
+                                class="body-data-entry">
                                 <div [matTooltip]="hotspot.description">
                                     {{ hotspot.displayName }}
                                 </div>
