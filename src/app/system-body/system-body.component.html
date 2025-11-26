@@ -325,8 +325,16 @@
                                 {{ getRingDensity() | number:'0.2-2' }} Mt/km²
                             </div>
                         </div>
-                        <div *ngIf="body.bodyData.type === 'Ring' && calculateHillLimit() !== null"
-                            class="body-data-entry clickable" (click)="showHillLimitExplanation()">
+                    </div>
+                </ng-container>
+
+                <!-- Limits Section (Rings only) -->
+                <ng-container
+                    *ngIf="body.bodyData.type === 'Ring' && (calculateHillLimit() !== null || calculateRigidRocheLimit() !== null || calculateFluidRocheLimit() !== null)">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Limits</div>
+                        <div *ngIf="calculateHillLimit() !== null" class="body-data-entry clickable"
+                            (click)="showHillLimitExplanation()">
                             <div>
                                 Hill limit
                             </div>
@@ -334,14 +342,29 @@
                                 {{ calculateHillLimit()! | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div *ngIf="body.bodyData.type === 'Ring' && calculateHillLimit() === null"
-                            class="body-data-entry"
+                        <div *ngIf="calculateHillLimit() === null" class="body-data-entry"
                             [matTooltip]="'The Hill limit cannot be calculated because the data from Spansh is incomplete'">
                             <div>
                                 Hill limit
                             </div>
                             <div>
                                 n/a
+                            </div>
+                        </div>
+                        <div *ngIf="calculateRigidRocheLimit() !== null" class="body-data-entry">
+                            <div>
+                                Roche limit (rigid)
+                            </div>
+                            <div [matTooltip]="'Rigid body Roche limit: ' + calculateRigidRocheLimit()! + ' km'">
+                                {{ calculateRigidRocheLimit()! | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div *ngIf="calculateFluidRocheLimit() !== null" class="body-data-entry">
+                            <div>
+                                Roche limit (fluid)
+                            </div>
+                            <div [matTooltip]="'Fluid body Roche limit: ' + calculateFluidRocheLimit()! + ' km'">
+                                {{ calculateFluidRocheLimit()! | number:'0.2-2' }} km
                             </div>
                         </div>
                     </div>

@@ -538,6 +538,128 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return result ? result.minHillRadius : null;
   }
 
+  public calculateRigidRocheLimit(): number | null {
+    // Rigid body Roche limit (for solid bodies)
+    // d = 2.456 * R_primary * (ρ_primary / ρ_satellite)^(1/3)
+    if (!this.body.parent) {
+      return null;
+    }
+
+    const parent = this.body.parent.bodyData;
+    let primaryRadius = 0;
+    let primaryDensity = 0;
+
+    // Get primary radius in km
+    if (parent.radius) {
+      primaryRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      primaryRadius = parent.solarRadius * 695700; // Solar radius to km
+    } else {
+      return null;
+    }
+
+    // Calculate primary density in kg/m³
+    if (parent.earthMasses && parent.radius) {
+      // Planet with earthMasses
+      const massKg = parent.earthMasses * 5.972e24; // Earth masses to kg
+      const radiusM = parent.radius * 1000; // km to m
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
+      primaryDensity = massKg / volume; // kg/m³
+    } else if (parent.mass && parent.radius) {
+      // Body with mass in Mt
+      const massKg = parent.mass * 1e12; // Mt to kg
+      const radiusM = parent.radius * 1000; // km to m
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
+      primaryDensity = massKg / volume; // kg/m³
+    } else if (parent.solarMasses && parent.solarRadius) {
+      // Star with solar masses
+      const radiusM = parent.solarRadius * 695700 * 1000; // solar radius to m
+      const massKg = parent.solarMasses * 1.989e30; // kg
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
+      primaryDensity = massKg / volume; // kg/m³
+    } else {
+      return null;
+    }
+
+    // Determine satellite density based on ring type (kg/m³)
+    let satelliteDensity = 1000; // Default: icy rings (water ice)
+    const ringClass = this.body.bodyData.subType?.toLowerCase() || '';
+
+    if (ringClass.includes('metal')) {
+      satelliteDensity = 4500; // Metal-rich rings (iron/nickel)
+    } else if (ringClass.includes('metallic')) {
+      satelliteDensity = 4500; // Metallic rings
+    } else if (ringClass.includes('rocky')) {
+      satelliteDensity = 3000; // Rocky rings (silicates)
+    } else if (ringClass.includes('icy')) {
+      satelliteDensity = 1000; // Icy rings (water ice)
+    }
+
+    const rigidRocheLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
+    return rigidRocheLimit;
+  }
+
+  public calculateFluidRocheLimit(): number | null {
+    // Fluid body Roche limit (for liquid bodies)
+    // d = 2.456 * R_primary * (ρ_primary / ρ_satellite)^(1/3)
+    if (!this.body.parent) {
+      return null;
+    }
+
+    const parent = this.body.parent.bodyData;
+    let primaryRadius = 0;
+    let primaryDensity = 0;
+
+    // Get primary radius in km
+    if (parent.radius) {
+      primaryRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      primaryRadius = parent.solarRadius * 695700;
+    } else {
+      return null;
+    }
+
+    // Calculate primary density in kg/m³
+    if (parent.earthMasses && parent.radius) {
+      // Planet with earthMasses
+      const massKg = parent.earthMasses * 5.972e24; // Earth masses to kg
+      const radiusM = parent.radius * 1000; // km to m
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
+      primaryDensity = massKg / volume; // kg/m³
+    } else if (parent.mass && parent.radius) {
+      // Body with mass in Mt
+      const massKg = parent.mass * 1e12; // Mt to kg
+      const radiusM = parent.radius * 1000; // km to m
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
+      primaryDensity = massKg / volume; // kg/m³
+    } else if (parent.solarMasses && parent.solarRadius) {
+      // Star with solar masses
+      const radiusM = parent.solarRadius * 695700 * 1000; // solar radius to m
+      const massKg = parent.solarMasses * 1.989e30; // kg
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
+      primaryDensity = massKg / volume; // kg/m³
+    } else {
+      return null;
+    }
+
+    // Determine satellite density based on ring type (kg/m³)
+    let satelliteDensity = 1000; // Default: icy rings (water ice)
+    const ringClass = this.body.bodyData.subType?.toLowerCase() || '';
+
+    if (ringClass.includes('metal')) {
+      satelliteDensity = 4500; // Metal-rich rings (iron/nickel)
+    } else if (ringClass.includes('metallic')) {
+      satelliteDensity = 4500; // Metallic rings
+    } else if (ringClass.includes('rocky')) {
+      satelliteDensity = 3000; // Rocky rings (silicates)
+    } else if (ringClass.includes('icy')) {
+      satelliteDensity = 1000; // Icy rings (water ice)
+    }
+
+    const fluidRocheLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
+    return fluidRocheLimit;
+  }
+
   // Orbital mechanics helper: Convert Keplerian elements to 3D Cartesian position
   private orbitalElementsToCartesian(
     semiMajorAxisAU: number,
