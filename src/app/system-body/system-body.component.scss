@@ -369,7 +369,45 @@
     margin: 20px 0;
     background: #fff;
     padding: 10px;
+    border-radius: 4px;
+    position: relative
+}
+
+.roche-dialog .chart-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 10;
     border-radius: 4px
+}
+
+.roche-dialog .chart-loading p {
+    margin: 12px 0 0 0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500
+}
+
+.roche-dialog .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #51cf66;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
 }
 
 .roche-dialog .ring-summary {

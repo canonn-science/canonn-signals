@@ -836,7 +836,8 @@
 
 <ng-template #rocheLimitDialogTemplate>
     <div class="roche-dialog" *ngIf="rocheLimitDialogData">
-        <h2 mat-dialog-title>Roche Limit Analysis - {{ rocheLimitDialogData.parentName }}</h2>
+        <h2 mat-dialog-title>Roche Limit Analysis - {{ rocheLimitDialogData.parentName }} {{
+            rocheLimitDialogData.ringName }}</h2>
         <mat-dialog-content>
             <div class="chart-description">
                 <p>
@@ -851,6 +852,10 @@
             </div>
 
             <div class="chart-container">
+                <div *ngIf="isChartLoading" class="chart-loading">
+                    <div class="spinner"></div>
+                    <p>Generating chart...</p>
+                </div>
                 <canvas #rocheCanvas width="700" height="400"></canvas>
             </div>
 

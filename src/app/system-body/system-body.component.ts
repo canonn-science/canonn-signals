@@ -77,6 +77,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public hillLimitDialogData: any = null;
   public invisibleRingDialogData: any = null;
   public rocheLimitDialogData: any = null;
+  public isChartLoading: boolean = false;
 
   public formattedEarthMass: { display: string; tooltip: string } | null = null;
   public formattedSolarMass: { display: string; tooltip: string } | null = null;
@@ -1476,28 +1477,26 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       fluidLimits.push(fluidLimit);
     }
 
-    // Get all rings for this parent body
-    const rings: any[] = [];
-    if (parent.rings) {
-      parent.rings.forEach(ring => {
-        rings.push({
-          name: ring.name,
-          innerRadius: ring.innerRadius / 1000, // Convert m to km
-          outerRadius: ring.outerRadius / 1000,
-          type: ring.type,
-          density: this.getRingDensityFromType(ring.type)
-        });
-      });
-    }
+    // Get only the current ring
+    const currentRing = {
+      name: this.body.bodyData.name,
+      innerRadius: this.body.bodyData.innerRadius || 0, // Already in km
+      outerRadius: this.body.bodyData.outerRadius || 0, // Already in km
+      type: this.body.bodyData.subType,
+      density: this.getRingDensityFromType(this.body.bodyData.subType)
+    };
 
     this.rocheLimitDialogData = {
       parentName: parent.name,
+      ringName: this.body.bodyData.name,
       densityRange,
       rigidLimits,
       fluidLimits,
-      rings,
+      rings: [currentRing],
       primaryRadius
     };
+
+    this.isChartLoading = true;
 
     const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate, {
       width: '800px',
@@ -1507,7 +1506,10 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     });
 
     // Draw chart after dialog opens
-    setTimeout(() => this.drawRocheChart(), 100);
+    setTimeout(() => {
+      this.drawRocheChart();
+      this.isChartLoading = false;
+    }, 100);
   }
 
   private getRingDensityFromType(type: string): number {
@@ -1537,15 +1539,28 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    // Find data ranges
+    // Find data ranges - use log scale for Y-axis
     const minDensity = Math.min(...data.densityRange);
     const maxDensity = Math.max(...data.densityRange);
-    const maxDistance = Math.max(...data.fluidLimits);
-    const minDistance = 0;
 
-    // Helper functions
+    // Get all distances including ring positions for proper scaling
+    const allDistances = [...data.rigidLimits, ...data.fluidLimits];
+    data.rings.forEach((ring: any) => {
+      allDistances.push(ring.innerRadius);
+      allDistances.push(ring.outerRadius);
+    });
+    const maxDistance = Math.max(...allDistances);
+    const minDistance = Math.min(...allDistances) * 0.5; // Start slightly below minimum for visibility
+
+    // Helper functions - logarithmic Y scale
     const scaleX = (density: number) => padding + ((density - minDensity) / (maxDensity - minDensity)) * chartWidth;
-    const scaleY = (distance: number) => height - padding - ((distance - minDistance) / (maxDistance - minDistance)) * chartHeight;
+    const scaleY = (distance: number) => {
+      if (distance <= 0) return height - padding;
+      const logMin = Math.log10(minDistance);
+      const logMax = Math.log10(maxDistance);
+      const logDist = Math.log10(distance);
+      return height - padding - ((logDist - logMin) / (logMax - logMin)) * chartHeight;
+    };
 
     // Draw axes
     ctx.strokeStyle = '#333';
@@ -1556,11 +1571,17 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.lineTo(width - padding, height - padding);
     ctx.stroke();
 
-    // Draw grid lines
+    // Draw logarithmic grid lines with labels
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding + (chartHeight / 5) * i;
+    const logMin = Math.log10(minDistance);
+    const logMax = Math.log10(maxDistance);
+    const logRange = logMax - logMin;
+
+    // Draw grid at powers of 10
+    for (let logVal = Math.ceil(logMin); logVal <= Math.floor(logMax); logVal++) {
+      const distance = Math.pow(10, logVal);
+      const y = scaleY(distance);
       ctx.beginPath();
       ctx.moveTo(padding, y);
       ctx.lineTo(width - padding, y);
@@ -1591,28 +1612,59 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
     ctx.stroke();
 
-    // Draw ring positions
+    // Draw ring positions as horizontal bands with vertical density line
+    const ringColors = ['#51cf66', '#ffa94d', '#748ffc', '#ff6b6b', '#20c997'];
     data.rings.forEach((ring: any, index: number) => {
+      const color = ringColors[index % ringColors.length];
       const x = scaleX(ring.density);
       const yInner = scaleY(ring.innerRadius);
       const yOuter = scaleY(ring.outerRadius);
 
-      // Draw vertical line for ring span
-      ctx.strokeStyle = '#51cf66';
-      ctx.lineWidth = 4;
+      // Draw translucent horizontal bar for ring extent
+      const rgb = color === '#51cf66' ? '81, 207, 102' :
+        color === '#ffa94d' ? '255, 169, 77' :
+          color === '#748ffc' ? '116, 143, 252' :
+            color === '#ff6b6b' ? '255, 107, 107' : '32, 201, 151';
+      ctx.fillStyle = `rgba(${rgb}, 0.2)`;
+      ctx.fillRect(padding, yOuter, chartWidth, yInner - yOuter);
+
+      // Draw horizontal lines at inner and outer radius
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(x, yInner);
-      ctx.lineTo(x, yOuter);
+      ctx.moveTo(padding, yInner);
+      ctx.lineTo(width - padding, yInner);
       ctx.stroke();
 
-      // Draw markers
-      ctx.fillStyle = '#51cf66';
       ctx.beginPath();
-      ctx.arc(x, yInner, 5, 0, 2 * Math.PI);
-      ctx.fill();
+      ctx.moveTo(padding, yOuter);
+      ctx.lineTo(width - padding, yOuter);
+      ctx.stroke();
+
+      // Draw vertical line at the assumed density
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([5, 5]);
       ctx.beginPath();
-      ctx.arc(x, yOuter, 5, 0, 2 * Math.PI);
+      ctx.moveTo(x, padding);
+      ctx.lineTo(x, height - padding);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw density marker
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, height - padding, 6, 0, 2 * Math.PI);
       ctx.fill();
+
+      // Label the density line
+      ctx.fillStyle = color;
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'center';
+      ctx.save();
+      ctx.translate(x, padding + 15 + (index * 18));
+      ctx.fillText(`${ring.density} kg/m³`, 0, 0);
+      ctx.restore();
     });
 
     // Draw axis labels
@@ -1627,12 +1679,18 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       ctx.fillText(density.toFixed(0), x, height - padding + 20);
     }
 
-    // Y-axis labels
+    // Y-axis labels (logarithmic scale - powers of 10)
     ctx.textAlign = 'right';
-    for (let i = 0; i <= 5; i++) {
-      const distance = minDistance + ((maxDistance - minDistance) / 5) * i;
+    for (let logVal = Math.ceil(logMin); logVal <= Math.floor(logMax); logVal++) {
+      const distance = Math.pow(10, logVal);
       const y = scaleY(distance);
-      ctx.fillText(distance.toFixed(0), padding - 10, y + 4);
+      // Format large numbers with scientific notation or comma separation
+      let label = distance >= 1000000
+        ? (distance / 1000000).toFixed(1) + 'M'
+        : distance >= 1000
+          ? (distance / 1000).toFixed(0) + 'k'
+          : distance.toFixed(0);
+      ctx.fillText(label, padding - 10, y + 4);
     }
 
     // Draw axis titles
@@ -1643,7 +1701,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.save();
     ctx.translate(15, height / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Roche Limit Distance (km)', 0, 0);
+    ctx.fillText('Roche Limit Distance (km, log scale)', 0, 0);
     ctx.restore();
 
     // Draw legend
