@@ -45,6 +45,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('invisibleRingDialogTemplate') invisibleRingDialogTemplate!: TemplateRef<any>;
   @ViewChild('jsonDialogTemplate') jsonDialogTemplate!: TemplateRef<any>;
+  @ViewChild('rocheLimitDialogTemplate') rocheLimitDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -75,6 +76,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public hillLimitDialogData: any = null;
   public invisibleRingDialogData: any = null;
+  public rocheLimitDialogData: any = null;
 
   public formattedEarthMass: { display: string; tooltip: string } | null = null;
   public formattedSolarMass: { display: string; tooltip: string } | null = null;
@@ -1426,6 +1428,253 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       maxWidth: '90vw',
       panelClass: 'invisible-ring-dialog'
     });
+  }
+
+  public showRocheLimitChart(): void {
+    if (!this.body.parent || this.body.bodyData.type !== 'Ring') {
+      return;
+    }
+
+    const parent = this.body.parent.bodyData;
+
+    // Calculate parent density and radius
+    let primaryDensity = 0;
+    let primaryRadius = 0;
+
+    if (parent.radius) {
+      primaryRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      primaryRadius = parent.solarRadius * 695700;
+    } else {
+      return;
+    }
+
+    if (parent.earthMasses && parent.radius) {
+      const massKg = parent.earthMasses * 5.972e24;
+      const radiusM = parent.radius * 1000;
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
+      primaryDensity = massKg / volume;
+    } else if (parent.solarMasses && parent.solarRadius) {
+      const radiusM = parent.solarRadius * 695700 * 1000;
+      const massKg = parent.solarMasses * 1.989e30;
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
+      primaryDensity = massKg / volume;
+    } else {
+      return;
+    }
+
+    // Generate chart data points
+    const densityRange = [];
+    const rigidLimits = [];
+    const fluidLimits = [];
+
+    for (let density = 500; density <= 8000; density += 100) {
+      densityRange.push(density);
+      const rigidLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
+      const fluidLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
+      rigidLimits.push(rigidLimit);
+      fluidLimits.push(fluidLimit);
+    }
+
+    // Get all rings for this parent body
+    const rings: any[] = [];
+    if (parent.rings) {
+      parent.rings.forEach(ring => {
+        rings.push({
+          name: ring.name,
+          innerRadius: ring.innerRadius / 1000, // Convert m to km
+          outerRadius: ring.outerRadius / 1000,
+          type: ring.type,
+          density: this.getRingDensityFromType(ring.type)
+        });
+      });
+    }
+
+    this.rocheLimitDialogData = {
+      parentName: parent.name,
+      densityRange,
+      rigidLimits,
+      fluidLimits,
+      rings,
+      primaryRadius
+    };
+
+    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate, {
+      width: '800px',
+      maxWidth: '90vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop'
+    });
+
+    // Draw chart after dialog opens
+    setTimeout(() => this.drawRocheChart(), 100);
+  }
+
+  private getRingDensityFromType(type: string): number {
+    const ringClass = type?.toLowerCase() || '';
+    if (ringClass.includes('metal')) return 4500;
+    if (ringClass.includes('rocky')) return 3000;
+    return 1000; // icy
+  }
+
+  private drawRocheChart(): void {
+    const canvas = document.querySelector('.roche-dialog canvas') as HTMLCanvasElement;
+    if (!canvas || !this.rocheLimitDialogData) {
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const data = this.rocheLimitDialogData;
+    const width = canvas.width;
+    const height = canvas.height;
+    const padding = 60;
+    const chartWidth = width - 2 * padding;
+    const chartHeight = height - 2 * padding;
+
+    // Clear canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    // Find data ranges
+    const minDensity = Math.min(...data.densityRange);
+    const maxDensity = Math.max(...data.densityRange);
+    const maxDistance = Math.max(...data.fluidLimits);
+    const minDistance = 0;
+
+    // Helper functions
+    const scaleX = (density: number) => padding + ((density - minDensity) / (maxDensity - minDensity)) * chartWidth;
+    const scaleY = (distance: number) => height - padding - ((distance - minDistance) / (maxDistance - minDistance)) * chartHeight;
+
+    // Draw axes
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+
+    // Draw grid lines
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = padding + (chartHeight / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+    }
+
+    // Draw rigid limit line
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let i = 0; i < data.densityRange.length; i++) {
+      const x = scaleX(data.densityRange[i]);
+      const y = scaleY(data.rigidLimits[i]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw fluid limit line
+    ctx.strokeStyle = '#4dabf7';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let i = 0; i < data.densityRange.length; i++) {
+      const x = scaleX(data.densityRange[i]);
+      const y = scaleY(data.fluidLimits[i]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw ring positions
+    data.rings.forEach((ring: any, index: number) => {
+      const x = scaleX(ring.density);
+      const yInner = scaleY(ring.innerRadius);
+      const yOuter = scaleY(ring.outerRadius);
+
+      // Draw vertical line for ring span
+      ctx.strokeStyle = '#51cf66';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x, yInner);
+      ctx.lineTo(x, yOuter);
+      ctx.stroke();
+
+      // Draw markers
+      ctx.fillStyle = '#51cf66';
+      ctx.beginPath();
+      ctx.arc(x, yInner, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, yOuter, 5, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+
+    // Draw axis labels
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+
+    // X-axis labels
+    for (let i = 0; i <= 5; i++) {
+      const density = minDensity + ((maxDensity - minDensity) / 5) * i;
+      const x = scaleX(density);
+      ctx.fillText(density.toFixed(0), x, height - padding + 20);
+    }
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++) {
+      const distance = minDistance + ((maxDistance - minDistance) / 5) * i;
+      const y = scaleY(distance);
+      ctx.fillText(distance.toFixed(0), padding - 10, y + 4);
+    }
+
+    // Draw axis titles
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Particle Density (kg/m³)', width / 2, height - 10);
+
+    ctx.save();
+    ctx.translate(15, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Roche Limit Distance (km)', 0, 0);
+    ctx.restore();
+
+    // Draw legend
+    const legendX = width - padding - 120;
+    const legendY = padding + 20;
+
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(legendX, legendY);
+    ctx.lineTo(legendX + 30, legendY);
+    ctx.stroke();
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Rigid limit', legendX + 35, legendY + 4);
+
+    ctx.strokeStyle = '#4dabf7';
+    ctx.beginPath();
+    ctx.moveTo(legendX, legendY + 20);
+    ctx.lineTo(legendX + 30, legendY + 20);
+    ctx.stroke();
+    ctx.fillText('Fluid limit', legendX + 35, legendY + 24);
+
+    ctx.strokeStyle = '#51cf66';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(legendX, legendY + 40);
+    ctx.lineTo(legendX + 30, legendY + 40);
+    ctx.stroke();
+    ctx.fillText('Ring position', legendX + 35, legendY + 44);
   }
 
   public getSpinResonance(): string {

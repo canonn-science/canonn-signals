@@ -24,7 +24,9 @@
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
     "@ngneat/until-destroy": "^10.0.0",
+    "chart.js": "^4.5.1",
     "material-icons": "^1.13.10",
+    "ng2-charts": "^8.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.0"

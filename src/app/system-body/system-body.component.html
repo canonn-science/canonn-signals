@@ -351,7 +351,8 @@
                                 n/a
                             </div>
                         </div>
-                        <div *ngIf="calculateRigidRocheLimit() !== null" class="body-data-entry">
+                        <div *ngIf="calculateRigidRocheLimit() !== null" class="body-data-entry clickable"
+                            (click)="showRocheLimitChart()">
                             <div>
                                 Roche limit (rigid)
                             </div>
@@ -359,7 +360,8 @@
                                 {{ calculateRigidRocheLimit()! | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div *ngIf="calculateFluidRocheLimit() !== null" class="body-data-entry">
+                        <div *ngIf="calculateFluidRocheLimit() !== null" class="body-data-entry clickable"
+                            (click)="showRocheLimitChart()">
                             <div>
                                 Roche limit (fluid)
                             </div>
@@ -828,6 +830,43 @@
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>
             <button mat-button (click)="copyBodyJson()">Copy to Clipboard</button>
+        </mat-dialog-actions>
+    </div>
+</ng-template>
+
+<ng-template #rocheLimitDialogTemplate>
+    <div class="roche-dialog" *ngIf="rocheLimitDialogData">
+        <h2 mat-dialog-title>Roche Limit Analysis - {{ rocheLimitDialogData.parentName }}</h2>
+        <mat-dialog-content>
+            <div class="chart-description">
+                <p>
+                    This chart shows the relationship between particle density and Roche limit distance.
+                    The Roche limit is the distance within which tidal forces would disintegrate a satellite.
+                </p>
+                <ul>
+                    <li><strong>Rigid limit</strong> (1.26 coefficient): for solid bodies held together by internal
+                        strength</li>
+                    <li><strong>Fluid limit</strong> (2.456 coefficient): for liquid or loosely bound bodies</li>
+                </ul>
+            </div>
+
+            <div class="chart-container">
+                <canvas #rocheCanvas width="700" height="400"></canvas>
+            </div>
+
+            <div class="ring-summary">
+                <h3>Ring Positions</h3>
+                <div *ngFor="let ring of rocheLimitDialogData.rings" class="ring-entry">
+                    <strong>{{ ring.name }}</strong> ({{ ring.type }})
+                    <br>
+                    Position: {{ ring.innerRadius | number:'0.0-0' }} - {{ ring.outerRadius | number:'0.0-0' }} km
+                    <br>
+                    Assumed density: {{ ring.density }} kg/m³
+                </div>
+            </div>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Close</button>
         </mat-dialog-actions>
     </div>
 </ng-template>
