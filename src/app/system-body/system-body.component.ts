@@ -719,6 +719,10 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return { rigid: rigidLimit, fluid: fluidLimit, currentDistance, periapsis, apoapsis };
   }
 
+  public getConfirmedBiologyCount(): number {
+    return this.biologySignals.filter(b => !b.isGuess).length;
+  }
+
   public isBodyWithinParentRings(): boolean {
     // Check if this body orbits within or near the parent's ring system
     if (!this.body.parent || this.body.bodyData.type === 'Ring' || this.body.bodyData.type === 'Star') {

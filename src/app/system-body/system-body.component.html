@@ -597,7 +597,7 @@
                                 Total Signals
                             </div>
                             <div>
-                                {{ biologySignals.length }}/{{ biologySignalCount || 0 }}
+                                {{ getConfirmedBiologyCount() }}/{{ biologySignalCount || 0 }}
                             </div>
                         </div>
                         <ng-container *ngIf="biologySignals.length">
