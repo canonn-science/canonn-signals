@@ -206,6 +206,37 @@
                     </div>
                 </ng-container>
 
+                <!-- Limits Section (Bodies only - when Roche limit breached or within parent rings) -->
+                <ng-container *ngIf="calculateBodyRocheLimits() as rocheLimits">
+                    <div class="body-data-section"
+                        *ngIf="rocheLimits.periapsis < rocheLimits.rigid || rocheLimits.apoapsis < rocheLimits.fluid || isBodyWithinParentRings()">
+                        <div class="body-data-section-header">Limits</div>
+                        <div class="body-data-entry clickable" (click)="showBodyRocheLimitChart()">
+                            <div>
+                                Roche limit (rigid)
+                            </div>
+                            <div
+                                [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">
+                                {{ rocheLimits.rigid | number:'0.2-2' }} km
+                                <span *ngIf="rocheLimits.periapsis < rocheLimits.rigid" style="color: #ff6b6b;">⚠</span>
+                                <span *ngIf="rocheLimits.periapsis >= rocheLimits.rigid"
+                                    style="color: #51cf66;">✓</span>
+                            </div>
+                        </div>
+                        <div class="body-data-entry clickable" (click)="showBodyRocheLimitChart()">
+                            <div>
+                                Roche limit (fluid)
+                            </div>
+                            <div
+                                [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">
+                                {{ rocheLimits.fluid | number:'0.2-2' }} km
+                                <span *ngIf="rocheLimits.apoapsis < rocheLimits.fluid" style="color: #ff6b6b;">⚠</span>
+                                <span *ngIf="rocheLimits.apoapsis >= rocheLimits.fluid" style="color: #51cf66;">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+
                 <!-- Physical Properties Section -->
                 <ng-container
                     *ngIf="body.bodyData.radius || body.bodyData.earthMasses || body.bodyData.solarMasses || body.bodyData.solarRadius || body.bodyData.gravity || body.bodyData.axialTilt || body.bodyData.age || body.bodyData.mass || (body.bodyData.innerRadius && body.bodyData.outerRadius)">
@@ -836,7 +867,8 @@
 
 <ng-template #rocheLimitDialogTemplate>
     <div class="roche-dialog" *ngIf="rocheLimitDialogData">
-        <h2 mat-dialog-title>Roche Limit Analysis - {{ rocheLimitDialogData.parentName }} {{
+        <h2 mat-dialog-title>Roche Limit Analysis<span *ngIf="!rocheLimitDialogData.isBody"> - {{
+                rocheLimitDialogData.parentName }}</span> - {{
             rocheLimitDialogData.ringName }}</h2>
         <mat-dialog-content>
             <div class="chart-description">

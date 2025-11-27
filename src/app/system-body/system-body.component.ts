@@ -663,6 +663,108 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return fluidRocheLimit;
   }
 
+  public calculateBodyRocheLimits(): { rigid: number; fluid: number; currentDistance: number; periapsis: number; apoapsis: number } | null {
+    // Calculate Roche limits for planets/moons (not rings)
+    if (!this.body.parent || this.body.bodyData.type === 'Ring' || this.body.bodyData.type === 'Star') {
+      return null;
+    }
+
+    if (!this.body.bodyData.semiMajorAxis || !this.body.bodyData.radius || !this.body.bodyData.earthMasses) {
+      return null;
+    }
+
+    const parent = this.body.parent.bodyData;
+    let primaryRadius = 0;
+    let primaryDensity = 0;
+
+    // Get primary radius in km
+    if (parent.radius) {
+      primaryRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      primaryRadius = parent.solarRadius * 695700;
+    } else {
+      return null;
+    }
+
+    // Calculate primary density in kg/m³
+    if (parent.earthMasses && parent.radius) {
+      const massKg = parent.earthMasses * 5.972e24;
+      const radiusM = parent.radius * 1000;
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
+      primaryDensity = massKg / volume;
+    } else if (parent.solarMasses && parent.solarRadius) {
+      const radiusM = parent.solarRadius * 695700 * 1000;
+      const massKg = parent.solarMasses * 1.989e30;
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
+      primaryDensity = massKg / volume;
+    } else {
+      return null;
+    }
+
+    // Calculate satellite (this body's) density
+    const satelliteMassKg = this.body.bodyData.earthMasses * 5.972e24;
+    const satelliteRadiusM = this.body.bodyData.radius * 1000;
+    const satelliteVolume = (4 / 3) * Math.PI * Math.pow(satelliteRadiusM, 3);
+    const satelliteDensity = satelliteMassKg / satelliteVolume;
+
+    const rigidLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
+    const fluidLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
+    const currentDistance = this.body.bodyData.semiMajorAxis * 149597870.7; // AU to km
+
+    // Calculate periapsis and apoapsis
+    const eccentricity = this.body.bodyData.orbitalEccentricity || 0;
+    const periapsis = currentDistance * (1 - eccentricity);
+    const apoapsis = currentDistance * (1 + eccentricity);
+
+    return { rigid: rigidLimit, fluid: fluidLimit, currentDistance, periapsis, apoapsis };
+  }
+
+  public isBodyWithinParentRings(): boolean {
+    // Check if this body orbits within or near the parent's ring system
+    if (!this.body.parent || this.body.bodyData.type === 'Ring' || this.body.bodyData.type === 'Star') {
+      return false;
+    }
+
+    if (!this.body.bodyData.semiMajorAxis) {
+      return false;
+    }
+
+    const parent = this.body.parent.bodyData;
+    if (!parent.rings || parent.rings.length === 0) {
+      return false;
+    }
+
+    // Get body's orbital distance in km
+    const bodyDistanceKm = this.body.bodyData.semiMajorAxis * 149597870.7;
+
+    // Get parent radius in km
+    let parentRadius = 0;
+    if (parent.radius) {
+      parentRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      parentRadius = parent.solarRadius * 695700;
+    }
+
+    // Find the outermost ring
+    let outermostRingRadius = 0;
+    for (const ring of parent.rings) {
+      if (ring.outerRadius && ring.outerRadius > outermostRingRadius) {
+        outermostRingRadius = ring.outerRadius;
+      }
+    }
+
+    if (outermostRingRadius === 0) {
+      return false;
+    }
+
+    // Show limits if body is between parent surface and outer ring edge
+    // or if body is close to the outer ring (within 20% of the ring system extent)
+    const ringSystemExtent = outermostRingRadius - parentRadius;
+    const proximityThreshold = outermostRingRadius + (ringSystemExtent * 0.2);
+
+    return bodyDistanceKm >= parentRadius && bodyDistanceKm <= proximityThreshold;
+  }
+
   // Orbital mechanics helper: Convert Keplerian elements to 3D Cartesian position
   private orbitalElementsToCartesian(
     semiMajorAxisAU: number,
@@ -1493,7 +1595,98 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       rigidLimits,
       fluidLimits,
       rings: [currentRing],
-      primaryRadius
+      primaryRadius,
+      isBody: false
+    };
+
+    this.isChartLoading = true;
+
+    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate, {
+      width: '800px',
+      maxWidth: '90vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop'
+    });
+
+    // Draw chart after dialog opens
+    setTimeout(() => {
+      this.drawRocheChart();
+      this.isChartLoading = false;
+    }, 100);
+  }
+
+  public showBodyRocheLimitChart(): void {
+    const rocheLimits = this.calculateBodyRocheLimits();
+    if (!rocheLimits || !this.body.parent) {
+      return;
+    }
+
+    const parent = this.body.parent.bodyData;
+
+    // Calculate parent density and radius
+    let primaryDensity = 0;
+    let primaryRadius = 0;
+
+    if (parent.radius) {
+      primaryRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      primaryRadius = parent.solarRadius * 695700;
+    } else {
+      return;
+    }
+
+    if (parent.earthMasses && parent.radius) {
+      const massKg = parent.earthMasses * 5.972e24;
+      const radiusM = parent.radius * 1000;
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
+      primaryDensity = massKg / volume;
+    } else if (parent.solarMasses && parent.solarRadius) {
+      const radiusM = parent.solarRadius * 695700 * 1000;
+      const massKg = parent.solarMasses * 1.989e30;
+      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
+      primaryDensity = massKg / volume;
+    } else {
+      return;
+    }
+
+    // Calculate body density
+    const bodyMassKg = this.body.bodyData.earthMasses! * 5.972e24;
+    const bodyRadiusM = this.body.bodyData.radius! * 1000;
+    const bodyVolume = (4 / 3) * Math.PI * Math.pow(bodyRadiusM, 3);
+    const bodyDensity = bodyMassKg / bodyVolume;
+
+    // Generate chart data points
+    const densityRange = [];
+    const rigidLimits = [];
+    const fluidLimits = [];
+
+    for (let density = 500; density <= 8000; density += 100) {
+      densityRange.push(density);
+      const rigidLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
+      const fluidLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
+      rigidLimits.push(rigidLimit);
+      fluidLimits.push(fluidLimit);
+    }
+
+    // Create a "ring" representation using periapsis/apoapsis with body radius
+    const bodyRadius = this.body.bodyData.radius!; // in km
+    const bodyRing = {
+      name: this.body.bodyData.name,
+      innerRadius: rocheLimits.periapsis - bodyRadius,
+      outerRadius: rocheLimits.apoapsis + bodyRadius,
+      type: 'Body Orbit',
+      density: bodyDensity
+    };
+
+    this.rocheLimitDialogData = {
+      parentName: parent.name,
+      ringName: this.body.bodyData.name,
+      densityRange,
+      rigidLimits,
+      fluidLimits,
+      rings: [bodyRing],
+      primaryRadius,
+      isBody: true
     };
 
     this.isChartLoading = true;
@@ -1663,7 +1856,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       ctx.textAlign = 'center';
       ctx.save();
       ctx.translate(x, padding + 15 + (index * 18));
-      ctx.fillText(`${ring.density} kg/m³`, 0, 0);
+      ctx.fillText(`${ring.density.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg/m³`, 0, 0);
       ctx.restore();
     });
 
@@ -1732,7 +1925,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.moveTo(legendX, legendY + 40);
     ctx.lineTo(legendX + 30, legendY + 40);
     ctx.stroke();
-    ctx.fillText('Ring position', legendX + 35, legendY + 44);
+    const positionLabel = this.rocheLimitDialogData.isBody ? 'Body position' : 'Ring position';
+    ctx.fillText(positionLabel, legendX + 35, legendY + 44);
   }
 
   public getSpinResonance(): string {
