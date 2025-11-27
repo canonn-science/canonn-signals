@@ -7,6 +7,10 @@ assignees: ''
 
 ---
 
+# Please make sure you discuss any issues in the Canonn discord first
+
+It is a sad fact that despite inadequate efforts LCU No Fool Like One does not read emails or regularly look at the issue lists. So please discuss on discord and just use this for for tracking purposes
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
