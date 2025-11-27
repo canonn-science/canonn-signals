@@ -528,105 +528,154 @@
                     </div>
                 </ng-container>
 
-                <!-- Signals Section -->
-                <ng-container *ngIf="hasSignals">
+                <!-- Signals Section (Human and Other only) -->
+                <ng-container *ngIf="humanSignalCount || otherSignalCount">
                     <div class="body-data-section">
-                        <div class="body-data-section-header">Signals</div>
-                        <div *ngIf="humanSignalCount" class="body-signal">
-                            <div class="body-signal-name">
-                                <img src="assets/icons/Human.png" />
-                                <span>
-                                    Human: {{ humanSignalCount }}
-                                </span>
+                        <div class="body-data-section-header">
+                            Signals
+                            <img *ngIf="humanSignalCount" src="assets/icons/Human.png"
+                                style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+                            <img *ngIf="otherSignalCount" src="assets/icons/Other.png"
+                                style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+                        </div>
+                        <div *ngIf="humanSignalCount" class="body-data-entry">
+                            <div>
+                                Human
+                            </div>
+                            <div>
+                                {{ humanSignalCount }}
                             </div>
                         </div>
-                        <div *ngIf="otherSignalCount" class="body-signal">
-                            <div class="body-signal-name">
-                                <img src="assets/icons/Other.png" />
-                                <span>
-                                    Other: {{ otherSignalCount }}
-                                </span>
+                        <div *ngIf="otherSignalCount" class="body-data-entry">
+                            <div>
+                                Other
+                            </div>
+                            <div>
+                                {{ otherSignalCount }}
                             </div>
                         </div>
-                        <div *ngIf="geologySignals.length || geologySignalCount" class="body-signal">
-                            <div class="body-signal-name">
-                                <img src="assets/icons/Geology.png" />
-                                <span>
-                                    Geology: {{ geologySignalCount }}
-                                </span>
+                    </div>
+                </ng-container>
+
+                <!-- Geology Section -->
+                <ng-container *ngIf="geologySignals.length || geologySignalCount">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">
+                            Geology
+                            <img src="assets/icons/Geology.png"
+                                style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+                        </div>
+                        <div class="body-data-entry">
+                            <div>
+                                Total Signals
                             </div>
-                            <ng-container *ngIf="geologySignals.length">
-                                <fa-icon [icon]="faChevronRight"></fa-icon>
+                            <div>
+                                {{ geologySignals.length }}/{{ geologySignalCount || 0 }}
+                            </div>
+                        </div>
+                        <ng-container *ngIf="geologySignals.length">
+                            <div *ngFor="let geologySignal of geologySignals" class="body-data-entry">
                                 <div>
-                                    <div *ngFor="let geologySignal of geologySignals" class="body-signal-data">
-                                        {{ geologySignal }}
-                                    </div>
+                                    {{ geologySignal }}
                                 </div>
-                            </ng-container>
-                        </div>
-                        <div *ngIf="biologySignals.length || biologySignalCount" class="body-signal">
-                            <div class="body-signal-name">
-                                <img src="assets/icons/Biology.png" />
-                                <span>
-                                    Biology: {{ biologySignalCount }}
-                                </span>
+                                <div></div>
                             </div>
-                            <ng-container *ngIf="biologySignals.length">
-                                <fa-icon [icon]="faChevronRight"></fa-icon>
-                                <div>
-                                    <div *ngFor="let biologySignal of biologySignals" class="body-signal-data">
-                                        <div>
-                                            <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
-                                                matTooltip="Guess"></fa-icon>
-                                            <span *ngIf="!biologySignal.entryId">
-                                                {{ biologySignal.signal }}</span>
-                                            <span *ngIf="biologySignal.entryId">
-                                                <a
-                                                    href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
-                                                    {{ biologySignal.signal }}
-                                                </a>
-                                                <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
-                                            </span>
-                                        </div>
-                                        <span *ngIf="biologySignal.codex?.reward">{{ biologySignal.codex?.reward |
-                                            number }}
-                                            cr</span>
-                                    </div>
-                                </div>
-                            </ng-container>
+                        </ng-container>
+                    </div>
+                </ng-container>
+
+                <!-- Biology Section -->
+                <ng-container *ngIf="biologySignals.length || biologySignalCount">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">
+                            Biology
+                            <img src="assets/icons/Biology.png"
+                                style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
                         </div>
-                        <div *ngIf="thargoidSignals.length || thargoidSignalCount" class="body-signal">
-                            <div class="body-signal-name">
-                                <img src="assets/icons/Thargoid.png" />
-                                <span>
-                                    Thargoid: {{ thargoidSignalCount }}
-                                </span>
+                        <div class="body-data-entry">
+                            <div>
+                                Total Signals
                             </div>
-                            <ng-container *ngIf="thargoidSignals.length">
-                                <fa-icon [icon]="faChevronRight"></fa-icon>
-                                <div>
-                                    <div *ngFor="let thargoidSignal of thargoidSignals" class="body-signal-data">
-                                        {{ thargoidSignal }}
-                                    </div>
-                                </div>
-                            </ng-container>
-                        </div>
-                        <div *ngIf="guardianSignals.length || guardianSignalCount" class="body-signal">
-                            <div class="body-signal-name">
-                                <img src="assets/icons/Guardian.png" />
-                                <span>
-                                    Guardian: {{ guardianSignalCount }}
-                                </span>
+                            <div>
+                                {{ biologySignals.length }}/{{ biologySignalCount || 0 }}
                             </div>
-                            <ng-container *ngIf="guardianSignals.length">
-                                <fa-icon [icon]="faChevronRight"></fa-icon>
-                                <div>
-                                    <div *ngFor="let guardianSignal of guardianSignals" class="body-signal-data">
-                                        {{ guardianSignal }}
-                                    </div>
-                                </div>
-                            </ng-container>
                         </div>
+                        <ng-container *ngIf="biologySignals.length">
+                            <div *ngFor="let biologySignal of biologySignals" class="body-data-entry">
+                                <div>
+                                    <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
+                                        matTooltip="Guess"></fa-icon>
+                                    <span *ngIf="!biologySignal.entryId">
+                                        {{ biologySignal.signal }}</span>
+                                    <span *ngIf="biologySignal.entryId">
+                                        <a
+                                            href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
+                                            {{ biologySignal.signal }}
+                                        </a>
+                                        <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span *ngIf="biologySignal.codex?.reward">{{ biologySignal.codex?.reward |
+                                        number }}
+                                        cr</span>
+                                </div>
+                            </div>
+                        </ng-container>
+                    </div>
+                </ng-container>
+
+                <!-- Thargoid Section -->
+                <ng-container *ngIf="thargoidSignals.length || thargoidSignalCount">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">
+                            Thargoid
+                            <img src="assets/icons/Thargoid.png"
+                                style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+                        </div>
+                        <div class="body-data-entry">
+                            <div>
+                                Total Signals
+                            </div>
+                            <div>
+                                {{ thargoidSignals.length }}/{{ thargoidSignalCount || 0 }}
+                            </div>
+                        </div>
+                        <ng-container *ngIf="thargoidSignals.length">
+                            <div *ngFor="let thargoidSignal of thargoidSignals" class="body-data-entry">
+                                <div>
+                                    {{ thargoidSignal }}
+                                </div>
+                                <div></div>
+                            </div>
+                        </ng-container>
+                    </div>
+                </ng-container>
+
+                <!-- Guardian Section -->
+                <ng-container *ngIf="guardianSignals.length || guardianSignalCount">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">
+                            Guardian
+                            <img src="assets/icons/Guardian.png"
+                                style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+                        </div>
+                        <div class="body-data-entry">
+                            <div>
+                                Total Signals
+                            </div>
+                            <div>
+                                {{ guardianSignals.length }}/{{ guardianSignalCount || 0 }}
+                            </div>
+                        </div>
+                        <ng-container *ngIf="guardianSignals.length">
+                            <div *ngFor="let guardianSignal of guardianSignals" class="body-data-entry">
+                                <div>
+                                    {{ guardianSignal }}
+                                </div>
+                                <div></div>
+                            </div>
+                        </ng-container>
                     </div>
                 </ng-container>
             </div>
