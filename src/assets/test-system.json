@@ -27,6 +27,59 @@
         "updateTime": "2024-11-19 17:05:49+00"
       },
       {
+        "argOfPeriapsis": 55.186001,
+        "ascendingNode": 76.677999,
+        "atmosphereComposition": {
+          "Carbon dioxide": 96.5,
+          "Nitrogen": 3.499999
+        },
+        "atmosphereType": "Hot thick Carbon dioxide",
+        "axialTilt": 3.094469,
+        "bodyId": 2,
+        "distanceToArrival": 358.529682,
+        "earthMasses": 0.815,
+        "gravity": 0.904402467625166,
+        "id64": 72057604515301740,
+        "isLandable": false,
+        "meanAnomaly": 3.668064,
+        "name": "Venus",
+        "orbitalEccentricity": 0.0067,
+        "orbitalInclination": 3.395,
+        "orbitalPeriod": 224.700997825023,
+        "parents": [
+          {
+            "Star": 0
+          }
+        ],
+        "radius": 6051.8,
+        "rotationalPeriod": 243.018485452627,
+        "rotationalPeriodTidallyLocked": true,
+        "semiMajorAxis": 0.723325688208136,
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Human;": 1
+          },
+          "updateTime": "3311-11-27 21:38:33+00"
+        },
+        "solidComposition": {
+          "Ice": 0,
+          "Metal": 30,
+          "Rock": 70
+        },
+        "stations": [],
+        "subType": "High metal content world",
+        "surfacePressure": 93.1895090056748,
+        "surfaceTemperature": 735,
+        "terraformingState": "Not terraformable",
+        "timestamps": {
+          "distanceToArrival": "3311-11-28T07:38:22Z",
+          "meanAnomaly": "3311-11-28T07:38:22Z"
+        },
+        "type": "Planet",
+        "updateTime": "3311-11-28 07:38:22+00",
+        "volcanismType": "Minor Rocky Magma"
+      },
+      {
         "absoluteMagnitude": -16.393875,
         "age": 266,
         "axialTilt": -0.245299,

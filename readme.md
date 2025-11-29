@@ -1,6 +1,18 @@
 # Canonn Signals
 
-The signals page is intended to help you see what signals have been comoposition scanned in a system and also show what might be present based on statistics gathered.
+Canonn Signals is a comprehensive Elite Dangerous system analysis tool that displays detailed astronomical data for stellar systems.
+
+It features signal display across five categories (Human, Other, Geology, Biology, Thargoid, and Guardian) with predictive capabilities for biological signals. 
+
+The application performs advanced astronomical calculations including Roche limit analysis with interactive visualizations, Hill sphere calculations, orbital mechanics (periapsis/apoapsis predictions), and spin-orbit resonance detection. 
+
+It identifies rare phenomena like Trojan configurations and Klemperer rosettes, provides detailed mining resource analysis with visual categorization (gemstones, metals, minerals, fuel), and offers landing safety assessments with color-coded warnings. 
+
+Bodies are displayed in a hierarchical tree structure with comprehensive physical properties, composition breakdowns, and educational dialogs explaining complex astronomical concepts. 
+
+The interface integrates real-time data from Spansh API and the Galactic Exploration Catalog and Canonn, presenting it through Material Design components with smart auto-expansion, tooltips throughout, and JSON export capabilities for detailed system analysis.
+
+A full set of features can be found is listed [here](features.md)
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.0.
 
@@ -20,6 +32,8 @@ Run `ng build` to build the project. The build artifacts will be stored in the `
 This application is [licensed](License.txt) under the MIT license.
 
 The body asset images used from https://github.com/EDDiscovery/ImageRepository/ and are licensed under the [Apache 2.0 license](src/assets/bodies/LICENSE).
+
+
 
 ## Credits
 * CMDR Elfener for the original implementation
