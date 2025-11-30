@@ -36,7 +36,7 @@ export class HomeComponent implements OnInit {
   public searchControl = new FormControl('');
   public filteredSystems: Observable<string[]> = of([]);
   public edastroData: EdastroData | null = null;
-  private systemMapping: Map<string, {systemName?: string, id64?: number}> = new Map();
+  private systemMapping: Map<string, { systemName?: string, id64?: number }> = new Map();
 
   public constructor(private readonly httpClient: HttpClient,
     private readonly appService: AppService,
@@ -85,7 +85,7 @@ export class HomeComponent implements OnInit {
     this.searching = true;
     this.searchError = false;
     this.searchControl.disable();
-    
+
     // Load test system
     if (this.searchInput.toLowerCase() === 'test') {
       this.httpClient.get<CanonnBiostats>('assets/test-system.json')
@@ -101,27 +101,30 @@ export class HomeComponent implements OnInit {
         );
       return;
     }
-    
+
     if (this.isNumeric(this.searchInput)) {
       const systemAddress = parseInt(this.searchInput);
       this.searchBySystemAddress(systemAddress);
       return;
     }
 
-    // Check EdAstro cache first
+    // Check EdAstro cache first (case-insensitive)
     this.appService.edastroSystems.subscribe(edastroSystems => {
-      const edastroSystem = edastroSystems.find(s => this.decodeHtmlEntities(s.name) === this.searchInput);
+      const edastroSystem = edastroSystems.find(s =>
+        this.decodeHtmlEntities(s.name).toLowerCase() === this.searchInput.toLowerCase()
+      );
       if (edastroSystem && edastroSystem.id64) {
         this.searchBySystemAddress(edastroSystem.id64);
         return;
       }
-      
+
       // Try Spansh if not found in EdAstro
-      this.httpClient.get<{min_max: {name: string, id64: number}[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
+      this.httpClient.get<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
         .subscribe(
           data => {
             const systems = data.min_max || [];
-            const system = systems.find(s => s.name === this.searchInput);
+            // Use case-insensitive comparison to find the system
+            const system = systems.find(s => s.name.toLowerCase() === this.searchInput.toLowerCase());
             if (system && system.id64) {
               this.searchBySystemAddress(system.id64);
             } else {
@@ -162,7 +165,7 @@ export class HomeComponent implements OnInit {
   private processBodies(data: CanonnBiostats): void {
     // Decode HTML entities in system name
     data.system.name = this.decodeHtmlEntities(data.system.name);
-    
+
     const queryParams: Params = { system: data.system.name };
 
     this.router.navigate(
@@ -360,22 +363,22 @@ export class HomeComponent implements OnInit {
   }
 
   private getSystemSuggestions(query: string): Observable<string[]> {
-    const spansQuery = this.httpClient.get<{values: string[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
+    const spansQuery = this.httpClient.get<{ values: string[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
       .pipe(switchMap(response => of((response.values || []).map(name => this.decodeHtmlEntities(name)))));
-    
+
     const edastroQuery = this.appService.edastroSystems.pipe(
       switchMap(systems => {
         const matchingSystems = systems
           .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
           .slice(0, 10);
-        
+
         const systemsWithId64 = matchingSystems.filter(s => s.id64);
         const systemsWithoutId64 = matchingSystems.filter(s => !s.id64);
-        
+
         if (systemsWithoutId64.length === 0) {
           return of(systemsWithId64.map(s => this.decodeHtmlEntities(s.name)));
         }
-        
+
         // Lookup id64 for systems without it
         const lookupPromises = systemsWithoutId64.map(system => {
           const systemName = system.galMapSearch || system.name;
@@ -387,7 +390,7 @@ export class HomeComponent implements OnInit {
             })
             .catch(() => null);
         });
-        
+
         return Promise.all(lookupPromises).then(results => {
           const systemsFoundInGalMap = results.filter(s => s !== null && s.id64) as EdastroSystem[];
           const allValidSystems = [...systemsWithId64, ...systemsFoundInGalMap];
@@ -395,7 +398,7 @@ export class HomeComponent implements OnInit {
         });
       })
     );
-    
+
     return combineLatest([spansQuery, edastroQuery]).pipe(
       switchMap(([spansSuggestions, edastroSuggestions]) => {
         // Store mapping for EdAstro systems
@@ -406,29 +409,29 @@ export class HomeComponent implements OnInit {
             this.systemMapping.set(displayName, { systemName, id64: system.id64 });
           });
         });
-        
+
         const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
         const queryLower = query.toLowerCase();
-        
+
         // Sort by relevance: exact match > starts with > contains
         const sorted = combined.sort((a, b) => {
           const aLower = a.toLowerCase();
           const bLower = b.toLowerCase();
-          
+
           // Exact match gets highest priority
           if (aLower === queryLower && bLower !== queryLower) return -1;
           if (bLower === queryLower && aLower !== queryLower) return 1;
-          
+
           // Starts with query gets second priority
           const aStartsWith = aLower.startsWith(queryLower);
           const bStartsWith = bLower.startsWith(queryLower);
           if (aStartsWith && !bStartsWith) return -1;
           if (bStartsWith && !aStartsWith) return 1;
-          
+
           // If both start with query or both don't, sort alphabetically
           return a.localeCompare(b);
         });
-        
+
         return of(sorted.slice(0, 20));
       }),
       untilDestroyed(this)
