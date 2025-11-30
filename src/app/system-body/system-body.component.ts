@@ -1431,7 +1431,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       autoFocus: false,
       restoreFocus: false
     });
-    
+
     // Focus the title after the dialog opens
     setTimeout(() => {
       if (this.jsonDialogTitle) {

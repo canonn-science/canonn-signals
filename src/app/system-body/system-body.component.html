@@ -608,11 +608,11 @@
                                     <span *ngIf="!biologySignal.entryId">
                                         {{ biologySignal.signal }}</span>
                                     <span *ngIf="biologySignal.entryId">
-                                        <a
-                                            href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}">
+                                        <a href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}"
+                                            target="_blank" rel="noopener noreferrer">
                                             {{ biologySignal.signal }}
+                                            <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
                                         </a>
-                                        <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
                                     </span>
                                 </div>
                                 <div>
