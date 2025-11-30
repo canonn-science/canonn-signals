@@ -336,6 +336,37 @@
     font-style: italic
 }
 
+.hill-limit-dialog .chart-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    background: #fff;
+    padding: 10px;
+    border-radius: 4px;
+    position: relative
+}
+
+.hill-limit-dialog .chart-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 10;
+    border-radius: 4px
+}
+
+.hill-limit-dialog .chart-loading p {
+    margin: 0;
+    font-size: 14px;
+    color: #666
+}
+
 .hill-limit-dialog mat-dialog-actions,
 .invisible-ring-dialog mat-dialog-actions,
 .json-dialog mat-dialog-actions {

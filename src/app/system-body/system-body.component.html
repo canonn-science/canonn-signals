@@ -16,9 +16,12 @@
             </span>
             <span *ngIf="isRingNotVisible()" class="badge badge-red clickable"
                 (click)="showInvisibleRingExplanation()">Invisible</span>
-            <span *ngIf="getHillLimitExceeded()" class="badge badge-red clickable"
+            <span *ngIf="getHillLimitExceeded() && body.bodyData.type === 'Ring'" class="badge badge-red clickable"
                 [matTooltip]="'Hill limit exceeded by ' + (getHillLimitExceeded()! | number:'0.0-0') + ' km'"
                 (click)="showHillLimitExplanation()">Anomalous</span>
+            <span *ngIf="isActualShepherd()" class="badge badge-blue clickable"
+                [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
+                (click)="showShepherdingHillLimitChart()">Shepherd</span>
             <span *ngIf="body.bodyData.isLandable" [class]="'badge ' + getLandableBadgeClass()"
                 [matTooltip]="getLandableTooltip()">
                 <img src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
@@ -232,6 +235,30 @@
                                 {{ rocheLimits.fluid | number:'0.2-2' }} km
                                 <span *ngIf="rocheLimits.apoapsis < rocheLimits.fluid" style="color: #ff6b6b;">⚠</span>
                                 <span *ngIf="rocheLimits.apoapsis >= rocheLimits.fluid" style="color: #51cf66;">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- Hill Limit Section (for shepherding bodies) -->
+                <ng-container *ngIf="calculateShepherdingHillLimit() as hillData">
+                    <div class="body-data-section">
+                        <div class="body-data-section-header">Shepherding Analysis</div>
+                        <div class="body-data-entry clickable" (click)="showShepherdingHillLimitChart()">
+                            <div>
+                                Hill sphere radius
+                            </div>
+                            <div [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
+                                {{ hillData.hillRadius | number:'0.2-2' }} km
+                            </div>
+                        </div>
+                        <div class="body-data-entry clickable" (click)="showShepherdingHillLimitChart()">
+                            <div>
+                                Position
+                            </div>
+                            <div>
+                                <span *ngIf="hillData.withinRings" matTooltip="This body orbits within the parent's ring system">Within rings</span>
+                                <span *ngIf="hillData.isFirstOutside" matTooltip="This is the first body outside the parent's ring system">First outside</span>
                             </div>
                         </div>
                     </div>
@@ -689,144 +716,72 @@
 </div>
 
 <ng-template #hillLimitDialogTemplate>
-    <div class="hill-limit-dialog">
-        <h2 mat-dialog-title>Ring Stability Assessment (Hill Sphere Method)</h2>
+    <div class="hill-limit-dialog" *ngIf="hillLimitDialogData">
+        <h2 mat-dialog-title>Shepherding Moon Analysis</h2>
         <mat-dialog-content>
             <p class="intro">
-                This report evaluates whether the ring lies within the parent body's theoretically stable gravitational
-                zone.
-                Stability is determined by the effective Hill radius, which represents the outermost distance at which
-                the parent
-                body can retain orbiting material.
+                This analysis evaluates whether this moon could act as a "shepherd moon" - a small satellite that helps
+                maintain or shape the parent body's ring system through gravitational interactions.
             </p>
             <p class="intro">
-                Nearby bodies with significant gravitational influence can reduce this stable region far below the
-                baseline Hill sphere.
+                The Hill sphere represents the region around the moon where its gravity dominates. If this sphere
+                extends close to or overlaps with the ring system, the moon could influence ring particle orbits.
             </p>
 
-            <div class="values" *ngIf="hillLimitDialogData">
-                <p><strong>System Overview</strong></p>
-
-                <p><strong>Parent Body</strong></p>
-                <ul>
-                    <li><strong>Name:</strong> {{ hillLimitDialogData.parentBodyName }}</li>
-                    <li><strong>Mass:</strong> {{ hillLimitDialogData.parentMass.toLocaleString('en-US',
-                        {minimumFractionDigits: 6, maximumFractionDigits: 6}) }} Earth masses</li>
-                </ul>
-
-                <p><strong>Nearest Star</strong></p>
-                <ul>
-                    <li><strong>Name:</strong> {{ hillLimitDialogData.primaryStarName }}</li>
-                    <li><strong>Mass:</strong> {{ hillLimitDialogData.primaryMass.toLocaleString('en-US',
-                        {minimumFractionDigits: 6, maximumFractionDigits: 6}) }} Earth masses</li>
-                </ul>
+            <div class="chart-container">
+                <div *ngIf="isChartLoading" class="chart-loading">
+                    <p>Generating visualization...</p>
+                </div>
+                <canvas width="700" height="500"></canvas>
             </div>
 
-            <div class="result" *ngIf="hillLimitDialogData">
-                <p><strong>Hill Radius & Ring Stability Results</strong></p>
+            <div class="values">
+                <p><strong>Analysis Results</strong></p>
+
                 <ul>
-                    <li>
-                        <strong>Baseline Hill Radius (star only):</strong> {{
-                        hillLimitDialogData.baselineHillRadius.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km
-                    </li>
-                    <li>
-                        <strong>Effective Hill Radius (including nearby gravitational influences):</strong> {{
-                        hillLimitDialogData.minHillRadius.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km
-                    </li>
-                    <li>
-                        <strong>Ring Outer Radius:</strong> {{ hillLimitDialogData.outerRadius.toLocaleString('en-US',
-                        {maximumFractionDigits: 0}) }} km
-                    </li>
+                    <li><strong>Moon name:</strong> {{ hillLimitDialogData.bodyName }}</li>
+                    <li><strong>Parent body:</strong> {{ hillLimitDialogData.parentName }}</li>
+                    <li><strong>Moon orbital radius:</strong> {{ 
+                        hillLimitDialogData.bodyOrbitalRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
+                    }} km</li>
+                    <li><strong>Moon periapsis:</strong> {{ 
+                        hillLimitDialogData.bodyPeriapsis.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
+                    }} km</li>
+                    <li><strong>Moon apoapsis:</strong> {{ 
+                        hillLimitDialogData.bodyApoapsis.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
+                    }} km</li>
+                    <li><strong>Hill sphere radius:</strong> {{ 
+                        hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
+                    }} km</li>
+                    <li><strong>Outermost ring:</strong> {{ 
+                        hillLimitDialogData.outermostRingRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
+                    }} km</li>
                 </ul>
 
-                <div *ngIf="hillLimitDialogData.isExceeded"
-                    style="margin-top: 15px; padding: 12px; background: #ff9999; border-radius: 4px; border-left: 4px solid #d32f2f; color: #1c1c1c;">
-                    <p style="margin: 0;"><strong>Stability Verdict:</strong></p>
-                    <p style="margin: 8px 0 0 0; font-size: 1.1em;"><strong>UNSTABLE</strong> — The ring extends {{
-                        hillLimitDialogData.difference.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km beyond
-                        the effective Hill radius.</p>
-                    <p style="margin: 8px 0 0 0; font-size: 0.95em;">Material at this distance cannot
-                        remain in stable orbit around the parent body.</p>
-                </div>
-                <div *ngIf="!hillLimitDialogData.isExceeded"
-                    style="margin-top: 15px; padding: 12px; background: #99cc99; border-radius: 4px; border-left: 4px solid #388e3c; color: #1c1c1c;">
-                    <p style="margin: 0;"><strong>Stability Verdict:</strong></p>
-                    <p style="margin: 8px 0 0 0; font-size: 1.1em;"><strong>STABLE</strong> — The ring is {{
-                        hillLimitDialogData.difference.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km inside
-                        the effective Hill radius.</p>
-                    <p style="margin: 8px 0 0 0; font-size: 0.95em;">The ring lies within the
-                        gravitationally stable zone{{
-                        hillLimitDialogData.perturbers && hillLimitDialogData.perturbers.length > 0 ? ', even accounting
-                        for nearby perturbing bodies' : '' }}.</p>
-                </div>
-            </div>
 
-            <div class="parameters"
-                *ngIf="hillLimitDialogData?.perturbers && hillLimitDialogData.perturbers.length > 0">
-                <p><strong>Nearby Bodies Affecting Gravitational Stability</strong></p>
-                <p>
-                    These are bodies within 3× the ring radius whose gravitational influence constrains the parent
-                    body's stable zone.
-                    The smallest resulting Hill radius among them defines the effective Hill limit.
-                </p>
-                <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #555;">
-                            <th style="text-align: left; padding: 8px; font-weight: 600; color: #e0e0e0;">Nearby Body
-                            </th>
-                            <th style="text-align: right; padding: 8px; font-weight: 600; color: #e0e0e0;">Average
-                                Distance (km)</th>
-                            <th style="text-align: right; padding: 8px; font-weight: 600; color: #e0e0e0;">Local Hill
-                                Radius (km)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let perturber of hillLimitDialogData.perturbers"
-                            [style.background]="perturber.name === hillLimitDialogData.limitingPerturber ? '#3a3a2a' : 'transparent'"
-                            style="border-bottom: 1px solid #444;">
-                            <td style="padding: 8px; color: #e0e0e0;">{{ perturber.name }}</td>
-                            <td style="text-align: right; padding: 8px; color: #e0e0e0;">{{
-                                perturber.minDistance.toLocaleString('en-US', {maximumFractionDigits: 0}) }}</td>
-                            <td style="text-align: right; padding: 8px; color: #e0e0e0;">{{
-                                perturber.hillRadius.toLocaleString('en-US',
-                                {maximumFractionDigits: 0}) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div *ngIf="hillLimitDialogData.limitingPerturber"
-                    style="margin-top: 12px; padding: 10px; background: #2a2a2a; border-radius: 4px; border-left: 4px solid #ffcc33;">
-                    <p style="margin: 0; color: #e0e0e0;"><strong>Dominant Stability-Limiting Body:</strong></p>
-                    <p style="margin: 5px 0 0 0; color: #ffcc33;"><strong>{{ hillLimitDialogData.limitingPerturber
-                            }}</strong></p>
-                    <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #b0b0b0;">
-                        Its proximity restricts the stability zone to {{
-                        hillLimitDialogData.minHillRadius.toLocaleString('en-US', {maximumFractionDigits: 0}) }} km{{
-                        hillLimitDialogData.isExceeded ? ', far inside the ring' : '' }}.
-                    </p>
-                </div>
-            </div>
-
-            <div class="formula">
-                <strong>Calculation Method:</strong>
-
-
-                <div class="parameters">
-                    <p>
-                        The algorithm samples orbital positions accounting for eccentricity, inclination, argument of
-                        periapsis, and ascending node. For each potential perturber within range, it computes the Hill
-                        radius at average separation: r<sub>H</sub> = d × (m / (3 × M))<sup>1/3</sup>, where d is the
-                        average distance
-                        to the perturber, m is the parent mass, and M is the perturber mass. The smallest computed Hill
-                        radius defines the
-                        effective stability limit.
-                    </p>
-                </div>
+                                <p><strong>Shepherding Analysis:</strong></p>
+                                <div class="conclusion">
+                                    <ng-container [ngSwitch]="hillLimitDialogData.shepherdStatus">
+                                        <div *ngSwitchCase="'shepherd'">
+                                            <strong>Status:</strong> <span style="color: #4dabf7;">Shepherd Moon</span><br>
+                                            The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) extends close enough to the ring system to potentially confine or shape the outer edge of the rings. Its gravity likely influences ring particle orbits through direct gravitational interaction or resonances.
+                                        </div>
+                                        <div *ngSwitchCase="'inner'">
+                                            <strong>Status:</strong> <span style="color: #51cf66;">Inner Moon (not a shepherd)</span><br>
+                                            This moon orbits within the ring system but is too far from the ring edge for its Hill sphere to influence the rings. It is not considered a shepherd moon.
+                                        </div>
+                                        <div *ngSwitchCase="'none'">
+                                            <strong>Status:</strong> <span style="color: #aaa;">Not a Shepherd</span><br>
+                                            The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) is too far from the ring system to have any shepherding effect.
+                                        </div>
+                                    </ng-container>
+                                </div>
             </div>
 
             <div class="disclaimer">
-                <p><strong>Note:</strong> The method used for calculating the absolute positions of the stars is not yet
-                    perfect but is a good approximation. The more parent-child relationships in a chain, the less
-                    accurate the positions.</p>
+                <p><strong>Note:</strong> This is a simplified analysis focusing on the local gravitational environment.
+                    Actual shepherding effects depend on many factors including orbital resonances, ring particle size
+                    distribution, and long-term dynamical evolution.</p>
             </div>
         </mat-dialog-content>
         <mat-dialog-actions align="end">

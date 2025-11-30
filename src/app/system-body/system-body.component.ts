@@ -403,22 +403,34 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   public getHillLimitExceeded(): number | null {
-    if (this.body.bodyData.type !== 'Ring') {
-      return null;
+    // For rings, check if outer radius exceeds Hill limit (old behavior)
+    if (this.body.bodyData.type === 'Ring') {
+      const outerRadius = this.body.bodyData.outerRadius;
+      if (!outerRadius || !this.body.parent) {
+        return null;
+      }
+
+      const hillLimit = this.calculateHillLimit();
+      if (hillLimit === null) {
+        return null;
+      }
+
+      const exceeded = outerRadius - hillLimit;
+      return exceeded > 0 ? exceeded : null;
     }
 
-    const outerRadius = this.body.bodyData.outerRadius;
-    if (!outerRadius || !this.body.parent) {
-      return null;
+    // For shepherding bodies, show Hill limit info (not "exceeded")
+    // Return a positive value if this is a shepherding candidate
+    if (this.isShepherdingCandidate()) {
+      const result = this.calculateShepherdingHillLimit();
+      if (result) {
+        // Return the Hill radius so badge shows (but this isn't really "exceeded")
+        // The badge will be used to indicate shepherding potential instead
+        return result.hillRadius;
+      }
     }
 
-    const hillLimit = this.calculateHillLimit();
-    if (hillLimit === null) {
-      return null;
-    }
-
-    const exceeded = outerRadius - hillLimit;
-    return exceeded > 0 ? exceeded : null;
+    return null;
   }
 
   public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
@@ -538,8 +550,110 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       return null;
     }
 
-    const result = this.calculateHillLimitWithPerturbers();
-    return result ? result.minHillRadius : null;
+    // Use old complex calculation for rings
+    if (this.body.bodyData.type === 'Ring') {
+      const result = this.calculateHillLimitWithPerturbers();
+      return result ? result.minHillRadius : null;
+    }
+
+    // Use new simple calculation for shepherding bodies
+    const result = this.calculateShepherdingHillLimit();
+    return result ? result.hillRadius : null;
+  }
+
+  public calculateShepherdingHillLimit(): {
+    hillRadius: number;
+    bodyOrbitalRadius: number;
+    bodyPeriapsis: number;
+    bodyApoapsis: number;
+    parentRadius: number;
+    outermostRingRadius: number;
+    withinRings: boolean;
+    isFirstOutside: boolean;
+  } | null {
+    // Simple localized Hill sphere calculation for potential shepherding bodies
+    if (!this.body.parent || !this.isShepherdingCandidate()) {
+      return null;
+    }
+
+    const parent = this.body.parent.bodyData;
+    const bodyMass = this.body.bodyData.earthMasses;
+    const semiMajorAxis = this.body.bodyData.semiMajorAxis;
+    const eccentricity = this.body.bodyData.orbitalEccentricity || 0;
+
+    if (!bodyMass || !semiMajorAxis) {
+      return null;
+    }
+
+    // Get parent mass
+    let parentMass = parent.earthMasses;
+    if (!parentMass && parent.solarMasses) {
+      parentMass = parent.solarMasses * 332950; // Convert to Earth masses
+    }
+
+    if (!parentMass) {
+      return null;
+    }
+
+    // Calculate Hill radius: r_H = a * (m / 3M)^(1/3)
+    // where a = semi-major axis, m = satellite mass, M = primary mass
+    const semiMajorAxisKm = semiMajorAxis * 149597870.7;
+    const massRatio = bodyMass / (3 * parentMass);
+    const hillRadius = semiMajorAxisKm * Math.pow(massRatio, 1/3);
+
+    // Calculate periapsis and apoapsis
+    const bodyPeriapsis = semiMajorAxisKm * (1 - eccentricity);
+    const bodyApoapsis = semiMajorAxisKm * (1 + eccentricity);
+
+    // Get parent radius
+    let parentRadius = 0;
+    if (parent.radius) {
+      parentRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      parentRadius = parent.solarRadius * 695700;
+    }
+
+    // Find outermost ring (convert from meters to km)
+    let outermostRingRadius = 0;
+    if (parent.rings) {
+      for (const ring of parent.rings) {
+        const outerRadiusKm = (ring.outerRadius || 0) / 1000;
+        if (outerRadiusKm > outermostRingRadius) {
+          outermostRingRadius = outerRadiusKm;
+        }
+      }
+    }
+
+    // Determine position relative to rings
+    const withinRings = semiMajorAxisKm >= parentRadius && semiMajorAxisKm <= outermostRingRadius;
+    
+    // Check if first body outside
+    const siblings = this.body.parent.subBodies.filter(b => 
+      b.bodyData.type !== 'Ring' && 
+      b.bodyData.semiMajorAxis && 
+      b.bodyData.semiMajorAxis > 0
+    );
+    const sortedSiblings = siblings.sort((a, b) => {
+      const distA = (a.bodyData.semiMajorAxis || 0) * 149597870.7;
+      const distB = (b.bodyData.semiMajorAxis || 0) * 149597870.7;
+      return distA - distB;
+    });
+    const bodiesOutsideRings = sortedSiblings.filter(b => {
+      const dist = (b.bodyData.semiMajorAxis || 0) * 149597870.7;
+      return dist > outermostRingRadius;
+    });
+    const isFirstOutside = bodiesOutsideRings.length > 0 && bodiesOutsideRings[0] === this.body;
+
+    return {
+      hillRadius,
+      bodyOrbitalRadius: semiMajorAxisKm,
+      bodyPeriapsis,
+      bodyApoapsis,
+      parentRadius,
+      outermostRingRadius,
+      withinRings,
+      isFirstOutside
+    };
   }
 
   public calculateRigidRocheLimit(): number | null {
@@ -750,11 +864,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       parentRadius = parent.solarRadius * 695700;
     }
 
-    // Find the outermost ring
+    // Find the outermost ring (convert from meters to km)
     let outermostRingRadius = 0;
     for (const ring of parent.rings) {
-      if (ring.outerRadius && ring.outerRadius > outermostRingRadius) {
-        outermostRingRadius = ring.outerRadius;
+      const outerRadiusKm = (ring.outerRadius || 0) / 1000;
+      if (outerRadiusKm > outermostRingRadius) {
+        outermostRingRadius = outerRadiusKm;
       }
     }
 
@@ -768,6 +883,105 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     const proximityThreshold = outermostRingRadius + (ringSystemExtent * 0.2);
 
     return bodyDistanceKm >= parentRadius && bodyDistanceKm <= proximityThreshold;
+  }
+
+  public isShepherdingCandidate(): boolean {
+    // Identifies bodies that could have a shepherding effect on rings
+    // Returns true if body's Hill sphere overlaps or is close to rings
+    if (!this.body.parent || this.body.bodyData.type === 'Ring' || this.body.bodyData.type === 'Star') {
+      return false;
+    }
+
+    if (!this.body.bodyData.semiMajorAxis) {
+      return false;
+    }
+
+    const parent = this.body.parent.bodyData;
+    if (!parent.rings || parent.rings.length === 0) {
+      return false;
+    }
+
+    // Get body's orbital distance in km
+    const bodyDistanceKm = this.body.bodyData.semiMajorAxis * 149597870.7;
+
+    // Get parent radius in km
+    let parentRadius = 0;
+    if (parent.radius) {
+      parentRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      parentRadius = parent.solarRadius * 695700;
+    }
+
+    // Find the outermost ring (convert from meters to km)
+    let outermostRingRadius = 0;
+    for (const ring of parent.rings) {
+      const outerRadiusKm = (ring.outerRadius || 0) / 1000;
+      if (outerRadiusKm > outermostRingRadius) {
+        outermostRingRadius = outerRadiusKm;
+      }
+    }
+
+    if (outermostRingRadius === 0) {
+      return false;
+    }
+
+    // Body is within rings if between parent and outermost ring
+    if (bodyDistanceKm >= parentRadius && bodyDistanceKm <= outermostRingRadius) {
+      return true;
+    }
+
+    // For bodies outside rings, check if Hill sphere is close enough to influence
+    // Calculate Hill radius
+    const bodyMass = this.body.bodyData.earthMasses;
+    if (!bodyMass) {
+      return false;
+    }
+
+    let parentMass = parent.earthMasses;
+    if (!parentMass && parent.solarMasses) {
+      parentMass = parent.solarMasses * 332950;
+    }
+
+    if (!parentMass) {
+      return false;
+    }
+
+    const massRatio = bodyMass / (3 * parentMass);
+    const hillRadius = bodyDistanceKm * Math.pow(massRatio, 1/3);
+
+    // Check if Hill sphere extends close to the rings
+    // Inner edge of Hill sphere
+    const hillInnerEdge = bodyDistanceKm - hillRadius;
+    
+    // Body is a shepherding candidate if its Hill sphere comes within 20% of ring system width from the outer ring
+    const ringSystemWidth = outermostRingRadius - parentRadius;
+    const influenceDistance = outermostRingRadius + (ringSystemWidth * 0.2);
+
+    if (hillInnerEdge <= influenceDistance) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Returns true if the body is a true shepherd moon (Hill sphere close enough to ring edge)
+   */
+  public isActualShepherd(): boolean {
+    const hillData = this.calculateShepherdingHillLimit();
+    if (!hillData) return false;
+    // Only true shepherd if status is 'shepherd' (Hill sphere close to ring edge)
+    // Use same logic as in showShepherdingHillLimitChart
+    if (hillData.withinRings) return false;
+    if (hillData.isFirstOutside) {
+      const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
+      const ringSystemWidth = hillData.outermostRingRadius - hillData.parentRadius;
+      const influenceDistance = hillData.outermostRingRadius + (ringSystemWidth * 0.2);
+      if (hillInnerEdge <= influenceDistance) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // Orbital mechanics helper: Convert Keplerian elements to 3D Cartesian position
@@ -1718,6 +1932,83 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }, 100);
   }
 
+  public showShepherdingHillLimitChart(): void {
+    const hillData = this.calculateShepherdingHillLimit();
+    if (!hillData || !this.body.parent) {
+      console.warn('Cannot show shepherding chart: missing data', { hillData, hasParent: !!this.body.parent });
+      return;
+    }
+
+    const parent = this.body.parent.bodyData;
+
+    // Get parent radius
+    let parentRadius = 0;
+    if (parent.radius) {
+      parentRadius = parent.radius;
+    } else if (parent.solarRadius) {
+      parentRadius = parent.solarRadius * 695700;
+    } else {
+      console.warn('Cannot show shepherding chart: missing parent radius');
+      return;
+    }
+
+    // Get all rings (convert from meters to km)
+    const rings = parent.rings || [];
+    const ringData = rings.map(ring => ({
+      name: ring.name || 'Ring',
+      innerRadius: (ring.innerRadius || 0) / 1000,
+      outerRadius: (ring.outerRadius || 0) / 1000,
+      type: ring.type || 'Ring'
+    }));
+
+    // Prepare dialog data
+    // Shepherd status logic
+    let shepherdStatus: 'shepherd' | 'inner' | 'none' = 'none';
+    if (hillData.withinRings) {
+      shepherdStatus = 'inner';
+    } else if (hillData.isFirstOutside) {
+      // Calculate Hill sphere proximity
+      const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
+      const ringSystemWidth = hillData.outermostRingRadius - hillData.parentRadius;
+      const influenceDistance = hillData.outermostRingRadius + (ringSystemWidth * 0.2);
+      if (hillInnerEdge <= influenceDistance) {
+        shepherdStatus = 'shepherd';
+      }
+    }
+
+    this.hillLimitDialogData = {
+      parentName: parent.name,
+      bodyName: this.body.bodyData.name,
+      parentRadius,
+      outermostRingRadius: hillData.outermostRingRadius,
+      bodyOrbitalRadius: hillData.bodyOrbitalRadius,
+      bodyPeriapsis: hillData.bodyPeriapsis,
+      bodyApoapsis: hillData.bodyApoapsis,
+      hillRadius: hillData.hillRadius,
+      withinRings: hillData.withinRings,
+      isFirstOutside: hillData.isFirstOutside,
+      rings: ringData,
+      bodyRadius: this.body.bodyData.radius || 0,
+      shepherdStatus
+    };
+
+    this.isChartLoading = true;
+
+    const dialogRef = this.dialog.open(this.hillLimitDialogTemplate, {
+      width: '800px',
+      maxWidth: '90vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop'
+    });
+
+    // Draw chart after dialog opens with a longer delay
+    setTimeout(() => {
+      console.log('Attempting to draw shepherding chart...');
+      this.drawShepherdingHillChart();
+      this.isChartLoading = false;
+    }, 200);
+  }
+
   private getRingDensityFromType(type: string): number {
     const ringClass = type?.toLowerCase() || '';
     if (ringClass.includes('metal')) return 4500;
@@ -1940,6 +2231,256 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.stroke();
     const positionLabel = this.rocheLimitDialogData.isBody ? 'Body position' : 'Ring position';
     ctx.fillText(positionLabel, legendX + 35, legendY + 44);
+  }
+
+  private drawShepherdingHillChart(): void {
+    const canvas = document.querySelector('.hill-limit-dialog canvas') as HTMLCanvasElement;
+    console.log('Canvas element found:', !!canvas);
+    if (!canvas || !this.hillLimitDialogData) {
+      console.warn('Cannot draw chart:', { hasCanvas: !!canvas, hasData: !!this.hillLimitDialogData });
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.warn('Cannot get 2d context');
+      return;
+    }
+
+    console.log('Drawing shepherding Hill chart with data:', this.hillLimitDialogData);
+
+    const data = this.hillLimitDialogData;
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = 80; // Bottom left origin
+    const centerY = height - 80;
+
+    // Clear canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    // Debug: Log all ring radii and body position
+    console.log('Parent radius:', data.parentRadius);
+    console.log('Body orbital radius:', data.bodyOrbitalRadius);
+    console.log('Body periapsis:', data.bodyPeriapsis);
+    console.log('Body apoapsis:', data.bodyApoapsis);
+    console.log('Rings:', data.rings.map((r: any) => ({ name: r.name, inner: r.innerRadius, outer: r.outerRadius })));
+    console.log('Outermost ring radius:', data.outermostRingRadius);
+
+    // Determine scale - find minimum and maximum radii from all features
+    let minRadius = data.parentRadius;
+    let maxRadius = Math.max(
+      data.outermostRingRadius * 1.1,
+      data.bodyApoapsis + data.hillRadius
+    );
+
+    // Find the smallest inner radius from rings for better scaling
+    if (data.rings && data.rings.length > 0) {
+      const smallestInner = Math.min(...data.rings.map((r: any) => r.innerRadius || minRadius));
+      minRadius = Math.min(minRadius, smallestInner * 0.8); // Start slightly below smallest ring
+    }
+    
+    console.log('Scale range:', { minRadius, maxRadius });
+
+    // Use logarithmic scale for better visibility of inner rings
+    const minLog = Math.log10(Math.max(minRadius, 1));
+    const maxLog = Math.log10(maxRadius);
+    const availableRadius = Math.min(width - centerX - 40, centerY - 40); // Quarter circle space
+
+    // Helper to convert km to pixels using logarithmic scale
+    const toPixels = (km: number) => {
+      if (km <= 0) return 0;
+      const logValue = Math.log10(km);
+      return ((logValue - minLog) / (maxLog - minLog)) * availableRadius;
+    };
+
+    // Draw parent body at origin (bottom left)
+    ctx.fillStyle = '#ff922b';
+    ctx.beginPath();
+    const parentRadiusPx = toPixels(data.parentRadius);
+    ctx.arc(centerX, centerY, Math.max(parentRadiusPx, 8), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Label parent
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 11px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Parent', centerX + 10, centerY - 5);
+
+    // Draw rings as quarter-circle arcs (top-right quadrant from bottom-left origin)
+    const ringColors = ['#51cf66', '#ffa94d', '#748ffc', '#ff6b6b', '#20c997'];
+    const startAngle = -Math.PI / 2; // Start at top (12 o'clock from origin)
+    const endAngle = 0; // End at right (3 o'clock from origin)
+    
+    data.rings.forEach((ring: any, index: number) => {
+      const color = ringColors[index % ringColors.length];
+      const innerRadiusPx = toPixels(ring.innerRadius);
+      const outerRadiusPx = toPixels(ring.outerRadius);
+
+      // Draw ring as two arcs (inner and outer)
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+
+      // Outer arc
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerRadiusPx, startAngle, endAngle);
+      ctx.stroke();
+
+      // Inner arc
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, innerRadiusPx, startAngle, endAngle);
+      ctx.stroke();
+
+      // Fill between arcs with transparency
+      const rgb = color === '#51cf66' ? '81, 207, 102' :
+        color === '#ffa94d' ? '255, 169, 77' :
+          color === '#748ffc' ? '116, 143, 252' :
+            color === '#ff6b6b' ? '255, 107, 107' : '32, 201, 151';
+      
+      ctx.fillStyle = `rgba(${rgb}, 0.2)`;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, innerRadiusPx, startAngle, endAngle);
+      ctx.lineTo(centerX + outerRadiusPx * Math.cos(endAngle), centerY + outerRadiusPx * Math.sin(endAngle));
+      ctx.arc(centerX, centerY, outerRadiusPx, endAngle, startAngle, true);
+      ctx.closePath();
+      ctx.fill();
+
+      // Label ring at 45 degrees
+      ctx.fillStyle = color;
+      ctx.font = '10px Arial';
+      ctx.textAlign = 'center';
+      const labelAngle = -Math.PI / 4; // 45 degrees
+      const labelRadius = (innerRadiusPx + outerRadiusPx) / 2;
+      const labelX = centerX + labelRadius * Math.cos(labelAngle);
+      const labelY = centerY + labelRadius * Math.sin(labelAngle);
+      ctx.fillText(`R${index + 1}`, labelX, labelY);
+    });
+
+    // Draw body orbital position as a solid quarter arc
+    const bodyOrbitRadiusPx = toPixels(data.bodyOrbitalRadius);
+    ctx.strokeStyle = '#4c6ef5';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, bodyOrbitRadiusPx, startAngle, endAngle);
+    ctx.stroke();
+
+    // Draw body position marker at 45 degrees
+    const bodyAngle = -Math.PI / 4;
+    const bodyX = centerX + bodyOrbitRadiusPx * Math.cos(bodyAngle);
+    const bodyY = centerY + bodyOrbitRadiusPx * Math.sin(bodyAngle);
+    ctx.fillStyle = '#4c6ef5';
+    ctx.beginPath();
+    ctx.arc(bodyX, bodyY, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw Hill sphere limits as dashed quarter arcs on either side
+    const hillInnerRadiusPx = toPixels(Math.max(data.bodyOrbitalRadius - data.hillRadius, data.parentRadius));
+    const hillOuterRadiusPx = toPixels(data.bodyOrbitalRadius + data.hillRadius);
+
+    ctx.strokeStyle = '#f03e3e';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+
+    // Inner Hill limit
+    if (data.bodyOrbitalRadius - data.hillRadius > data.parentRadius) {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, hillInnerRadiusPx, startAngle, endAngle);
+      ctx.stroke();
+    }
+
+    // Outer Hill limit
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, hillOuterRadiusPx, startAngle, endAngle);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    // Add distance markers with logarithmic spacing
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([1, 3]);
+    
+    // Calculate nice logarithmic intervals
+    const logRange = maxLog - minLog;
+    const numMarkers = 6;
+    
+    for (let i = 0; i <= numMarkers; i++) {
+      const logValue = minLog + (logRange / numMarkers) * i;
+      const dist = Math.pow(10, logValue);
+      const radiusPx = toPixels(dist);
+      
+      if (radiusPx > parentRadiusPx && radiusPx < availableRadius) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radiusPx, startAngle, endAngle);
+        ctx.stroke();
+        
+        // Label at the right edge
+        ctx.fillStyle = '#999';
+        ctx.font = '9px Arial';
+        ctx.textAlign = 'left';
+        const label = dist >= 1000000
+          ? (dist / 1000000).toFixed(1) + 'M km'
+          : dist >= 1000
+            ? (dist / 1000).toFixed(0) + 'k km'
+            : dist.toFixed(0) + ' km';
+        ctx.fillText(label, centerX + radiusPx + 5, centerY);
+      }
+    }
+
+    ctx.setLineDash([]);
+
+    // Draw title
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Orbital View - Shepherding Analysis (Log Scale)', 20, 25);
+
+    // Draw legend in top right
+    const legendX = width - 180;
+    const legendY = 50;
+
+    ctx.fillStyle = '#333';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'left';
+
+    // Ring legend
+    ctx.fillStyle = 'rgba(81, 207, 102, 0.3)';
+    ctx.fillRect(legendX, legendY, 15, 10);
+    ctx.strokeStyle = '#51cf66';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(legendX, legendY, 15, 10);
+    ctx.fillStyle = '#333';
+    ctx.fillText('Ring boundaries', legendX + 20, legendY + 9);
+
+    // Body orbit
+    ctx.strokeStyle = '#4c6ef5';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(legendX, legendY + 30);
+    ctx.lineTo(legendX + 15, legendY + 30);
+    ctx.stroke();
+    ctx.fillStyle = '#333';
+    ctx.fillText('Body orbit', legendX + 20, legendY + 34);
+
+    // Hill sphere
+    ctx.strokeStyle = '#f03e3e';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(legendX, legendY + 55);
+    ctx.lineTo(legendX + 15, legendY + 55);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#333';
+    ctx.fillText('Hill sphere extent', legendX + 20, legendY + 59);
+    
+    // Parent body
+    ctx.fillStyle = '#ff922b';
+    ctx.beginPath();
+    ctx.arc(legendX + 7, legendY + 80, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.fillText('Parent body', legendX + 20, legendY + 84);
   }
 
   public getSpinResonance(): string {
