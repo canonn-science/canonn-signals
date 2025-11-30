@@ -1,3 +1,4 @@
+// ...existing code...
 import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
@@ -30,6 +31,10 @@ import { MatDialog } from '@angular/material/dialog';
   ]
 })
 export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
+  // Expose Math.abs for template use
+  abs(value: number): number {
+    return Math.abs(value);
+  }
   public readonly faChevronRight = faCircleChevronRight;
   public readonly faCircleQuestion = faCircleQuestion;
   public readonly faUpRightFromSquare = faUpRightFromSquare;
@@ -47,6 +52,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChild('jsonDialogTemplate') jsonDialogTemplate!: TemplateRef<any>;
   @ViewChild('jsonDialogTitle') jsonDialogTitle!: ElementRef<HTMLElement>;
   @ViewChild('rocheLimitDialogTemplate') rocheLimitDialogTemplate!: TemplateRef<any>;
+  @ViewChild('tidalLockDialogTemplate') tidalLockDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -599,7 +605,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     // where a = semi-major axis, m = satellite mass, M = primary mass
     const semiMajorAxisKm = semiMajorAxis * 149597870.7;
     const massRatio = bodyMass / (3 * parentMass);
-    const hillRadius = semiMajorAxisKm * Math.pow(massRatio, 1/3);
+    const hillRadius = semiMajorAxisKm * Math.pow(massRatio, 1 / 3);
 
     // Calculate periapsis and apoapsis
     const bodyPeriapsis = semiMajorAxisKm * (1 - eccentricity);
@@ -626,11 +632,11 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
     // Determine position relative to rings
     const withinRings = semiMajorAxisKm >= parentRadius && semiMajorAxisKm <= outermostRingRadius;
-    
+
     // Check if first body outside
-    const siblings = this.body.parent.subBodies.filter(b => 
-      b.bodyData.type !== 'Ring' && 
-      b.bodyData.semiMajorAxis && 
+    const siblings = this.body.parent.subBodies.filter(b =>
+      b.bodyData.type !== 'Ring' &&
+      b.bodyData.semiMajorAxis &&
       b.bodyData.semiMajorAxis > 0
     );
     const sortedSiblings = siblings.sort((a, b) => {
@@ -947,12 +953,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     const massRatio = bodyMass / (3 * parentMass);
-    const hillRadius = bodyDistanceKm * Math.pow(massRatio, 1/3);
+    const hillRadius = bodyDistanceKm * Math.pow(massRatio, 1 / 3);
 
     // Check if Hill sphere extends close to the rings
     // Inner edge of Hill sphere
     const hillInnerEdge = bodyDistanceKm - hillRadius;
-    
+
     // Body is a shepherding candidate if its Hill sphere comes within 20% of ring system width from the outer ring
     const ringSystemWidth = outermostRingRadius - parentRadius;
     const influenceDistance = outermostRingRadius + (ringSystemWidth * 0.2);
@@ -1251,7 +1257,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     // search all system bodies for a star or the main body
     if (!primaryMass) {
       const allBodies = this.getAllSystemBodies();
-      for (const body of allBodies) {
+      // Ensure allBodies is always an array
+      const bodiesArray = Array.isArray(allBodies) ? allBodies : [allBodies];
+      for (const body of bodiesArray) {
         // Look for a star (has solarMasses)
         if (body.bodyData.solarMasses) {
           primaryMass = body.bodyData.solarMasses * 332950;
@@ -1397,7 +1405,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     // Sample count for orbit positions (balance performance vs accuracy)
     const sampleCount = 24; // 15-degree intervals
 
-    for (const otherBody of allBodies) {
+    // Ensure allBodies is always an array
+    const bodiesArray = Array.isArray(allBodies) ? allBodies : [allBodies];
+    for (const otherBody of bodiesArray) {
       // Skip self and parent
       if (otherBody === this.body || otherBody === this.body.parent) {
         continue;
@@ -1676,7 +1686,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
     // Find the primary body to get its mass
     const allBodies = this.getAllSystemBodies();
-    const primaryBodyObj = allBodies.find(b => b.bodyData.name === primaryName);
+    // Ensure allBodies is always an array
+    const bodiesArray = Array.isArray(allBodies) ? allBodies : [allBodies];
+    const primaryBodyObj = bodiesArray.find((b: any) => b.bodyData.name === primaryName);
     if (!primaryBodyObj) {
       return;
     }
@@ -2279,7 +2291,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       const smallestInner = Math.min(...data.rings.map((r: any) => r.innerRadius || minRadius));
       minRadius = Math.min(minRadius, smallestInner * 0.8); // Start slightly below smallest ring
     }
-    
+
     console.log('Scale range:', { minRadius, maxRadius });
 
     // Use logarithmic scale for better visibility of inner rings
@@ -2311,7 +2323,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     const ringColors = ['#51cf66', '#ffa94d', '#748ffc', '#ff6b6b', '#20c997'];
     const startAngle = -Math.PI / 2; // Start at top (12 o'clock from origin)
     const endAngle = 0; // End at right (3 o'clock from origin)
-    
+
     data.rings.forEach((ring: any, index: number) => {
       const color = ringColors[index % ringColors.length];
       const innerRadiusPx = toPixels(ring.innerRadius);
@@ -2336,7 +2348,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         color === '#ffa94d' ? '255, 169, 77' :
           color === '#748ffc' ? '116, 143, 252' :
             color === '#ff6b6b' ? '255, 107, 107' : '32, 201, 151';
-      
+
       ctx.fillStyle = `rgba(${rgb}, 0.2)`;
       ctx.beginPath();
       ctx.arc(centerX, centerY, innerRadiusPx, startAngle, endAngle);
@@ -2399,21 +2411,21 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
     ctx.setLineDash([1, 3]);
-    
+
     // Calculate nice logarithmic intervals
     const logRange = maxLog - minLog;
     const numMarkers = 6;
-    
+
     for (let i = 0; i <= numMarkers; i++) {
       const logValue = minLog + (logRange / numMarkers) * i;
       const dist = Math.pow(10, logValue);
       const radiusPx = toPixels(dist);
-      
+
       if (radiusPx > parentRadiusPx && radiusPx < availableRadius) {
         ctx.beginPath();
         ctx.arc(centerX, centerY, radiusPx, startAngle, endAngle);
         ctx.stroke();
-        
+
         // Label at the right edge
         ctx.fillStyle = '#999';
         ctx.font = '9px Arial';
@@ -2473,7 +2485,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.setLineDash([]);
     ctx.fillStyle = '#333';
     ctx.fillText('Hill sphere extent', legendX + 20, legendY + 59);
-    
+
     // Parent body
     ctx.fillStyle = '#ff922b';
     ctx.beginPath();
@@ -2955,6 +2967,39 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return { rocheLimitM: rocheLimit, violates };
   }
 
+  public tidalLockDialogData: any = null;
+
+  public showTidalLockDialog(): void {
+    const rot = this.body.bodyData.rotationalPeriod;
+    const orb = this.body.bodyData.orbitalPeriod;
+    let difference: number | null = null;
+    let solarDay: number | null = null;
+    if (rot && orb) {
+      difference = Math.abs(rot - orb);
+      // Solar day formula: 1 / |1/rot - 1/orb|
+      const rotAbs = Math.abs(rot);
+      const orbAbs = Math.abs(orb);
+      if (rotAbs > 0.0001 && orbAbs > 0.0001 && Math.abs(rotAbs - orbAbs) > 0.00001) {
+        solarDay = 1 / Math.abs(1 / rotAbs - 1 / orbAbs);
+      } else {
+        solarDay = null;
+      }
+    }
+    const resonance = this.getSpinResonance();
+    this.tidalLockDialogData = {
+      rotationalPeriod: rot,
+      orbitalPeriod: orb,
+      difference,
+      solarDay,
+      resonance
+    };
+    this.dialog.open(this.tidalLockDialogTemplate, {
+      width: '600px',
+      maxWidth: '90vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop'
+    });
+  }
 
 }
 

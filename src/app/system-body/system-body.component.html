@@ -27,9 +27,11 @@
                 <img src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
             </span>
             <span *ngIf="getSpinResonance() !== 'none' || body.bodyData.rotationalPeriodTidallyLocked"
-                class="badge badge-purple" [matTooltip]="getSpinResonanceTooltip()">
-                <span *ngIf="getSpinResonance() !== 'none'">{{ getSpinResonance() }}</span><fa-icon
-                    *ngIf="body.bodyData.rotationalPeriodTidallyLocked" [icon]="faLock" class="lock-icon"></fa-icon>
+                class="badge badge-purple clickable" [matTooltip]="getSpinResonanceTooltip()"
+                (click)="showTidalLockDialog()">
+                <span *ngIf="getSpinResonance() !== 'none'">{{ getSpinResonance() }}</span>
+                <fa-icon *ngIf="body.bodyData.rotationalPeriodTidallyLocked" [icon]="faLock" class="lock-icon"
+                    [matTooltip]="'Click for tidal locking explanation'"></fa-icon>
             </span>
             <span
                 *ngIf="body.bodyData.isLandable &&  body.bodyData.atmosphereType && body.bodyData.atmosphereType != ''"
@@ -248,7 +250,8 @@
                             <div>
                                 Hill sphere radius
                             </div>
-                            <div [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
+                            <div
+                                [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
                                 {{ hillData.hillRadius | number:'0.2-2' }} km
                             </div>
                         </div>
@@ -257,8 +260,11 @@
                                 Position
                             </div>
                             <div>
-                                <span *ngIf="hillData.withinRings" matTooltip="This body orbits within the parent's ring system">Within rings</span>
-                                <span *ngIf="hillData.isFirstOutside" matTooltip="This is the first body outside the parent's ring system">First outside</span>
+                                <span *ngIf="hillData.withinRings"
+                                    matTooltip="This body orbits within the parent's ring system">Within rings</span>
+                                <span *ngIf="hillData.isFirstOutside"
+                                    matTooltip="This is the first body outside the parent's ring system">First
+                                    outside</span>
                             </div>
                         </div>
                     </div>
@@ -388,27 +394,9 @@
 
                 <!-- Limits Section (Rings only) -->
                 <ng-container
-                    *ngIf="body.bodyData.type === 'Ring' && (calculateHillLimit() !== null || calculateRigidRocheLimit() !== null || calculateFluidRocheLimit() !== null)">
+                    *ngIf="body.bodyData.type === 'Ring' && (calculateRigidRocheLimit() !== null || calculateFluidRocheLimit() !== null)">
                     <div class="body-data-section">
                         <div class="body-data-section-header">Limits</div>
-                        <div *ngIf="calculateHillLimit() !== null" class="body-data-entry clickable"
-                            (click)="showHillLimitExplanation()">
-                            <div>
-                                Hill limit
-                            </div>
-                            <div [matTooltip]="calculateHillLimit()! + ' km'">
-                                {{ calculateHillLimit()! | number:'0.2-2' }} km
-                            </div>
-                        </div>
-                        <div *ngIf="calculateHillLimit() === null" class="body-data-entry"
-                            [matTooltip]="'The Hill limit cannot be calculated because the data from Spansh is incomplete'">
-                            <div>
-                                Hill limit
-                            </div>
-                            <div>
-                                n/a
-                            </div>
-                        </div>
                         <div *ngIf="calculateRigidRocheLimit() !== null" class="body-data-entry clickable"
                             (click)="showRocheLimitChart()">
                             <div>
@@ -741,41 +729,54 @@
                 <ul>
                     <li><strong>Moon name:</strong> {{ hillLimitDialogData.bodyName }}</li>
                     <li><strong>Parent body:</strong> {{ hillLimitDialogData.parentName }}</li>
-                    <li><strong>Moon orbital radius:</strong> {{ 
-                        hillLimitDialogData.bodyOrbitalRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
-                    }} km</li>
-                    <li><strong>Moon periapsis:</strong> {{ 
-                        hillLimitDialogData.bodyPeriapsis.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
-                    }} km</li>
-                    <li><strong>Moon apoapsis:</strong> {{ 
-                        hillLimitDialogData.bodyApoapsis.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
-                    }} km</li>
-                    <li><strong>Hill sphere radius:</strong> {{ 
-                        hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
-                    }} km</li>
-                    <li><strong>Outermost ring:</strong> {{ 
-                        hillLimitDialogData.outermostRingRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) 
-                    }} km</li>
+                    <li><strong>Moon orbital radius:</strong> {{
+                        hillLimitDialogData.bodyOrbitalRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
+                        maximumFractionDigits: 0})
+                        }} km</li>
+                    <li><strong>Moon periapsis:</strong> {{
+                        hillLimitDialogData.bodyPeriapsis.toLocaleString('en-US', {minimumFractionDigits: 0,
+                        maximumFractionDigits: 0})
+                        }} km</li>
+                    <li><strong>Moon apoapsis:</strong> {{
+                        hillLimitDialogData.bodyApoapsis.toLocaleString('en-US', {minimumFractionDigits: 0,
+                        maximumFractionDigits: 0})
+                        }} km</li>
+                    <li><strong>Hill sphere radius:</strong> {{
+                        hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
+                        maximumFractionDigits: 0})
+                        }} km</li>
+                    <li><strong>Outermost ring:</strong> {{
+                        hillLimitDialogData.outermostRingRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
+                        maximumFractionDigits: 0})
+                        }} km</li>
                 </ul>
 
 
-                                <p><strong>Shepherding Analysis:</strong></p>
-                                <div class="conclusion">
-                                    <ng-container [ngSwitch]="hillLimitDialogData.shepherdStatus">
-                                        <div *ngSwitchCase="'shepherd'">
-                                            <strong>Status:</strong> <span style="color: #4dabf7;">Shepherd Moon</span><br>
-                                            The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) extends close enough to the ring system to potentially confine or shape the outer edge of the rings. Its gravity likely influences ring particle orbits through direct gravitational interaction or resonances.
-                                        </div>
-                                        <div *ngSwitchCase="'inner'">
-                                            <strong>Status:</strong> <span style="color: #51cf66;">Inner Moon (not a shepherd)</span><br>
-                                            This moon orbits within the ring system but is too far from the ring edge for its Hill sphere to influence the rings. It is not considered a shepherd moon.
-                                        </div>
-                                        <div *ngSwitchCase="'none'">
-                                            <strong>Status:</strong> <span style="color: #aaa;">Not a Shepherd</span><br>
-                                            The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) is too far from the ring system to have any shepherding effect.
-                                        </div>
-                                    </ng-container>
-                                </div>
+                <p><strong>Shepherding Analysis:</strong></p>
+                <div class="conclusion">
+                    <ng-container [ngSwitch]="hillLimitDialogData.shepherdStatus">
+                        <div *ngSwitchCase="'shepherd'">
+                            <strong>Status:</strong> <span style="color: #4dabf7;">Shepherd Moon</span><br>
+                            The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US',
+                                {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) extends
+                            close enough to the ring system to potentially confine or shape the outer edge of the rings.
+                            Its gravity likely influences ring particle orbits through direct gravitational interaction
+                            or resonances.
+                        </div>
+                        <div *ngSwitchCase="'inner'">
+                            <strong>Status:</strong> <span style="color: #51cf66;">Inner Moon (not a
+                                shepherd)</span><br>
+                            This moon orbits within the ring system but is too far from the ring edge for its Hill
+                            sphere to influence the rings. It is not considered a shepherd moon.
+                        </div>
+                        <div *ngSwitchCase="'none'">
+                            <strong>Status:</strong> <span style="color: #aaa;">Not a Shepherd</span><br>
+                            The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US',
+                                {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) is too far
+                            from the ring system to have any shepherding effect.
+                        </div>
+                    </ng-container>
+                </div>
             </div>
 
             <div class="disclaimer">
@@ -905,6 +906,71 @@
                     Assumed density: {{ ring.density }} kg/m³
                 </div>
             </div>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Close</button>
+        </mat-dialog-actions>
+    </div>
+</ng-template>
+
+<ng-template #tidalLockDialogTemplate>
+    <div class="tidal-lock-dialog">
+        <h2 mat-dialog-title>Tidal Locking & Synchronous Rotation</h2>
+        <mat-dialog-content>
+            <ng-container
+                *ngIf="tidalLockDialogData.resonance === '1:1' && tidalLockDialogData.solarDay !== null && abs(tidalLockDialogData.solarDay) > 1000; else notLocked">
+                <p class="intro">
+                    This body is <strong>synchronous</strong> (tidally locked): its rotational period matches its
+                    orbital period, so the same face always points toward its parent body.
+                </p>
+            </ng-container>
+            <ng-template #notLocked>
+                <p class="intro">
+                    This body is <strong>not tidally locked</strong>.
+                    <span *ngIf="tidalLockDialogData.resonance !== '1:1'">
+                        It is in a <strong>{{ tidalLockDialogData.resonance }}</strong> spin resonance, meaning it
+                        rotates {{ tidalLockDialogData.resonance.split(':')[0] }} times for every {{
+                        tidalLockDialogData.resonance.split(':')[1] }} orbits.
+                    </span>
+                    <span *ngIf="tidalLockDialogData.solarDay !== null && abs(tidalLockDialogData.solarDay) < 1000">
+                        The solar day (the time between successive sunrises) is {{ tidalLockDialogData.solarDay |
+                        number:'0.2-2' }} days, so the same face does not always point at the parent body.
+                    </span>
+                </p>
+            </ng-template>
+            <ul>
+                <li><strong>Rotational period:</strong> {{ tidalLockDialogData.rotationalPeriod | number:'0.2-2' }} days
+                </li>
+                <li><strong>Orbital period:</strong> {{ tidalLockDialogData.orbitalPeriod | number:'0.2-2' }} days</li>
+                <li *ngIf="tidalLockDialogData.solarDay !== null"><strong>Solar day:</strong> {{
+                    tidalLockDialogData.solarDay | number:'0.2-2' }} days</li>
+                <li *ngIf="tidalLockDialogData.difference !== null"><strong>Difference:</strong> {{
+                    tidalLockDialogData.difference | number:'0.4-4' }} days</li>
+                <li *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'"><strong>Spin
+                        resonance:</strong> {{ tidalLockDialogData.resonance }}</li>
+            </ul>
+            <p class="disclaimer" style="color: #b8860b; font-style: italic; margin-bottom: 0.5em;">
+                <strong>Disclaimer:</strong> This tidal locking analysis feature is still being refined. It is currently
+                unclear why the game journal sets the tidal locking flag for some bodies that are not truly tidally
+                locked. The analysis here may differ from the in-game flag.
+            </p>
+            <p class="explanation">
+                <strong>How is this determined?</strong><br>
+                <u>Sidereal day:</u> The sidereal day is the time it takes for a body to rotate once relative to the
+                distant stars. This is equal to the rotational period shown above.<br>
+                <u>Solar day:</u> The solar day is the time between successive sunrises for an observer on the surface.
+                It is calculated as:
+                <br>
+                <code>solarDay = 1 / |1/rotationalPeriod - 1/orbitalPeriod|</code>
+                <br>
+                If the rotational and orbital periods are exactly equal (1:1 resonance), the solar day is infinite—the
+                sun never moves in the sky, and the same face always points at the parent body.<br>
+                If the resonance is not 1:1 or the solar day is short, the body is not tidally locked, even if the game
+                says so.<br>
+                <u>Axial tilt:</u> Even on a tidally locked world, if the planet has a significant axial tilt, some
+                regions may experience a day/night cycle as the star appears to move north and south in the sky over the
+                course of an orbit. This can create areas with periodic sunlight and darkness despite tidal locking.
+            </p>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>
