@@ -45,6 +45,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('invisibleRingDialogTemplate') invisibleRingDialogTemplate!: TemplateRef<any>;
   @ViewChild('jsonDialogTemplate') jsonDialogTemplate!: TemplateRef<any>;
+  @ViewChild('jsonDialogTitle') jsonDialogTitle!: ElementRef<HTMLElement>;
   @ViewChild('rocheLimitDialogTemplate') rocheLimitDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
@@ -1427,8 +1428,16 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public showBodyJsonDialog(event: MouseEvent): void {
     this.dialog.open(this.jsonDialogTemplate, {
       width: '800px',
-      maxHeight: '80vh'
+      autoFocus: false,
+      restoreFocus: false
     });
+    
+    // Focus the title after the dialog opens
+    setTimeout(() => {
+      if (this.jsonDialogTitle) {
+        this.jsonDialogTitle.nativeElement.focus();
+      }
+    }, 100);
   }
 
   public showHillLimitExplanation(): void {
