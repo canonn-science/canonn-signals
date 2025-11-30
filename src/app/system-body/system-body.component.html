@@ -927,7 +927,7 @@
             <ng-template #notLocked>
                 <p class="intro">
                     This body is <strong>not tidally locked</strong>.
-                    <span *ngIf="tidalLockDialogData.resonance !== '1:1'">
+                    <span *ngIf="tidalLockDialogData.resonance !== '1:1' && tidalLockDialogData.resonance !== 'none'">
                         It is in a <strong>{{ tidalLockDialogData.resonance }}</strong> spin resonance, meaning it
                         rotates {{ tidalLockDialogData.resonance.split(':')[0] }} times for every {{
                         tidalLockDialogData.resonance.split(':')[1] }} orbits.
