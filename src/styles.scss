@@ -81,22 +81,13 @@ a:hover,
   left: -56px;
 }
 
-.child-container-default::before {
-  position: absolute;
-  content: " ";
-  height: 0px;
-  width: 56px;
-  top: 85px;
-  left: -56px;
-  border-bottom: 4px solid #393939;
-}
-
+.child-container-default::before,
 .child-container-title-only::before {
   position: absolute;
   content: " ";
   height: 0px;
   width: 56px;
-  top: 15.5px;
+  top: 20px;
   left: -56px;
   border-bottom: 4px solid #393939;
 }
@@ -113,12 +104,9 @@ a:hover,
   border-radius: 0px 0px 0px 4px;
 }
 
-.child-container-default-last::after {
-  height: 85px;
-}
-
+.child-container-default-last::after,
 .child-container-title-only-last::after {
-  height: 20px;
+  height: 24px;
 }
 
 hr {
