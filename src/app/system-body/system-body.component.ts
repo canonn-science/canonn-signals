@@ -92,6 +92,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   // Cache for expensive computed properties
   public cachedMaterialBadges: { name: string, class: string, tooltip: string }[] = [];
   public cachedHotspotsList: { displayName: string; count: number; wikiUrl: string; description: string }[] = [];
+  public cachedSurfacePressureTooltip: string = '';
+
   public cachedRingResourceTypes: Set<string> = new Set();
 
   public constructor(
@@ -249,6 +251,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     this.computeMaterialBadges();
     this.computeHotspotsList();
     this.computeRingResourceTypes();
+    this.computeSurfacePressureTooltip();
 
   }
 
@@ -516,6 +519,28 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public getRingResourceTypes(): Set<string> {
     return this.cachedRingResourceTypes;
+  }
+
+  private computeSurfacePressureTooltip(): void {
+    const p = this.body?.bodyData?.surfacePressure;
+    if (p === null || p === undefined) {
+      this.cachedSurfacePressureTooltip = '';
+      return;
+    }
+
+    // Assume stored value is in atmospheres
+    const atm = Number(p);
+    const kPa = atm * 101.325; // 1 atm = 101.325 kPa
+    const pa = atm * 101325; // 1 atm = 101325 Pa
+    const psi = atm * 14.6959488; // 1 atm = 14.6959 psi
+
+    // Format nicely (one value per line for tooltip)
+    const atmStr = `${atm.toFixed(2)} atm`;
+    const kPaStr = `${kPa.toFixed(2)} kPa`;
+    const paStr = `${Math.round(pa).toLocaleString()} Pa`;
+    const psiStr = `${psi.toFixed(2)} psi`;
+
+    this.cachedSurfacePressureTooltip = `${atmStr}\n${kPaStr}\n${paStr}\n${psiStr}`;
   }
 
   public logTooltip(name: string, description: string): void {

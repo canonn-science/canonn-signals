@@ -418,7 +418,7 @@
 
                 <!-- Atmosphere & Environment Section -->
                 <ng-container
-                    *ngIf="body.bodyData.surfaceTemperature || body.bodyData.surfacePressure || body.bodyData.volcanismType">
+                    *ngIf="body.bodyData.surfaceTemperature != null || body.bodyData.surfacePressure != null || body.bodyData.volcanismType">
                     <div class="body-data-section">
                         <div class="body-data-section-header">Atmosphere & Environment</div>
                         <div *ngIf="body.bodyData.surfaceTemperature" class="body-data-entry">
@@ -429,11 +429,12 @@
                                 {{ body.bodyData.surfaceTemperature | number:'0.2-2' }} K
                             </div>
                         </div>
-                        <div *ngIf="body.bodyData.surfacePressure" class="body-data-entry">
+                        <div *ngIf="body.bodyData.surfacePressure != null && body.bodyData.surfacePressure !== 0"
+                            class="body-data-entry">
                             <div>
                                 Surface pressure
                             </div>
-                            <div [matTooltip]="body.bodyData.surfacePressure + ' atmospheres'">
+                            <div [matTooltip]="cachedSurfacePressureTooltip || ''" matTooltipClass="multiline-tooltip">
                                 {{ body.bodyData.surfacePressure | number:'0.2-2' }} atmospheres
                             </div>
                         </div>

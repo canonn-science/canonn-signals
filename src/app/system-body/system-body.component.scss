@@ -134,6 +134,27 @@
     white-space: nowrap
 }
 
+/* Pressure unit selector styling to match other body-data entries */
+.unit-select-field {
+    min-width: 120px;
+    max-width: 220px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.system-body .body-data-entry .unit-select-field .mat-select-trigger {
+    padding: 0 8px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+}
+
+.system-body .body-data-entry .unit-select-field .mat-select-value {
+    font-size: 0.95em;
+    color: inherit;
+}
+
 .system-body .body-data-entry.clickable {
     cursor: pointer
 }
