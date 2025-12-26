@@ -16,9 +16,6 @@
             </span>
             <span *ngIf="isRingNotVisible()" class="badge badge-red clickable"
                 (click)="showInvisibleRingExplanation()">Invisible</span>
-            <span *ngIf="getHillLimitExceeded() && body.bodyData.type === 'Ring'" class="badge badge-red clickable"
-                [matTooltip]="'Hill limit exceeded by ' + (getHillLimitExceeded()! | number:'0.0-0') + ' km'"
-                (click)="showHillLimitExplanation()">Anomalous</span>
             <span *ngIf="isActualShepherd()" class="badge badge-blue clickable"
                 [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
                 (click)="showShepherdingHillLimitChart()">Shepherd</span>
