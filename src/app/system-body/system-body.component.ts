@@ -1,5 +1,5 @@
 // ...existing code...
-import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -15,7 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
-
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     trigger("grow", [ // Note the trigger name
       transition(":enter", [
@@ -88,6 +88,10 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public formattedEarthMass: { display: string; tooltip: string } | null = null;
   public formattedSolarMass: { display: string; tooltip: string } | null = null;
+
+  // Cache for expensive computed properties
+  public cachedMaterialBadges: { name: string, class: string, tooltip: string }[] = [];
+  public cachedHotspotsList: { displayName: string; count: number; wikiUrl: string; description: string }[] = [];
 
   public constructor(private readonly appService: AppService, private readonly dialog: MatDialog) {
   }
@@ -236,8 +240,10 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       }
     }
 
-    // Update cached children state after expansion logic completes
-    setTimeout(() => this.updateChildrenExpandedState());
+    // Compute and cache expensive properties
+    this.computeMaterialBadges();
+    this.computeHotspotsList();
+    
   }
 
   public toggleExpand(): void {
@@ -470,7 +476,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return 0;
   }
 
-  public getHotspotsList(): { displayName: string; count: number; wikiUrl: string; description: string }[] {
+  private computeHotspotsList(): void {
     let signals: { [key: string]: number } | undefined;
 
     // First check if the ring body itself has signals
@@ -485,9 +491,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       }
     }
 
-    if (!signals) return [];
+    if (!signals) {
+      this.cachedHotspotsList = [];
+      return;
+    }
 
-    return Object.entries(signals).map(([key, count]) => {
+    this.cachedHotspotsList = Object.entries(signals).map(([key, count]) => {
       const resource = MINING_RESOURCES[key];
       const displayName = resource?.name || key;
       let description = resource?.description || '';
@@ -502,8 +511,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     });
   }
 
+  public getHotspotsList(): { displayName: string; count: number; wikiUrl: string; description: string }[] {
+    return this.cachedHotspotsList;
+  }
+
   public getRingResourceTypes(): Set<string> {
-    const hotspots = this.getHotspotsList();
+    const hotspots = this.cachedHotspotsList;
     const types = new Set<string>();
 
     hotspots.forEach(hotspot => {
@@ -1623,6 +1636,18 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
 
   public trackByMaterial(index: number, material: { name: string, class: string, tooltip: string }): string {
     return material.name;
+  }
+
+  public trackByBody(index: number, body: SystemBody): number {
+    return body.bodyData.bodyId;
+  }
+
+  public trackByBiologySignal(index: number, signal: BiologySignal): number {
+    return signal.entryId;
+  }
+
+  public trackByString(index: number, item: string): string {
+    return item;
   }
 
 
@@ -2851,9 +2876,10 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return this.cachedNextApoapsis;
   }
 
-  public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
+  private computeMaterialBadges(): void {
     if (!this.body.bodyData.materials) {
-      return [];
+      this.cachedMaterialBadges = [];
+      return;
     }
 
     const materialData: { [key: string]: { grade: string, abbrev: string } } = {
@@ -2888,7 +2914,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       'Sulphur': { grade: 'badge-mat4', abbrev: 'S' }
     };
 
-    return Object.entries(this.body.bodyData.materials)
+    this.cachedMaterialBadges = Object.entries(this.body.bodyData.materials)
       .filter(([material, percentage]) => percentage > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([material, percentage]) => ({
@@ -2896,6 +2922,10 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         class: materialData[material]?.grade || 'badge-gray',
         tooltip: `${material}: ${percentage.toFixed(2)}%`
       }));
+  }
+
+  public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
+    return this.cachedMaterialBadges;
   }
 
   public getRocheExcess(): number | null {

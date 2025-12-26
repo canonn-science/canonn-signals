@@ -473,6 +473,10 @@ export class HomeComponent implements OnInit {
     };
     return countBodies(this.bodies);
   }
+
+  public trackByBody(index: number, body: SystemBody): number {
+    return body.bodyData.bodyId;
+  }
 }
 
 interface EDSMSystemV1 {

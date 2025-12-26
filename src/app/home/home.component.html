@@ -86,7 +86,7 @@
             </div>
         </div>
         <div class="bodies">
-            <app-system-body *ngFor="let body of bodies; last as isLast" [body]="body" [isRoot]="true"
+            <app-system-body *ngFor="let body of bodies; trackBy: trackByBody; last as isLast" [body]="body" [isRoot]="true"
                 [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"></app-system-body>
         </div>
     </div>

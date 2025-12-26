@@ -92,7 +92,7 @@
             </div>
         </div>
         <div class="materials-badges" (mouseleave)="hoveredIndex = -1">
-            <span *ngFor="let material of getMaterialBadges(); let i = index" [class]="'badge ' + material.class"
+            <span *ngFor="let material of getMaterialBadges(); trackBy: trackByMaterial; let i = index" [class]="'badge ' + material.class"
                 (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ? material.tooltip : material.name }}</span>
             <button class="json-button" (click)="showBodyJsonDialog($event)"
                 (contextmenu)="copyBodyJson(); $event.preventDefault()"
@@ -589,7 +589,7 @@
                             </div>
                         </div>
                         <ng-container *ngIf="geologySignals.length">
-                            <div *ngFor="let geologySignal of geologySignals" class="body-data-entry">
+                            <div *ngFor="let geologySignal of geologySignals; trackBy: trackByString" class="body-data-entry">
                                 <div>
                                     {{ geologySignal }}
                                 </div>
@@ -616,7 +616,7 @@
                             </div>
                         </div>
                         <ng-container *ngIf="biologySignals.length">
-                            <div *ngFor="let biologySignal of biologySignals" class="body-data-entry">
+                            <div *ngFor="let biologySignal of biologySignals; trackBy: trackByBiologySignal" class="body-data-entry">
                                 <div>
                                     <fa-icon *ngIf="biologySignal.isGuess" [icon]="faCircleQuestion"
                                         matTooltip="Guess"></fa-icon>
@@ -657,7 +657,7 @@
                             </div>
                         </div>
                         <ng-container *ngIf="thargoidSignals.length">
-                            <div *ngFor="let thargoidSignal of thargoidSignals" class="body-data-entry">
+                            <div *ngFor="let thargoidSignal of thargoidSignals; trackBy: trackByString" class="body-data-entry">
                                 <div>
                                     {{ thargoidSignal }}
                                 </div>
@@ -684,7 +684,7 @@
                             </div>
                         </div>
                         <ng-container *ngIf="guardianSignals.length">
-                            <div *ngFor="let guardianSignal of guardianSignals" class="body-data-entry">
+                            <div *ngFor="let guardianSignal of guardianSignals; trackBy: trackByString" class="body-data-entry">
                                 <div>
                                     {{ guardianSignal }}
                                 </div>
@@ -698,7 +698,7 @@
     </div>
     <div class="system-body-end"></div>
     <div class="child-bodies">
-        <app-system-body *ngFor="let body of body.subBodies; last as isLast" [body]="body" [isLast]="isLast"
+        <app-system-body *ngFor="let body of body.subBodies; trackBy: trackByBody; last as isLast" [body]="body" [isLast]="isLast"
             [forceExpanded]="forceExpanded"></app-system-body>
     </div>
 </div>
