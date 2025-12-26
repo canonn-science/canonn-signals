@@ -18,6 +18,9 @@
                 <mat-icon>search</mat-icon>
             </button>
         </div>
+        <div *ngIf="searchError" class="error-message">
+            <p>{{ searchErrorMessage }}</p>
+        </div>
     </div>
     <div>
         <img [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"

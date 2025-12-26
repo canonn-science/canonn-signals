@@ -31,6 +31,7 @@ export class HomeComponent implements OnInit {
   public searching = false;
   public searchInput: string = "";
   public searchError = false;
+  public searchErrorMessage: string = "";
   public data: CanonnBiostats | null = null;
   public bodies: SystemBody[] = [];
   public searchControl = new FormControl('');
@@ -84,6 +85,7 @@ export class HomeComponent implements OnInit {
     this.bodies = [];
     this.searching = true;
     this.searchError = false;
+    this.searchErrorMessage = '';
     this.searchControl.disable();
 
     // Load test system
@@ -138,9 +140,10 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  private searchFailed(): void {
+  private searchFailed(message: string = 'System not found'): void {
     this.searching = false;
     this.searchError = true;
+    this.searchErrorMessage = message;
     this.searchControl.enable();
   }
 
@@ -149,7 +152,12 @@ export class HomeComponent implements OnInit {
       .subscribe(
         data => {
           if (!data) {
-            this.searchFailed();
+            this.searchFailed('System not found in database');
+            return;
+          }
+          // Check if the response indicates no spansh data or missing system info
+          if (!data.system || !data.system.name) {
+            this.searchFailed('No system data available for this address');
             return;
           }
           this.processBodies(data);
@@ -157,7 +165,15 @@ export class HomeComponent implements OnInit {
           this.searchControl.enable();
         },
         error => {
-          this.searchFailed();
+          // Check for specific error messages
+          const errorMessage = error?.error?.message || error?.message || '';
+          if (errorMessage.toLowerCase().includes('no spansh data')) {
+            this.searchFailed('System not found in Spansh database');
+          } else if (error.status === 404) {
+            this.searchFailed('System not found');
+          } else {
+            this.searchFailed('Error loading system data. Please try again.');
+          }
         }
       );
   }
