@@ -120,9 +120,6 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       ? this.formatSolarMass(this.body.bodyData.solarMasses)
       : null;
 
-    // Update cached children state after expansion logic
-    setTimeout(() => this.updateChildrenExpandedState());
-
     this.bodyCoronaImage = "";
     this.bodyImage = "";
 
@@ -238,6 +235,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
         this.styleClass = "child-container-default-last";
       }
     }
+
+    // Update cached children state after expansion logic completes
+    setTimeout(() => this.updateChildrenExpandedState());
   }
 
   public toggleExpand(): void {
