@@ -1,5 +1,5 @@
 // ...existing code...
-import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -92,8 +92,13 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   // Cache for expensive computed properties
   public cachedMaterialBadges: { name: string, class: string, tooltip: string }[] = [];
   public cachedHotspotsList: { displayName: string; count: number; wikiUrl: string; description: string }[] = [];
+  public cachedRingResourceTypes: Set<string> = new Set();
 
-  public constructor(private readonly appService: AppService, private readonly dialog: MatDialog) {
+  public constructor(
+    private readonly appService: AppService,
+    private readonly dialog: MatDialog,
+    private readonly cdr: ChangeDetectorRef
+  ) {
   }
 
   public ngOnInit(): void {
@@ -243,43 +248,47 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     // Compute and cache expensive properties
     this.computeMaterialBadges();
     this.computeHotspotsList();
-    
+    this.computeRingResourceTypes();
+
   }
 
   public toggleExpand(): void {
     this.expanded = !this.expanded;
     this.isExpanded = this.expanded;
-    // Update parent's cached state if it exists
-    if (this.body.parent) {
-      setTimeout(() => this.updateParentChildrenState());
-    }
-  }
-
-  private updateParentChildrenState(): void {
-    // Find parent component and update its cached state
-    const parentElement = document.querySelector(`[data-body-id="${this.body.parent?.bodyData.bodyId}"]`);
-    if (parentElement) {
-      // This will be handled by the parent component's change detection
-    }
+    // Update cached state
+    this.updateChildrenExpandedState();
+    this.cdr.markForCheck();
   }
 
   public toggleChildren(): void {
     const childArray = this.childComponents.toArray();
     const anyChildExpanded = childArray.some(child => child.expanded);
-    childArray.forEach(child => {
-      this.toggleChildRecursively(child, !anyChildExpanded);
-    });
-    setTimeout(() => this.updateChildrenExpandedState());
-  }
+    const targetState = !anyChildExpanded;
 
-  private toggleChildRecursively(component: SystemBodyComponent, expand: boolean): void {
-    component.expanded = expand;
-    component.isExpanded = expand;
+    // Collect all descendants using non-recursive approach
+    const allDescendants: SystemBodyComponent[] = [];
+    const queue: SystemBodyComponent[] = [...childArray];
 
-    const grandChildren = component.childComponents?.toArray() || [];
-    grandChildren.forEach(grandChild => {
-      this.toggleChildRecursively(grandChild, expand);
+    while (queue.length > 0) {
+      const component = queue.shift()!;
+      allDescendants.push(component);
+
+      // Add grandchildren to queue
+      if (component.childComponents) {
+        queue.push(...component.childComponents.toArray());
+      }
+    }
+
+    // Batch update all descendants
+    allDescendants.forEach(component => {
+      component.expanded = targetState;
+      component.isExpanded = targetState;
+      component.cdr.markForCheck();
     });
+
+    // Update cached state and trigger change detection
+    this.updateChildrenExpandedState();
+    this.cdr.markForCheck();
   }
 
   public hasChildren(): boolean {
@@ -515,7 +524,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     return this.cachedHotspotsList;
   }
 
-  public getRingResourceTypes(): Set<string> {
+  private computeRingResourceTypes(): void {
     const hotspots = this.cachedHotspotsList;
     const types = new Set<string>();
 
@@ -528,7 +537,11 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       }
     });
 
-    return types;
+    this.cachedRingResourceTypes = types;
+  }
+
+  public getRingResourceTypes(): Set<string> {
+    return this.cachedRingResourceTypes;
   }
 
   public logTooltip(name: string, description: string): void {

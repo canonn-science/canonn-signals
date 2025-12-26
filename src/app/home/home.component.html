@@ -27,9 +27,14 @@
 <div class="system-container" *ngIf="data" @visibilityTrigger>
     <div class="system-container-data">
         <div class="system-title">
-            <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> (<a [href]="edastroData?.poiUrl" target="_blank" class="edastro-name-link">{{ edastroData?.name }}</a><img src="https://edastro.com/images/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline">)</span> - ID64: <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}"
-                target="_blank">{{ data.system.id64 }} <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a></span>
-            <span *ngIf="data.system.population !== null && data.system.population !== undefined" class="population">Population: {{ data.system.population | number }}</span>
+            <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> (<a [href]="edastroData?.poiUrl"
+                        target="_blank" class="edastro-name-link">{{ edastroData?.name }}</a><img
+                        src="https://edastro.com/images/GEC-marker-logo-240px.png" alt="GEC"
+                        class="edastro-icon-inline">)</span> - ID64: <a
+                    href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank">{{ data.system.id64 }}
+                    <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a></span>
+            <span *ngIf="data.system.population !== null && data.system.population !== undefined"
+                class="population">Population: {{ data.system.population | number }}</span>
         </div>
         <div class="edastro-summary" *ngIf="edastroData?.summary">
             <span class="summary-text">{{ edastroData?.summary }}</span>
@@ -86,8 +91,8 @@
             </div>
         </div>
         <div class="bodies">
-            <app-system-body *ngFor="let body of bodies; trackBy: trackByBody; last as isLast" [body]="body" [isRoot]="true"
-                [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"></app-system-body>
+            <app-system-body *ngFor="let body of bodies; trackBy: trackByBody; last as isLast" [body]="body"
+                [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"></app-system-body>
         </div>
     </div>
 </div>
