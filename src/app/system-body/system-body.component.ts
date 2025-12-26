@@ -1875,7 +1875,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
     ctx.fillText('Parent', centerX + 10, centerY - 5);
 
     // Draw rings as quarter-circle arcs (top-right quadrant from bottom-left origin)
-    const ringColors = ['#51cf66', '#ffa94d', '#748ffc', '#ff6b6b', '#20c997'];
+    // Use a single green colour for all rings to match the legend and improve
+    // visibility when rings are very thin.
+    const ringColors = ['#51cf66', '#51cf66', '#51cf66', '#51cf66', '#51cf66'];
     const startAngle = -Math.PI / 2; // Start at top (12 o'clock from origin)
     const endAngle = 0; // End at right (3 o'clock from origin)
 
