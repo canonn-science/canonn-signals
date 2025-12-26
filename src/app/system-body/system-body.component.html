@@ -253,7 +253,8 @@
                                 {{ hillData.hillRadius | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div class="body-data-entry clickable" (click)="showShepherdingHillLimitChart()">
+                        <div *ngIf="hillData.withinRings || hillData.isFirstOutside" class="body-data-entry clickable"
+                            (click)="showShepherdingHillLimitChart()">
                             <div>
                                 Position
                             </div>
