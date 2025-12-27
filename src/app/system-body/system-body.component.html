@@ -502,11 +502,11 @@
                                 {{ body.bodyData.absoluteMagnitude | number:'0.2-2' }}
                             </div>
                         </div>
-                        <div *ngIf="getJetConeAngle() !== null" class="body-data-entry">
+                        <div *ngIf="getJetConeAngle() !== null" class="body-data-entry clickable" (click)="showJetAngleDialog()">
                             <div>
                                 Jet cone half angle
                             </div>
-                            <div matTooltip="Estimate">
+                            <div [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
                                 {{ getJetConeAngle() | number:'0.2-2' }}°
                             </div>
                         </div>
@@ -785,6 +785,50 @@
                 <p><strong>Note:</strong> This is a simplified analysis focusing on the local gravitational environment.
                     Actual shepherding effects depend on many factors including orbital resonances, ring particle size
                     distribution, and long-term dynamical evolution.</p>
+            </div>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Close</button>
+        </mat-dialog-actions>
+    </div>
+</ng-template>
+
+<ng-template #jetAngleDialogTemplate>
+    <div class="jet-angle-dialog">
+        <h2 mat-dialog-title>Neutron star jet angle — explanation</h2>
+        <mat-dialog-content>
+            <p>
+                These jet cone half angles were measured from a small sample of neutron stars. The measurements were
+                fitted to a smooth S-shaped curve (a sigmoid) and then adjusted with small quadratic corrections
+                to improve accuracy for extreme stars.
+            </p>
+            <p><strong>Model constants</strong></p>
+            <ul>
+                <li>Amin = -83.8389</li>
+                <li>Amax = -60.8896</li>
+                <li>k = 2.2037</li>
+                <li>x0 = -5.0497</li>
+                <li>alpha = 0.001517</li>
+                <li>gamma_sr = 0.724671</li>
+                <li>gamma_rot = -0.025587</li>
+                <li>gamma_age = 0.045594</li>
+            </ul>
+            <h3>How the prediction is built</h3>
+            <p>1) Combine the inputs into a single predictor:</p>
+            <p>x = ln(solarRadius / sqrt(rotationalPeriod)) + 0.001517 × ln(age)</p>
+            <p>2) Pass the predictor through the sigmoid (S-shaped) curve:</p>
+            <p>Angle_sigmoid = Amin + (Amax - Amin) / (1 + exp(-k * (x - x0)))</p>
+            <p>3) Add small quadratic corrections to account for outliers:</p>
+            <p>corrections = gamma_sr * ln(solarRadius)^2 + gamma_rot * ln(rotationalPeriod)^2 + gamma_age * ln(age)^2</p>
+            <p>4) Final prediction: Angle_pred = Angle_sigmoid + corrections</p>
+            <p class="disclaimer" style="margin-top:0.5em; font-style:italic; color:#b8860b">
+                Note: the displayed model is a simplified regression of a small sample. The uncertainty is large
+                — the tooltip shows a conservative ±5° estimate.
+            </p>
+            <h3>Fit vs sample data</h3>
+            <p>The chart below is a bubble plot: <strong>x</strong> = rotational period (days, log scale), <strong>y</strong> = solar radius (Ls). Point color encodes <strong>age</strong> (older → red), and point size indicates the measured jet cone half angle (degrees).</p>
+            <div *ngIf="jetAngleChartDataUrl">
+                <img [src]="jetAngleChartDataUrl" alt="Fit chart" style="max-width:100%; border:1px solid #ddd;" />
             </div>
         </mat-dialog-content>
         <mat-dialog-actions align="end">

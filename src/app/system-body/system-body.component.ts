@@ -1,5 +1,5 @@
 // ...existing code...
-import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -53,6 +53,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChild('jsonDialogTitle') jsonDialogTitle!: ElementRef<HTMLElement>;
   @ViewChild('rocheLimitDialogTemplate') rocheLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('tidalLockDialogTemplate') tidalLockDialogTemplate!: TemplateRef<any>;
+  @ViewChild('jetAngleDialogTemplate') jetAngleDialogTemplate!: TemplateRef<any>;
   @ViewChild('apoPeriDialogTemplate') apoPeriDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
@@ -86,6 +87,18 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public invisibleRingDialogData: any = null;
   public rocheLimitDialogData: any = null;
   public isChartLoading: boolean = false;
+  public jetAngleChartDataUrl: string | null = null;
+  public readonly jetSampleCsv: string = `System,Body,Rotation Period [s],Radius [Ls],Angle [deg],age
+Hypaa,B1,1.789518,2.01,8.759363,12830
+Hypaa,B2,1.700175,2.04,11.40773,12860
+Hypaa,B3,2.27105,1.62,7.6653,12982
+Hypaa,B4,2.510701,1.52,6.9503,10680
+Hypaa,B5,3.352849,1.18,8.0145,7416
+Hypua,B6,1.026249,3.26,16.396,12296
+Phrooe,B7,4.044732,1.04,7.1671,12918
+Phrooe,B8,0.973363,3.3,16,6402
+Phrooe,B9,1.866787,1.95,9.1197,6346
+Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public apoPeriDialogData: { type: 'apo' | 'peri', date: Date, days: number, distanceKm?: number,
     meanAnomaly?: number, orbitalPeriod?: number, timestamp?: Date, currentMeanAnomaly?: number, degreesToEvent?: number } | null = null;
@@ -116,7 +129,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       });
   }
 
-  public ngOnChanges(): void {
+  public ngOnChanges(changes?: SimpleChanges): void {
     if (!this.body) {
       return;
     }
@@ -2399,31 +2412,49 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   public getJetConeAngle(): number | null {
+    // Only apply to neutron stars with required inputs
     if (this.body.bodyData.type !== 'Star' || !this.body.bodyData.subType?.includes('Neutron Star') ||
-      !this.body.bodyData.rotationalPeriod || !this.body.bodyData.solarMasses ||
-      !this.body.bodyData.solarRadius || !this.body.bodyData.surfaceTemperature || !this.body.bodyData.age) {
+      !this.body.bodyData.rotationalPeriod || !this.body.bodyData.solarRadius || !this.body.bodyData.age) {
       return null;
     }
 
-    const mass = this.body.bodyData.solarMasses;
-    const radius = this.body.bodyData.solarRadius;
-    const rotPeriod = this.body.bodyData.rotationalPeriod;
-    const surfaceTemp = this.body.bodyData.surfaceTemperature;
+    const rotationalPeriod = this.body.bodyData.rotationalPeriod;
+    const solarRadius = this.body.bodyData.solarRadius;
     const age = this.body.bodyData.age;
 
-    if (mass <= 0 || radius <= 0 || rotPeriod <= 0 || surfaceTemp <= 0 || age <= 0) {
+    if (rotationalPeriod <= 0 || solarRadius <= 0 || age <= 0) {
       return null;
     }
 
-    const rotEnergy = (mass * radius * radius) / (rotPeriod * rotPeriod);
-    const tempPerMass = surfaceTemp / mass;
+    // Fitted parameters
+    const Amin = -83.8389;
+    const Amax = -60.8896;
+    const k = 2.2037;
+    const x0 = -5.0497;
+    const alpha = 0.001517;
+    const gamma_sr = 0.724671;
+    const gamma_rot = -0.025587;
+    const gamma_age = 0.045594;
 
-    const logPred = 0.8785 +
-      0.1185 * Math.log(rotEnergy) +
-      0.1362 * Math.log(tempPerMass) +
-      -0.0787 * Math.log(age);
+    // Step 2: combined predictor
+    // Using the requested form: x = LN(solarRadius / SQRT(rotationalPeriod)) + alpha * LN(age)
+    // LN(solarRadius / SQRT(rotationalPeriod)) = ln(solarRadius) - 0.5 * ln(rotationalPeriod)
+    const x = Math.log(solarRadius / Math.sqrt(rotationalPeriod)) + alpha * Math.log(age);
 
-    return Math.exp(logPred);
+    // Step 3: sigmoid
+    const denom = 1 + Math.exp(-k * (x - x0));
+    const angleSigmoid = Amin + (Amax - Amin) / denom;
+
+    // Step 4: quadratic corrections (use natural logs)
+    const ln_sr = Math.log(solarRadius);
+    const ln_rot = Math.log(rotationalPeriod);
+    const ln_age = Math.log(age);
+    const quad = gamma_sr * (ln_sr * ln_sr) + gamma_rot * (ln_rot * ln_rot) + gamma_age * (ln_age * ln_age);
+
+    // Step 5: combine
+    const anglePred = angleSigmoid + quad;
+
+    return anglePred;
   }
 
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
@@ -2595,6 +2626,222 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   public tidalLockDialogData: any = null;
+
+  public showJetAngleDialog(): void {
+    // Generate the chart image for the dialog and then open it
+    try {
+      this.jetAngleChartDataUrl = this.generateJetAngleChart();
+    } catch (e) {
+      // If chart generation fails, clear URL and still open dialog
+      this.jetAngleChartDataUrl = null;
+      console.error('Jet chart generation error', e);
+    }
+
+    this.dialog.open(this.jetAngleDialogTemplate, {
+      width: '800px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop'
+    });
+  }
+
+
+
+  private generateJetAngleChart(): string | null {
+    // Parse CSV
+    const rows = this.parseCsv(this.jetSampleCsv);
+    if (!rows || rows.length === 0) return null;
+
+    // Model parameters (used for sigmoid overlay)
+    const Amin = -83.8389;
+    const Amax = -60.8896;
+    const k = 2.2037;
+    const x0 = -5.0497;
+    const alpha = 0.001517;
+
+    // Build points with combined predictor x, actual angle y, and residual (actual - predicted_full)
+    const pts: { x: number; y: number; residual: number }[] = [];
+    for (const r of rows) {
+      const rot = r['Rotation Period [s]'] ? Number(r['Rotation Period [s]']) : null;
+      const sr = r['Radius [Ls]'] ? Number(r['Radius [Ls]']) : null;
+      const age = r['age'] ? Number(r['age']) : null;
+      const angle = r['Angle [deg]'] ? Number(r['Angle [deg]']) : null;
+      if (rot === null || sr === null || age === null || angle === null) continue;
+      const rotDays = rot / 86400;
+      if (!(rotDays > 0)) continue;
+      const x = Math.log(sr / Math.sqrt(rotDays)) + alpha * Math.log(age);
+      const predictedFull = this.computePredictedAngleForSample(rot, sr, age);
+      if (predictedFull === null) continue;
+      const residual = angle - predictedFull; // positive => under-predicted (actual > predicted)
+      pts.push({ x, y: angle, residual });
+    }
+
+    if (pts.length === 0) return null;
+
+    // x-range and sampling for sigmoid overlay
+    const xs = pts.map(p => p.x);
+    const xmin = Math.min(...xs) - 0.2;
+    const xmax = Math.max(...xs) + 0.2;
+    const sampleCount = 300;
+    const sigmoidCurve: { x: number; y: number }[] = [];
+    for (let i = 0; i <= sampleCount; i++) {
+      const x = xmin + (i / sampleCount) * (xmax - xmin);
+      const denom = 1 + Math.exp(-k * (x - x0));
+      const y = Amin + (Amax - Amin) / denom;
+      sigmoidCurve.push({ x, y });
+    }
+
+    // Canvas setup
+    const width = 780;
+    const height = 360;
+    const padding = 50;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d')!;
+
+    // background
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, width, height);
+
+    // For bubble plot: x = rotational period (days), y = solarRadius (Ls), color = age, size = angle (deg)
+    // Build arrays
+    const bubblePts: { x: number; y: number; age: number; angle: number }[] = [];
+    for (const r of rows) {
+      const rot = r['Rotation Period [s]'] ? Number(r['Rotation Period [s]']) : null;
+      const sr = r['Radius [Ls]'] ? Number(r['Radius [Ls]']) : null;
+      const age = r['age'] ? Number(r['age']) : null;
+      const angle = r['Angle [deg]'] ? Number(r['Angle [deg]']) : null;
+      if (rot === null || sr === null || age === null || angle === null) continue;
+      const rotDays = rot / 86400;
+      if (!(rotDays > 0)) continue;
+      bubblePts.push({ x: rotDays, y: sr, age, angle });
+    }
+    if (bubblePts.length === 0) return null;
+
+    // compute ranges
+    const xvals = bubblePts.map(p => p.x);
+    const yvals = bubblePts.map(p => p.y);
+    const ageVals = bubblePts.map(p => p.age);
+    const angleVals = bubblePts.map(p => p.angle);
+    const xminB = Math.min(...xvals);
+    const xmaxB = Math.max(...xvals);
+    const yminB = Math.min(...yvals);
+    const ymaxB = Math.max(...yvals);
+    const ageMin = Math.min(...ageVals);
+    const ageMax = Math.max(...ageVals);
+    const angleMin = Math.min(...angleVals);
+    const angleMax = Math.max(...angleVals);
+
+    const xToPx = (x: number) => padding + ((Math.log10(x) - Math.log10(xminB)) / (Math.log10(xmaxB) - Math.log10(xminB))) * (width - padding * 2);
+    const yToPx = (y: number) => (height - padding) - ((y - yminB) / (ymaxB - yminB)) * (height - padding * 2);
+
+    // axes
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+
+    // draw bubbles
+    for (const p of bubblePts) {
+      const px = xToPx(p.x);
+      const py = yToPx(p.y);
+      // size scale (map angle to radius between 4 and 18)
+      const size = 4 + 14 * ((p.angle - angleMin) / (angleMax - angleMin || 1));
+      // color map age -> hue (older = more red)
+      const t = (p.age - ageMin) / (ageMax - ageMin || 1);
+      const hue = 240 - 240 * t; // 240 blue -> 0 red
+      const color = `hsl(${hue},70%,50%)`;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(px, py, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    // axes labels
+    ctx.fillStyle = '#000';
+    ctx.font = '13px Arial';
+    ctx.fillText('Rotational period (days) [log scale]', width / 2 - 90, height - 12);
+    ctx.save();
+    ctx.translate(14, height / 2 + 30);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Solar radius (Ls)', 0, 0);
+    ctx.restore();
+
+    // color legend (age)
+    const legendX = width - padding - 140;
+    const legendY = padding + 10;
+    ctx.fillStyle = '#000';
+    ctx.fillText('Age (older → red)', legendX, legendY - 6);
+    for (let i = 0; i <= 4; i++) {
+      const ty = legendY + i * 12;
+      const tt = i / 4;
+      const hue = 240 - 240 * tt;
+      ctx.fillStyle = `hsl(${hue},70%,50%)`;
+      ctx.fillRect(legendX, ty, 12, 10);
+      ctx.fillStyle = '#000';
+      const ageLabel = Math.round(ageMin + tt * (ageMax - ageMin));
+      ctx.fillText(ageLabel.toString(), legendX + 18, ty + 9);
+    }
+
+    // size legend (angle)
+    ctx.fillStyle = '#000';
+    ctx.fillText('Size = jet angle (deg)', legendX, legendY + 70);
+    const sY = legendY + 84;
+    const smallR = 6;
+    const largeR = 16;
+    ctx.beginPath(); ctx.arc(legendX + 12, sY, smallR, 0, Math.PI * 2); ctx.fillStyle = '#888'; ctx.fill();
+    ctx.fillStyle = '#000'; ctx.fillText(Math.round(angleMin).toString(), legendX + 32, sY + 4);
+    ctx.beginPath(); ctx.arc(legendX + 12, sY + 28, largeR, 0, Math.PI * 2); ctx.fillStyle = '#888'; ctx.fill();
+    ctx.fillStyle = '#000'; ctx.fillText(Math.round(angleMax).toString(), legendX + 32, sY + 32 + 4);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  private parseCsv(text: string): Array<Record<string, string>> {
+    if (!text) return [];
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return [];
+    const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    const rows: Array<Record<string, string>> = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      const obj: Record<string, string> = {};
+      for (let j = 0; j < header.length; j++) {
+        obj[header[j]] = cols[j] ?? '';
+      }
+      rows.push(obj);
+    }
+    return rows;
+  }
+
+  private computePredictedAngleForSample(rotSeconds: number | null, solarRadius: number | null, age: number | null): number | null {
+    if (!rotSeconds || !solarRadius || !age) return null;
+    const rotDays = Number(rotSeconds) / 86400;
+    if (!(rotDays > 0) || !(solarRadius > 0) || !(age > 0)) return null;
+    const Amin = -83.8389;
+    const Amax = -60.8896;
+    const k = 2.2037;
+    const x0 = -5.0497;
+    const alpha = 0.001517;
+    const gamma_sr = 0.724671;
+    const gamma_rot = -0.025587;
+    const gamma_age = 0.045594;
+    const x = Math.log(solarRadius / Math.sqrt(rotDays)) + alpha * Math.log(age);
+    const denom = 1 + Math.exp(-k * (x - x0));
+    const angleSigmoid = Amin + (Amax - Amin) / denom;
+    const ln_sr = Math.log(solarRadius);
+    const ln_rot = Math.log(rotDays);
+    const ln_age = Math.log(age);
+    const quad = gamma_sr * (ln_sr * ln_sr) + gamma_rot * (ln_rot * ln_rot) + gamma_age * (ln_age * ln_age);
+    return angleSigmoid + quad;
+  }
 
   public showTidalLockDialog(): void {
     const rot = this.body.bodyData.rotationalPeriod;
