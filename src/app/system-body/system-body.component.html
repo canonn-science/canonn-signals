@@ -151,9 +151,8 @@
                             <div>
                                 Next apoapsis
                             </div>
-                            <div>
-                                {{ getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextApoapsis()!.days |
-                                number:'0.1-1' }} days)
+                            <div [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
+                                {{ getNextApoapsis()!.days | number:'0.1-1' }} days
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
@@ -169,9 +168,8 @@
                             <div>
                                 Next periapsis
                             </div>
-                            <div>
-                                {{ getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm' }} ({{ getNextPeriapsis()!.days |
-                                number:'0.1-1' }} days)
+                            <div [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
+                                {{ getNextPeriapsis()!.days | number:'0.1-1' }} days
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.orbitalInclination" class="body-data-entry">
