@@ -53,6 +53,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChild('jsonDialogTitle') jsonDialogTitle!: ElementRef<HTMLElement>;
   @ViewChild('rocheLimitDialogTemplate') rocheLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('tidalLockDialogTemplate') tidalLockDialogTemplate!: TemplateRef<any>;
+  @ViewChild('apoPeriDialogTemplate') apoPeriDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -85,6 +86,9 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public invisibleRingDialogData: any = null;
   public rocheLimitDialogData: any = null;
   public isChartLoading: boolean = false;
+
+  public apoPeriDialogData: { type: 'apo' | 'peri', date: Date, days: number, distanceKm?: number,
+    meanAnomaly?: number, orbitalPeriod?: number, timestamp?: Date, currentMeanAnomaly?: number, degreesToEvent?: number } | null = null;
 
   public formattedEarthMass: { display: string; tooltip: string } | null = null;
   public formattedSolarMass: { display: string; tooltip: string } | null = null;
@@ -1497,6 +1501,67 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
       this.drawRocheChart();
       this.isChartLoading = false;
     }, 100);
+  }
+
+  public showApoPeriDialog(type: 'apo' | 'peri'): void {
+    let data: { date: Date, days: number } | null = null;
+    let distanceKm: number | undefined = undefined;
+    if (type === 'apo') {
+      data = this.getNextApoapsis();
+      if (this.body.bodyData.semiMajorAxis && this.body.bodyData.orbitalEccentricity !== undefined) {
+        distanceKm = this.getApoapsis();
+      }
+    } else {
+      data = this.getNextPeriapsis();
+      if (this.body.bodyData.semiMajorAxis && this.body.bodyData.orbitalEccentricity !== undefined) {
+        distanceKm = this.getPeriapsis();
+      }
+    }
+
+    if (!data) return;
+
+    // Prepare detailed calculation info if orbital elements exist
+    let meanAnomaly: number | undefined = undefined;
+    let orbitalPeriod: number | undefined = undefined;
+    let timestamp: Date | undefined = undefined;
+    let currentMeanAnomaly: number | undefined = undefined;
+    let degreesToEvent: number | undefined = undefined;
+
+    if (this.body.bodyData.meanAnomaly !== undefined && this.body.bodyData.orbitalPeriod && this.body.bodyData.timestamps?.meanAnomaly) {
+      meanAnomaly = this.body.bodyData.meanAnomaly;
+      orbitalPeriod = this.body.bodyData.orbitalPeriod;
+      timestamp = new Date(this.body.bodyData.timestamps.meanAnomaly);
+      const timestampMs = timestamp.getTime();
+      const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
+      const orbitalCycles = elapsedDays / orbitalPeriod;
+      currentMeanAnomaly = (meanAnomaly + (orbitalCycles * 360)) % 360;
+
+      if (type === 'apo') {
+        degreesToEvent = (180 - currentMeanAnomaly) % 360;
+        if (degreesToEvent < 0) degreesToEvent += 360;
+      } else {
+        degreesToEvent = (360 - currentMeanAnomaly) % 360;
+      }
+    }
+
+    this.apoPeriDialogData = {
+      type,
+      date: data.date,
+      days: data.days,
+      distanceKm,
+      meanAnomaly,
+      orbitalPeriod,
+      timestamp,
+      currentMeanAnomaly,
+      degreesToEvent
+    };
+
+    this.dialog.open(this.apoPeriDialogTemplate, {
+      width: '600px',
+      maxWidth: '90vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop'
+    });
   }
 
   public showShepherdingHillLimitChart(): void {

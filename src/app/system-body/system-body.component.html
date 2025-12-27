@@ -139,7 +139,7 @@
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
-                            class="body-data-entry">
+                            class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
                             <div>
                                 Apoapsis
                             </div>
@@ -147,7 +147,7 @@
                                 {{ getApoapsis() | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div *ngIf="getNextApoapsis()" class="body-data-entry">
+                        <div *ngIf="getNextApoapsis()" class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
                             <div>
                                 Next apoapsis
                             </div>
@@ -156,7 +156,7 @@
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined && body.bodyData.orbitalEccentricity !== null && body.bodyData.orbitalEccentricity !== 0"
-                            class="body-data-entry">
+                            class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
                             <div>
                                 Periapsis
                             </div>
@@ -164,7 +164,7 @@
                                 {{ getPeriapsis() | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div *ngIf="getNextPeriapsis()" class="body-data-entry">
+                        <div *ngIf="getNextPeriapsis()" class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
                             <div>
                                 Next periapsis
                             </div>
@@ -785,6 +785,68 @@
                 <p><strong>Note:</strong> This is a simplified analysis focusing on the local gravitational environment.
                     Actual shepherding effects depend on many factors including orbital resonances, ring particle size
                     distribution, and long-term dynamical evolution.</p>
+            </div>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Close</button>
+        </mat-dialog-actions>
+    </div>
+</ng-template>
+
+<ng-template #apoPeriDialogTemplate>
+    <div class="apo-peri-dialog" *ngIf="apoPeriDialogData">
+        <h2 mat-dialog-title>{{ apoPeriDialogData.type === 'apo' ? 'Next Apoapsis' : 'Next Periapsis' }}</h2>
+        <mat-dialog-content>
+            
+
+            <div class="values">
+                <ul>
+                    <li><strong>Event:</strong> {{ apoPeriDialogData.type === 'apo' ? 'Apoapsis' : 'Periapsis' }}</li>
+                    <li><strong>Date (UTC):</strong> {{ apoPeriDialogData.date | date:'yyyy-MM-dd HH:mm' }}</li>
+                    <li><strong>Time until event:</strong> {{ apoPeriDialogData.days | number:'0.1-1' }} days</li>
+                    <li *ngIf="apoPeriDialogData.distanceKm !== undefined"><strong>Distance at event:</strong>
+                        {{ apoPeriDialogData.distanceKm | number:'0.0-0' }} km</li>
+                </ul>
+            </div>
+
+            <div class="explanation">
+                <p><strong>What is {{ apoPeriDialogData.type === 'apo' ? 'apoapsis' : 'periapsis' }}?</strong></p>
+                <p>
+                    <strong>Apoapsis</strong> is the point in the orbit farthest from the parent body; <strong>periapsis</strong>
+                    is the closest point. Their distances are computed from the orbital semi-major axis <em>a</em>
+                    and eccentricity <em>e</em> using:
+                </p>
+                <p>
+                    Periapsis: <strong>a × (1 - e)</strong><br>
+                    Apoapsis: <strong>a × (1 + e)</strong>
+                </p>
+
+                <p><strong>How is the next date estimated?</strong></p>
+                <p *ngIf="apoPeriDialogData.meanAnomaly !== undefined">
+                    The calculation uses the stored mean anomaly (M0) and its timestamp (t0). Steps:
+                </p>
+                <ol *ngIf="apoPeriDialogData.meanAnomaly !== undefined">
+                    <li>Compute elapsed time since the timestamp: <em>Δt = now - t0</em> (in days).</li>
+                    <li>Compute the number of orbital cycles since then: <em>cycles = Δt / P</em>, where <em>P</em> is the orbital period (days).</li>
+                    <li>Advance the mean anomaly by <em>cycles × 360°</em> to get the current mean anomaly <em>M</em>:</li>
+                    <li><strong>M = (M0 + cycles × 360°) mod 360°</strong></li>
+                    <li>Find the angular distance to the event:
+                        <br>* For periapsis: <strong>Δθ = (360° − M) mod 360°</strong>
+                        <br>* For apoapsis: <strong>Δθ = (180° − M) mod 360°</strong>
+                    </li>
+                    <li>Convert to time: <strong>Δt_event = (Δθ / 360°) × P</strong>. The event date is now + Δt_event.</li>
+                </ol>
+                <p *ngIf="apoPeriDialogData.meanAnomaly === undefined">
+                    A next-event estimate requires a recorded mean anomaly and timestamp. If that data is unavailable the
+                    application cannot compute the next occurrence.
+                </p>
+
+                <p *ngIf="apoPeriDialogData.currentMeanAnomaly !== undefined">
+                    Debug values used in the calculation:<br>
+                    Recorded M0 = {{ apoPeriDialogData.meanAnomaly }}° at {{ apoPeriDialogData.timestamp | date:'yyyy-MM-dd HH:mm' }}<br>
+                    Current mean anomaly M ≈ {{ apoPeriDialogData.currentMeanAnomaly | number:'0.1-1' }}°<br>
+                    Angular distance to event Δθ ≈ {{ apoPeriDialogData.degreesToEvent | number:'0.1-1' }}°
+                </p>
             </div>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
