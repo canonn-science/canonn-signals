@@ -43,54 +43,60 @@
             <span class="summary-text">{{ edastroData?.summary }}</span>
         </div>
         <div class="system-data">
-            <div class="system-data-row">
-                <span class="row-label">
-                    Coordinates
-                </span>
-                <div class="system-coordinates">
-                    <div>
-                        <div>{{ data.system.coords.x | number: '0.5-5' }}</div>
-                        <div>X</div>
-                    </div>
-                    <div>
-                        <div>{{ data.system.coords.y | number: '0.5-5' }}</div>
-                        <div>Y</div>
-                    </div>
-                    <div>
-                        <div>{{ data.system.coords.z | number: '0.5-5' }}</div>
-                        <div>Z</div>
+            <div class="region-map-container" #regionMapContainer></div>
+            <div class="system-data-content">
+                <div class="system-data-row">
+                    <span class="row-label">
+                        Coordinates
+                    </span>
+                    <div class="system-coordinates">
+                        <div>
+                            <div>{{ data.system.coords.x | number: '0.5-5' }}</div>
+                            <div>X</div>
+                        </div>
+                        <div>
+                            <div>{{ data.system.coords.y | number: '0.5-5' }}</div>
+                            <div>Y</div>
+                        </div>
+                        <div>
+                            <div>{{ data.system.coords.z | number: '0.5-5' }}</div>
+                            <div>Z</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="system-data-row">
-                <span class="row-label">
-                    Region
-                </span>
-                <span>
-                    {{ data.system.region.name }}
-                </span>
-            </div>
-            <div class="system-data-row" *ngIf="data.system.signals?.cloud?.length">
-                <span class="row-label">
-                    Clouds
-                </span>
-                <span>
-                    <div *ngFor="let cloud of data.system.signals!.cloud">
-                        {{ cloud }}
-                    </div>
-                </span>
-            </div>
-            <div class="system-data-row" *ngIf="data.system.signals?.anomaly?.length">
-                <span class="row-label">
-                    Anomalies
-                </span>
-                <span>
+                <div class="system-data-row">
+                    <span class="row-label">
+                        Region
+                    </span>
                     <span>
-                        <div *ngFor="let anomaly of data.system.signals!.anomaly">
-                            {{ anomaly }}
+                        {{ data.system.region.name }}
+                    </span>
+                </div>
+                <div class="system-data-row" *ngIf="data.system.signals?.cloud?.length">
+                    <span class="row-label">
+                        Clouds
+                    </span>
+                    <span>
+                        <div *ngFor="let cloud of data.system.signals!.cloud">
+                            {{ cloud }}
                         </div>
                     </span>
-                </span>
+                </div>
+                <div class="system-data-row" *ngIf="data.system.signals?.anomaly?.length">
+                    <span class="row-label">
+                        Anomalies
+                    </span>
+                    <span>
+                        <span>
+                            <div *ngFor="let anomaly of data.system.signals!.anomaly">
+                                {{ anomaly }}
+                            </div>
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <div class="gec-image-container" *ngIf="edastroData?.mainImage" #gecContainer>
+                <img [src]="edastroData!.mainImage" alt="GEC Image" class="gec-main-image" #gecImage>
             </div>
         </div>
         <div class="bodies">

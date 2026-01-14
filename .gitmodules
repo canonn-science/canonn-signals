@@ -1,0 +1,3 @@
+[submodule "src/assets/EliteDangerousRegionMap"]
+	path = src/assets/EliteDangerousRegionMap
+	url = https://github.com/klightspeed/EliteDangerousRegionMap

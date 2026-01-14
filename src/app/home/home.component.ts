@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { AppService, EdastroData, EdastroSystem } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
@@ -26,7 +26,7 @@ import { FormControl } from '@angular/forms';
     ]),
   ]
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, AfterViewInit {
   public readonly faUpRightFromSquare = faUpRightFromSquare;
   public searching = false;
   public searchInput: string = "";
@@ -38,6 +38,9 @@ export class HomeComponent implements OnInit {
   public filteredSystems: Observable<string[]> = of([]);
   public edastroData: EdastroData | null = null;
   private systemMapping: Map<string, { systemName?: string, id64?: number }> = new Map();
+  @ViewChild('regionMapContainer') regionMapContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('gecImage') gecImage?: ElementRef<HTMLImageElement>;
+  @ViewChild('gecContainer') gecContainer?: ElementRef<HTMLDivElement>;
 
   public constructor(private readonly httpClient: HttpClient,
     private readonly appService: AppService,
@@ -70,6 +73,10 @@ export class HomeComponent implements OnInit {
         return of([]);
       })
     );
+  }
+
+  public ngAfterViewInit(): void {
+    // SVG will be loaded after data is set
   }
 
   public search(): void {
@@ -197,6 +204,9 @@ export class HomeComponent implements OnInit {
     this.bodies = [];
     this.edastroData = null;
     this.appService.setBackgroundImage('assets/bg1.jpg');
+
+    // Load and highlight region map immediately
+    setTimeout(() => this.loadRegionMap(), 0);
 
     // Fetch edastro data
     this.appService.getEdastroData(data.system.id64)
@@ -492,6 +502,241 @@ export class HomeComponent implements OnInit {
 
   public trackByBody(index: number, body: SystemBody): number {
     return body.bodyData.bodyId;
+  }
+
+  private loadRegionMap(): void {
+    if (!this.regionMapContainer || !this.data) {
+      return;
+    }
+
+    // Check if SVG already exists
+    const existingSvg = this.regionMapContainer.nativeElement.querySelector('svg');
+    if (existingSvg) {
+      // SVG already loaded, just update the highlighting and marker
+      this.highlightRegion();
+      return;
+    }
+
+    // Load the SVG from the assets folder
+    this.httpClient.get('assets/EliteDangerousRegionMap/RegionMap.svg', { responseType: 'text' })
+      .subscribe(
+        svgContent => {
+          if (this.regionMapContainer && this.regionMapContainer.nativeElement) {
+            this.regionMapContainer.nativeElement.innerHTML = svgContent;
+
+            // Remove explicit width and height attributes from SVG
+            const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
+            if (svgElement) {
+              svgElement.removeAttribute('width');
+              svgElement.removeAttribute('height');
+              svgElement.style.width = '100%';
+              svgElement.style.height = 'auto';
+              svgElement.style.borderRadius = '8px';
+            }
+
+            this.highlightRegion();
+          }
+        },
+        error => {
+          console.error('Error loading region map:', error);
+        }
+      );
+  }
+
+  private highlightRegion(): void {
+    if (!this.regionMapContainer || !this.data || !this.data.system.region) {
+      return;
+    }
+
+    const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
+    if (!svgElement) {
+      return;
+    }
+
+    // Add custom styles to override hover and hide text
+    let styleElement = svgElement.querySelector('style#custom-region-styles');
+    if (!styleElement) {
+      styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+      styleElement.id = 'custom-region-styles';
+      styleElement.textContent = `
+        .regionText { display: none !important; }
+        .region { pointer-events: none !important; }
+      `;
+      svgElement.insertBefore(styleElement, svgElement.firstChild);
+    }
+
+    // Reset all regions to default style
+    const allRegions = svgElement.querySelectorAll('path[id^="Region_"]');
+    allRegions.forEach(region => {
+      (region as HTMLElement).style.fill = 'darkorange';
+      (region as HTMLElement).style.fillOpacity = '0.1';
+      (region as HTMLElement).style.stroke = 'orange';
+      (region as HTMLElement).style.strokeOpacity = '1';
+      (region as HTMLElement).style.strokeWidth = '';
+    });
+
+    // Highlight the current region
+    const regionId = `Region_${String(this.data.system.region.region).padStart(2, '0')}`;
+    console.log('Attempting to highlight region:', regionId, 'Region data:', this.data.system.region);
+    const regionElement = svgElement.querySelector(`#${regionId}`);
+    console.log('Found region element:', regionElement);
+    if (regionElement) {
+      (regionElement as HTMLElement).style.fill = '#ff9900';
+      (regionElement as HTMLElement).style.fillOpacity = '0.6';
+      (regionElement as HTMLElement).style.stroke = '#ff9900';
+      (regionElement as HTMLElement).style.strokeOpacity = '1';
+      (regionElement as HTMLElement).style.strokeWidth = '2';
+    } else {
+      console.warn('Region element not found for ID:', regionId);
+    }
+
+    // Add red dot at system coordinates
+    this.addSystemMarker(svgElement);
+    
+    // Debug GEC image sizing
+    this.debugGecImageSize();
+  }
+
+  private debugGecImageSize(): void {
+    setTimeout(() => {
+      if (this.gecContainer && this.gecImage) {
+        console.log('=== GEC IMAGE DEBUG ===');
+        
+        const systemDataDiv = this.gecContainer.nativeElement.parentElement;
+        console.log('Parent (system-data) dimensions:', {
+          width: systemDataDiv?.clientWidth,
+          height: systemDataDiv?.clientHeight,
+          offsetWidth: systemDataDiv?.offsetWidth,
+          offsetHeight: systemDataDiv?.offsetHeight
+        });
+        
+        console.log('Container dimensions:', {
+          width: this.gecContainer.nativeElement.clientWidth,
+          height: this.gecContainer.nativeElement.clientHeight,
+          offsetWidth: this.gecContainer.nativeElement.offsetWidth,
+          offsetHeight: this.gecContainer.nativeElement.offsetHeight
+        });
+        
+        console.log('Container computed style:', {
+          height: getComputedStyle(this.gecContainer.nativeElement).height,
+          maxHeight: getComputedStyle(this.gecContainer.nativeElement).maxHeight,
+          overflow: getComputedStyle(this.gecContainer.nativeElement).overflow
+        });
+        
+        console.log('Image dimensions:', {
+          width: this.gecImage.nativeElement.clientWidth,
+          height: this.gecImage.nativeElement.clientHeight,
+          offsetWidth: this.gecImage.nativeElement.offsetWidth,
+          offsetHeight: this.gecImage.nativeElement.offsetHeight,
+          naturalWidth: this.gecImage.nativeElement.naturalWidth,
+          naturalHeight: this.gecImage.nativeElement.naturalHeight
+        });
+        console.log('Image computed style:', {
+          width: getComputedStyle(this.gecImage.nativeElement).width,
+          height: getComputedStyle(this.gecImage.nativeElement).height,
+          maxWidth: getComputedStyle(this.gecImage.nativeElement).maxWidth,
+          minWidth: getComputedStyle(this.gecImage.nativeElement).minWidth,
+          maxHeight: getComputedStyle(this.gecImage.nativeElement).maxHeight
+        });
+        
+        const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
+        if (svgElement) {
+          console.log('SVG height:', svgElement.clientHeight);
+        }
+        console.log('======================');
+      }
+    }, 500);
+  }
+
+  private addSystemMarker(svgElement: SVGSVGElement): void {
+    if (!this.data || !this.data.system.coords) {
+      return;
+    }
+
+    // Remove any existing system marker
+    const existingMarker = svgElement.querySelector('#system-marker');
+    if (existingMarker) {
+      existingMarker.remove();
+    }
+
+    const coords = this.data.system.coords;
+    
+    // Apply transformation formula
+    // Note: The region map uses X and Z coordinates (not Y)
+    // X is horizontal, Z is vertical on the 2D map
+    const tx = ((coords.x - (-49985)) * 83 / 4096);
+    const tz = ((coords.z - (-24105)) * 83 / 4096);
+    
+    // Invert Z coordinate for SVG (SVG Y increases downward)
+    const finalY = 2048 - tz;
+    
+    console.log('=== SYSTEM MARKER DEBUG ===');
+    console.log('System:', this.data.system.name);
+    console.log('Original ED Coordinates:', {
+      x: coords.x,
+      y: coords.y,
+      z: coords.z
+    });
+    console.log('After offset translation:', {
+      'x - (-49985)': coords.x - (-49985),
+      'z - (-24105)': coords.z - (-24105)
+    });
+    console.log('After scaling (* 83 / 4096):', {
+      tx: tx,
+      tz: tz
+    });
+    console.log('Final SVG Coordinates (with Z-inversion):', {
+      cx: tx,
+      cy: finalY,
+      'calculation': `2048 - ${tz} = ${finalY}`
+    });
+    console.log('=========================');
+    
+    // Check SVG dimensions and viewBox
+    const viewBox = svgElement.getAttribute('viewBox');
+    const width = svgElement.getAttribute('width');
+    const height = svgElement.getAttribute('height');
+    console.log('SVG Properties:', {
+      viewBox: viewBox,
+      width: width,
+      height: height,
+      clientWidth: svgElement.clientWidth,
+      clientHeight: svgElement.clientHeight
+    });
+    
+    // Create a larger, more visible green circle marker with glow effect
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('id', 'system-marker');
+    circle.setAttribute('cx', tx.toString());
+    circle.setAttribute('cy', finalY.toString());
+    circle.setAttribute('r', '24');
+    circle.setAttribute('fill', 'green');
+    circle.setAttribute('stroke', 'white');
+    circle.setAttribute('stroke-width', '6');
+    circle.setAttribute('opacity', '1');
+    circle.setAttribute('filter', 'drop-shadow(0 0 16px rgba(0, 255, 0, 0.8))');
+    
+    // Add the marker to the SVG
+    svgElement.appendChild(circle);
+    
+    // Verify the actual position after appending
+    console.log('Circle element attributes:', {
+      id: circle.getAttribute('id'),
+      cx: circle.getAttribute('cx'),
+      cy: circle.getAttribute('cy'),
+      r: circle.getAttribute('r')
+    });
+    
+    // Get the bounding box of the circle
+    setTimeout(() => {
+      const bbox = circle.getBBox();
+      console.log('Circle bounding box:', {
+        x: bbox.x,
+        y: bbox.y,
+        width: bbox.width,
+        height: bbox.height
+      });
+    }, 100);
   }
 }
 
