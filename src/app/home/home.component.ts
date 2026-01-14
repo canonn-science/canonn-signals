@@ -4,7 +4,7 @@ import { AppService, EdastroData, EdastroSystem } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
-import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { faFileCode } from '@fortawesome/free-solid-svg-icons';
 import { environment } from 'src/environments/environment';
 import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest } from 'rxjs';
 import { FormControl } from '@angular/forms';
@@ -27,7 +27,10 @@ import { FormControl } from '@angular/forms';
   ]
 })
 export class HomeComponent implements OnInit, AfterViewInit {
-  public readonly faUpRightFromSquare = faUpRightFromSquare;
+    public encodeURIComponent(value: string): string {
+      return encodeURIComponent(value);
+    }
+  public readonly faFileCode = faFileCode;
   public searching = false;
   public searchInput: string = "";
   public searchError = false;

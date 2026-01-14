@@ -30,12 +30,29 @@
 <div class="system-container" *ngIf="data" @visibilityTrigger>
     <div class="system-container-data">
         <div class="system-title">
-            <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> (<a [href]="edastroData?.poiUrl"
-                        target="_blank" class="edastro-name-link">{{ edastroData?.name }}</a><img
-                        src="https://edastro.com/images/GEC-marker-logo-240px.png" alt="GEC"
-                        class="edastro-icon-inline">)</span> - ID64: <a
-                    href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank">{{ data.system.id64 }}
-                    <fa-icon [icon]="faUpRightFromSquare"></fa-icon></a></span>
+            <span style="display: flex; align-items: center; gap: 4px;">
+                <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> ({{ edastroData?.name }})</span></span>
+                <ng-container *ngIf="edastroData?.name">
+                    <a [href]="edastroData?.poiUrl" target="_blank" title="View on the Galactic Exploration Catalog" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        <img src="https://edastro.com/images/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline" style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;" tabindex="0" />
+                    </a>
+                </ng-container>
+                <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                    <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;" tabindex="0" />
+                </a>
+                <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
+                    <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON" title="View the spansh dump" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;" tabindex="0" />
+                </a>
+                <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)" target="_blank" title="View on Inara" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                    <img src="assets/icons/inara.png" alt="Inara" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;" tabindex="0" />
+                </a>
+                <a [href]="'https://www.edsm.net/en/system?systemName=' + encodeURIComponent(data.system.name)" target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                    <img src="assets/icons/edsm-194x194.png" alt="EDSM" title="View on EDSM" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;" tabindex="0" />
+                </a>
+                <a [href]="'https://www.edsm.net/api-system-v1/bodies?systemName=' + encodeURIComponent(data.system.name)" target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
+                    <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="EDSM JSON" title="View the EDSM dump" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;" tabindex="0" />
+                </a>
+            </span>
             <span *ngIf="data.system.population !== null && data.system.population !== undefined"
                 class="population">Population: {{ data.system.population | number }}</span>
         </div>
@@ -63,6 +80,10 @@
                             <div>Z</div>
                         </div>
                     </div>
+                </div>
+                <div class="system-data-row">
+                    <span class="row-label">Id64</span>
+                    <span>{{ data.system.id64 }}</span>
                 </div>
                 <div class="system-data-row">
                     <span class="row-label">
