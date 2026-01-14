@@ -628,15 +628,23 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Get the bounding box of the region
     const bbox = regionPath.getBBox();
     
-    // Add some padding (10% on each side)
-    const padding = Math.max(bbox.width, bbox.height) * 0.1;
-    const x = bbox.x - padding;
-    const y = bbox.y - padding;
-    const width = bbox.width + (padding * 2);
-    const height = bbox.height + (padding * 2);
+    // Add minimal padding (2% on each side)
+    const padding = Math.max(bbox.width, bbox.height) * 0.02;
     
-    // Set the viewBox to zoom into the region
-    svgElement.setAttribute('viewBox', `${x} ${y} ${width} ${height}`);
+    // Calculate dimensions with padding
+    const paddedWidth = bbox.width + (padding * 2);
+    const paddedHeight = bbox.height + (padding * 2);
+    
+    // Use the larger dimension to create a square viewBox
+    // This ensures the region touches the edges on its larger axis
+    const size = Math.max(paddedWidth, paddedHeight);
+    
+    // Center the region in the square viewBox
+    const x = bbox.x - padding + (paddedWidth - size) / 2;
+    const y = bbox.y - padding + (paddedHeight - size) / 2;
+    
+    // Set the viewBox to a square zoom
+    svgElement.setAttribute('viewBox', `${x} ${y} ${size} ${size}`);
     
     // Get region ID from the path element
     const regionId = regionPath.id; // e.g., "Region_01"
@@ -659,7 +667,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
     
     // Calculate scale factor and update marker sizes
-    const scaleFactor = 2048 / Math.max(width, height);
+    const scaleFactor = 2048 / size;
     
     // Use setTimeout to ensure markers are rendered before scaling
     setTimeout(() => {
