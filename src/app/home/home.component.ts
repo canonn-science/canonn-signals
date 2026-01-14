@@ -38,6 +38,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
   public filteredSystems: Observable<string[]> = of([]);
   public edastroData: EdastroData | null = null;
   private systemMapping: Map<string, { systemName?: string, id64?: number }> = new Map();
+  private gnosisData: GnosisData | null = null;
+  private gnosisLastFetched: number = 0;
+  private readonly GNOSIS_CACHE_DURATION = 3600000; // 1 hour in milliseconds
   @ViewChild('regionMapContainer') regionMapContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('gecImage') gecImage?: ElementRef<HTMLImageElement>;
   @ViewChild('gecContainer') gecContainer?: ElementRef<HTMLDivElement>;
@@ -635,9 +638,33 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Set the viewBox to zoom into the region
     svgElement.setAttribute('viewBox', `${x} ${y} ${width} ${height}`);
     
+    // Get region ID from the path element
+    const regionId = regionPath.id; // e.g., "Region_01"
+    const regionNumber = regionId ? parseInt(regionId.replace('Region_', ''), 10) : 0;
+    
+    console.log('=== ZOOM TO REGION DEBUG ===');
+    console.log('Region ID:', regionId);
+    console.log('Region Number:', regionNumber);
+    console.log('Is Inner Orion Spur (region 18):', regionNumber === 18);
+    console.log('============================');
+    
+    // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
+    if (regionNumber === 18) {
+      this.fetchGnosisData().subscribe(gnosisData => {
+        console.log('Gnosis data received:', gnosisData);
+        if (gnosisData) {
+          this.addGnosisMarker(svgElement, bbox);
+        }
+      });
+    }
+    
     // Calculate scale factor and update marker sizes
     const scaleFactor = 2048 / Math.max(width, height);
-    this.updateMarkerScales(svgElement, scaleFactor);
+    
+    // Use setTimeout to ensure markers are rendered before scaling
+    setTimeout(() => {
+      this.updateMarkerScales(svgElement, scaleFactor);
+    }, 0);
     
     // Add a reset button or double-click handler to zoom out
     svgElement.style.transition = 'viewBox 0.3s ease';
@@ -758,6 +785,164 @@ export class HomeComponent implements OnInit, AfterViewInit {
       // Add the group to the SVG
       svgElement.appendChild(group);
     });
+  }
+
+  private fetchGnosisData(): Observable<GnosisData | null> {
+    // Check if we have cached data and if it's still fresh
+    const now = Date.now();
+    console.log('=== FETCH GNOSIS DEBUG ===');
+    console.log('Current time:', now);
+    console.log('Last fetched:', this.gnosisLastFetched);
+    console.log('Cache age (ms):', now - this.gnosisLastFetched);
+    console.log('Cache duration (ms):', this.GNOSIS_CACHE_DURATION);
+    console.log('Has cached data:', !!this.gnosisData);
+    
+    if (this.gnosisData && (now - this.gnosisLastFetched) < this.GNOSIS_CACHE_DURATION) {
+      console.log('Using cached Gnosis data:', this.gnosisData);
+      console.log('=========================');
+      return of(this.gnosisData);
+    }
+
+    console.log('Fetching fresh Gnosis data from API...');
+    console.log('=========================');
+    
+    // Fetch fresh data
+    return this.httpClient.get<GnosisData>('https://us-central1-canonn-api-236217.cloudfunctions.net/query/gnosis')
+      .pipe(
+        switchMap(data => {
+          console.log('Fresh Gnosis data received:', data);
+          this.gnosisData = data;
+          this.gnosisLastFetched = now;
+          return of(data);
+        }),
+        untilDestroyed(this)
+      );
+  }
+
+  private addGnosisMarker(svgElement: SVGSVGElement, regionBbox: DOMRect): void {
+    console.log('=== ADD GNOSIS MARKER DEBUG ===');
+    console.log('Gnosis data:', this.gnosisData);
+    
+    if (!this.gnosisData) {
+      console.log('No Gnosis data available');
+      console.log('================================');
+      return;
+    }
+
+    // Remove existing Gnosis marker if any
+    const existingMarker = svgElement.querySelector('#gnosis-marker');
+    if (existingMarker) {
+      console.log('Removing existing Gnosis marker');
+      existingMarker.remove();
+    }
+
+    const [x, y, z] = this.gnosisData.coords;
+    
+    console.log('Gnosis ED coordinates:', { x, y, z });
+    
+    // Apply transformation formula
+    const tx = ((x - (-49985)) * 83 / 4096);
+    const tz = ((z - (-24105)) * 83 / 4096);
+    const finalY = 2048 - tz;
+
+    console.log('Gnosis SVG coordinates:', { tx, finalY });
+    console.log('Region bbox:', {
+      x: regionBbox.x,
+      y: regionBbox.y,
+      width: regionBbox.width,
+      height: regionBbox.height,
+      right: regionBbox.x + regionBbox.width,
+      bottom: regionBbox.y + regionBbox.height
+    });
+
+    // Check if Gnosis is within the region bounds
+    const inBounds = !(tx < regionBbox.x || tx > regionBbox.x + regionBbox.width ||
+        finalY < regionBbox.y || finalY > regionBbox.y + regionBbox.height);
+    
+    console.log('Gnosis in region bounds:', inBounds);
+    
+    if (!inBounds) {
+      // Gnosis is not in this region, don't display it
+      console.log('Gnosis is NOT in this region, skipping marker');
+      console.log('================================');
+      return;
+    }
+
+    console.log('Adding Gnosis marker to SVG');
+    console.log('================================');
+
+    // Create a group for the marker
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('id', 'gnosis-marker');
+    group.setAttribute('class', 'known-system-marker');
+    group.setAttribute('data-zoom-level', 'zoomed');
+
+    // Create a blue circle marker
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', tx.toString());
+    circle.setAttribute('cy', finalY.toString());
+    circle.setAttribute('r', '12');
+    circle.setAttribute('fill', 'blue');
+    circle.setAttribute('stroke', 'white');
+    circle.setAttribute('stroke-width', '1.5');
+    circle.setAttribute('opacity', '0.9');
+    circle.style.cursor = 'pointer';
+
+    // Add click handler to navigate to system
+    circle.addEventListener('click', () => {
+      this.searchInput = this.gnosisData!.system;
+      this.searchControl.setValue(this.gnosisData!.system);
+      this.search();
+    });
+
+    // Position tooltip - use more conservative positioning for long text
+    // Check if we're in the right 60% of the map (not just right half)
+    const isRightSide = tx > 819; // 2048 * 0.4 = 819
+    const textX = isRightSide ? tx - 20 : tx + 20;
+
+    // Create tooltip text element
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', textX.toString());
+    text.setAttribute('y', (finalY - 10).toString());
+    text.setAttribute('fill', 'white');
+    text.setAttribute('font-size', '80');
+    text.setAttribute('font-weight', 'bold');
+    text.setAttribute('pointer-events', 'none');
+    text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
+    text.style.display = 'none';
+    text.textContent = `The Gnosis (${this.gnosisData.system})`;
+
+    // Create background rect for text
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('fill', 'rgba(0, 0, 0, 0.8)');
+    rect.setAttribute('rx', '10');
+    rect.setAttribute('pointer-events', 'none');
+    rect.style.display = 'none';
+
+    // Add hover events
+    circle.addEventListener('mouseenter', () => {
+      const bbox = text.getBBox();
+      rect.setAttribute('x', (bbox.x - 4).toString());
+      rect.setAttribute('y', (bbox.y - 2).toString());
+      rect.setAttribute('width', (bbox.width + 8).toString());
+      rect.setAttribute('height', (bbox.height + 4).toString());
+      
+      rect.style.display = 'block';
+      text.style.display = 'block';
+    });
+
+    circle.addEventListener('mouseleave', () => {
+      rect.style.display = 'none';
+      text.style.display = 'none';
+    });
+
+    // Add elements to group
+    group.appendChild(circle);
+    group.appendChild(rect);
+    group.appendChild(text);
+
+    // Add the group to the SVG
+    svgElement.appendChild(group);
   }
 
   private debugGecImageSize(): void {
@@ -1054,4 +1239,12 @@ export interface SystemBody {
   bodyData: CanonnBiostatsBody;
   subBodies: SystemBody[];
   parent: SystemBody | null;
+}
+
+export interface GnosisData {
+  arrival: string;
+  coords: [number, number, number];
+  departure: string;
+  desc: string;
+  system: string;
 }
