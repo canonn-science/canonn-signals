@@ -666,23 +666,29 @@ export class HomeComponent implements OnInit, AfterViewInit {
     console.log('Is Inner Orion Spur (region 18):', regionNumber === 18);
     console.log('============================');
     
+    // Calculate scale factor for markers
+    const scaleFactor = 2048 / size;
+    
     // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
     if (regionNumber === 18) {
       this.fetchGnosisData().subscribe(gnosisData => {
         console.log('Gnosis data received:', gnosisData);
         if (gnosisData) {
           this.addGnosisMarker(svgElement, bbox);
+          // Scale the Gnosis marker after it's added
+          setTimeout(() => {
+            this.updateMarkerScales(svgElement, scaleFactor);
+          }, 50);
         }
       });
     }
     
-    // Calculate scale factor and update marker sizes
-    const scaleFactor = 2048 / size;
-    
-    // Use setTimeout to ensure markers are rendered before scaling
+    // Update marker scales immediately and again after a short delay
+    // to ensure all markers are scaled correctly
+    this.updateMarkerScales(svgElement, scaleFactor);
     setTimeout(() => {
       this.updateMarkerScales(svgElement, scaleFactor);
-    }, 0);
+    }, 50);
     
     // Add a reset button or double-click handler to zoom out
     svgElement.style.transition = 'viewBox 0.3s ease';
@@ -709,6 +715,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private addKnownSystemMarkers(svgElement: SVGSVGElement): void {
+    // Get current viewBox to determine zoom level
+    const viewBox = svgElement.getAttribute('viewBox');
+    const viewBoxValues = viewBox ? viewBox.split(' ').map(parseFloat) : [0, 0, 2048, 2048];
+    const viewBoxSize = Math.max(viewBoxValues[2], viewBoxValues[3]);
+    const currentScaleFactor = 2048 / viewBoxSize;
+    
     const knownSystems = [
       { name: 'Varati', systemName: 'Varati', x: -178.65625, y: 77.12500, z: -87.12500, zoomLevel: 'always' },
       { name: 'Canonnia', systemName: 'Canonnia', x: -9522.93750, y: -894.06250, z: 19791.87500, zoomLevel: 'always' },
@@ -794,10 +806,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
       // Set visibility based on zoom level
       if (system.zoomLevel === 'zoomed') {
-        group.style.display = 'none';
+        group.style.display = currentScaleFactor > 1 ? 'block' : 'none';
         group.setAttribute('data-zoom-level', 'zoomed');
       } else {
         group.setAttribute('data-zoom-level', 'always');
+      }
+      
+      // Apply current scale immediately
+      if (currentScaleFactor !== 1) {
+        group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1/currentScaleFactor}) translate(${-tx}, ${-finalY})`);
       }
 
       // Add the group to the SVG
@@ -853,6 +870,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
       console.log('Removing existing Gnosis marker');
       existingMarker.remove();
     }
+    
+    // Get current viewBox to determine zoom level
+    const viewBox = svgElement.getAttribute('viewBox');
+    const viewBoxValues = viewBox ? viewBox.split(' ').map(parseFloat) : [0, 0, 2048, 2048];
+    const viewBoxSize = Math.max(viewBoxValues[2], viewBoxValues[3]);
+    const currentScaleFactor = 2048 / viewBoxSize;
 
     const [x, y, z] = this.gnosisData.coords;
     
@@ -958,6 +981,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
     group.appendChild(circle);
     group.appendChild(rect);
     group.appendChild(text);
+    
+    // Apply current scale immediately if zoomed
+    if (currentScaleFactor !== 1) {
+      group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1/currentScaleFactor}) translate(${-tx}, ${-finalY})`);
+    }
 
     // Add the group to the SVG
     svgElement.appendChild(group);
