@@ -532,6 +532,17 @@ export class HomeComponent implements OnInit, AfterViewInit {
               svgElement.style.width = '100%';
               svgElement.style.height = 'auto';
               svgElement.style.borderRadius = '8px';
+              
+              // Add click handler to reset zoom
+              svgElement.addEventListener('click', (event) => {
+                const currentViewBox = svgElement.getAttribute('viewBox');
+                // If we're zoomed in, any click resets to full view
+                if (currentViewBox !== '0 0 2048 2048') {
+                  event.stopPropagation();
+                  svgElement.setAttribute('viewBox', '0 0 2048 2048');
+                  this.updateMarkerScales(svgElement, 1);
+                }
+              });
             }
 
             this.highlightRegion();
@@ -560,12 +571,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
       styleElement.id = 'custom-region-styles';
       styleElement.textContent = `
         .regionText { display: none !important; }
-        .region { pointer-events: none !important; }
+        .region { pointer-events: auto !important; cursor: pointer !important; }
       `;
       svgElement.insertBefore(styleElement, svgElement.firstChild);
     }
 
-    // Reset all regions to default style
+    // Reset all regions to default style and add click handlers
     const allRegions = svgElement.querySelectorAll('path[id^="Region_"]');
     allRegions.forEach(region => {
       (region as HTMLElement).style.fill = 'darkorange';
@@ -573,6 +584,16 @@ export class HomeComponent implements OnInit, AfterViewInit {
       (region as HTMLElement).style.stroke = 'orange';
       (region as HTMLElement).style.strokeOpacity = '1';
       (region as HTMLElement).style.strokeWidth = '';
+      
+      // Add click handler for zooming
+      region.addEventListener('click', (event) => {
+        const currentViewBox = svgElement.getAttribute('viewBox');
+        // Only zoom in if we're not already zoomed
+        if (currentViewBox === '0 0 2048 2048') {
+          event.stopPropagation();
+          this.zoomToRegion(region as SVGPathElement, svgElement);
+        }
+      });
     });
 
     // Highlight the current region
@@ -593,8 +614,150 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Add red dot at system coordinates
     this.addSystemMarker(svgElement);
     
+    // Add known systems markers
+    this.addKnownSystemMarkers(svgElement);
+    
     // Debug GEC image sizing
     this.debugGecImageSize();
+  }
+
+  private zoomToRegion(regionPath: SVGPathElement, svgElement: SVGSVGElement): void {
+    // Get the bounding box of the region
+    const bbox = regionPath.getBBox();
+    
+    // Add some padding (10% on each side)
+    const padding = Math.max(bbox.width, bbox.height) * 0.1;
+    const x = bbox.x - padding;
+    const y = bbox.y - padding;
+    const width = bbox.width + (padding * 2);
+    const height = bbox.height + (padding * 2);
+    
+    // Set the viewBox to zoom into the region
+    svgElement.setAttribute('viewBox', `${x} ${y} ${width} ${height}`);
+    
+    // Calculate scale factor and update marker sizes
+    const scaleFactor = 2048 / Math.max(width, height);
+    this.updateMarkerScales(svgElement, scaleFactor);
+    
+    // Add a reset button or double-click handler to zoom out
+    svgElement.style.transition = 'viewBox 0.3s ease';
+  }
+
+  private updateMarkerScales(svgElement: SVGSVGElement, scaleFactor: number): void {
+    // Update all marker groups to scale inversely with zoom
+    const markers = svgElement.querySelectorAll('.known-system-marker, #system-marker');
+    markers.forEach(marker => {
+      const circle = marker.querySelector('circle');
+      if (circle) {
+        const cx = parseFloat(circle.getAttribute('cx') || '0');
+        const cy = parseFloat(circle.getAttribute('cy') || '0');
+        (marker as SVGGElement).setAttribute('transform', `translate(${cx}, ${cy}) scale(${1/scaleFactor}) translate(${-cx}, ${-cy})`);
+      }
+      
+      // Show/hide markers based on zoom level
+      const zoomLevel = marker.getAttribute('data-zoom-level');
+      if (zoomLevel === 'zoomed') {
+        // Show zoom-only markers when zoomed in (scaleFactor > 1)
+        (marker as HTMLElement).style.display = scaleFactor > 1 ? 'block' : 'none';
+      }
+    });
+  }
+
+  private addKnownSystemMarkers(svgElement: SVGSVGElement): void {
+    const knownSystems = [
+      { name: 'Varati', systemName: 'Varati', x: -178.65625, y: 77.12500, z: -87.12500, zoomLevel: 'always' },
+      { name: 'Canonnia', systemName: 'Canonnia', x: -9522.93750, y: -894.06250, z: 19791.87500, zoomLevel: 'always' },
+      { name: 'Hotel Canonnia', systemName: 'Prua Phoe MI-B b17-5', x: -5652.84375, y: -561.06250, z: 10815.34375, zoomLevel: 'always' },
+      { name: 'Miskatonic University', systemName: 'Byae Aowsy GR-N d6-52', x: 14407.6, y: 17.5, z: 44312.6, zoomLevel: 'always' },
+      { name: 'Col 70 Sector FY-N C21-3', systemName: 'Col 70 Sector FY-N C21-3', x: 275.34375, y: -371.34375, z: -680.96875, zoomLevel: 'zoomed' },
+      { name: "Explorer's Anchorage", systemName: 'Stuemeae FG-Y d7561', x: 28.68750, y: -19.78125, z: 25899.68750, zoomLevel: 'zoomed' }
+    ];
+
+    knownSystems.forEach(system => {
+      // Apply transformation formula
+      const tx = ((system.x - (-49985)) * 83 / 4096);
+      const tz = ((system.z - (-24105)) * 83 / 4096);
+      const finalY = 2048 - tz;
+
+      // Create a group for the marker and label
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.setAttribute('class', 'known-system-marker');
+
+      // Create a blue circle marker
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', tx.toString());
+      circle.setAttribute('cy', finalY.toString());
+      circle.setAttribute('r', '12');
+      circle.setAttribute('fill', 'blue');
+      circle.setAttribute('stroke', 'white');
+      circle.setAttribute('stroke-width', '1.5');
+      circle.setAttribute('opacity', '0.9');
+      circle.style.cursor = 'pointer';
+
+      // Add click handler to navigate to system
+      circle.addEventListener('click', () => {
+        this.searchInput = system.systemName;
+        this.searchControl.setValue(system.systemName);
+        this.search();
+      });
+
+      // Position tooltip on left if marker is on right half of map to avoid clipping
+      const isRightSide = tx > 1024;
+      const textX = isRightSide ? tx - 20 : tx + 20;
+
+      // Create tooltip text element (initially hidden)
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', textX.toString());
+      text.setAttribute('y', (finalY - 10).toString());
+      text.setAttribute('fill', 'white');
+      text.setAttribute('font-size', '80');
+      text.setAttribute('font-weight', 'bold');
+      text.setAttribute('pointer-events', 'none');
+      text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
+      text.style.display = 'none';
+      text.textContent = system.name;
+
+      // Create background rect for text
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('fill', 'rgba(0, 0, 0, 0.8)');
+      rect.setAttribute('rx', '10');
+      rect.setAttribute('pointer-events', 'none');
+      rect.style.display = 'none';
+
+      // Add hover events
+      circle.addEventListener('mouseenter', () => {
+        // Update rect size based on text
+        const bbox = text.getBBox();
+        rect.setAttribute('x', (bbox.x - 4).toString());
+        rect.setAttribute('y', (bbox.y - 2).toString());
+        rect.setAttribute('width', (bbox.width + 8).toString());
+        rect.setAttribute('height', (bbox.height + 4).toString());
+        
+        rect.style.display = 'block';
+        text.style.display = 'block';
+      });
+
+      circle.addEventListener('mouseleave', () => {
+        rect.style.display = 'none';
+        text.style.display = 'none';
+      });
+
+      // Add elements to group
+      group.appendChild(circle);
+      group.appendChild(rect);
+      group.appendChild(text);
+
+      // Set visibility based on zoom level
+      if (system.zoomLevel === 'zoomed') {
+        group.style.display = 'none';
+        group.setAttribute('data-zoom-level', 'zoomed');
+      } else {
+        group.setAttribute('data-zoom-level', 'always');
+      }
+
+      // Add the group to the SVG
+      svgElement.appendChild(group);
+    });
   }
 
   private debugGecImageSize(): void {
@@ -692,6 +855,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
     });
     console.log('=========================');
     
+    // Create a group for the marker
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('id', 'system-marker');
+    
     // Check SVG dimensions and viewBox
     const viewBox = svgElement.getAttribute('viewBox');
     const width = svgElement.getAttribute('width');
@@ -706,7 +873,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     
     // Create a larger, more visible green circle marker with glow effect
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('id', 'system-marker');
     circle.setAttribute('cx', tx.toString());
     circle.setAttribute('cy', finalY.toString());
     circle.setAttribute('r', '24');
@@ -716,8 +882,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
     circle.setAttribute('opacity', '1');
     circle.setAttribute('filter', 'drop-shadow(0 0 16px rgba(0, 255, 0, 0.8))');
     
-    // Add the marker to the SVG
-    svgElement.appendChild(circle);
+    group.appendChild(circle);
+    
+    // Add the marker group to the SVG
+    svgElement.appendChild(group);
     
     // Verify the actual position after appending
     console.log('Circle element attributes:', {
