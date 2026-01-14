@@ -203,29 +203,39 @@ export class HomeComponent implements OnInit, AfterViewInit {
       });
     this.searchInput = data.system.name;
 
+    // Check if we're loading a different system
+    const isDifferentSystem = !this.data || this.data.system.id64 !== data.system.id64;
+
     this.data = data;
     this.bodies = [];
-    this.edastroData = null;
+    
+    // Only reset edastroData if loading a different system
+    if (isDifferentSystem) {
+      this.edastroData = null;
+    }
+    
     this.appService.setBackgroundImage('assets/bg1.jpg');
 
     // Load and highlight region map immediately
     setTimeout(() => this.loadRegionMap(), 0);
 
-    // Fetch edastro data
-    this.appService.getEdastroData(data.system.id64)
-      .subscribe(
-        edastroData => {
-          if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
-            this.edastroData = edastroData;
-            if (edastroData.mainImage) {
-              this.appService.setBackgroundImage(edastroData.mainImage);
+    // Fetch edastro data only if we don't have it or it's a different system
+    if (isDifferentSystem || !this.edastroData) {
+      this.appService.getEdastroData(data.system.id64)
+        .subscribe(
+          edastroData => {
+            if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
+              this.edastroData = edastroData;
+              if (edastroData.mainImage) {
+                this.appService.setBackgroundImage(edastroData.mainImage);
+              }
             }
+          },
+          error => {
+            // Silently handle error - edastro data is optional
           }
-        },
-        error => {
-          // Silently handle error - edastro data is optional
-        }
-      );
+        );
+    }
 
     const bodiesFlat: SystemBody[] = [];
 
