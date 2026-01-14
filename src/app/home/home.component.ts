@@ -758,8 +758,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
         this.search();
       });
 
-      // Position tooltip on left if marker is on right half of map to avoid clipping
-      const isRightSide = tx > 1024;
+      // Check viewBox to determine if we should position tooltip on left
+      // When zoomed, use viewBox bounds instead of full map coordinates
+      const viewBoxCenterX = viewBoxValues[0] + (viewBoxValues[2] / 2);
+      const isRightSide = tx > viewBoxCenterX;
       const textX = isRightSide ? tx - 20 : tx + 20;
 
       // Create tooltip text element (initially hidden)
@@ -1115,8 +1117,14 @@ export class HomeComponent implements OnInit, AfterViewInit {
     
     group.appendChild(circle);
     
-    // Add the marker group to the SVG
-    svgElement.appendChild(group);
+    // Add the marker group to the SVG, but before any known-system-marker elements
+    // This ensures blue dots (known systems) are always on top
+    const firstBlueMarker = svgElement.querySelector('.known-system-marker');
+    if (firstBlueMarker) {
+      svgElement.insertBefore(group, firstBlueMarker);
+    } else {
+      svgElement.appendChild(group);
+    }
     
     // Verify the actual position after appending
     console.log('Circle element attributes:', {
