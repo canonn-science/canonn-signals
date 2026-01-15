@@ -27,6 +27,75 @@ import { FormControl } from '@angular/forms';
   ]
 })
 export class HomeComponent implements OnInit, AfterViewInit {
+              openSignalsPage(systemName: string) {
+                const url = `/signals?system=${encodeURIComponent(systemName)}`;
+                window.open(url, '_blank');
+              }
+            referenceSystems = [
+              { name: 'Sol', coords: { x: 0, y: 0, z: 0 } },
+              { name: 'Colonia', coords: { x: -9530.5, y: -910.28125, z: 19808.125 } },
+              { name: 'Merope', coords: { x: -78.59375, y: -149.625, z: -340.53125 } },
+              { name: 'Varati', coords: { x: -178.65625, y: 77.125, z: -87.125 } },
+              { name: 'Col 70 Sector FY-N C21-3', coords: { x: 687.0625, y: -362.53125, z: -697.0625 } }
+            ];
+
+            getSystemDistances(): { name: string, distance: number }[] {
+              if (!this.data?.system?.coords) return [];
+              const { x, y, z } = this.data.system.coords;
+              const currentName = (this.data.system.name || '').toLowerCase();
+              return this.referenceSystems
+                .filter(ref => ref.name.toLowerCase() !== currentName)
+                .map(ref => {
+                  const dx = x - ref.coords.x;
+                  const dy = y - ref.coords.y;
+                  const dz = z - ref.coords.z;
+                  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                  return { name: ref.name, distance: dist };
+                });
+            }
+          copyCoordinatesToClipboard(separator?: 'comma' | 'tab' | 'pipe', event?: MouseEvent) {
+            if (event) {
+              event.preventDefault();
+            }
+            if (!this.data?.system?.coords) return;
+            const coords = this.data.system.coords;
+            let sep = ',';
+            if (separator === 'tab') sep = '\t';
+            if (separator === 'pipe') sep = '|';
+            const text = `${coords.x}${sep}${coords.y}${sep}${coords.z}`;
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(text);
+            } else {
+              const textarea = document.createElement('textarea');
+              textarea.value = text;
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textarea);
+            }
+          }
+
+          onCoordinatesMouseDown(event: MouseEvent) {
+            // Middle click (button 1)
+            if (event.button === 1) {
+              event.preventDefault();
+              this.copyCoordinatesToClipboard('pipe');
+            }
+          }
+        copyId64ToClipboard() {
+          if (!this.data?.system?.id64) return;
+          const text = `${this.data.system.id64}`;
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+          } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+          }
+        }
     public encodeURIComponent(value: string): string {
       return encodeURIComponent(value);
     }

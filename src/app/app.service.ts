@@ -71,6 +71,7 @@ export interface EdastroData {
   summary?: string;
   poiUrl?: string;
   mainImage?: string;
+  description?: string;
 }
 
 export interface EdastroSystem {
