@@ -27,78 +27,145 @@ import { FormControl } from '@angular/forms';
   ]
 })
 export class HomeComponent implements OnInit, AfterViewInit {
-              openSignalsPage(systemName: string) {
-                const url = `/signals?system=${encodeURIComponent(systemName)}`;
-                window.open(url, '_blank');
-              }
-            referenceSystems = [
-              { name: 'Sol', coords: { x: 0, y: 0, z: 0 } },
-              { name: 'Colonia', coords: { x: -9530.5, y: -910.28125, z: 19808.125 } },
-              { name: 'Merope', coords: { x: -78.59375, y: -149.625, z: -340.53125 } },
-              { name: 'Varati', coords: { x: -178.65625, y: 77.125, z: -87.125 } },
-              { name: 'Col 70 Sector FY-N C21-3', coords: { x: 687.0625, y: -362.53125, z: -697.0625 } }
-            ];
+  openSimbadPageRaw(ident: string) {
+    if (!ident) return;
+    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=${encodeURIComponent(ident)}`, '_blank');
+  }
+  openSimbadPage(ident: string) {
+    if (!ident) return;
+    const id = this.formatSimbadId(ident);
+    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=${encodeURIComponent(id)}`, '_blank');
+  }
 
-            getSystemDistances(): { name: string, distance: number }[] {
-              if (!this.data?.system?.coords) return [];
-              const { x, y, z } = this.data.system.coords;
-              const currentName = (this.data.system.name || '').toLowerCase();
-              return this.referenceSystems
-                .filter(ref => ref.name.toLowerCase() !== currentName)
-                .map(ref => {
-                  const dx = x - ref.coords.x;
-                  const dy = y - ref.coords.y;
-                  const dz = z - ref.coords.z;
-                  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                  return { name: ref.name, distance: dist };
-                });
-            }
-          copyCoordinatesToClipboard(separator?: 'comma' | 'tab' | 'pipe', event?: MouseEvent) {
-            if (event) {
-              event.preventDefault();
-            }
-            if (!this.data?.system?.coords) return;
-            const coords = this.data.system.coords;
-            let sep = ',';
-            if (separator === 'tab') sep = '\t';
-            if (separator === 'pipe') sep = '|';
-            const text = `${coords.x}${sep}${coords.y}${sep}${coords.z}`;
-            if (navigator.clipboard) {
-              navigator.clipboard.writeText(text);
-            } else {
-              const textarea = document.createElement('textarea');
-              textarea.value = text;
-              document.body.appendChild(textarea);
-              textarea.select();
-              document.execCommand('copy');
-              document.body.removeChild(textarea);
-            }
-          }
+  // Format RAJ2000 (degrees) to '19h 21m 45.0s' (rounded to 0.1s, padded)
+  formatRAJ2000(ra: number): string {
+    if (typeof ra !== 'number' || isNaN(ra)) return '';
+    const totalSeconds = ra * 240; // 360deg = 24h, so 1deg = 240s
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = (totalSeconds % 60);
+    // Pad minutes and seconds to 2 digits, seconds to 1 decimal
+    const pad = (n: number, d = 2) => n.toString().padStart(d, '0');
+    return `${hours}h ${pad(minutes)}m ${seconds.toFixed(1).padStart(4, '0')}s`;
+  }
 
-          onCoordinatesMouseDown(event: MouseEvent) {
-            // Middle click (button 1)
-            if (event.button === 1) {
-              event.preventDefault();
-              this.copyCoordinatesToClipboard('pipe');
-            }
-          }
-        copyId64ToClipboard() {
-          if (!this.data?.system?.id64) return;
-          const text = `${this.data.system.id64}`;
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(text);
-          } else {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-          }
-        }
-    public encodeURIComponent(value: string): string {
-      return encodeURIComponent(value);
+  // Format DEJ2000 (degrees) to '+21° 53′ 02.3″' (rounded to 0.1″, padded)
+  formatDEJ2000(de: number): string {
+    if (typeof de !== 'number' || isNaN(de)) return '';
+    const sign = de >= 0 ? '+' : '-';
+    const abs = Math.abs(de);
+    const degrees = Math.floor(abs);
+    const arcminutes = Math.floor((abs - degrees) * 60);
+    const arcseconds = ((abs - degrees - arcminutes / 60) * 3600);
+    // Pad arcminutes and arcseconds
+    const pad = (n: number, d = 2) => n.toString().padStart(d, '0');
+    return `${sign}${degrees}° ${pad(arcminutes)}′ ${arcseconds.toFixed(1).padStart(4, '0')}″`;
+  }
+
+  // Remove leading @ from Ident for SIMBAD ID
+  formatSimbadId(ident: string): string {
+    return ident ? ident.replace(/^@/, '') : '';
+  }
+  public edGalaxyData: any = null;
+
+  fetchEdGalaxyData(systemName: string, id64: number) {
+    const url = `https://edgalaxydata.space/eddn-lookup/systems.php?systemName=${encodeURIComponent(systemName)}&systemId64=${id64}&includeRejected=false&brief=true`;
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        this.edGalaxyData = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      })
+      .catch(() => { this.edGalaxyData = null; });
+  }
+
+  ngOnChanges(): void {
+    this.updateEdGalaxyData();
+  }
+
+  ngDoCheck(): void {
+    this.updateEdGalaxyData();
+  }
+
+  updateEdGalaxyData() {
+    if (this.data?.system?.name && this.data?.system?.id64) {
+      if (!this.edGalaxyData || this.edGalaxyData.Name !== this.data.system.name || this.edGalaxyData.SystemAddress !== this.data.system.id64) {
+        this.fetchEdGalaxyData(this.data.system.name, this.data.system.id64);
+      }
     }
+  }
+  openSignalsPage(systemName: string) {
+    const url = `/signals?system=${encodeURIComponent(systemName)}`;
+    window.open(url, '_blank');
+  }
+  referenceSystems = [
+    { name: 'Sol', coords: { x: 0, y: 0, z: 0 } },
+    { name: 'Colonia', coords: { x: -9530.5, y: -910.28125, z: 19808.125 } },
+    { name: 'Merope', coords: { x: -78.59375, y: -149.625, z: -340.53125 } },
+    { name: 'Varati', coords: { x: -178.65625, y: 77.125, z: -87.125 } },
+    { name: 'Col 70 Sector FY-N C21-3', coords: { x: 687.0625, y: -362.53125, z: -697.0625 } }
+  ];
+
+  getSystemDistances(): { name: string, distance: number }[] {
+    if (!this.data?.system?.coords) return [];
+    const { x, y, z } = this.data.system.coords;
+    const currentName = (this.data.system.name || '').toLowerCase();
+    return this.referenceSystems
+      .filter(ref => ref.name.toLowerCase() !== currentName)
+      .map(ref => {
+        const dx = x - ref.coords.x;
+        const dy = y - ref.coords.y;
+        const dz = z - ref.coords.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        return { name: ref.name, distance: dist };
+      })
+      .sort((a, b) => a.distance - b.distance);
+  }
+  copyCoordinatesToClipboard(separator?: 'comma' | 'tab' | 'pipe', event?: MouseEvent) {
+    if (event) {
+      event.preventDefault();
+    }
+    if (!this.data?.system?.coords) return;
+    const coords = this.data.system.coords;
+    let sep = ',';
+    if (separator === 'tab') sep = '\t';
+    if (separator === 'pipe') sep = '|';
+    const text = `${coords.x}${sep}${coords.y}${sep}${coords.z}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  }
+
+  onCoordinatesMouseDown(event: MouseEvent) {
+    // Middle click (button 1)
+    if (event.button === 1) {
+      event.preventDefault();
+      this.copyCoordinatesToClipboard('pipe');
+    }
+  }
+  copyId64ToClipboard() {
+    if (!this.data?.system?.id64) return;
+    const text = `${this.data.system.id64}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  }
+  public encodeURIComponent(value: string): string {
+    return encodeURIComponent(value);
+  }
   public readonly faFileCode = faFileCode;
   public searching = false;
   public searchInput: string = "";
@@ -280,12 +347,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     this.data = data;
     this.bodies = [];
-    
+
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {
       this.edastroData = null;
     }
-    
+
     this.appService.setBackgroundImage('assets/bg1.jpg');
 
     // Load and highlight region map immediately
@@ -617,7 +684,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
               svgElement.style.width = '100%';
               svgElement.style.height = 'auto';
               svgElement.style.borderRadius = '8px';
-              
+
               // Add click handler to reset zoom
               svgElement.addEventListener('click', (event) => {
                 const currentViewBox = svgElement.getAttribute('viewBox');
@@ -669,7 +736,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       (region as HTMLElement).style.stroke = 'orange';
       (region as HTMLElement).style.strokeOpacity = '1';
       (region as HTMLElement).style.strokeWidth = '';
-      
+
       // Add click handler for zooming
       region.addEventListener('click', (event) => {
         const currentViewBox = svgElement.getAttribute('viewBox');
@@ -698,10 +765,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Add red dot at system coordinates
     this.addSystemMarker(svgElement);
-    
+
     // Add known systems markers
     this.addKnownSystemMarkers(svgElement);
-    
+
     // Debug GEC image sizing
     this.debugGecImageSize();
   }
@@ -709,38 +776,38 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private zoomToRegion(regionPath: SVGPathElement, svgElement: SVGSVGElement): void {
     // Get the bounding box of the region
     const bbox = regionPath.getBBox();
-    
+
     // Add minimal padding (2% on each side)
     const padding = Math.max(bbox.width, bbox.height) * 0.02;
-    
+
     // Calculate dimensions with padding
     const paddedWidth = bbox.width + (padding * 2);
     const paddedHeight = bbox.height + (padding * 2);
-    
+
     // Use the larger dimension to create a square viewBox
     // This ensures the region touches the edges on its larger axis
     const size = Math.max(paddedWidth, paddedHeight);
-    
+
     // Center the region in the square viewBox
     const x = bbox.x - padding + (paddedWidth - size) / 2;
     const y = bbox.y - padding + (paddedHeight - size) / 2;
-    
+
     // Set the viewBox to a square zoom
     svgElement.setAttribute('viewBox', `${x} ${y} ${size} ${size}`);
-    
+
     // Get region ID from the path element
     const regionId = regionPath.id; // e.g., "Region_01"
     const regionNumber = regionId ? parseInt(regionId.replace('Region_', ''), 10) : 0;
-    
+
     console.log('=== ZOOM TO REGION DEBUG ===');
     console.log('Region ID:', regionId);
     console.log('Region Number:', regionNumber);
     console.log('Is Inner Orion Spur (region 18):', regionNumber === 18);
     console.log('============================');
-    
+
     // Calculate scale factor for markers
     const scaleFactor = 2048 / size;
-    
+
     // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
     if (regionNumber === 18) {
       this.fetchGnosisData().subscribe(gnosisData => {
@@ -754,14 +821,14 @@ export class HomeComponent implements OnInit, AfterViewInit {
         }
       });
     }
-    
+
     // Update marker scales immediately and again after a short delay
     // to ensure all markers are scaled correctly
     this.updateMarkerScales(svgElement, scaleFactor);
     setTimeout(() => {
       this.updateMarkerScales(svgElement, scaleFactor);
     }, 50);
-    
+
     // Add a reset button or double-click handler to zoom out
     svgElement.style.transition = 'viewBox 0.3s ease';
   }
@@ -774,9 +841,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
       if (circle) {
         const cx = parseFloat(circle.getAttribute('cx') || '0');
         const cy = parseFloat(circle.getAttribute('cy') || '0');
-        (marker as SVGGElement).setAttribute('transform', `translate(${cx}, ${cy}) scale(${1/scaleFactor}) translate(${-cx}, ${-cy})`);
+        (marker as SVGGElement).setAttribute('transform', `translate(${cx}, ${cy}) scale(${1 / scaleFactor}) translate(${-cx}, ${-cy})`);
       }
-      
+
       // Show/hide markers based on zoom level
       const zoomLevel = marker.getAttribute('data-zoom-level');
       if (zoomLevel === 'zoomed') {
@@ -792,7 +859,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     const viewBoxValues = viewBox ? viewBox.split(' ').map(parseFloat) : [0, 0, 2048, 2048];
     const viewBoxSize = Math.max(viewBoxValues[2], viewBoxValues[3]);
     const currentScaleFactor = 2048 / viewBoxSize;
-    
+
     const knownSystems = [
       { name: 'Varati', systemName: 'Varati', x: -178.65625, y: 77.12500, z: -87.12500, zoomLevel: 'always' },
       { name: 'Canonnia', systemName: 'Canonnia', x: -9522.93750, y: -894.06250, z: 19791.87500, zoomLevel: 'always' },
@@ -863,7 +930,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         rect.setAttribute('y', (bbox.y - 2).toString());
         rect.setAttribute('width', (bbox.width + 8).toString());
         rect.setAttribute('height', (bbox.height + 4).toString());
-        
+
         rect.style.display = 'block';
         text.style.display = 'block';
       });
@@ -885,10 +952,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
       } else {
         group.setAttribute('data-zoom-level', 'always');
       }
-      
+
       // Apply current scale immediately
       if (currentScaleFactor !== 1) {
-        group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1/currentScaleFactor}) translate(${-tx}, ${-finalY})`);
+        group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1 / currentScaleFactor}) translate(${-tx}, ${-finalY})`);
       }
 
       // Add the group to the SVG
@@ -905,7 +972,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     console.log('Cache age (ms):', now - this.gnosisLastFetched);
     console.log('Cache duration (ms):', this.GNOSIS_CACHE_DURATION);
     console.log('Has cached data:', !!this.gnosisData);
-    
+
     if (this.gnosisData && (now - this.gnosisLastFetched) < this.GNOSIS_CACHE_DURATION) {
       console.log('Using cached Gnosis data:', this.gnosisData);
       console.log('=========================');
@@ -914,7 +981,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     console.log('Fetching fresh Gnosis data from API...');
     console.log('=========================');
-    
+
     // Fetch fresh data
     return this.httpClient.get<GnosisData>('https://us-central1-canonn-api-236217.cloudfunctions.net/query/gnosis')
       .pipe(
@@ -931,7 +998,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private addGnosisMarker(svgElement: SVGSVGElement, regionBbox: DOMRect): void {
     console.log('=== ADD GNOSIS MARKER DEBUG ===');
     console.log('Gnosis data:', this.gnosisData);
-    
+
     if (!this.gnosisData) {
       console.log('No Gnosis data available');
       console.log('================================');
@@ -944,7 +1011,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       console.log('Removing existing Gnosis marker');
       existingMarker.remove();
     }
-    
+
     // Get current viewBox to determine zoom level
     const viewBox = svgElement.getAttribute('viewBox');
     const viewBoxValues = viewBox ? viewBox.split(' ').map(parseFloat) : [0, 0, 2048, 2048];
@@ -952,9 +1019,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
     const currentScaleFactor = 2048 / viewBoxSize;
 
     const [x, y, z] = this.gnosisData.coords;
-    
+
     console.log('Gnosis ED coordinates:', { x, y, z });
-    
+
     // Apply transformation formula
     const tx = ((x - (-49985)) * 83 / 4096);
     const tz = ((z - (-24105)) * 83 / 4096);
@@ -972,10 +1039,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Check if Gnosis is within the region bounds
     const inBounds = !(tx < regionBbox.x || tx > regionBbox.x + regionBbox.width ||
-        finalY < regionBbox.y || finalY > regionBbox.y + regionBbox.height);
-    
+      finalY < regionBbox.y || finalY > regionBbox.y + regionBbox.height);
+
     console.log('Gnosis in region bounds:', inBounds);
-    
+
     if (!inBounds) {
       // Gnosis is not in this region, don't display it
       console.log('Gnosis is NOT in this region, skipping marker');
@@ -1041,7 +1108,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       rect.setAttribute('y', (bbox.y - 2).toString());
       rect.setAttribute('width', (bbox.width + 8).toString());
       rect.setAttribute('height', (bbox.height + 4).toString());
-      
+
       rect.style.display = 'block';
       text.style.display = 'block';
     });
@@ -1055,10 +1122,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
     group.appendChild(circle);
     group.appendChild(rect);
     group.appendChild(text);
-    
+
     // Apply current scale immediately if zoomed
     if (currentScaleFactor !== 1) {
-      group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1/currentScaleFactor}) translate(${-tx}, ${-finalY})`);
+      group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1 / currentScaleFactor}) translate(${-tx}, ${-finalY})`);
     }
 
     // Add the group to the SVG
@@ -1069,7 +1136,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     setTimeout(() => {
       if (this.gecContainer && this.gecImage) {
         console.log('=== GEC IMAGE DEBUG ===');
-        
+
         const systemDataDiv = this.gecContainer.nativeElement.parentElement;
         console.log('Parent (system-data) dimensions:', {
           width: systemDataDiv?.clientWidth,
@@ -1077,20 +1144,20 @@ export class HomeComponent implements OnInit, AfterViewInit {
           offsetWidth: systemDataDiv?.offsetWidth,
           offsetHeight: systemDataDiv?.offsetHeight
         });
-        
+
         console.log('Container dimensions:', {
           width: this.gecContainer.nativeElement.clientWidth,
           height: this.gecContainer.nativeElement.clientHeight,
           offsetWidth: this.gecContainer.nativeElement.offsetWidth,
           offsetHeight: this.gecContainer.nativeElement.offsetHeight
         });
-        
+
         console.log('Container computed style:', {
           height: getComputedStyle(this.gecContainer.nativeElement).height,
           maxHeight: getComputedStyle(this.gecContainer.nativeElement).maxHeight,
           overflow: getComputedStyle(this.gecContainer.nativeElement).overflow
         });
-        
+
         console.log('Image dimensions:', {
           width: this.gecImage.nativeElement.clientWidth,
           height: this.gecImage.nativeElement.clientHeight,
@@ -1106,7 +1173,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           minWidth: getComputedStyle(this.gecImage.nativeElement).minWidth,
           maxHeight: getComputedStyle(this.gecImage.nativeElement).maxHeight
         });
-        
+
         const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
         if (svgElement) {
           console.log('SVG height:', svgElement.clientHeight);
@@ -1128,16 +1195,16 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
 
     const coords = this.data.system.coords;
-    
+
     // Apply transformation formula
     // Note: The region map uses X and Z coordinates (not Y)
     // X is horizontal, Z is vertical on the 2D map
     const tx = ((coords.x - (-49985)) * 83 / 4096);
     const tz = ((coords.z - (-24105)) * 83 / 4096);
-    
+
     // Invert Z coordinate for SVG (SVG Y increases downward)
     const finalY = 2048 - tz;
-    
+
     console.log('=== SYSTEM MARKER DEBUG ===');
     console.log('System:', this.data.system.name);
     console.log('Original ED Coordinates:', {
@@ -1159,11 +1226,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
       'calculation': `2048 - ${tz} = ${finalY}`
     });
     console.log('=========================');
-    
+
     // Create a group for the marker
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('id', 'system-marker');
-    
+
     // Check SVG dimensions and viewBox
     const viewBox = svgElement.getAttribute('viewBox');
     const width = svgElement.getAttribute('width');
@@ -1175,7 +1242,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       clientWidth: svgElement.clientWidth,
       clientHeight: svgElement.clientHeight
     });
-    
+
     // Create a larger, more visible green circle marker with glow effect
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('cx', tx.toString());
@@ -1186,9 +1253,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
     circle.setAttribute('stroke-width', '6');
     circle.setAttribute('opacity', '1');
     circle.setAttribute('filter', 'drop-shadow(0 0 16px rgba(0, 255, 0, 0.8))');
-    
+
     group.appendChild(circle);
-    
+
     // Add the marker group to the SVG, but before any known-system-marker elements
     // This ensures blue dots (known systems) are always on top
     const firstBlueMarker = svgElement.querySelector('.known-system-marker');
@@ -1197,7 +1264,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     } else {
       svgElement.appendChild(group);
     }
-    
+
     // Verify the actual position after appending
     console.log('Circle element attributes:', {
       id: circle.getAttribute('id'),
@@ -1205,7 +1272,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       cy: circle.getAttribute('cy'),
       r: circle.getAttribute('r')
     });
-    
+
     // Get the bounding box of the circle
     setTimeout(() => {
       const bbox = circle.getBBox();

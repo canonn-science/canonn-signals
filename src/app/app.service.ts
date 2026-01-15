@@ -9,10 +9,10 @@ import { environment } from 'src/environments/environment';
 export class AppService {
   private _codexEntries: BehaviorSubject<CanonnCodexEntry[]> = new BehaviorSubject<CanonnCodexEntry[]>([]);
   public codexEntries: Observable<CanonnCodexEntry[]> = this._codexEntries.asObservable();
-  
+
   private _backgroundImage: BehaviorSubject<string> = new BehaviorSubject<string>('assets/bg1.jpg');
   public backgroundImage$: Observable<string> = this._backgroundImage.asObservable();
-  
+
   private _edastroSystems: BehaviorSubject<EdastroSystem[]> = new BehaviorSubject<EdastroSystem[]>([]);
   public edastroSystems: Observable<EdastroSystem[]> = this._edastroSystems.asObservable();
 
@@ -23,11 +23,11 @@ export class AppService {
       .subscribe(c => {
         this._codexEntries.next(Object.values(c));
       });
-    
-    const edastroUrl = environment.production 
+
+    const edastroUrl = environment.production
       ? "https://edastro.com/gec/json/combined"
       : "/api/edastro/gec/json/combined";
-    
+
     this.httpClient.get<EdastroSystem[]>(edastroUrl)
       .subscribe(systems => {
         this._edastroSystems.next(systems);
@@ -35,7 +35,7 @@ export class AppService {
   }
 
   public getEdastroData(id64: number): Observable<EdastroData> {
-    const url = environment.production 
+    const url = environment.production
       ? `https://edastro.com/gec/json/id64/${id64}`
       : `/api/edastro/gec/json/id64/${id64}`;
     return this.httpClient.get<EdastroData>(url);
@@ -45,8 +45,8 @@ export class AppService {
     this._backgroundImage.next(imageUrl);
   }
 
-  public galMapSearch(systemName: string): Observable<{min_max: {name: string, id64: number}[]}> {
-    return this.httpClient.get<{min_max: {name: string, id64: number}[]}>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(systemName)}`);
+  public galMapSearch(systemName: string): Observable<{ min_max: { name: string, id64: number }[] }> {
+    return this.httpClient.get<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(systemName)}`);
   }
 }
 

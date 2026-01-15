@@ -34,24 +34,46 @@
                 <span style="display: flex; align-items: center; gap: 4px;">
                     <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> ({{ edastroData?.name }})</span></span>
                     <ng-container *ngIf="edastroData?.name">
-                        <a [href]="edastroData?.poiUrl" target="_blank" title="View on the Galactic Exploration Catalog" style="margin-left: 4px; display: inline-flex; align-items: center;">
-                            <img src="https://edastro.com/images/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline" style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;" tabindex="0" />
+                        <a [href]="edastroData?.poiUrl" target="_blank" title="View on the Galactic Exploration Catalog"
+                            style="margin-left: 4px; display: inline-flex; align-items: center;">
+                            <img src="https://edastro.com/images/GEC-marker-logo-240px.png" alt="GEC"
+                                class="edastro-icon-inline"
+                                style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;"
+                                tabindex="0" />
                         </a>
                     </ng-container>
-                    <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
-                        <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;" tabindex="0" />
+                    <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank"
+                        style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh"
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;"
+                            tabindex="0" />
                     </a>
-                    <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
-                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON" title="View the spansh dump" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;" tabindex="0" />
+                    <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank"
+                        style="display: inline-flex; align-items: center; margin-left: -0.4em;">
+                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON"
+                            title="View the spansh dump"
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
+                            tabindex="0" />
                     </a>
-                    <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)" target="_blank" title="View on Inara" style="margin-left: 4px; display: inline-flex; align-items: center;">
-                        <img src="assets/icons/inara.png" alt="Inara" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;" tabindex="0" />
+                    <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)"
+                        target="_blank" title="View on Inara"
+                        style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        <img src="assets/icons/inara.png" alt="Inara"
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
+                            tabindex="0" />
                     </a>
-                    <a [href]="'https://www.edsm.net/en/system?systemName=' + encodeURIComponent(data.system.name)" target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
-                        <img src="assets/icons/edsm-194x194.png" alt="EDSM" title="View on EDSM" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;" tabindex="0" />
+                    <a [href]="'https://www.edsm.net/en/system?systemName=' + encodeURIComponent(data.system.name)"
+                        target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        <img src="assets/icons/edsm-194x194.png" alt="EDSM" title="View on EDSM"
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
+                            tabindex="0" />
                     </a>
-                    <a [href]="'https://www.edsm.net/api-system-v1/bodies?systemName=' + encodeURIComponent(data.system.name)" target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
-                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="EDSM JSON" title="View the EDSM dump" style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;" tabindex="0" />
+                    <a [href]="'https://www.edsm.net/api-system-v1/bodies?systemName=' + encodeURIComponent(data.system.name)"
+                        target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
+                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="EDSM JSON"
+                            title="View the EDSM dump"
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
+                            tabindex="0" />
                     </a>
                 </span>
                 <span *ngIf="data.system.population !== null && data.system.population !== undefined"
@@ -61,67 +83,96 @@
                 <span class="summary-text">{{ edastroData?.summary }}</span>
             </div>
             <div class="system-data">
-            <div class="region-map-container" #regionMapContainer></div>
-            <div class="system-data-columns">
-                <div class="system-data-section">
-                    <div class="system-data-section-header">Location</div>
-                    <div class="system-data-entry">
-                        <div>Region</div>
-                        <div>{{ data.system.region.name }}</div>
-                    </div>
-                    <div class="system-data-entry">
-                        <div>Id64</div>
-                        <div class="id64-copy" (click)="copyId64ToClipboard()" title="Click to copy Id64">
-                            {{ data.system.id64 }}
+                <div class="region-map-container" #regionMapContainer></div>
+                <div class="system-data-columns">
+                    <div class="system-data-section">
+                        <div class="system-data-section-header">Location</div>
+                        <div class="system-data-entry" *ngIf="edGalaxyData?.PGName">
+                            <div>PG Name</div>
+                            <div>{{ edGalaxyData.PGName }}</div>
                         </div>
-                    </div>
-                    <div class="system-data-entry">
-                        <div>Coordinates</div>
-                        <div class="coordinates-copy"
-                             (click)="copyCoordinatesToClipboard('comma')"
-                             (contextmenu)="copyCoordinatesToClipboard('tab', $event)"
-                             (mousedown)="onCoordinatesMouseDown($event)"
-                             title="Left: comma, Right: tab, Middle: pipe">
-                            {{ data.system.coords.x }} / {{ data.system.coords.y }} / {{ data.system.coords.z }}
+                        <div class="system-data-entry">
+                            <div>Region</div>
+                            <div>{{ data.system.region.name }}</div>
                         </div>
-                    </div>
-                </div>
-                <div class="system-data-section" *ngIf="edastroData?.mainImage">
-                    <div class="system-data-section-header">GEC</div>
-                    <div class="gec-image-panel">
-                        <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image" />
-                        <div class="gec-description" *ngIf="edastroData?.description">{{ edastroData?.description }}</div>
-                    </div>
-                </div>
-                <div class="system-data-section">
-                    <div class="system-data-section-header">Distances</div>
-                    <div class="system-data-entry" *ngFor="let dist of getSystemDistances()">
-                        <div class="distance-system-link" (click)="openSignalsPage(dist.name)" title="Open signals page for {{ dist.name }}">
-                            {{ dist.name }}
+                        <div class="system-data-entry">
+                            <div>Id64</div>
+                            <div class="id64-copy" (click)="copyId64ToClipboard()" title="Click to copy Id64">
+                                {{ data.system.id64 }}
+                            </div>
                         </div>
-                        <div>{{ dist.distance | number: '1.1-1' }} ly</div>
-                    </div>
-                </div>
-                <div class="system-data-section" *ngIf="data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length">
-                    <div class="system-data-section-header">Signals</div>
-                    <div class="system-data-entry" *ngIf="data.system.signals?.cloud?.length">
-                        <div>Clouds</div>
-                        <div>
-                            <div *ngFor="let cloud of data.system.signals!.cloud">
-                                {{ cloud }}
+                        <div class="system-data-entry">
+                            <div>Coordinates</div>
+                            <div class="coordinates-copy" (click)="copyCoordinatesToClipboard('comma')"
+                                (contextmenu)="copyCoordinatesToClipboard('tab', $event)"
+                                (mousedown)="onCoordinatesMouseDown($event)"
+                                title="Left: comma, Right: tab, Middle: pipe">
+                                {{ data.system.coords.x }} / {{ data.system.coords.y }} / {{ data.system.coords.z }}
                             </div>
                         </div>
                     </div>
-                    <div class="system-data-entry" *ngIf="data.system.signals?.anomaly?.length">
-                        <div>Anomalies</div>
-                        <div>
-                            <div *ngFor="let anomaly of data.system.signals!.anomaly">
-                                {{ anomaly }}
+                    <div class="system-data-section" *ngIf="edGalaxyData?.Simbad">
+                        <div class="system-data-section-header">Simbad</div>
+                        <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.Name">
+                            <div>Name</div>
+                            <div>
+                                <span *ngIf="edGalaxyData?.Simbad?.Ident; else plainSimbadName" class="pgname-link"
+                                    (click)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)" title="Open in SIMBAD"
+                                    style="cursor:pointer;text-decoration:underline dotted;">
+                                    {{ edGalaxyData.Simbad.Name }}
+                                </span>
+                                <ng-template #plainSimbadName>{{ edGalaxyData.Simbad.Name }}</ng-template>
+                            </div>
+                        </div>
+                        <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.RAJ2000">
+                            <div>Right Ascension</div>
+                            <div>{{ formatRAJ2000(edGalaxyData.Simbad.RAJ2000) }}</div>
+                        </div>
+                        <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.DEJ2000">
+                            <div>Declination</div>
+                            <div>{{ formatDEJ2000(edGalaxyData.Simbad.DEJ2000) }}</div>
+                        </div>
+                    </div>
+
+                    <div class="system-data-section">
+                        <div class="system-data-section-header">Distances</div>
+                        <div class="system-data-entry" *ngFor="let dist of getSystemDistances()">
+                            <div class="distance-system-link" (click)="openSignalsPage(dist.name)"
+                                title="Open signals page for {{ dist.name }}">
+                                {{ dist.name }}
+                            </div>
+                            <div>{{ dist.distance | number: '1.1-1' }} ly</div>
+                        </div>
+                    </div>
+                    <div class="system-data-section" *ngIf="edastroData?.mainImage">
+                        <div class="system-data-section-header">Galactic Exploration Catalog</div>
+                        <div class="gec-image-panel">
+                            <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image" />
+                            <div class="gec-description" *ngIf="edastroData?.description">{{ edastroData?.description }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="system-data-section"
+                        *ngIf="data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length">
+                        <div class="system-data-section-header">Signals</div>
+                        <div class="system-data-entry" *ngIf="data.system.signals?.cloud?.length">
+                            <div>Clouds</div>
+                            <div>
+                                <div *ngFor="let cloud of data.system.signals!.cloud">
+                                    {{ cloud }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="system-data-entry" *ngIf="data.system.signals?.anomaly?.length">
+                            <div>Anomalies</div>
+                            <div>
+                                <div *ngFor="let anomaly of data.system.signals!.anomaly">
+                                    {{ anomaly }}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
             </div>
         </div>
         <div class="bodies">
