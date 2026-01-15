@@ -94,7 +94,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
   }
   openSignalsPage(systemName: string) {
-    const url = `/signals?system=${encodeURIComponent(systemName)}`;
+    const url = `?system=${encodeURIComponent(systemName)}`;
     window.open(url, '_blank');
   }
   referenceSystems = [
@@ -698,10 +698,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
     console.log('Checking for GEC section...');
     const gecSection = document.querySelector('.system-data-section');
     console.log('Found system-data-section:', !!gecSection);
-    
+
     const img = document.querySelector('.gec-main-image') as HTMLImageElement;
     console.log('Found .gec-main-image:', !!img);
-    
+
     if (img) {
       console.log('Direct image check - src:', img.src);
       console.log('Direct image check - complete:', img.complete);
@@ -1033,7 +1033,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       }
 
       const [x, y, z] = outpost.coordinates;
-      
+
       // Apply transformation formula
       const tx = ((x - (-49985)) * 83 / 4096);
       const tz = ((z - (-24105)) * 83 / 4096);

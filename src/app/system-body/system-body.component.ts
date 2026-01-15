@@ -2226,52 +2226,71 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
         this.body.bodyData.subType === 'Neutron Star');
   }
 
-  public classifyNeutronStar(): { classification: string; tooltip: string } | null {
+  public getRotationalPeriodDisplay(): string {
+    const days = this.body.bodyData.rotationalPeriod;
+    if (!days) return '';
+
+    const seconds = days * 86400;
+    const minutes = seconds / 60;
+    const hours = minutes / 60;
+    const weeks = days / 7;
+    const years = days / 365.25;
+    const decades = years / 10;
+    const centuries = years / 100;
+
+    if (seconds < 1) return `${(seconds * 1000).toFixed(2)} ms`;
+    if (seconds < 60) return `${seconds.toFixed(2)} s`;
+    if (minutes < 60) return `${minutes.toFixed(2)} min`;
+    if (hours < 24) return `${hours.toFixed(2)} h`;
+    if (days < 7) return `${days.toFixed(2)} days`;
+    if (weeks < 52) return `${weeks.toFixed(2)} weeks`;
+    if (years < 10) return `${years.toFixed(2)} years`;
+    if (decades < 10) return `${decades.toFixed(2)} decades`;
+    return `${centuries.toFixed(2)} centuries`;
+  }
+
+  public classifyNeutronStar(): string | null {
     if (this.body.bodyData.type !== 'Star' || this.body.bodyData.subType !== 'Neutron Star') {
       return null;
     }
 
     const mass = this.body.bodyData.solarMasses;
-    const age = this.body.bodyData.age;
-    const temp = this.body.bodyData.surfaceTemperature;
+    const radius = this.body.bodyData.solarRadius;
     const periodDays = this.body.bodyData.rotationalPeriod;
+    const absMag = this.body.bodyData.absoluteMagnitude;
 
-    if (mass === undefined || age === undefined || periodDays === undefined || temp === undefined) {
+    if (mass === undefined || radius === undefined || periodDays === undefined || absMag === undefined) {
       return null;
     }
 
-    const period = periodDays * 86400;
+    const period = periodDays * 86400; // Convert days to seconds
 
-    if (mass > 3) {
-      return { classification: "Anomalous", tooltip: `Mass of ${mass.toFixed(2)} solar masses exceeds theoretical limit of ~3 solar masses` };
+    const isHighMass = mass > 2.1;
+
+    if (period < 0.01) {
+      return isHighMass ? "Hyper-Massive Millisecond Pulsar" : "Millisecond Pulsar";
     }
 
-    if (age > 100 && (period < 0.1 || temp > 1e7)) {
-      return { classification: "Anomalous", tooltip: `Old neutron star (${age}My) with impossible rotation (${(period / 86400).toFixed(3)}d) or temperature (${temp.toLocaleString()}K)` };
+    if (period >= 0.01 && period < 5) {
+      return "Standard Pulsar";
     }
 
-    if (mass <= 3 && age >= 0.1 && age <= 10 && period >= 0.001 && period <= 0.01) {
-      return { classification: "Millisecond Pulsar", tooltip: `Fast rotation (${(period * 1000).toFixed(1)}ms) and moderate age (${age}My) indicate spin-up from companion` };
+    if (period >= 5 && period < 30) {
+      return "Slow-Period Pulsar";
     }
 
-    if (mass <= 3 && age <= 10 && period > 0.01 && period <= 5 && temp > 1e7) {
-      return { classification: "Normal Pulsar (Young)", tooltip: `Young age (${age}My) with expected high rotation rate and temperature (${temp.toLocaleString()}K)` };
+    if (period >= 30 && period < 3600) {
+      return absMag < 10 ? "Ultra-Long Period Magnetar" : "Ultra-Long Period Pulsar";
     }
 
-    if (mass <= 3 && age > 10 && age <= 100 && period > 0.01 && period <= 5 && temp >= 1e6 && temp <= 1e7) {
-      return { classification: "Normal Pulsar (Middle-aged)", tooltip: `Middle age (${age}My) with moderate rotation (${(period / 86400).toFixed(3)}d) as pulsar spins down` };
+    if (period >= 3600) {
+      return "Anomalous Slow-Rotator (Stalled)";
     }
 
-    if (mass <= 3 && age > 100 && period > 0.1 && temp <= 1e6) {
-      return { classification: "Normal Pulsar (Old)", tooltip: `Old age (${age}My) with slow rotation (${(period / 86400).toFixed(3)}d) as rotational energy dissipated` };
-    }
-
-    if (mass <= 3 && age < 0.1 && period >= 2 && period <= 12 && temp > 1e8) {
-      return { classification: "Potential Magnetar", tooltip: `Very young (${age}My) with slow rotation (${(period / 86400).toFixed(3)}d) and extreme temperature (${temp.toLocaleString()}K) suggests strong magnetic field` };
-    }
-
-    return null;
+    return "Unclassified Compact Object";
   }
+
+
 
   public getLandableBadgeClass(): string {
     if (!this.body.bodyData.isLandable) {

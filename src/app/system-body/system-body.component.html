@@ -4,11 +4,7 @@
             <b>{{ getBodyDisplayName(body.bodyData.name) }}</b>
             <span *ngIf="body.bodyData.subType">-</span>
             <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()"
-                matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}</span>
-            <span *ngIf="classifyNeutronStar()"
-                [class]="classifyNeutronStar()!.classification === 'Anomalous' ? 'badge badge-red' : 'neutron-star-classification'"
-                [matTooltip]="classifyNeutronStar()!.tooltip">{{ classifyNeutronStar()!.classification === 'Anomalous' ?
-                classifyNeutronStar()!.classification : '- ' + classifyNeutronStar()!.classification }}</span>
+                matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}<span *ngIf="classifyNeutronStar()"> ({{ classifyNeutronStar() }})</span></span>
             <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition"
                 [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip"
                 class="atmosphere-type">
@@ -457,7 +453,7 @@
                                 Rotational period
                             </div>
                             <div [matTooltip]="body.bodyData.rotationalPeriod + ' days'">
-                                {{ body.bodyData.rotationalPeriod | number:'0.2-2' }} days
+                                {{ getRotationalPeriodDisplay() }}
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.distanceToArrival !== undefined && body.bodyData.distanceToArrival !== null && (body.bodyData.bodyId !== 0 || body.bodyData.distanceToArrival > 0)"
