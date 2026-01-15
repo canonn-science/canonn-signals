@@ -361,7 +361,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
       this.edastroData = null;
     }
 
-    this.appService.setBackgroundImage('assets/bg1.jpg');
+    // Only set default background if we don't have edastro data with an image
+    if (!this.edastroData?.mainImage) {
+      this.appService.setBackgroundImage('assets/bg1.jpg');
+      console.log('Reset background to default bg1.jpg');
+    }
 
     // Load and highlight region map immediately
     setTimeout(() => this.loadRegionMap(), 0);
@@ -371,14 +375,20 @@ export class HomeComponent implements OnInit, AfterViewInit {
       this.appService.getEdastroData(data.system.id64)
         .subscribe(
           edastroData => {
+            console.log('EdAstro data received:', edastroData);
             if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
+              console.log('Main image URL:', edastroData.mainImage);
               this.edastroData = edastroData;
               if (edastroData.mainImage) {
+                console.log('Setting background image to:', edastroData.mainImage);
                 this.appService.setBackgroundImage(edastroData.mainImage);
               }
+              // Check image after DOM update
+              setTimeout(() => this.checkGecImage(), 500);
             }
           },
           error => {
+            console.error('EdAstro data error:', error);
             // Silently handle error - edastro data is optional
           }
         );
@@ -662,6 +672,48 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   public trackByBody(index: number, body: SystemBody): number {
     return body.bodyData.bodyId;
+  }
+
+  public onGecImageError(event: any): void {
+    console.error('GEC image failed to load:', event.target.src);
+    console.error('Image error event:', event);
+    // Force reload for GIFs that might have loading issues
+    const img = event.target as HTMLImageElement;
+    if (img.src.toLowerCase().includes('.gif')) {
+      console.log('Attempting to reload GIF with cache-busting');
+      setTimeout(() => {
+        img.src = img.src + '?t=' + Date.now();
+      }, 100);
+    }
+  }
+
+  public onGecImageLoad(event: any): void {
+    console.log('GEC image loaded successfully:', event.target.src);
+    console.log('Image dimensions:', event.target.naturalWidth, 'x', event.target.naturalHeight);
+    console.log('Image visible:', event.target.offsetWidth, 'x', event.target.offsetHeight);
+    console.log('Image complete:', event.target.complete);
+  }
+
+  private checkGecImage(): void {
+    console.log('Checking for GEC section...');
+    const gecSection = document.querySelector('.system-data-section');
+    console.log('Found system-data-section:', !!gecSection);
+    
+    const img = document.querySelector('.gec-main-image') as HTMLImageElement;
+    console.log('Found .gec-main-image:', !!img);
+    
+    if (img) {
+      console.log('Direct image check - src:', img.src);
+      console.log('Direct image check - complete:', img.complete);
+      console.log('Direct image check - naturalWidth:', img.naturalWidth);
+      console.log('Direct image check - offsetWidth:', img.offsetWidth);
+      console.log('Direct image check - display:', getComputedStyle(img).display);
+      console.log('Direct image check - visibility:', getComputedStyle(img).visibility);
+    } else {
+      console.log('GEC image element not found');
+      console.log('edastroData:', this.edastroData);
+      console.log('edastroData.mainImage:', this.edastroData?.mainImage);
+    }
   }
 
   public getBodyDisplayName(bodyName: string): string {

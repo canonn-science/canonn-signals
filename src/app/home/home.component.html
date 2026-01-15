@@ -163,16 +163,17 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="system-data-section" *ngIf="edastroData?.mainImage">
-                            <div class="system-data-section-header">Galactic Exploration Catalog</div>
-                            <div class="gec-image-panel">
-                                <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image" />
-                                <div class="gec-description" *ngIf="edastroData?.description">{{
-                                    edastroData?.description }}
-                                </div>
+                    </div>
+                    <div class="system-data-section" *ngIf="edastroData?.mainImage">
+                        <div class="system-data-section-header">Galactic Exploration Catalog</div>
+                        <div class="gec-image-panel">
+                            <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image" 
+                                 (error)="onGecImageError($event)" (load)="onGecImageLoad($event)" 
+                                 #gecImage />
+                            <div class="gec-description" *ngIf="edastroData?.description">{{
+                                edastroData?.description }}
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
