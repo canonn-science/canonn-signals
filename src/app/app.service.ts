@@ -16,6 +16,9 @@ export class AppService {
   private _edastroSystems: BehaviorSubject<EdastroSystem[]> = new BehaviorSubject<EdastroSystem[]>([]);
   public edastroSystems: Observable<EdastroSystem[]> = this._edastroSystems.asObservable();
 
+  private _independentOutposts: BehaviorSubject<IndependentOutpost[]> = new BehaviorSubject<IndependentOutpost[]>([]);
+  public independentOutposts: Observable<IndependentOutpost[]> = this._independentOutposts.asObservable();
+
   constructor(
     private readonly httpClient: HttpClient
   ) {
@@ -31,6 +34,19 @@ export class AppService {
     this.httpClient.get<EdastroSystem[]>(edastroUrl)
       .subscribe(systems => {
         this._edastroSystems.next(systems);
+
+        // Filter and extract independentOutpost data
+        const outposts = systems
+          .filter(system => system.type === 'independentOutpost' &&
+            !system.name.toLowerCase().includes('retired'))
+          .map(system => ({
+            name: system.name,
+            galMapSearch: system.galMapSearch || system.name,
+            coordinates: system.coordinates || [],
+            type: system.type
+          } as IndependentOutpost));
+
+        this._independentOutposts.next(outposts);
       });
   }
 
@@ -47,6 +63,18 @@ export class AppService {
 
   public galMapSearch(systemName: string): Observable<{ min_max: { name: string, id64: number }[] }> {
     return this.httpClient.get<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(systemName)}`);
+  }
+
+  private bodyNameOverrides: BodyNameOverride[] = [
+    { bodyName: 'KOI 413 1', suffix: 'Rhubarb' },
+    { bodyName: 'KOI 413 2', suffix: 'Custard' },
+    { bodyName: 'KOI 232 2', suffix: 'Prunes' },
+    { bodyName: 'KOI 232 3', suffix: 'Magnesia' }
+  ];
+
+  public getBodyDisplayName(bodyName: string): string {
+    const override = this.bodyNameOverrides.find(o => o.bodyName === bodyName);
+    return override ? `${bodyName} (${override.suffix})` : bodyName;
   }
 }
 
@@ -78,4 +106,18 @@ export interface EdastroSystem {
   name: string;
   id64: number;
   galMapSearch?: string;
+  type?: string;
+  coordinates?: number[];
+}
+
+export interface BodyNameOverride {
+  bodyName: string;
+  suffix: string;
+}
+
+export interface IndependentOutpost {
+  name: string;
+  galMapSearch: string;
+  coordinates: number[];
+  type: string;
 }

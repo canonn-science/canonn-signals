@@ -1,7 +1,7 @@
 <div class="body-container" [ngClass]="styleClass">
     <div class="body-title">
         <div class="title-left">
-            <b>{{ body.bodyData.name }}</b>
+            <b>{{ getBodyDisplayName(body.bodyData.name) }}</b>
             <span *ngIf="body.bodyData.subType">-</span>
             <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()"
                 matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}</span>

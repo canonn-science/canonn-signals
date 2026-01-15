@@ -120,6 +120,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   ) {
   }
 
+  public getBodyDisplayName(bodyName: string): string {
+    return this.appService.getBodyDisplayName(bodyName);
+  }
+
   public ngOnInit(): void {
     this.appService.codexEntries
       .pipe(untilDestroyed(this))

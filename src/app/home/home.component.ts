@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { AppService, EdastroData, EdastroSystem } from '../app.service';
+import { AppService, EdastroData, EdastroSystem, IndependentOutpost, BodyNameOverride } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
@@ -180,6 +180,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private gnosisData: GnosisData | null = null;
   private gnosisLastFetched: number = 0;
   private readonly GNOSIS_CACHE_DURATION = 3600000; // 1 hour in milliseconds
+  private independentOutposts: IndependentOutpost[] = [];
   @ViewChild('regionMapContainer') regionMapContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('gecImage') gecImage?: ElementRef<HTMLImageElement>;
   @ViewChild('gecContainer') gecContainer?: ElementRef<HTMLDivElement>;
@@ -215,6 +216,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
         return of([]);
       })
     );
+
+    // Subscribe to independentOutposts data
+    this.appService.independentOutposts
+      .pipe(untilDestroyed(this))
+      .subscribe(outposts => {
+        this.independentOutposts = outposts;
+      });
   }
 
   public ngAfterViewInit(): void {
@@ -656,6 +664,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return body.bodyData.bodyId;
   }
 
+  public getBodyDisplayName(bodyName: string): string {
+    return this.appService.getBodyDisplayName(bodyName);
+  }
+
   private loadRegionMap(): void {
     if (!this.regionMapContainer || !this.data) {
       return;
@@ -952,6 +964,104 @@ export class HomeComponent implements OnInit, AfterViewInit {
       } else {
         group.setAttribute('data-zoom-level', 'always');
       }
+
+      // Apply current scale immediately
+      if (currentScaleFactor !== 1) {
+        group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1 / currentScaleFactor}) translate(${-tx}, ${-finalY})`);
+      }
+
+      // Add the group to the SVG
+      svgElement.appendChild(group);
+    });
+
+    // Add independentOutpost markers as blue dots when zoomed in
+    this.independentOutposts.forEach(outpost => {
+      if (!outpost.coordinates || outpost.coordinates.length < 3) {
+        return; // Skip if coordinates are missing
+      }
+
+      const [x, y, z] = outpost.coordinates;
+      
+      // Apply transformation formula
+      const tx = ((x - (-49985)) * 83 / 4096);
+      const tz = ((z - (-24105)) * 83 / 4096);
+      const finalY = 2048 - tz;
+
+      // Create a group for the marker and label
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.setAttribute('class', 'known-system-marker');
+
+      // Create a blue circle marker
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', tx.toString());
+      circle.setAttribute('cy', finalY.toString());
+      circle.setAttribute('r', '12');
+      circle.setAttribute('fill', 'blue');
+      circle.setAttribute('stroke', 'white');
+      circle.setAttribute('stroke-width', '1.5');
+      circle.setAttribute('opacity', '0.9');
+      circle.style.cursor = 'pointer';
+
+      // Add click handler to navigate to system
+      circle.addEventListener('click', () => {
+        this.searchInput = outpost.galMapSearch;
+        this.searchControl.setValue(outpost.galMapSearch);
+        this.search();
+      });
+
+      // Check viewBox to determine tooltip position based on distance from edges
+      const viewBoxLeft = viewBoxValues[0];
+      const viewBoxRight = viewBoxValues[0] + viewBoxValues[2];
+      const distanceFromLeft = tx - viewBoxLeft;
+      const distanceFromRight = viewBoxRight - tx;
+      const isRightSide = distanceFromLeft > distanceFromRight;
+      const textX = isRightSide ? tx - 15 : tx + 15;
+
+      // Create tooltip text element (initially hidden)
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', textX.toString());
+      text.setAttribute('y', (finalY - 8).toString());
+      text.setAttribute('fill', 'white');
+      text.setAttribute('font-size', '60');
+      text.setAttribute('font-weight', 'bold');
+      text.setAttribute('pointer-events', 'none');
+      text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
+      text.style.display = 'none';
+      text.textContent = outpost.name;
+
+      // Create background rect for text
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('fill', 'rgba(0, 0, 0, 0.8)');
+      rect.setAttribute('rx', '8');
+      rect.setAttribute('pointer-events', 'none');
+      rect.style.display = 'none';
+
+      // Add hover events
+      circle.addEventListener('mouseenter', () => {
+        // Pre-calculate bbox to avoid delay
+        const bbox = text.getBBox();
+        rect.setAttribute('x', (bbox.x - 3).toString());
+        rect.setAttribute('y', (bbox.y - 1).toString());
+        rect.setAttribute('width', (bbox.width + 6).toString());
+        rect.setAttribute('height', (bbox.height + 2).toString());
+
+        rect.style.display = 'block';
+        text.style.display = 'block';
+      });
+
+      circle.addEventListener('mouseleave', () => {
+        rect.style.display = 'none';
+        text.style.display = 'none';
+      });
+
+      // Add elements to group
+      group.appendChild(circle);
+      group.appendChild(rect);
+      group.appendChild(text);
+
+      // Set visibility - only show when zoomed in
+      group.style.display = currentScaleFactor > 1 ? 'block' : 'none';
+      group.setAttribute('data-zoom-level', 'zoomed');
 
       // Apply current scale immediately
       if (currentScaleFactor !== 1) {

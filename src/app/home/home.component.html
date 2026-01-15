@@ -144,14 +144,6 @@
                             <div>{{ dist.distance | number: '1.1-1' }} ly</div>
                         </div>
                     </div>
-                    <div class="system-data-section" *ngIf="edastroData?.mainImage">
-                        <div class="system-data-section-header">Galactic Exploration Catalog</div>
-                        <div class="gec-image-panel">
-                            <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image" />
-                            <div class="gec-description" *ngIf="edastroData?.description">{{ edastroData?.description }}
-                            </div>
-                        </div>
-                    </div>
                     <div class="system-data-section"
                         *ngIf="data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length">
                         <div class="system-data-section-header">Signals</div>
@@ -171,6 +163,16 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="system-data-section" *ngIf="edastroData?.mainImage">
+                            <div class="system-data-section-header">Galactic Exploration Catalog</div>
+                            <div class="gec-image-panel">
+                                <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image" />
+                                <div class="gec-description" *ngIf="edastroData?.description">{{
+                                    edastroData?.description }}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
