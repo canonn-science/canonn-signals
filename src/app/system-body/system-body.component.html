@@ -281,7 +281,12 @@
                                 Solar radius
                             </div>
                             <div [matTooltip]="body.bodyData.solarRadius.toString()">
-                                {{ body.bodyData.solarRadius | number:'0.2-2' }}
+                                <ng-container *ngIf="body.bodyData.subType === 'Neutron Star'; else solarRadiusNormal">
+                                    {{ (body.bodyData.solarRadius * 695700) | number:'0.2-2' }} km
+                                </ng-container>
+                                <ng-template #solarRadiusNormal>
+                                    {{ body.bodyData.solarRadius | number:'0.2-2' }}
+                                </ng-template>
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.earthMasses && body.bodyData.type === 'Planet'"

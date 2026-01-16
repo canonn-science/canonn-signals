@@ -100,8 +100,10 @@ Phrooe,B8,0.973363,3.3,16,6402
 Phrooe,B9,1.866787,1.95,9.1197,6346
 Phrooe,B10,1.117071,3.02,13.454,12938`;
 
-  public apoPeriDialogData: { type: 'apo' | 'peri', date: Date, days: number, distanceKm?: number,
-    meanAnomaly?: number, orbitalPeriod?: number, timestamp?: Date, currentMeanAnomaly?: number, degreesToEvent?: number } | null = null;
+  public apoPeriDialogData: {
+    type: 'apo' | 'peri', date: Date, days: number, distanceKm?: number,
+    meanAnomaly?: number, orbitalPeriod?: number, timestamp?: Date, currentMeanAnomaly?: number, degreesToEvent?: number
+  } | null = null;
 
   public formattedEarthMass: { display: string; tooltip: string } | null = null;
   public formattedSolarMass: { display: string; tooltip: string } | null = null;
@@ -2272,11 +2274,11 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     if (period >= 0.01 && period < 5) {
-      return "Standard Pulsar";
+      return isHighMass ? "Anomalous Mass Pulsar" : "Standard Pulsar";
     }
 
     if (period >= 5 && period < 30) {
-      return "Slow-Period Pulsar";
+      return isHighMass ? "Anomalous Mass Slow-Period Pulsar" : "Slow-Period Pulsar";
     }
 
     if (period >= 30 && period < 3600) {
@@ -2284,7 +2286,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     if (period >= 3600) {
-      return "Anomalous Slow-Rotator (Stalled)";
+      return "Anomalous Slow-Rotator";
     }
 
     return "Unclassified Compact Object";
