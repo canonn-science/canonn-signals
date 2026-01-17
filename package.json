@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "copy-readme": "node scripts/copy-readme.js",
+    "watch-readme": "chokidar readme.md -c \"npm run copy-readme\"",
+    "start": "npm-run-all --parallel watch-readme ng",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -34,12 +36,15 @@
     "@angular/cli": "~16.2.1",
     "@angular/compiler-cli": "^16.2.3",
     "@types/jasmine": "~4.3.0",
+    "chokidar-cli": "^3.0.0",
     "jasmine-core": "~4.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "marked": "^17.0.1",
+    "npm-run-all": "^4.1.5",
     "typescript": "~5.1.3"
   }
 }

@@ -27,6 +27,39 @@ import { FormControl } from '@angular/forms';
   ]
 })
 export class HomeComponent implements OnInit, AfterViewInit {
+    public creditsHtml: string = '';
+
+    private parseCreditsSection(markdown: string): string {
+      console.log('[Credits Debug] Raw markdown:', markdown);
+      // Extract #Credits or ##Credits section (robust)
+      const creditsMatch = markdown.match(/^#{1,2}\s*Credits\s*$([\s\S]*)/m);
+      console.log('[Credits Debug] creditsMatch:', creditsMatch);
+      if (!creditsMatch) {
+        console.warn('[Credits Debug] No #Credits section found in markdown.');
+        return '';
+      }
+      let creditsText = creditsMatch[1].trim();
+      console.log('[Credits Debug] creditsText:', creditsText);
+      // Convert markdown links to HTML links
+      creditsText = creditsText.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+      // Convert markdown list to HTML
+      let html = creditsText.replace(/\* (.+)/g, '<li>$1</li>');
+      if (/^<li>/.test(html)) {
+        html = `<ul>${html}</ul>`;
+      }
+      console.log('[Credits Debug] creditsHtml:', html);
+      return html;
+    }
+
+    private loadCredits(): void {
+      this.httpClient.get('assets/readme.md', { responseType: 'text' }).subscribe(md => {
+        console.log('[Credits Debug] Fetched readme.md:', md);
+        this.creditsHtml = this.parseCreditsSection(md);
+        console.log('[Credits Debug] Final creditsHtml:', this.creditsHtml);
+      }, err => {
+        console.error('[Credits Debug] Error fetching readme.md:', err);
+      });
+    }
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
     window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=${encodeURIComponent(ident)}`, '_blank');
@@ -79,10 +112,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   ngOnChanges(): void {
-    this.updateEdGalaxyData();
-  }
-
-  ngDoCheck(): void {
     this.updateEdGalaxyData();
   }
 
@@ -193,6 +222,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   public ngOnInit(): void {
+      this.loadCredits();
     this.activatedRoute.queryParams
       .pipe(untilDestroyed(this))
       .subscribe(q => {

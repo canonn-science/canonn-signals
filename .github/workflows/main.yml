@@ -36,6 +36,7 @@ jobs:
         with:
           node-version: 16
       - run: npm i
+      - run: npm run copy-readme
       - run: npm run ng build canonn-signals #-- --base-href "/canonn-signals/"
       - run: echo 'signals.canonn.tech' > dist/CNAME
       - name: Setup Pages

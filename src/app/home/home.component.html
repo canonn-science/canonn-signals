@@ -182,5 +182,11 @@
             <app-system-body *ngFor="let body of bodies; trackBy: trackByBody; last as isLast" [body]="body"
                 [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"></app-system-body>
         </div>
+            <div class="credits-panel">
+                <div class="credits-title">Credits</div>
+                <div class="credits-detail">
+                    <div [innerHTML]="creditsHtml"></div>
+                </div>
+            </div>
     </div>
 </div>
