@@ -567,10 +567,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public logTooltip(name: string, description: string): void {
-    console.log('Tooltip hover detected:', name);
-    console.log('Description:', description);
-    console.log('Description length:', description?.length);
-    console.log('Description value:', JSON.stringify(description));
+    // Debug logging removed
   }
 
   public trackByHotspot(index: number, hotspot: any): string {
@@ -1586,7 +1583,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public showShepherdingHillLimitChart(): void {
     const hillData = this.calculateShepherdingHillLimit();
     if (!hillData || !this.body.parent) {
-      console.warn('Cannot show shepherding chart: missing data', { hillData, hasParent: !!this.body.parent });
       return;
     }
 
@@ -1599,7 +1595,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     } else if (parent.solarRadius) {
       parentRadius = parent.solarRadius * 695700;
     } else {
-      console.warn('Cannot show shepherding chart: missing parent radius');
       return;
     }
 
@@ -1654,7 +1649,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Draw chart after dialog opens with a longer delay
     setTimeout(() => {
-      console.log('Attempting to draw shepherding chart...');
       this.drawShepherdingHillChart();
       this.isChartLoading = false;
     }, 200);
@@ -1886,19 +1880,15 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   private drawShepherdingHillChart(): void {
     const canvas = document.querySelector('.hill-limit-dialog canvas') as HTMLCanvasElement;
-    console.log('Canvas element found:', !!canvas);
     if (!canvas || !this.hillLimitDialogData) {
-      console.warn('Cannot draw chart:', { hasCanvas: !!canvas, hasData: !!this.hillLimitDialogData });
       return;
     }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      console.warn('Cannot get 2d context');
       return;
     }
 
-    console.log('Drawing shepherding Hill chart with data:', this.hillLimitDialogData);
 
     const data = this.hillLimitDialogData;
     const width = canvas.width;
@@ -1910,13 +1900,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    // Debug: Log all ring radii and body position
-    console.log('Parent radius:', data.parentRadius);
-    console.log('Body orbital radius:', data.bodyOrbitalRadius);
-    console.log('Body periapsis:', data.bodyPeriapsis);
-    console.log('Body apoapsis:', data.bodyApoapsis);
-    console.log('Rings:', data.rings.map((r: any) => ({ name: r.name, inner: r.innerRadius, outer: r.outerRadius })));
-    console.log('Outermost ring radius:', data.outermostRingRadius);
 
     // Determine scale - find minimum and maximum radii from all features
     let minRadius = data.parentRadius;
@@ -1931,7 +1914,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       minRadius = Math.min(minRadius, smallestInner * 0.8); // Start slightly below smallest ring
     }
 
-    console.log('Scale range:', { minRadius, maxRadius });
 
     // Use logarithmic scale for better visibility of inner rings
     const minLog = Math.log10(Math.max(minRadius, 1));
@@ -2659,7 +2641,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     } catch (e) {
       // If chart generation fails, clear URL and still open dialog
       this.jetAngleChartDataUrl = null;
-      console.error('Jet chart generation error', e);
+      // Debug removed
     }
 
     this.dialog.open(this.jetAngleDialogTemplate, {

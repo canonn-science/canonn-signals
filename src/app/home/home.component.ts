@@ -28,18 +28,16 @@ import { FormControl } from '@angular/forms';
 })
 export class HomeComponent implements OnInit, AfterViewInit {
     public creditsHtml: string = '';
+  // In-memory cache for typeahead suggestions
+  private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
 
     private parseCreditsSection(markdown: string): string {
-      console.log('[Credits Debug] Raw markdown:', markdown);
       // Extract #Credits or ##Credits section (robust)
       const creditsMatch = markdown.match(/^#{1,2}\s*Credits\s*$([\s\S]*)/m);
-      console.log('[Credits Debug] creditsMatch:', creditsMatch);
       if (!creditsMatch) {
-        console.warn('[Credits Debug] No #Credits section found in markdown.');
         return '';
       }
       let creditsText = creditsMatch[1].trim();
-      console.log('[Credits Debug] creditsText:', creditsText);
       // Convert markdown links to HTML links
       creditsText = creditsText.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
       // Convert markdown list to HTML
@@ -47,17 +45,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
       if (/^<li>/.test(html)) {
         html = `<ul>${html}</ul>`;
       }
-      console.log('[Credits Debug] creditsHtml:', html);
       return html;
     }
 
     private loadCredits(): void {
       this.httpClient.get('assets/readme.md', { responseType: 'text' }).subscribe(md => {
-        console.log('[Credits Debug] Fetched readme.md:', md);
         this.creditsHtml = this.parseCreditsSection(md);
-        console.log('[Credits Debug] Final creditsHtml:', this.creditsHtml);
       }, err => {
-        console.error('[Credits Debug] Error fetching readme.md:', err);
       });
     }
   openSimbadPageRaw(ident: string) {
@@ -394,7 +388,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Only set default background if we don't have edastro data with an image
     if (!this.edastroData?.mainImage) {
       this.appService.setBackgroundImage('assets/bg1.jpg');
-      console.log('Reset background to default bg1.jpg');
     }
 
     // Load and highlight region map immediately
@@ -405,12 +398,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
       this.appService.getEdastroData(data.system.id64)
         .subscribe(
           edastroData => {
-            console.log('EdAstro data received:', edastroData);
             if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
-              console.log('Main image URL:', edastroData.mainImage);
               this.edastroData = edastroData;
               if (edastroData.mainImage) {
-                console.log('Setting background image to:', edastroData.mainImage);
                 this.appService.setBackgroundImage(edastroData.mainImage);
               }
               // Check image after DOM update
@@ -589,6 +579,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private getSystemSuggestions(query: string): Observable<string[]> {
+    const cacheKey = query.trim().toLowerCase();
+    if (this.systemSuggestionsCache.has(cacheKey)) {
+      return this.systemSuggestionsCache.get(cacheKey)!;
+    }
+
     const spansQuery = this.httpClient.get<{ values: string[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
       .pipe(switchMap(response => of((response.values || []).map(name => this.decodeHtmlEntities(name)))));
 
@@ -625,7 +620,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       })
     );
 
-    return combineLatest([spansQuery, edastroQuery]).pipe(
+    const result$ = combineLatest([spansQuery, edastroQuery]).pipe(
       switchMap(([spansSuggestions, edastroSuggestions]) => {
         // Store mapping for EdAstro systems
         this.appService.edastroSystems.subscribe(systems => {
@@ -662,6 +657,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
       }),
       untilDestroyed(this)
     );
+
+    this.systemSuggestionsCache.set(cacheKey, result$);
+    return result$;
   }
 
   public onSystemSelected(displayName: string): void {
@@ -710,7 +708,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Force reload for GIFs that might have loading issues
     const img = event.target as HTMLImageElement;
     if (img.src.toLowerCase().includes('.gif')) {
-      console.log('Attempting to reload GIF with cache-busting');
       setTimeout(() => {
         img.src = img.src + '?t=' + Date.now();
       }, 100);
@@ -718,32 +715,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   public onGecImageLoad(event: any): void {
-    console.log('GEC image loaded successfully:', event.target.src);
-    console.log('Image dimensions:', event.target.naturalWidth, 'x', event.target.naturalHeight);
-    console.log('Image visible:', event.target.offsetWidth, 'x', event.target.offsetHeight);
-    console.log('Image complete:', event.target.complete);
+    // Debug removed
   }
 
   private checkGecImage(): void {
-    console.log('Checking for GEC section...');
     const gecSection = document.querySelector('.system-data-section');
-    console.log('Found system-data-section:', !!gecSection);
-
     const img = document.querySelector('.gec-main-image') as HTMLImageElement;
-    console.log('Found .gec-main-image:', !!img);
-
-    if (img) {
-      console.log('Direct image check - src:', img.src);
-      console.log('Direct image check - complete:', img.complete);
-      console.log('Direct image check - naturalWidth:', img.naturalWidth);
-      console.log('Direct image check - offsetWidth:', img.offsetWidth);
-      console.log('Direct image check - display:', getComputedStyle(img).display);
-      console.log('Direct image check - visibility:', getComputedStyle(img).visibility);
-    } else {
-      console.log('GEC image element not found');
-      console.log('edastroData:', this.edastroData);
-      console.log('edastroData.mainImage:', this.edastroData?.mainImage);
-    }
+    // Debug removed
   }
 
   public getBodyDisplayName(bodyName: string): string {
@@ -844,9 +822,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Highlight the current region
     const regionId = `Region_${String(this.data.system.region.region).padStart(2, '0')}`;
-    console.log('Attempting to highlight region:', regionId, 'Region data:', this.data.system.region);
     const regionElement = svgElement.querySelector(`#${regionId}`);
-    console.log('Found region element:', regionElement);
     if (regionElement) {
       (regionElement as HTMLElement).style.fill = '#ff9900';
       (regionElement as HTMLElement).style.fillOpacity = '0.6';
@@ -1397,27 +1373,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Invert Z coordinate for SVG (SVG Y increases downward)
     const finalY = 2048 - tz;
 
-    console.log('=== SYSTEM MARKER DEBUG ===');
-    console.log('System:', this.data.system.name);
-    console.log('Original ED Coordinates:', {
-      x: coords.x,
-      y: coords.y,
-      z: coords.z
-    });
-    console.log('After offset translation:', {
-      'x - (-49985)': coords.x - (-49985),
-      'z - (-24105)': coords.z - (-24105)
-    });
-    console.log('After scaling (* 83 / 4096):', {
-      tx: tx,
-      tz: tz
-    });
-    console.log('Final SVG Coordinates (with Z-inversion):', {
-      cx: tx,
-      cy: finalY,
-      'calculation': `2048 - ${tz} = ${finalY}`
-    });
-    console.log('=========================');
+    // Debug removed
+    // Debug removed
 
     // Create a group for the marker
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1427,13 +1384,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     const viewBox = svgElement.getAttribute('viewBox');
     const width = svgElement.getAttribute('width');
     const height = svgElement.getAttribute('height');
-    console.log('SVG Properties:', {
-      viewBox: viewBox,
-      width: width,
-      height: height,
-      clientWidth: svgElement.clientWidth,
-      clientHeight: svgElement.clientHeight
-    });
+    // Debug removed
 
     // Create a larger, more visible green circle marker with glow effect
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -1458,22 +1409,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
 
     // Verify the actual position after appending
-    console.log('Circle element attributes:', {
-      id: circle.getAttribute('id'),
-      cx: circle.getAttribute('cx'),
-      cy: circle.getAttribute('cy'),
-      r: circle.getAttribute('r')
-    });
+    // Debug removed
 
     // Get the bounding box of the circle
     setTimeout(() => {
       const bbox = circle.getBBox();
-      console.log('Circle bounding box:', {
-        x: bbox.x,
-        y: bbox.y,
-        width: bbox.width,
-        height: bbox.height
-      });
+      // Debug removed
     }, 100);
   }
 }
