@@ -43,6 +43,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public readonly faCode = faCode;
   public readonly faLock = faLock;
   @Input() body!: SystemBody;
+  @Input() edGalaxyData: any = null;
   @Input() isRoot: boolean = false;
   @Input() isLast: boolean = false;
   @Input() forceExpanded: boolean = false;

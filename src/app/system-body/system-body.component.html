@@ -4,7 +4,8 @@
             <b>{{ getBodyDisplayName(body.bodyData.name) }}</b>
             <span *ngIf="body.bodyData.subType">-</span>
             <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()"
-                matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}<span *ngIf="classifyNeutronStar()"> ({{ classifyNeutronStar() }})</span></span>
+                matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}<span *ngIf="classifyNeutronStar()"> ({{
+                    classifyNeutronStar() }})</span></span>
             <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition"
                 [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip"
                 class="atmosphere-type">
@@ -143,7 +144,8 @@
                                 {{ getApoapsis() | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div *ngIf="getNextApoapsis()" class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
+                        <div *ngIf="getNextApoapsis()" class="body-data-entry clickable"
+                            (click)="showApoPeriDialog('apo')">
                             <div>
                                 Next apoapsis
                             </div>
@@ -160,7 +162,8 @@
                                 {{ getPeriapsis() | number:'0.2-2' }} km
                             </div>
                         </div>
-                        <div *ngIf="getNextPeriapsis()" class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
+                        <div *ngIf="getNextPeriapsis()" class="body-data-entry clickable"
+                            (click)="showApoPeriDialog('peri')">
                             <div>
                                 Next periapsis
                             </div>
@@ -503,11 +506,13 @@
                                 {{ body.bodyData.absoluteMagnitude | number:'0.2-2' }}
                             </div>
                         </div>
-                        <div *ngIf="getJetConeAngle() !== null" class="body-data-entry clickable" (click)="showJetAngleDialog()">
+                        <div *ngIf="getJetConeAngle() !== null" class="body-data-entry clickable"
+                            (click)="showJetAngleDialog()">
                             <div>
                                 Jet cone half angle
                             </div>
-                            <div [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
+                            <div
+                                [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
                                 {{ getJetConeAngle() | number:'0.2-2' }}°
                             </div>
                         </div>
@@ -820,14 +825,18 @@
             <p>2) Pass the predictor through the sigmoid (S-shaped) curve:</p>
             <p>Angle_sigmoid = Amin + (Amax - Amin) / (1 + exp(-k * (x - x0)))</p>
             <p>3) Add small quadratic corrections to account for outliers:</p>
-            <p>corrections = gamma_sr * ln(solarRadius)^2 + gamma_rot * ln(rotationalPeriod)^2 + gamma_age * ln(age)^2</p>
+            <p>corrections = gamma_sr * ln(solarRadius)^2 + gamma_rot * ln(rotationalPeriod)^2 + gamma_age * ln(age)^2
+            </p>
             <p>4) Final prediction: Angle_pred = Angle_sigmoid + corrections</p>
             <p class="disclaimer" style="margin-top:0.5em; font-style:italic; color:#b8860b">
                 Note: the displayed model is a simplified regression of a small sample. The uncertainty is large
                 — the tooltip shows a conservative ±5° estimate.
             </p>
             <h3>Fit vs sample data</h3>
-            <p>The chart below is a bubble plot: <strong>x</strong> = rotational period (days, log scale), <strong>y</strong> = solar radius (Ls). Point color encodes <strong>age</strong> (older → red), and point size indicates the measured jet cone half angle (degrees).</p>
+            <p>The chart below is a bubble plot: <strong>x</strong> = rotational period (days, log scale),
+                <strong>y</strong> = solar radius (Ls). Point color encodes <strong>age</strong> (older → red), and
+                point size indicates the measured jet cone half angle (degrees).
+            </p>
             <div *ngIf="jetAngleChartDataUrl">
                 <img [src]="jetAngleChartDataUrl" alt="Fit chart" style="max-width:100%; border:1px solid #ddd;" />
             </div>
@@ -842,7 +851,7 @@
     <div class="apo-peri-dialog" *ngIf="apoPeriDialogData">
         <h2 mat-dialog-title>{{ apoPeriDialogData.type === 'apo' ? 'Next Apoapsis' : 'Next Periapsis' }}</h2>
         <mat-dialog-content>
-            
+
 
             <div class="values">
                 <ul>
@@ -857,7 +866,8 @@
             <div class="explanation">
                 <p><strong>What is {{ apoPeriDialogData.type === 'apo' ? 'apoapsis' : 'periapsis' }}?</strong></p>
                 <p>
-                    <strong>Apoapsis</strong> is the point in the orbit farthest from the parent body; <strong>periapsis</strong>
+                    <strong>Apoapsis</strong> is the point in the orbit farthest from the parent body;
+                    <strong>periapsis</strong>
                     is the closest point. Their distances are computed from the orbital semi-major axis <em>a</em>
                     and eccentricity <em>e</em> using:
                 </p>
@@ -872,23 +882,28 @@
                 </p>
                 <ol *ngIf="apoPeriDialogData.meanAnomaly !== undefined">
                     <li>Compute elapsed time since the timestamp: <em>Δt = now - t0</em> (in days).</li>
-                    <li>Compute the number of orbital cycles since then: <em>cycles = Δt / P</em>, where <em>P</em> is the orbital period (days).</li>
-                    <li>Advance the mean anomaly by <em>cycles × 360°</em> to get the current mean anomaly <em>M</em>:</li>
+                    <li>Compute the number of orbital cycles since then: <em>cycles = Δt / P</em>, where <em>P</em> is
+                        the orbital period (days).</li>
+                    <li>Advance the mean anomaly by <em>cycles × 360°</em> to get the current mean anomaly <em>M</em>:
+                    </li>
                     <li><strong>M = (M0 + cycles × 360°) mod 360°</strong></li>
                     <li>Find the angular distance to the event:
                         <br>* For periapsis: <strong>Δθ = (360° − M) mod 360°</strong>
                         <br>* For apoapsis: <strong>Δθ = (180° − M) mod 360°</strong>
                     </li>
-                    <li>Convert to time: <strong>Δt_event = (Δθ / 360°) × P</strong>. The event date is now + Δt_event.</li>
+                    <li>Convert to time: <strong>Δt_event = (Δθ / 360°) × P</strong>. The event date is now + Δt_event.
+                    </li>
                 </ol>
                 <p *ngIf="apoPeriDialogData.meanAnomaly === undefined">
-                    A next-event estimate requires a recorded mean anomaly and timestamp. If that data is unavailable the
+                    A next-event estimate requires a recorded mean anomaly and timestamp. If that data is unavailable
+                    the
                     application cannot compute the next occurrence.
                 </p>
 
                 <p *ngIf="apoPeriDialogData.currentMeanAnomaly !== undefined">
                     Debug values used in the calculation:<br>
-                    Recorded M0 = {{ apoPeriDialogData.meanAnomaly }}° at {{ apoPeriDialogData.timestamp | date:'yyyy-MM-dd HH:mm' }}<br>
+                    Recorded M0 = {{ apoPeriDialogData.meanAnomaly }}° at {{ apoPeriDialogData.timestamp |
+                    date:'yyyy-MM-dd HH:mm' }}<br>
                     Current mean anomaly M ≈ {{ apoPeriDialogData.currentMeanAnomaly | number:'0.1-1' }}°<br>
                     Angular distance to event Δθ ≈ {{ apoPeriDialogData.degreesToEvent | number:'0.1-1' }}°
                 </p>

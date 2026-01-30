@@ -180,7 +180,7 @@
         </div>
         <div class="bodies">
             <app-system-body *ngFor="let body of bodies; trackBy: trackByBody; last as isLast" [body]="body"
-                [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"></app-system-body>
+                [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3" [edGalaxyData]="edGalaxyData"></app-system-body>
         </div>
             <div class="credits-panel">
                 <div class="credits-title">Credits</div>

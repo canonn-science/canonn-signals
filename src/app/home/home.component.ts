@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject } from 'rxjs';
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { AppService, EdastroData, EdastroSystem, IndependentOutpost, BodyNameOverride } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -27,33 +28,33 @@ import { FormControl } from '@angular/forms';
   ]
 })
 export class HomeComponent implements OnInit, AfterViewInit {
-    public creditsHtml: string = '';
+  public creditsHtml: string = '';
   // In-memory cache for typeahead suggestions
   private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
 
-    private parseCreditsSection(markdown: string): string {
-      // Extract #Credits or ##Credits section (robust)
-      const creditsMatch = markdown.match(/^#{1,2}\s*Credits\s*$([\s\S]*)/m);
-      if (!creditsMatch) {
-        return '';
-      }
-      let creditsText = creditsMatch[1].trim();
-      // Convert markdown links to HTML links
-      creditsText = creditsText.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-      // Convert markdown list to HTML
-      let html = creditsText.replace(/\* (.+)/g, '<li>$1</li>');
-      if (/^<li>/.test(html)) {
-        html = `<ul>${html}</ul>`;
-      }
-      return html;
+  private parseCreditsSection(markdown: string): string {
+    // Extract #Credits or ##Credits section (robust)
+    const creditsMatch = markdown.match(/^#{1,2}\s*Credits\s*$([\s\S]*)/m);
+    if (!creditsMatch) {
+      return '';
     }
+    let creditsText = creditsMatch[1].trim();
+    // Convert markdown links to HTML links
+    creditsText = creditsText.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    // Convert markdown list to HTML
+    let html = creditsText.replace(/\* (.+)/g, '<li>$1</li>');
+    if (/^<li>/.test(html)) {
+      html = `<ul>${html}</ul>`;
+    }
+    return html;
+  }
 
-    private loadCredits(): void {
-      this.httpClient.get('assets/readme.md', { responseType: 'text' }).subscribe(md => {
-        this.creditsHtml = this.parseCreditsSection(md);
-      }, err => {
-      });
-    }
+  private loadCredits(): void {
+    this.httpClient.get('assets/readme.md', { responseType: 'text' }).subscribe(md => {
+      this.creditsHtml = this.parseCreditsSection(md);
+    }, err => {
+    });
+  }
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
     window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=${encodeURIComponent(ident)}`, '_blank');
@@ -94,15 +95,103 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return ident ? ident.replace(/^@/, '') : '';
   }
   public edGalaxyData: any = null;
+  private simbadCache: Map<string|number, any> = new Map();
+  private simbadFileLoaded = false;
+  private simbadFileLoading = false;
+  private simbadFileLoadSubject = new BehaviorSubject<boolean>(false);
 
   fetchEdGalaxyData(systemName: string, id64: number) {
-    const url = `https://edgalaxydata.space/eddn-lookup/systems.php?systemName=${encodeURIComponent(systemName)}&systemId64=${id64}&includeRejected=false&brief=true`;
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        this.edGalaxyData = Array.isArray(data) && data.length > 0 ? data[0] : null;
-      })
-      .catch(() => { this.edGalaxyData = null; });
+    // Try cache first
+    if (this.simbadCache.has(id64)) {
+      this.edGalaxyData = this.simbadCache.get(id64);
+      return;
+    }
+    if (this.simbadCache.has(systemName)) {
+      this.edGalaxyData = this.simbadCache.get(systemName);
+      return;
+    }
+    // If file is already loaded, lookup now
+    if (this.simbadFileLoaded) {
+      this.lookupSimbadData(systemName, id64);
+      return;
+    }
+    // If file is loading, wait for it
+    if (this.simbadFileLoading) {
+      this.simbadFileLoadSubject.subscribe(loaded => {
+        if (loaded) this.lookupSimbadData(systemName, id64);
+      });
+      return;
+    }
+    // Start loading file
+    this.simbadFileLoading = true;
+    this.httpClient.get('assets/simbad-systems.txt', { responseType: 'text' }).subscribe(
+      txt => {
+        const lines = txt.split(/\r?\n/);
+        const header = lines[0].split(/\t/);
+        for (let i = 1; i < lines.length; ++i) {
+          const line = lines[i];
+          if (!line.trim()) continue;
+          const cols = line.split(/\t/);
+          const entry: any = {};
+          for (let j = 0; j < header.length; ++j) {
+            entry[header[j]] = cols[j];
+          }
+          // Cache by SystemAddress and Name and PGName
+          if (entry.SystemAddress) this.simbadCache.set(entry.SystemAddress, entry);
+          if (entry.Name) this.simbadCache.set(entry.Name, entry);
+          if (entry.PGName) this.simbadCache.set(entry.PGName, entry);
+        }
+        this.simbadFileLoaded = true;
+        this.simbadFileLoading = false;
+        this.simbadFileLoadSubject.next(true);
+        this.lookupSimbadData(systemName, id64);
+      },
+      err => {
+        this.simbadFileLoaded = true;
+        this.simbadFileLoading = false;
+        this.simbadFileLoadSubject.next(true);
+        this.edGalaxyData = null;
+      }
+    );
+  }
+
+  private lookupSimbadData(systemName: string, id64: number) {
+    let entry = this.simbadCache.get(id64);
+    if (!entry) entry = this.simbadCache.get(systemName);
+    if (!entry && systemName) {
+      // Try case-insensitive match
+      for (const [key, value] of this.simbadCache.entries()) {
+        if (typeof key === 'string' && key.toLowerCase() === systemName.toLowerCase()) {
+          entry = value;
+          break;
+        }
+      }
+    }
+    if (entry) {
+      // Parse RA/Dec as numbers if present
+      let raj = entry.RA_J2000;
+      let dej = entry.Dec_J2000;
+      if (raj !== undefined && raj !== null && raj !== '') raj = Number(raj);
+      else raj = undefined;
+      if (dej !== undefined && dej !== null && dej !== '') dej = Number(dej);
+      else dej = undefined;
+      // Map to expected structure for display
+      this.edGalaxyData = {
+        PGName: entry.PGName,
+        SystemAddress: entry.SystemAddress,
+        Name: entry.Name,
+        Simbad: (entry.SimbadName || entry.SimbadIdent || raj !== undefined || dej !== undefined) ? {
+          Name: entry.SimbadName,
+          Ident: entry.SimbadIdent,
+          RAJ2000: raj,
+          DEJ2000: dej
+        } : undefined
+      };
+      console.log('[EDGalaxyData] Set from simbad-systems.txt:', this.edGalaxyData);
+    } else {
+      this.edGalaxyData = null;
+      console.log('[EDGalaxyData] No entry found for', systemName, id64);
+    }
   }
 
   ngOnChanges(): void {
@@ -111,9 +200,18 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   updateEdGalaxyData() {
     if (this.data?.system?.name && this.data?.system?.id64) {
-      if (!this.edGalaxyData || this.edGalaxyData.Name !== this.data.system.name || this.edGalaxyData.SystemAddress !== this.data.system.id64) {
+      const cachedName = (this.edGalaxyData?.Name || '').toString().toLowerCase().trim();
+      const currentName = this.data.system.name.toString().toLowerCase().trim();
+      const cachedId = this.edGalaxyData?.SystemAddress?.toString();
+      const currentId = this.data.system.id64?.toString();
+      if (!this.edGalaxyData || cachedName !== currentName || cachedId !== currentId) {
+        console.log('[EDGalaxyData] updateEdGalaxyData: fetching for', this.data.system.name, this.data.system.id64);
         this.fetchEdGalaxyData(this.data.system.name, this.data.system.id64);
+      } else {
+        console.log('[EDGalaxyData] updateEdGalaxyData: using cached', this.edGalaxyData);
       }
+    } else {
+      console.log('[EDGalaxyData] updateEdGalaxyData: missing system name or id64', this.data);
     }
   }
   openSignalsPage(systemName: string) {
@@ -216,7 +314,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   public ngOnInit(): void {
-      this.loadCredits();
+    this.loadCredits();
     this.activatedRoute.queryParams
       .pipe(untilDestroyed(this))
       .subscribe(q => {
@@ -379,6 +477,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     this.data = data;
     this.bodies = [];
+    // Ensure edGalaxyData is updated/fetched when system changes
+    this.updateEdGalaxyData();
 
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {
