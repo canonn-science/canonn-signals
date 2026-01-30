@@ -75,6 +75,20 @@
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
                             tabindex="0" />
                     </a>
+                    <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
+                        target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        <img src="assets/icons/eddn.png" alt="ED Galaxy Data"
+                            title="View on EDDN journals on ED Galaxy Data"
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
+                            tabindex="0" />
+                    </a>
+                    <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
+                        target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.5em;">
+                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="ED Galaxy Data"
+                            title="View on EDDN journals on ED Galaxy Data"
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
+                            tabindex="0" />
+                    </a>
                 </span>
                 <span *ngIf="data.system.population !== null && data.system.population !== undefined"
                     class="population">Population: {{ data.system.population | number }}</span>
@@ -167,9 +181,8 @@
                     <div class="system-data-section" *ngIf="edastroData?.mainImage">
                         <div class="system-data-section-header">Galactic Exploration Catalog</div>
                         <div class="gec-image-panel">
-                            <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image" 
-                                 (error)="onGecImageError($event)" (load)="onGecImageLoad($event)" 
-                                 #gecImage />
+                            <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image"
+                                (error)="onGecImageError($event)" (load)="onGecImageLoad($event)" #gecImage />
                             <div class="gec-description" *ngIf="edastroData?.description">{{
                                 edastroData?.description }}
                             </div>
@@ -180,13 +193,14 @@
         </div>
         <div class="bodies">
             <app-system-body *ngFor="let body of bodies; trackBy: trackByBody; last as isLast" [body]="body"
-                [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3" [edGalaxyData]="edGalaxyData"></app-system-body>
+                [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
+                [edGalaxyData]="edGalaxyData"></app-system-body>
         </div>
-            <div class="credits-panel">
-                <div class="credits-title">Credits</div>
-                <div class="credits-detail">
-                    <div [innerHTML]="creditsHtml"></div>
-                </div>
+        <div class="credits-panel">
+            <div class="credits-title">Credits</div>
+            <div class="credits-detail">
+                <div [innerHTML]="creditsHtml"></div>
             </div>
+        </div>
     </div>
 </div>

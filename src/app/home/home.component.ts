@@ -154,6 +154,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       }
     );
   }
+// End of fetchEdGalaxyData
 
   private lookupSimbadData(systemName: string, id64: number) {
     let entry = this.simbadCache.get(id64);
