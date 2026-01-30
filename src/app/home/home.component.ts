@@ -95,7 +95,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return ident ? ident.replace(/^@/, '') : '';
   }
   public edGalaxyData: any = null;
-  private simbadCache: Map<string|number, any> = new Map();
+  private simbadCache: Map<string | number, any> = new Map();
   private simbadFileLoaded = false;
   private simbadFileLoading = false;
   private simbadFileLoadSubject = new BehaviorSubject<boolean>(false);
@@ -154,7 +154,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       }
     );
   }
-// End of fetchEdGalaxyData
+  // End of fetchEdGalaxyData
 
   private lookupSimbadData(systemName: string, id64: number) {
     let entry = this.simbadCache.get(id64);
@@ -189,6 +189,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
         } : undefined
       };
       console.log('[EDGalaxyData] Set from simbad-systems.txt:', this.edGalaxyData);
+      // Force change detection so Simbad section appears immediately
+      if (typeof (window as any).ng !== 'undefined' && typeof (window as any).ng.getComponent === 'function') {
+        // Angular DevTools present, do nothing
+      } else if ((this as any).cdr && typeof (this as any).cdr.detectChanges === 'function') {
+        (this as any).cdr.detectChanges();
+      }
     } else {
       this.edGalaxyData = null;
       console.log('[EDGalaxyData] No entry found for', systemName, id64);
@@ -319,10 +325,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.activatedRoute.queryParams
       .pipe(untilDestroyed(this))
       .subscribe(q => {
+        // Only trigger search if system is not already loaded
         if (this.searching) {
           return;
         }
-        if (q["system"] && (!this.bodies || this.data?.system.name != q["system"])) {
+        if (q["system"] && (!this.data || this.data.system.name !== q["system"])) {
           this.searchInput = q["system"];
           this.searchControl.setValue(q["system"]);
           this.search();
@@ -464,13 +471,16 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     const queryParams: Params = { system: data.system.name };
 
-    this.router.navigate(
-      [],
-      {
-        relativeTo: this.activatedRoute,
-        queryParams,
-        queryParamsHandling: 'merge', // remove to replace all query params by provided
-      });
+    // Only update query params if not already set
+    if (!this.data || this.data.system.name !== data.system.name) {
+      this.router.navigate(
+        [],
+        {
+          relativeTo: this.activatedRoute,
+          queryParams,
+          queryParamsHandling: 'merge',
+        });
+    }
     this.searchInput = data.system.name;
 
     // Check if we're loading a different system
