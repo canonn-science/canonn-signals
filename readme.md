@@ -48,3 +48,4 @@ The RegionMap is used from https://github.com/klightspeed/EliteDangerousRegionMa
 * CMDR Eahlstan for his consultancy on astronomical matters
 * CMDR Steven Green for supplying the icons for Belts and Rings
 * CMDR LCU No Fool Like One for cloud functions and ongoing enhancements
+* CMDR Sovereign Winter for Neutron Star Cone Angle Research
