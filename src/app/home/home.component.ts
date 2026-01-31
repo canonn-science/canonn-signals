@@ -9,6 +9,7 @@ import { faFileCode } from '@fortawesome/free-solid-svg-icons';
 import { environment } from 'src/environments/environment';
 import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest } from 'rxjs';
 import { FormControl } from '@angular/forms';
+import { ChangeDetectorRef } from '@angular/core';
 
 @UntilDestroy()
 @Component({
@@ -31,6 +32,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
   public creditsHtml: string = '';
   // In-memory cache for typeahead suggestions
   private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
+  constructor(
+    private readonly httpClient: HttpClient,
+    public readonly appService: AppService,
+    private readonly activatedRoute: ActivatedRoute,
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
+  ) {}
 
   private parseCreditsSection(markdown: string): string {
     // Extract #Credits or ##Credits section (robust)
@@ -103,11 +111,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
   fetchEdGalaxyData(systemName: string, id64: number) {
     // Try cache first
     if (this.simbadCache.has(id64)) {
-      this.edGalaxyData = this.simbadCache.get(id64);
+      this.lookupSimbadData(systemName, id64);
       return;
     }
     if (this.simbadCache.has(systemName)) {
-      this.edGalaxyData = this.simbadCache.get(systemName);
+      this.lookupSimbadData(systemName, id64);
       return;
     }
     // If file is already loaded, lookup now
@@ -189,15 +197,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
         } : undefined
       };
       console.log('[EDGalaxyData] Set from simbad-systems.txt:', this.edGalaxyData);
-      // Force change detection so Simbad section appears immediately
-      if (typeof (window as any).ng !== 'undefined' && typeof (window as any).ng.getComponent === 'function') {
-        // Angular DevTools present, do nothing
-      } else if ((this as any).cdr && typeof (this as any).cdr.detectChanges === 'function') {
-        (this as any).cdr.detectChanges();
+      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
+        this.cdr.markForCheck();
       }
     } else {
       this.edGalaxyData = null;
       console.log('[EDGalaxyData] No entry found for', systemName, id64);
+      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
+        this.cdr.markForCheck();
+      }
     }
   }
 
@@ -313,12 +321,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   @ViewChild('gecImage') gecImage?: ElementRef<HTMLImageElement>;
   @ViewChild('gecContainer') gecContainer?: ElementRef<HTMLDivElement>;
 
-  public constructor(private readonly httpClient: HttpClient,
-    private readonly appService: AppService,
-    private readonly router: Router,
-    private readonly activatedRoute: ActivatedRoute
-  ) {
-  }
+  // Removed duplicate constructor
 
   public ngOnInit(): void {
     this.loadCredits();
@@ -448,6 +451,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
             return;
           }
           this.processBodies(data);
+          // Ensure Simbad data is updated after setting this.data
+          this.updateEdGalaxyData();
           this.searching = false;
           this.searchControl.enable();
         },
