@@ -1257,7 +1257,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       text.setAttribute('pointer-events', 'none');
       text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
       text.style.display = 'none';
-      text.textContent = outpost.name;
+      text.textContent = this.decodeHtmlEntities(outpost.name);
 
       // Create background rect for text
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
