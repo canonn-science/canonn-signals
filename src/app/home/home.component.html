@@ -89,6 +89,14 @@
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
                             tabindex="0" />
                     </a>
+                    <a *ngIf="isVoyagerGoldenRecordSystem()"
+                        href="https://science.nasa.gov/mission/voyager/golden-record-cover/" target="_blank"
+                        style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        <img src="assets/icons/Voyager_Golden_Record_fx.png" alt="Voyager Golden Record"
+                            title="This pulsar is featured on the Voyager Golden Record cover"
+                            style="max-height: 1.1em; width: 1.1em; display: block; pointer-events: auto; cursor: pointer;"
+                            tabindex="0" />
+                    </a>
                 </span>
                 <span *ngIf="data.system.population !== null && data.system.population !== undefined"
                     class="population">Population: {{ data.system.population | number }}</span>
@@ -125,7 +133,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="system-data-section" *ngIf="edGalaxyData?.Simbad?.Name || edGalaxyData?.Simbad?.RAJ2000 || edGalaxyData?.Simbad?.DEJ2000">
+                    <div class="system-data-section"
+                        *ngIf="edGalaxyData?.Simbad?.Name || edGalaxyData?.Simbad?.RAJ2000 || edGalaxyData?.Simbad?.DEJ2000">
                         <div class="system-data-section-header">Simbad</div>
                         <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.Name">
                             <div>Name</div>

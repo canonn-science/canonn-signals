@@ -270,6 +270,33 @@ export class HomeComponent implements OnInit, AfterViewInit {
     { name: 'Col 70 Sector FY-N C21-3', coords: { x: 687.0625, y: -362.53125, z: -697.0625 } }
   ];
 
+  // Systems featured on the Voyager Golden Record cover (pulsars used for triangulation)
+  private readonly voyagerGoldenRecordSystems = [
+    'Crab Pulsar',
+    'Vela Pulsar',
+    'PSR J0332+5434',
+    'PSR J0953+0755',
+    'PSR J1136+1551',
+    'PSR J1239+2453',
+    'PSR J1932+1059',
+    'LGM-1',
+    'LGM‑1', // with en-dash
+    'PSR J2018+2839',
+    'PSR J2022+2854',
+    'PSR J2022+5154',
+    'PSR J2048-1616',
+    'PSR J2048−1616', // with minus sign
+    'PSR J1509+5531'
+  ];
+
+  isVoyagerGoldenRecordSystem(): boolean {
+    if (!this.data?.system?.name) return false;
+    const systemName = this.data.system.name;
+    return this.voyagerGoldenRecordSystems.some(name => 
+      name.toLowerCase() === systemName.toLowerCase()
+    );
+  }
+
   getSystemDistances(): { name: string, distance: number }[] {
     if (!this.data?.system?.coords) return [];
     const { x, y, z } = this.data.system.coords;
