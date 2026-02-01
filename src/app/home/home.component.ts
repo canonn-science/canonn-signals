@@ -292,7 +292,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   isVoyagerGoldenRecordSystem(): boolean {
     if (!this.data?.system?.name) return false;
     const systemName = this.data.system.name;
-    return this.voyagerGoldenRecordSystems.some(name => 
+    return this.voyagerGoldenRecordSystems.some(name =>
       name.toLowerCase() === systemName.toLowerCase()
     );
   }

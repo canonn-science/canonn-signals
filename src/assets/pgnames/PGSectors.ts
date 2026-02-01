@@ -330,7 +330,7 @@ export class PGSectors {
 
         const offset = (pos.z << 14) + (pos.y << 7) + pos.x;
         console.log(`[getSectorName] Coords: (${pos.x}, ${pos.y}, ${pos.z}), Offset: ${offset}`);
-        
+
         let sectorname: string;
 
         if (PGSectors.isC1Sector(offset)) {
@@ -477,18 +477,18 @@ export class PGSectors {
 
         const s1s = PGSectors.C2PrefixSuffix2.has(p1Lower) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
         const s2s = PGSectors.C2PrefixSuffix2.has(p2Lower) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
-        
+
         const p1Offset = PGSectors.prefixOffsets.get(p1Lower) || 0;
         const p2Offset = PGSectors.prefixOffsets.get(p2Lower) || 0;
         const s1Index = idx0 - p1Offset;
         const s2Index = idx1 - p2Offset;
-        
+
         console.log(`[getC2Name] Suffix arrays: s1s=${s1s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}, s2s=${s2s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}`);
         console.log(`[getC2Name] Suffix indices: s1Index=${s1Index}, s2Index=${s2Index}`);
 
         const s1 = s1s[s1Index];
         const s2 = s2s[s2Index];
-        
+
         console.log(`[getC2Name] Suffixes: s1="${s1}", s2="${s2}"`);
 
         const result = `${p1}${s1.toLowerCase()} ${p2}${s2.toLowerCase()}`;
