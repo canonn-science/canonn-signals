@@ -125,7 +125,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="system-data-section" *ngIf="edGalaxyData?.Simbad">
+                    <div class="system-data-section" *ngIf="edGalaxyData?.Simbad?.Name || edGalaxyData?.Simbad?.RAJ2000 || edGalaxyData?.Simbad?.DEJ2000">
                         <div class="system-data-section-header">Simbad</div>
                         <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.Name">
                             <div>Name</div>
