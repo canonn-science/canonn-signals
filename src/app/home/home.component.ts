@@ -10,6 +10,7 @@ import { environment } from 'src/environments/environment';
 import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
+import { PGSystem } from 'src/assets/pgnames/PGSystem';
 
 @UntilDestroy()
 @Component({
@@ -29,6 +30,8 @@ import { ChangeDetectorRef } from '@angular/core';
   ]
 })
 export class HomeComponent implements OnInit, AfterViewInit {
+  private lastSimbadSystemName: string | null = null;
+  private lastSimbadId64: number | null = null;
   public creditsHtml: string = '';
   // In-memory cache for typeahead suggestions
   private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
@@ -38,7 +41,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     private readonly activatedRoute: ActivatedRoute,
     private readonly router: Router,
     private readonly cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   private parseCreditsSection(markdown: string): string {
     // Extract #Credits or ##Credits section (robust)
@@ -65,12 +68,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
-    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=${encodeURIComponent(ident)}`, '_blank');
+    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank');
   }
   openSimbadPage(ident: string) {
     if (!ident) return;
     const id = this.formatSimbadId(ident);
-    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=${encodeURIComponent(id)}`, '_blank');
+    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=@${encodeURIComponent(id)}`, '_blank');
   }
 
   // Format RAJ2000 (degrees) to '19h 21m 45.0s' (rounded to 0.1s, padded)
@@ -103,111 +106,118 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return ident ? ident.replace(/^@/, '') : '';
   }
   public edGalaxyData: any = null;
-  private simbadCache: Map<string | number, any> = new Map();
-  private simbadFileLoaded = false;
-  private simbadFileLoading = false;
-  private simbadFileLoadSubject = new BehaviorSubject<boolean>(false);
+  // Simbad cache and file loading logic removed (now using API)
+
+  // Convert id64 to PGName using PGSystem, formatted for Elite Dangerous
+  getPGName(id64: string | number): string {
+    try {
+      // Accept id64 as string or number, always convert via string to preserve precision
+      const id64BigInt = BigInt(typeof id64 === 'string' ? id64 : id64.toString());
+      const pgSystem = PGSystem.fromSystemAddress(id64BigInt);
+
+      // Format with canonical casing:
+      // Region name: title case
+      // System ID: uppercase letters, lowercase mass code
+      const titleCasedRegion = pgSystem.regionName
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+
+      const mid1a = String.fromCharCode('A'.charCodeAt(0) + pgSystem.mid1a);
+      const mid1b = String.fromCharCode('A'.charCodeAt(0) + pgSystem.mid1b);
+      const mid2 = String.fromCharCode('A'.charCodeAt(0) + pgSystem.mid2);
+      const mcode = String.fromCharCode('a'.charCodeAt(0) + pgSystem.sizeClass);
+      const mid3 = Math.trunc(pgSystem.mid3);
+      const seq = Math.trunc(pgSystem.sequence);
+
+      return `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${mid3}-${seq}`;
+    } catch (e) {
+      console.error('[getPGName] Error:', e);
+      return '';
+    }
+  }
 
   fetchEdGalaxyData(systemName: string, id64: number) {
-    // Try cache first
-    if (this.simbadCache.has(id64)) {
-      this.lookupSimbadData(systemName, id64);
+    // Get PGName from id64
+    const pgName = this.getPGName(id64);
+    console.log('[fetchEdGalaxyData] pgName:', pgName);
+    console.log('[fetchEdGalaxyData] systemName:', systemName);
+
+    // Check if system name is a valid PG system name
+    const isPGSystem = PGSystem.isPGSystemName(systemName);
+    console.log('[fetchEdGalaxyData] isPGSystemName result:', isPGSystem);
+
+    // If PGName is the same as system name, skip Simbad API call
+    if (pgName.toLowerCase() === systemName.toLowerCase()) {
+      console.log('[fetchEdGalaxyData] PGName matches system name, skipping Simbad API call');
+      this.edGalaxyData = {
+        PGName: pgName,
+        SystemAddress: id64,
+        Name: systemName,
+        Simbad: undefined
+      };
+      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
+        this.cdr.markForCheck();
+      }
       return;
     }
-    if (this.simbadCache.has(systemName)) {
-      this.lookupSimbadData(systemName, id64);
+
+    // Only call Simbad if the system name is NOT a PG system (hand-authored systems only)
+    if (isPGSystem) {
+      console.log('[fetchEdGalaxyData] PG system detected, skipping Simbad API call');
+      this.edGalaxyData = {
+        PGName: pgName,
+        SystemAddress: id64,
+        Name: systemName,
+        Simbad: undefined
+      };
+      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
+        this.cdr.markForCheck();
+      }
       return;
     }
-    // If file is already loaded, lookup now
-    if (this.simbadFileLoaded) {
-      this.lookupSimbadData(systemName, id64);
-      return;
-    }
-    // If file is loading, wait for it
-    if (this.simbadFileLoading) {
-      this.simbadFileLoadSubject.subscribe(loaded => {
-        if (loaded) this.lookupSimbadData(systemName, id64);
-      });
-      return;
-    }
-    // Start loading file
-    this.simbadFileLoading = true;
-    this.httpClient.get('assets/simbad-systems.txt', { responseType: 'text' }).subscribe(
-      txt => {
-        const lines = txt.split(/\r?\n/);
-        const header = lines[0].split(/\t/);
-        for (let i = 1; i < lines.length; ++i) {
-          const line = lines[i];
-          if (!line.trim()) continue;
-          const cols = line.split(/\t/);
-          const entry: any = {};
-          for (let j = 0; j < header.length; ++j) {
-            entry[header[j]] = cols[j];
-          }
-          // Cache by SystemAddress and Name and PGName
-          if (entry.SystemAddress) this.simbadCache.set(entry.SystemAddress, entry);
-          if (entry.Name) this.simbadCache.set(entry.Name, entry);
-          if (entry.PGName) this.simbadCache.set(entry.PGName, entry);
+
+    console.log('[fetchEdGalaxyData] Hand-authored system, calling Simbad API');
+    // Call the new API for Simbad data
+    const url = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/simbad?system_address=${id64}&name=${encodeURIComponent(systemName)}`;
+    this.httpClient.get<any>(url).subscribe(
+      (result) => {
+        // Remap API response to expected structure for edGalaxyData
+        // API returns: { name, system_address, ra_j2000, dec_j2000, simbad_name, simbad_ident, ... }
+        this.edGalaxyData = {
+          PGName: pgName,
+          SystemAddress: result.system_address,
+          Name: result.name,
+          Simbad: (result.simbad_name || result.simbad_ident || result.ra_j2000 !== undefined || result.dec_j2000 !== undefined) ? {
+            Name: result.simbad_name,
+            Ident: result.simbad_ident,
+            RAJ2000: result.ra_j2000,
+            DEJ2000: result.dec_j2000
+          } : undefined
+        };
+        console.log('[fetchEdGalaxyData] edGalaxyData:', this.edGalaxyData);
+        if (this.cdr && typeof this.cdr.markForCheck === 'function') {
+          this.cdr.markForCheck();
         }
-        this.simbadFileLoaded = true;
-        this.simbadFileLoading = false;
-        this.simbadFileLoadSubject.next(true);
-        this.lookupSimbadData(systemName, id64);
       },
       err => {
-        this.simbadFileLoaded = true;
-        this.simbadFileLoading = false;
-        this.simbadFileLoadSubject.next(true);
-        this.edGalaxyData = null;
+        console.log('[fetchEdGalaxyData] Simbad API error:', err);
+        // Even if Simbad API fails, still populate edGalaxyData with PGName
+        this.edGalaxyData = {
+          PGName: pgName,
+          SystemAddress: id64,
+          Name: systemName,
+          Simbad: undefined
+        };
+        if (this.cdr && typeof this.cdr.markForCheck === 'function') {
+          this.cdr.markForCheck();
+        }
       }
     );
   }
   // End of fetchEdGalaxyData
 
-  private lookupSimbadData(systemName: string, id64: number) {
-    let entry = this.simbadCache.get(id64);
-    if (!entry) entry = this.simbadCache.get(systemName);
-    if (!entry && systemName) {
-      // Try case-insensitive match
-      for (const [key, value] of this.simbadCache.entries()) {
-        if (typeof key === 'string' && key.toLowerCase() === systemName.toLowerCase()) {
-          entry = value;
-          break;
-        }
-      }
-    }
-    if (entry) {
-      // Parse RA/Dec as numbers if present
-      let raj = entry.RA_J2000;
-      let dej = entry.Dec_J2000;
-      if (raj !== undefined && raj !== null && raj !== '') raj = Number(raj);
-      else raj = undefined;
-      if (dej !== undefined && dej !== null && dej !== '') dej = Number(dej);
-      else dej = undefined;
-      // Map to expected structure for display
-      this.edGalaxyData = {
-        PGName: entry.PGName,
-        SystemAddress: entry.SystemAddress,
-        Name: entry.Name,
-        Simbad: (entry.SimbadName || entry.SimbadIdent || raj !== undefined || dej !== undefined) ? {
-          Name: entry.SimbadName,
-          Ident: entry.SimbadIdent,
-          RAJ2000: raj,
-          DEJ2000: dej
-        } : undefined
-      };
-      console.log('[EDGalaxyData] Set from simbad-systems.txt:', this.edGalaxyData);
-      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
-        this.cdr.markForCheck();
-      }
-    } else {
-      this.edGalaxyData = null;
-      console.log('[EDGalaxyData] No entry found for', systemName, id64);
-      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
-        this.cdr.markForCheck();
-      }
-    }
-  }
+  // lookupSimbadData removed: Simbad data is now fetched directly from the API in fetchEdGalaxyData
 
   ngOnChanges(): void {
     this.updateEdGalaxyData();
@@ -215,18 +225,24 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   updateEdGalaxyData() {
     if (this.data?.system?.name && this.data?.system?.id64) {
-      const cachedName = (this.edGalaxyData?.Name || '').toString().toLowerCase().trim();
-      const currentName = this.data.system.name.toString().toLowerCase().trim();
-      const cachedId = this.edGalaxyData?.SystemAddress?.toString();
-      const currentId = this.data.system.id64?.toString();
-      if (!this.edGalaxyData || cachedName !== currentName || cachedId !== currentId) {
-        console.log('[EDGalaxyData] updateEdGalaxyData: fetching for', this.data.system.name, this.data.system.id64);
-        this.fetchEdGalaxyData(this.data.system.name, this.data.system.id64);
+      const currentName = this.data.system.name;
+      const currentId64 = this.data.system.id64;
+      console.log('[updateEdGalaxyData] currentName:', currentName, 'currentId64:', currentId64);
+      if (this.lastSimbadSystemName !== currentName || this.lastSimbadId64 !== currentId64) {
+        // Clear previous data immediately when switching systems
+        this.edGalaxyData = null;
+        if (this.cdr && typeof this.cdr.markForCheck === 'function') {
+          this.cdr.markForCheck();
+        }
+        this.lastSimbadSystemName = currentName;
+        this.lastSimbadId64 = currentId64;
+        console.log('[updateEdGalaxyData] Calling fetchEdGalaxyData');
+        this.fetchEdGalaxyData(currentName, currentId64);
       } else {
-        console.log('[EDGalaxyData] updateEdGalaxyData: using cached', this.edGalaxyData);
+        console.log('[updateEdGalaxyData] Already fetched for this system');
       }
     } else {
-      console.log('[EDGalaxyData] updateEdGalaxyData: missing system name or id64', this.data);
+      console.log('[updateEdGalaxyData] Missing system name or id64');
     }
   }
   openSignalsPage(systemName: string) {
