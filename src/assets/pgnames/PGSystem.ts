@@ -136,7 +136,7 @@ export class PGSystem implements IPGSystem {
      * @returns Formatted sector name
      */
     static formatSectorName(input: string[] | string): string | null {
-        const frags = typeof input === 'string' 
+        const frags = typeof input === 'string'
             ? PGSystem.getSectorFragments(input)
             : input;
 
@@ -357,9 +357,9 @@ export class PGSystem implements IPGSystem {
         );
         const mid = x1 | (y1 << 7) | (z1 << 14);
         const mid1a = mid % 26;
-        const mid1b = Math.floor((mid / 26) % 26);
-        const mid2 = Math.floor((mid / (26 * 26)) % 26);
-        const mid3 = Math.floor(mid / (26 * 26 * 26));
+        const mid1b = Math.trunc(mid / 26) % 26;
+        const mid2 = Math.trunc(mid / (26 * 26)) % 26;
+        const mid3 = Math.trunc(mid / (26 * 26 * 26));
 
         const sys = new PGSystem();
         sys.regionName = regionname;
@@ -385,9 +385,9 @@ export class PGSystem implements IPGSystem {
             new ByteXYZ(x2, y2, z2)
         );
         const mid1a = mid % 26;
-        const mid1b = Math.floor((mid / 26) % 26);
-        const mid2 = Math.floor((mid / (26 * 26)) % 26);
-        const mid3 = Math.floor(mid / (26 * 26 * 26));
+        const mid1b = Math.trunc(mid / 26) % 26;
+        const mid2 = Math.trunc(mid / (26 * 26)) % 26;
+        const mid3 = Math.trunc(mid / (26 * 26 * 26));
 
         const sys = new PGSystem();
         sys.regionName = regionname;

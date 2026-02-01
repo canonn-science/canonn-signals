@@ -18,8 +18,8 @@
                 <mat-icon>search</mat-icon>
             </button>
         </div>
-        <div *ngIf="searchError" class="error-message">
-            <p>{{ searchErrorMessage }}</p>
+        <div *ngIf="searchError" class="error-message" style="min-width: 400px; max-width: 400px;">
+            <p style="white-space: pre-line; margin: 0; text-align: left;">{{ searchErrorMessage }}</p>
         </div>
     </div>
     <div>

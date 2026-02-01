@@ -68,12 +68,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
-    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank');
+    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank');
   }
   openSimbadPage(ident: string) {
     if (!ident) return;
     const id = this.formatSimbadId(ident);
-    window.open(`https://simbad.u-strasbg.fr/simbad/sim-id?Ident=@${encodeURIComponent(id)}`, '_blank');
+    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(id)}`, '_blank');
   }
 
   // Format RAJ2000 (degrees) to '19h 21m 45.0s' (rounded to 0.1s, padded)
@@ -113,7 +113,18 @@ export class HomeComponent implements OnInit, AfterViewInit {
     try {
       // Accept id64 as string or number, always convert via string to preserve precision
       const id64BigInt = BigInt(typeof id64 === 'string' ? id64 : id64.toString());
+      console.log(`[getPGName] Input id64: ${id64BigInt}`);
+
       const pgSystem = PGSystem.fromSystemAddress(id64BigInt);
+      console.log(`[getPGName] PGSystem result:`, {
+        regionName: pgSystem.regionName,
+        mid1a: pgSystem.mid1a,
+        mid1b: pgSystem.mid1b,
+        mid2: pgSystem.mid2,
+        mid3: pgSystem.mid3,
+        sizeClass: pgSystem.sizeClass,
+        sequence: pgSystem.sequence
+      });
 
       // Format with canonical casing:
       // Region name: title case
@@ -130,7 +141,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
       const mid3 = Math.trunc(pgSystem.mid3);
       const seq = Math.trunc(pgSystem.sequence);
 
-      return `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${mid3}-${seq}`;
+      const result = `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${mid3}-${seq}`;
+      console.log(`[getPGName] Final result: "${result}"`);
+      return result;
     } catch (e) {
       console.error('[getPGName] Error:', e);
       return '';
@@ -436,11 +449,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
             if (system && system.id64) {
               this.searchBySystemAddress(system.id64);
             } else {
-              this.searchFailed();
+              this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
             }
           },
           error => {
-            this.searchFailed();
+            this.searchFailed('Typeahead API error: Unable to search for systems. Please try again later.');
           }
         );
     });
@@ -458,12 +471,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
       .subscribe(
         data => {
           if (!data) {
-            this.searchFailed('System not found in database');
+            this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
             return;
           }
           // Check if the response indicates no spansh data or missing system info
           if (!data.system || !data.system.name) {
-            this.searchFailed('No system data available for this address');
+            this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
             return;
           }
           this.processBodies(data);
@@ -476,11 +489,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
           // Check for specific error messages
           const errorMessage = error?.error?.message || error?.message || '';
           if (errorMessage.toLowerCase().includes('no spansh data')) {
-            this.searchFailed('System not found in Spansh database');
+            this.searchFailed('System not found in Spansh database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
           } else if (error.status === 404) {
-            this.searchFailed('System not found');
+            this.searchFailed('System not found.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
           } else {
-            this.searchFailed('Error loading system data. Please try again.');
+            this.searchFailed(`Biostats API error: ${errorMessage || 'Unable to load system data'}. Please try again later.`);
           }
         }
       );

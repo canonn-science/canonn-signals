@@ -329,14 +329,19 @@ export class PGSectors {
         }
 
         const offset = (pos.z << 14) + (pos.y << 7) + pos.x;
+        console.log(`[getSectorName] Coords: (${pos.x}, ${pos.y}, ${pos.z}), Offset: ${offset}`);
+        
         let sectorname: string;
 
         if (PGSectors.isC1Sector(offset)) {
+            console.log(`[getSectorName] Using C1 naming for offset ${offset}`);
             sectorname = PGSectors.getC1Name(offset) || '';
         } else {
+            console.log(`[getSectorName] Using C2 naming for offset ${offset}`);
             sectorname = PGSectors.getC2Name(offset);
         }
 
+        console.log(`[getSectorName] Final sector name: "${sectorname}"`);
         PGSectors.cachedSectorsByCoords.set(key, sectorname);
         return sectorname;
     }
@@ -373,22 +378,24 @@ export class PGSectors {
         let curOffset = offset % PGSectors.prefixTotalRunLength;
 
         let prefix = '';
+        let prefixLower = '';
         for (const p of PGSectors.Prefixes) {
             const pLower = p.toLowerCase();
             if ((PGSectors.prefixOffsets.get(pLower) || 0) <= curOffset) {
-                prefix = pLower;
+                prefix = p;
+                prefixLower = pLower;
             }
         }
 
         frags.push(prefix);
-        curOffset -= PGSectors.prefixOffsets.get(prefix) || 0;
+        curOffset -= PGSectors.prefixOffsets.get(prefixLower) || 0;
 
-        const infix1s2 = PGSectors.C1PrefixInfix2.has(prefix);
+        const infix1s2 = PGSectors.C1PrefixInfix2.has(prefixLower);
         const infix1TotalLen = infix1s2 ? PGSectors.infix2TotalRunLength : PGSectors.infix1TotalRunLength;
         const infix1s = infix1s2 ? PGSectors.Infixes2 : PGSectors.Infixes1;
 
-        const infix1Cnt = Math.floor((prefixCnt * (PGSectors.PrefixRunLengths.get(prefix) || 35) + curOffset) / infix1TotalLen);
-        curOffset = ((prefixCnt * (PGSectors.PrefixRunLengths.get(prefix) || 35) + curOffset) % infix1TotalLen);
+        const infix1Cnt = Math.floor((prefixCnt * (PGSectors.PrefixRunLengths.get(prefixLower) || 35) + curOffset) / infix1TotalLen);
+        curOffset = ((prefixCnt * (PGSectors.PrefixRunLengths.get(prefixLower) || 35) + curOffset) % infix1TotalLen);
 
         let infix1 = '';
         for (const p of infix1s) {
@@ -438,30 +445,55 @@ export class PGSectors {
 
     private static getC2Name(offset: number): string {
         const [idx0, idx1] = PGSectors.deinterleave2(offset);
+        console.log(`[getC2Name] Offset: ${offset}, Deinterleaved: idx0=${idx0}, idx1=${idx1}`);
 
         let p1 = '';
+        let p1Lower = '';
+        console.log(`[getC2Name] Finding prefix 1 for idx0=${idx0}:`);
         for (const p of PGSectors.Prefixes) {
             const pLower = p.toLowerCase();
-            if ((PGSectors.prefixOffsets.get(pLower) || 0) <= idx0) {
-                p1 = pLower;
+            const offset = PGSectors.prefixOffsets.get(pLower) || 0;
+            if (offset <= idx0) {
+                console.log(`  - "${p}" (offset=${offset}) matches`);
+                p1 = p;
+                p1Lower = pLower;
             }
         }
+        console.log(`[getC2Name] Selected p1="${p1}" (lower="${p1Lower}")`);
 
         let p2 = '';
+        let p2Lower = '';
+        console.log(`[getC2Name] Finding prefix 2 for idx1=${idx1}:`);
         for (const p of PGSectors.Prefixes) {
             const pLower = p.toLowerCase();
-            if ((PGSectors.prefixOffsets.get(pLower) || 0) <= idx1) {
-                p2 = pLower;
+            const offset = PGSectors.prefixOffsets.get(pLower) || 0;
+            if (offset <= idx1) {
+                console.log(`  - "${p}" (offset=${offset}) matches`);
+                p2 = p;
+                p2Lower = pLower;
             }
         }
+        console.log(`[getC2Name] Selected p2="${p2}" (lower="${p2Lower}")`);
 
-        const s1s = PGSectors.C2PrefixSuffix2.has(p1) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
-        const s2s = PGSectors.C2PrefixSuffix2.has(p2) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
+        const s1s = PGSectors.C2PrefixSuffix2.has(p1Lower) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
+        const s2s = PGSectors.C2PrefixSuffix2.has(p2Lower) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
+        
+        const p1Offset = PGSectors.prefixOffsets.get(p1Lower) || 0;
+        const p2Offset = PGSectors.prefixOffsets.get(p2Lower) || 0;
+        const s1Index = idx0 - p1Offset;
+        const s2Index = idx1 - p2Offset;
+        
+        console.log(`[getC2Name] Suffix arrays: s1s=${s1s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}, s2s=${s2s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}`);
+        console.log(`[getC2Name] Suffix indices: s1Index=${s1Index}, s2Index=${s2Index}`);
 
-        const s1 = s1s[idx0 - (PGSectors.prefixOffsets.get(p1) || 0)];
-        const s2 = s2s[idx1 - (PGSectors.prefixOffsets.get(p2) || 0)];
+        const s1 = s1s[s1Index];
+        const s2 = s2s[s2Index];
+        
+        console.log(`[getC2Name] Suffixes: s1="${s1}", s2="${s2}"`);
 
-        return `${p1}${s1.toLowerCase()} ${p2}${s2.toLowerCase()}`;
+        const result = `${p1}${s1.toLowerCase()} ${p2}${s2.toLowerCase()}`;
+        console.log(`[getC2Name] Final result: "${result}"`);
+        return result;
     }
 
     private static getSectorFragments(name: string): FragmentInfo[] | null {
@@ -616,44 +648,46 @@ export class PGSectors {
     }
 
     private static interleave2(v1: number, v2: number): number {
-        let x = v1 | (v2 << 32);
-        x = (x | (x << 8)) & 0x00ff00ff00ff00ff;
-        x = (x | (x << 4)) & 0x0f0f0f0f0f0f0f0f;
-        x = (x | (x << 2)) & 0x3333333333333333;
-        x = (x | (x << 1)) & 0x5555555555555555;
-        return ((x | (x >>> 31)) & 0xffffffff) >>> 0;
+        let x = BigInt(v1) | (BigInt(v2) << 32n);
+        x = (x | (x << 8n)) & 0x00ff00ff00ff00ffn;
+        x = (x | (x << 4n)) & 0x0f0f0f0f0f0f0f0fn;
+        x = (x | (x << 2n)) & 0x3333333333333333n;
+        x = (x | (x << 1n)) & 0x5555555555555555n;
+        return Number((x | (x >> 31n)) & 0xffffffffn);
     }
 
     private static deinterleave2(val: number): [number, number] {
-        let x = (val & 0x55555555) | ((val & 0xaaaaaaaa) << 31);
-        x = (x | (x >>> 1)) & 0x3333333333333333;
-        x = (x | (x >>> 2)) & 0x0f0f0f0f0f0f0f0f;
-        x = (x | (x >>> 4)) & 0x00ff00ff00ff00ff;
-        x = (x | (x >>> 8)) & 0x0000ffff0000ffff;
-        return [x & 0xffff, (x >>> 32) & 0xffff];
+        const valBig = BigInt(val);
+        let x = (valBig & 0x55555555n) | ((valBig & 0xaaaaaaaaan) << 31n);
+        x = (x | (x >> 1n)) & 0x3333333333333333n;
+        x = (x | (x >> 2n)) & 0x0f0f0f0f0f0f0f0fn;
+        x = (x | (x >> 4n)) & 0x00ff00ff00ff00ffn;
+        x = (x | (x >> 8n)) & 0x0000ffff0000ffffn;
+        return [Number(x & 0xffffn), Number((x >> 32n) & 0xffffn)];
     }
 
     private static interleave3(val: ByteXYZ): number {
-        let x = ((val.x & 0x7f)) | ((val.y & 0x7f) << 7) | ((val.z & 0x7f) << 14);
-        x = (x | (x << 32)) & 0x001f00000000ffff;
-        x = (x | (x << 16)) & 0x001f0000ff0000ff;
-        x = (x | (x << 8)) & 0x100f00f00f00f00f;
-        x = (x | (x << 4)) & 0x10c30c30c30c30c3;
-        x = (x | (x << 2)) & 0x1249249249249249;
-        return ((x | (x >>> 20) | (x >>> 40)) & 0x1fffff) >>> 0;
+        let x = BigInt((val.x & 0x7f)) | (BigInt(val.y & 0x7f) << 7n) | (BigInt(val.z & 0x7f) << 14n);
+        x = (x | (x << 32n)) & 0x001f00000000ffffn;
+        x = (x | (x << 16n)) & 0x001f0000ff0000ffn;
+        x = (x | (x << 8n)) & 0x100f00f00f00f00fn;
+        x = (x | (x << 4n)) & 0x10c30c30c30c30c3n;
+        x = (x | (x << 2n)) & 0x1249249249249249n;
+        return Number((x | (x >> 20n) | (x >> 40n)) & 0x1fffffn);
     }
 
     private static deinterleave3(val: number): ByteXYZ {
-        let x = (val & 0x49249) | ((val & 0x92492) << 20) | ((val & 0x124924) << 40);
-        x = (x | (x >>> 2)) & 0x10c30c30c30c30c3;
-        x = (x | (x >>> 4)) & 0x100f00f00f00f00f;
-        x = (x | (x >>> 8)) & 0x001f0000ff0000ff;
-        x = (x | (x >>> 16)) & 0x001f00000000ffff;
-        x = (x | (x >>> 32)) & 0x00000000001fffff;
+        const valBig = BigInt(val);
+        let x = (valBig & 0x49249n) | ((valBig & 0x92492n) << 20n) | ((valBig & 0x124924n) << 40n);
+        x = (x | (x >> 2n)) & 0x10c30c30c30c30c3n;
+        x = (x | (x >> 4n)) & 0x100f00f00f00f00fn;
+        x = (x | (x >> 8n)) & 0x001f0000ff0000ffn;
+        x = (x | (x >> 16n)) & 0x001f00000000ffffn;
+        x = (x | (x >> 32n)) & 0x00000000001fffffn;
         return new ByteXYZ(
-            (x & 0x7f) as any,
-            ((x >>> 7) & 0x7f) as any,
-            ((x >>> 14) & 0x7f) as any
+            Number(x & 0x7fn) as any,
+            Number((x >> 7n) & 0x7fn) as any,
+            Number((x >> 14n) & 0x7fn) as any
         );
     }
 }
