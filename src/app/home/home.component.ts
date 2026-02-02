@@ -150,7 +150,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
   }
 
-  fetchEdGalaxyData(systemName: string, id64: number) {
+  fetchEdGalaxyData(systemName: string, id64: number, coords?: { x: number, y: number, z: number }) {
     // Get PGName from id64
     const pgName = this.getPGName(id64);
     console.log('[fetchEdGalaxyData] pgName:', pgName);
@@ -176,7 +176,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
 
     // Only call Simbad if the system name is NOT a PG system (hand-authored systems only)
-    if (isPGSystem) {
+    // Also skip if the system name contains "Sector" (indicates a PG system)
+    if (isPGSystem || systemName.toLowerCase().includes('sector')) {
       console.log('[fetchEdGalaxyData] PG system detected, skipping Simbad API call');
       this.edGalaxyData = {
         PGName: pgName,
@@ -192,7 +193,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     console.log('[fetchEdGalaxyData] Hand-authored system, calling Simbad API');
     // Call the new API for Simbad data
-    const url = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/simbad?system_address=${id64}&name=${encodeURIComponent(systemName)}`;
+    let url = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/simbad?system_address=${id64}&name=${encodeURIComponent(systemName)}`;
+    if (coords) {
+      url += `&x=${coords.x}&y=${coords.y}&z=${coords.z}`;
+    }
     this.httpClient.get<any>(url).subscribe(
       (result) => {
         // Remap API response to expected structure for edGalaxyData
@@ -250,7 +254,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         this.lastSimbadSystemName = currentName;
         this.lastSimbadId64 = currentId64;
         console.log('[updateEdGalaxyData] Calling fetchEdGalaxyData');
-        this.fetchEdGalaxyData(currentName, currentId64);
+        this.fetchEdGalaxyData(currentName, currentId64, this.data?.system?.coords);
       } else {
         console.log('[updateEdGalaxyData] Already fetched for this system');
       }
