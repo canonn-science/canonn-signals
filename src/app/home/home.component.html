@@ -167,6 +167,17 @@
                             <div>{{ dist.distance | number: '1.1-1' }} ly</div>
                         </div>
                     </div>
+
+                    <div class="system-data-section" *ngIf="getNearestOutposts().length">
+                        <div class="system-data-section-header">Nearest DSSA</div>
+                        <div class="system-data-entry" *ngFor="let outpost of getNearestOutposts()">
+                            <div class="distance-system-link" (click)="openSignalsPage(outpost.systemName)"
+                                title="{{ outpost.systemName }}">
+                                {{ outpost.name }}
+                            </div>
+                            <div>{{ outpost.distance | number: '1.1-1' }} ly</div>
+                        </div>
+                    </div>
                     <div class="system-data-section"
                         *ngIf="data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length">
                         <div class="system-data-section-header">Signals</div>

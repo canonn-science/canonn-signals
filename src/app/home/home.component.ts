@@ -316,6 +316,22 @@ export class HomeComponent implements OnInit, AfterViewInit {
       })
       .sort((a, b) => a.distance - b.distance);
   }
+
+  getNearestOutposts(): { name: string, systemName: string, distance: number }[] {
+    if (!this.data?.system?.coords || !this.independentOutposts?.length) return [];
+    const { x, y, z } = this.data.system.coords;
+    return this.independentOutposts
+      .map(outpost => {
+        const [ox, oy, oz] = outpost.coordinates;
+        const dx = x - ox;
+        const dy = y - oy;
+        const dz = z - oz;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        return { name: this.decodeHtmlEntities(outpost.name), systemName: outpost.galMapSearch, distance: dist };
+      })
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3);
+  }
   copyCoordinatesToClipboard(separator?: 'comma' | 'tab' | 'pipe', event?: MouseEvent) {
     if (event) {
       event.preventDefault();
