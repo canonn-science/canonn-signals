@@ -707,7 +707,7 @@
     <div class="system-body-end"></div>
     <div class="child-bodies">
         <app-system-body *ngFor="let body of body.subBodies; trackBy: trackByBody; last as isLast" [body]="body"
-            [isLast]="isLast" [forceExpanded]="forceExpanded"></app-system-body>
+            [isLast]="isLast" [forceExpanded]="forceExpanded" [edGalaxyData]="edGalaxyData"></app-system-body>
     </div>
 </div>
 
@@ -983,7 +983,15 @@
 
 <ng-template #jsonDialogTemplate>
     <div class="json-dialog">
-        <h2 mat-dialog-title #jsonDialogTitle tabindex="-1">Body JSON Data</h2>
+        <h2 mat-dialog-title #jsonDialogTitle tabindex="-1">
+            Body JSON Data
+            <a class="edgalaxy-link"
+                [href]="'https://edgalaxydata.space/eddn-lookup/bodies.php?systemName=' + encodeURIComponent((edGalaxyData?.Name || body.bodyData.name)) + '&systemId64=' + (edGalaxyData?.SystemAddress || body.bodyData.id64) + '&bodyId=' + getEdGalaxyBodyId(body)"
+                title="Click to find journals in EDGalaxyData" target="_blank" rel="noopener noreferrer">
+                <img src="assets/icons/eddn.png" alt="EDDN" />
+                <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON" />
+            </a>
+        </h2>
         <mat-dialog-content class="json-dialog-content">
             <pre>{{ getFormattedBodyJson() }}</pre>
         </mat-dialog-content>

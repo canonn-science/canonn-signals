@@ -127,6 +127,27 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     return this.appService.getBodyDisplayName(bodyName);
   }
 
+  public encodeURIComponent(value: any): string {
+    try {
+      return encodeURIComponent(value ?? '');
+    } catch (e) {
+      return '';
+    }
+  }
+
+  public getEdGalaxyBodyId(b: SystemBody): number {
+    if (!b || !b.bodyData) { return -1; }
+    const bid = typeof b.bodyData.bodyId === 'number' ? b.bodyData.bodyId : -1;
+    if (bid && bid > -1) {
+      return bid;
+    }
+    // Fallback to parent's bodyId if available (useful for rings/belts)
+    if (b.parent && b.parent.bodyData && typeof b.parent.bodyData.bodyId === 'number' && b.parent.bodyData.bodyId > -1) {
+      return b.parent.bodyData.bodyId;
+    }
+    return bid;
+  }
+
   public ngOnInit(): void {
     this.appService.codexEntries
       .pipe(untilDestroyed(this))
