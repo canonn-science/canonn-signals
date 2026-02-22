@@ -337,8 +337,8 @@
                             <div>
                                 Axial tilt
                             </div>
-                            <div [matTooltip]="body.bodyData.axialTilt + '°'">
-                                {{ body.bodyData.axialTilt | number:'0.2-2' }}°
+                            <div [matTooltip]="radToDeg(body.bodyData.axialTilt) + '°'">
+                                {{ radToDeg(body.bodyData.axialTilt) | number:'0.2-2' }}°
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.age" class="body-data-entry">

@@ -462,6 +462,11 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     };
   }
 
+  public radToDeg(value: number | null | undefined): number | null {
+    if (value === null || value === undefined) return null;
+    return value * 180 / Math.PI;
+  }
+
   public isRingNotVisible(): boolean {
     if (this.body.bodyData.type !== 'Ring') {
       return false;
