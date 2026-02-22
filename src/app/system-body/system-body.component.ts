@@ -1029,19 +1029,23 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public isActualShepherd(): boolean {
     const hillData = this.calculateShepherdingHillLimit();
     if (!hillData) return false;
-    // Only true shepherd if status is 'shepherd' (Hill sphere close to ring edge)
-    // Use same logic as in showShepherdingHillLimitChart
+    // Do not consider bodies inside rings as shepherds
     if (hillData.withinRings) return false;
-    if (hillData.isFirstOutside) {
-      const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
-      const ringSystemWidth = hillData.outermostRingRadius - hillData.parentRadius;
-      const influenceDistance = hillData.outermostRingRadius + (ringSystemWidth * 0.2);
-      if (hillInnerEdge <= influenceDistance) {
-        return true;
-      }
-    }
-    return false;
+
+    // Only consider bodies that are the first body outside the rings
+    if (!hillData.isFirstOutside) return false;
+
+    // Inner edge of the Hill sphere
+    const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
+
+    // Require the Hill sphere to actually reach (or slightly overlap) the outermost ring edge.
+    // Allow a small tolerance (5% of ring width or 1 km minimum) to avoid floating-point edge cases.
+    const ringWidth = Math.max(0, hillData.outermostRingRadius - hillData.parentRadius);
+    const tolerance = Math.max(1, ringWidth * 0.05);
+
+    return hillInnerEdge <= (hillData.outermostRingRadius + tolerance);
   }
+
 
   // Orbital mechanics helper: Convert Keplerian elements to 3D Cartesian position
   private orbitalElementsToCartesian(
@@ -1637,9 +1641,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     } else if (hillData.isFirstOutside) {
       // Calculate Hill sphere proximity
       const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
-      const ringSystemWidth = hillData.outermostRingRadius - hillData.parentRadius;
-      const influenceDistance = hillData.outermostRingRadius + (ringSystemWidth * 0.2);
-      if (hillInnerEdge <= influenceDistance) {
+
+      // Require the Hill sphere to actually reach (or slightly overlap) the outermost ring edge.
+      // Use the same tolerance as `isActualShepherd()` (5% of ring width or minimum 1 km).
+      const ringWidth = Math.max(0, hillData.outermostRingRadius - hillData.parentRadius);
+      const tolerance = Math.max(1, ringWidth * 0.05);
+
+      if (hillInnerEdge <= (hillData.outermostRingRadius + tolerance)) {
         shepherdStatus = 'shepherd';
       }
     }
