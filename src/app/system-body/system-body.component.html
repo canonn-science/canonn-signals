@@ -421,7 +421,7 @@
 
                 <!-- Atmosphere & Environment Section -->
                 <ng-container
-                    *ngIf="body.bodyData.surfaceTemperature != null || body.bodyData.surfacePressure != null || body.bodyData.volcanismType">
+                    *ngIf="(body.bodyData.surfaceTemperature != null && body.bodyData.surfaceTemperature !== 0) || (body.bodyData.surfacePressure != null && body.bodyData.surfacePressure !== 0) || body.bodyData.volcanismType">
                     <div class="body-data-section">
                         <div class="body-data-section-header">Atmosphere & Environment</div>
                         <div *ngIf="body.bodyData.surfaceTemperature" class="body-data-entry">
