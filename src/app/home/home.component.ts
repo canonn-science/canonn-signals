@@ -290,7 +290,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
     'PSR J2022+5154',
     'PSR J2048-1616',
     'PSR J2048−1616', // with minus sign
-    'PSR J1509+5531'
+    'PSR J1509+5531',
+    'PSR J1456-6843'
   ];
 
   isVoyagerGoldenRecordSystem(): boolean {
