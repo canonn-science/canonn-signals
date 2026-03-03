@@ -276,23 +276,23 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   // Systems featured on the Voyager Golden Record cover (pulsars used for triangulation)
   private readonly voyagerGoldenRecordSystems = [
-    'Crab Pulsar',
-    'Vela Pulsar',
-    'PSR J0332+5434',
-    'PSR J0953+0755',
-    'PSR J1136+1551',
-    'PSR J1239+2453',
-    'PSR J1932+1059',
-    'LGM-1',
-    'LGM‑1', // with en-dash
-    'PSR J2018+2839',
-    'PSR J2022+2854',
-    'PSR J2022+5154',
-    'PSR J2048-1616',
-    'PSR J2048−1616', // with minus sign
-    'PSR J1509+5531',
-    'PSR J1456-6843'
+    'PSR J1935+1616', // in elite
+    'PSR J1932+1059', //in elite
+    'PSR J1645-0317', // not in spansh, closest is J1643-1224 at ~40ly
+    'PSR J1731-4744', // not in spansh, closest is J1730-3350 at ~50ly
+    'PSR J1456-6843', //in elite
+    'PSR J1243-6423', //in elite
+    'Vela Pulsar', //J0835-4510
+    'PSR J0953+0755',// in elite
+    'PSR J0826+2637',// in elite
+    'Crab Pulsar', //J0534+2200
+    'PSR J0528+2200', // not in spansh, closest is J0528-2505 at ~50ly
+    'PSR J0332+5434', //in  elite
+    'PSR J2219+4754', // not in spansh, closest is J2225+6535 at ~30ly
+    'PSR J2018+2839' // in elite
   ];
+
+
 
   isVoyagerGoldenRecordSystem(): boolean {
     if (!this.data?.system?.name) return false;
