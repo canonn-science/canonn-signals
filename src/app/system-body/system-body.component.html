@@ -32,6 +32,7 @@
                 class="badge badge-blue">Odyssey</span>
             <span *ngIf="body.bodyData.terraformingState == 'Terraformable'"
                 class="badge badge-gray">Terraformable</span>
+            <span *ngIf="trojanHostStatus" class="badge badge-blue" matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points">Host</span>
             <span *ngIf="trojanStatus" class="badge badge-blue" [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{
                 trojanStatus }}</span>
             <span *ngIf="rosetteStatus" class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{

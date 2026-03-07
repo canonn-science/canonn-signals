@@ -2358,6 +2358,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public trojanStatus: string | null = null;
+  public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
   private cachedNextPeriapsis: { date: Date, days: number } | null = null;
   private cachedNextApoapsis: { date: Date, days: number } | null = null;
@@ -2366,6 +2367,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   private detectTrojanStatus(): void {
     this.trojanStatus = null;
+    this.trojanHostStatus = false;
 
     if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis ||
       this.body.bodyData.argOfPeriapsis === undefined) {
@@ -2380,12 +2382,30 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       sibling.bodyData.argOfPeriapsis !== undefined
     );
 
+    // If this body has co-orbital neighbours at both +60° and −60°, it is the host planet
+    // of the Trojan pair (the "massive" reference body). It should not itself be labelled
+    // as a Trojan, so bail out early.
+    let hasLeadingTrojan = false;
+    let hasTrailingTrojan = false;
+    for (const sibling of sameSMABodies) {
+      const diff = ((sibling.bodyData.argOfPeriapsis! - this.body.bodyData.argOfPeriapsis! + 540) % 360) - 180;
+      if (Math.abs(diff - 60) < 1) hasLeadingTrojan = true;
+      if (Math.abs(diff + 60) < 1) hasTrailingTrojan = true;
+    }
+    if (hasLeadingTrojan && hasTrailingTrojan) {
+      this.trojanHostStatus = true; // This body has Trojans at both L4 and L5 — it is the host, not a Trojan itself.
+      return;
+    }
+
     for (const sibling of sameSMABodies) {
       const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
       const normalizedDiff = Math.min(argDiff, 360 - argDiff);
 
       if (Math.abs(normalizedDiff - 60) < 1) {
-        this.trojanStatus = this.body.bodyData.argOfPeriapsis! > sibling.bodyData.argOfPeriapsis! ? 'L4' : 'L5';
+        // Use a signed angular difference (normalised to [−180, 180]) so that wrap-around
+        // values such as 300° vs 0° are handled correctly.
+        const relativePos = ((this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis! + 540) % 360) - 180;
+        this.trojanStatus = relativePos > 0 ? 'L4' : 'L5';
         return;
       } else if (Math.abs(normalizedDiff - 180) < 1) {
         this.trojanStatus = 'L3';
