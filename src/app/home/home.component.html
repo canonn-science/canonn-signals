@@ -217,7 +217,14 @@
                 [edGalaxyData]="edGalaxyData"></app-system-body>
         </div>
         <div class="credits-panel">
-            <div class="credits-title">Credits</div>
+            <div class="credits-title">
+                <span class="credits-title-text">Credits</span>
+
+                <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank"
+                    rel="noopener noreferrer" aria-label="Donate via PayPal (fallback)">
+                    <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
+                </a>
+            </div>
             <div class="credits-detail">
                 <div [innerHTML]="creditsHtml"></div>
             </div>
