@@ -515,7 +515,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private searchBySystemAddress(systemAddress: number): void {
-    this.httpClient.get<CanonnBiostats>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=${systemAddress}`)
+    this.httpClient.get<CanonnBiostats>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=${systemAddress}&caller=Signals`)
       .subscribe(
         data => {
           if (!data) {
