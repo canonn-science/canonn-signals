@@ -2249,23 +2249,25 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     const days = this.body.bodyData.rotationalPeriod;
     if (!days) return '';
 
-    const seconds = days * 86400;
+    const absDays = Math.abs(days);
+    const seconds = absDays * 86400;
     const minutes = seconds / 60;
     const hours = minutes / 60;
-    const weeks = days / 7;
-    const years = days / 365.25;
+    const weeks = absDays / 7;
+    const years = absDays / 365.25;
     const decades = years / 10;
     const centuries = years / 100;
+    const sign = days < 0 ? '-' : '';
 
-    if (seconds < 1) return `${(seconds * 1000).toFixed(2)} ms`;
-    if (seconds < 60) return `${seconds.toFixed(2)} s`;
-    if (minutes < 60) return `${minutes.toFixed(2)} min`;
-    if (hours < 24) return `${hours.toFixed(2)} h`;
-    if (days < 7) return `${days.toFixed(2)} days`;
-    if (weeks < 52) return `${weeks.toFixed(2)} weeks`;
-    if (years < 10) return `${years.toFixed(2)} years`;
-    if (decades < 10) return `${decades.toFixed(2)} decades`;
-    return `${centuries.toFixed(2)} centuries`;
+    if (seconds < 1) return `${sign}${(seconds * 1000).toFixed(2)} ms`;
+    if (seconds < 60) return `${sign}${seconds.toFixed(2)} s`;
+    if (minutes < 60) return `${sign}${minutes.toFixed(2)} min`;
+    if (hours < 24) return `${sign}${hours.toFixed(2)} h`;
+    if (absDays < 7) return `${sign}${absDays.toFixed(2)} days`;
+    if (weeks < 52) return `${sign}${weeks.toFixed(2)} weeks`;
+    if (years < 10) return `${sign}${years.toFixed(2)} years`;
+    if (decades < 10) return `${sign}${decades.toFixed(2)} decades`;
+    return `${sign}${centuries.toFixed(2)} centuries`;
   }
 
   public classifyNeutronStar(): string | null {
