@@ -2245,10 +2245,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
         this.body.bodyData.subType === 'Neutron Star');
   }
 
-  public getRotationalPeriodDisplay(): string {
-    const days = this.body.bodyData.rotationalPeriod;
-    if (!days) return '';
-
+  private formatPeriodDays(days: number): string {
     const absDays = Math.abs(days);
     const seconds = absDays * 86400;
     const minutes = seconds / 60;
@@ -2268,6 +2265,18 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     if (years < 10) return `${sign}${years.toFixed(2)} years`;
     if (decades < 10) return `${sign}${decades.toFixed(2)} decades`;
     return `${sign}${centuries.toFixed(2)} centuries`;
+  }
+
+  public getRotationalPeriodDisplay(): string {
+    const days = this.body.bodyData.rotationalPeriod;
+    if (!days) return '';
+    return this.formatPeriodDays(days);
+  }
+
+  public getOrbitalPeriodDisplay(): string {
+    const days = this.body.bodyData.orbitalPeriod;
+    if (!days) return '';
+    return this.formatPeriodDays(days);
   }
 
   public classifyNeutronStar(): string | null {

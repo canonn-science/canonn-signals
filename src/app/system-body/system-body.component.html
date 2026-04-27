@@ -115,7 +115,7 @@
                                 Orbital period
                             </div>
                             <div [matTooltip]="body.bodyData.orbitalPeriod + ' days'">
-                                {{ body.bodyData.orbitalPeriod | number:'0.2-2' }} days
+                                {{ getOrbitalPeriodDisplay() }}
                             </div>
                         </div>
                         <div *ngIf="body.bodyData.semiMajorAxis" class="body-data-entry">
