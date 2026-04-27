@@ -41,10 +41,10 @@
                 [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
                 <img src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
             </span>
-            <div *ngIf="geologySignals.length || geologySignalCount" matTooltip="Geological signals">
+            <div *ngIf="(geologySignals.length || geologySignalCount) && body.bodyData.type !== 'Star'" matTooltip="Geological signals">
                 <img src="assets/icons/Geology.png" />
             </div>
-            <div *ngIf="biologySignals.length || biologySignalCount" matTooltip="Biological signals">
+            <div *ngIf="(biologySignals.length || biologySignalCount) && body.bodyData.type !== 'Star'" matTooltip="Biological signals">
                 <img src="assets/icons/Biology.png" />
             </div>
             <div *ngIf="thargoidSignals.length || thargoidSignalCount" matTooltip="Thargoid signals">
@@ -578,7 +578,7 @@
                 </ng-container>
 
                 <!-- Geology Section -->
-                <ng-container *ngIf="geologySignals.length || geologySignalCount">
+                <ng-container *ngIf="(geologySignals.length || geologySignalCount) && body.bodyData.type !== 'Star'">
                     <div class="body-data-section">
                         <div class="body-data-section-header">
                             Geology
@@ -606,7 +606,7 @@
                 </ng-container>
 
                 <!-- Biology Section -->
-                <ng-container *ngIf="biologySignals.length || biologySignalCount">
+                <ng-container *ngIf="(biologySignals.length || biologySignalCount) && body.bodyData.type !== 'Star'">
                     <div class="body-data-section">
                         <div class="body-data-section-header">
                             Biology
