@@ -2178,7 +2178,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public getSpinResonanceTooltip(): string {
     const resonance = this.getSpinResonance();
     if (resonance === 'none' && this.body.bodyData.rotationalPeriodTidallyLocked) {
-      return 'Rotational Period Tidally Locked';
+      return 'Tidally Locked not in a simple resonance';
     }
     if (resonance === '1:1' && this.body.bodyData.rotationalPeriodTidallyLocked) {
       if (this.body.parent?.bodyData.type === 'Star') {
