@@ -2938,13 +2938,20 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       orbitalPeriod: orb,
       difference,
       solarDay,
-      resonance
+      resonance,
+      tidallyLocked: !!this.body.bodyData.rotationalPeriodTidallyLocked
     };
-    this.dialog.open(this.tidalLockDialogTemplate, {
+    const dialogRef = this.dialog.open(this.tidalLockDialogTemplate, {
       width: '600px',
       maxWidth: '90vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop'
+    });
+    dialogRef.afterOpened().subscribe(() => {
+      setTimeout(() => {
+        const container = document.querySelector('.tidal-lock-dialog .mat-mdc-dialog-content, .tidal-lock-dialog mat-dialog-content');
+        if (container) container.scrollTop = 0;
+      });
     });
   }
 

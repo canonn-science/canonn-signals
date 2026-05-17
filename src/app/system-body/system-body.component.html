@@ -1054,21 +1054,29 @@
         <h2 mat-dialog-title>Tidal Locking & Synchronous Rotation</h2>
         <mat-dialog-content>
             <p class="intro">
-                This body is <strong>tidally locked</strong>
-                <ng-container
-                    *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'; else noResonance">
-                    with a spin resonance of <strong>{{ tidalLockDialogData.resonance }}</strong>.
+                <ng-container *ngIf="tidalLockDialogData.tidallyLocked; else notLocked">
+                    This body is <strong>tidally locked</strong>
+                    <ng-container
+                        *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'; else noResonance">
+                        with a spin resonance of <strong>{{ tidalLockDialogData.resonance }}</strong>.
+                    </ng-container>
+                    <ng-template #noResonance>
+                        without any detected spin resonance.
+                    </ng-template>
                 </ng-container>
-                <ng-template #noResonance>
-                    without any spin resonance.
+                <ng-template #notLocked>
+                    This body is <strong>not flagged as tidally locked</strong> by the game journal,
+                    <ng-container *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'">
+                        but it is in a <strong>{{ tidalLockDialogData.resonance }}</strong> spin–orbit resonance.
+                        This means its rotation rate is synchronised with its orbit in a stable ratio,
+                        which is itself a form of tidal evolution — even if the game does not set the tidal lock flag.
+                    </ng-container>
                 </ng-template>
             </p>
             <ul>
                 <li><strong>Rotational period:</strong> {{ tidalLockDialogData.rotationalPeriod | number:'0.2-2' }} days
                 </li>
                 <li><strong>Orbital period:</strong> {{ tidalLockDialogData.orbitalPeriod | number:'0.2-2' }} days</li>
-                <li *ngIf="tidalLockDialogData.solarDay !== null"><strong>Solar day:</strong> {{
-                    tidalLockDialogData.solarDay | number:'0.2-2' }} days</li>
                 <li *ngIf="tidalLockDialogData.difference !== null"><strong>Difference:</strong> {{
                     tidalLockDialogData.difference | number:'0.4-4' }} days</li>
                 <li *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'"><strong>Spin-orbit
