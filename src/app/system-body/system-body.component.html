@@ -32,7 +32,8 @@
                 class="badge badge-blue">Odyssey</span>
             <span *ngIf="body.bodyData.terraformingState == 'Terraformable'"
                 class="badge badge-gray">Terraformable</span>
-            <span *ngIf="trojanHostStatus" class="badge badge-blue" matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points">Host</span>
+            <span *ngIf="trojanHostStatus" class="badge badge-blue"
+                matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points">Host</span>
             <span *ngIf="trojanStatus" class="badge badge-blue" [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{
                 trojanStatus }}</span>
             <span *ngIf="rosetteStatus" class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{
@@ -41,10 +42,12 @@
                 [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
                 <img src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
             </span>
-            <div *ngIf="(geologySignals.length || geologySignalCount) && body.bodyData.type !== 'Star'" matTooltip="Geological signals">
+            <div *ngIf="(geologySignals.length || geologySignalCount) && body.bodyData.type !== 'Star'"
+                matTooltip="Geological signals">
                 <img src="assets/icons/Geology.png" />
             </div>
-            <div *ngIf="(biologySignals.length || biologySignalCount) && body.bodyData.type !== 'Star'" matTooltip="Biological signals">
+            <div *ngIf="(biologySignals.length || biologySignalCount) && body.bodyData.type !== 'Star'"
+                matTooltip="Biological signals">
                 <img src="assets/icons/Biology.png" />
             </div>
             <div *ngIf="thargoidSignals.length || thargoidSignalCount" matTooltip="Thargoid signals">
@@ -1050,27 +1053,16 @@
     <div class="tidal-lock-dialog">
         <h2 mat-dialog-title>Tidal Locking & Synchronous Rotation</h2>
         <mat-dialog-content>
-            <ng-container
-                *ngIf="tidalLockDialogData.resonance === '1:1' && tidalLockDialogData.solarDay !== null && abs(tidalLockDialogData.solarDay) > 1000; else notLocked">
-                <p class="intro">
-                    This body is <strong>synchronous</strong> (tidally locked): its rotational period matches its
-                    orbital period, so the same face always points toward its parent body.
-                </p>
-            </ng-container>
-            <ng-template #notLocked>
-                <p class="intro">
-                    This body is <strong>not tidally locked</strong>.
-                    <span *ngIf="tidalLockDialogData.resonance !== '1:1' && tidalLockDialogData.resonance !== 'none'">
-                        It is in a <strong>{{ tidalLockDialogData.resonance }}</strong> spin resonance, meaning it
-                        rotates {{ tidalLockDialogData.resonance.split(':')[0] }} times for every {{
-                        tidalLockDialogData.resonance.split(':')[1] }} orbits.
-                    </span>
-                    <span *ngIf="tidalLockDialogData.solarDay !== null && abs(tidalLockDialogData.solarDay) < 1000">
-                        The solar day (the time between successive sunrises) is {{ tidalLockDialogData.solarDay |
-                        number:'0.2-2' }} days, so the same face does not always point at the parent body.
-                    </span>
-                </p>
-            </ng-template>
+            <p class="intro">
+                This body is <strong>tidally locked</strong>
+                <ng-container
+                    *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'; else noResonance">
+                    with a spin resonance of <strong>{{ tidalLockDialogData.resonance }}</strong>.
+                </ng-container>
+                <ng-template #noResonance>
+                    without any spin resonance.
+                </ng-template>
+            </p>
             <ul>
                 <li><strong>Rotational period:</strong> {{ tidalLockDialogData.rotationalPeriod | number:'0.2-2' }} days
                 </li>
@@ -1079,31 +1071,54 @@
                     tidalLockDialogData.solarDay | number:'0.2-2' }} days</li>
                 <li *ngIf="tidalLockDialogData.difference !== null"><strong>Difference:</strong> {{
                     tidalLockDialogData.difference | number:'0.4-4' }} days</li>
-                <li *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'"><strong>Spin
+                <li *ngIf="tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none'"><strong>Spin-orbit
                         resonance:</strong> {{ tidalLockDialogData.resonance }}</li>
             </ul>
-            <p class="disclaimer" style="color: #b8860b; font-style: italic; margin-bottom: 0.5em;">
-                <strong>Disclaimer:</strong> This tidal locking analysis feature is still being refined. It is currently
-                unclear why the game journal sets the tidal locking flag for some bodies that are not truly tidally
-                locked. The analysis here may differ from the in-game flag.
-            </p>
             <p class="explanation">
-                <strong>How is this determined?</strong><br>
-                <u>Sidereal day:</u> The sidereal day is the time it takes for a body to rotate once relative to the
-                distant stars. This is equal to the rotational period shown above.<br>
-                <u>Solar day:</u> The solar day is the time between successive sunrises for an observer on the surface.
-                It is calculated as:
-                <br>
-                <code>solarDay = 1 / |1/rotationalPeriod - 1/orbitalPeriod|</code>
-                <br>
-                If the rotational and orbital periods are exactly equal (1:1 resonance), the solar day is infinite—the
-                sun never moves in the sky, and the same face always points at the parent body.<br>
-                If the resonance is not 1:1 or the solar day is short, the body is not tidally locked, even if the game
-                says so.<br>
-                <u>Axial tilt:</u> Even on a tidally locked world, if the planet has a significant axial tilt, some
-                regions may experience a day/night cycle as the star appears to move north and south in the sky over the
-                course of an orbit. This can create areas with periodic sunlight and darkness despite tidal locking.
+                <strong>What is tidal locking?</strong><br>
+                The tidal lock indicator is often misinterpreted. It does not always mean that the body faces the same
+                direction relative to its parent body like the Moon faces the Earth. That is just a special
+                case.<br><br>
+                Tidal locking is the process by which tidal forces alter the rotation of a body until it reaches a
+                long-term rotational equilibrium with its orbit. A body is considered tidally locked when its average
+                rotational evolution has stabilised and the net tidal torque over an orbit is effectively zero
+                (<em>dω/dt ≈ 0</em>).<br><br>
+                <em>ω (omega)</em> means rotational speed — how fast the body spins.<br>
+                <em>dω/dt</em> means "how the spin rate changes over time."<br><br>
+                This equilibrium may occur in several forms depending on orbital eccentricity and axial tilt.
             </p>
+            <p><strong>Special cases include:</strong></p>
+            <ul>
+                <li>
+                    <strong>Synchronous rotation (1:1 resonance)</strong><br>
+                    The rotation period equals the orbital period and the same hemisphere always faces the parent body.
+                    Example: Earth's Moon.
+
+                    However, axial tilt can result in some surface seasonality over the course of an orbit.
+                </li>
+                <li>
+                    <strong>Higher-order spin–orbit resonances</strong><br>
+                    The body rotates in a stable ratio other than 1:1. Example: Mercury's 3:2 resonance, where it
+                    rotates three times every two orbits.
+                </li>
+                <li>
+                    <strong>Pseudo-synchronous rotation</strong><br>
+                    In an elongated (eccentric) orbit, a body moves faster when closer to its parent and slower when
+                    farther away. Because of this changing orbital speed, tides may settle the body into a stable
+                    rotation rate that is slightly faster than one full rotation per orbit. The body does not keep the
+                    same face pointed at its parent at all times, but over the course of an orbit the torques average to
+                    zero over an orbit, even though instantaneous torque varies.
+                </li>
+            </ul>
+            <p class="disclaimer" style="color: #b8860b; font-style: italic; margin-bottom: 0.5em;">
+                <strong>Disclaimer:</strong> The journal data does not have enough precision to record changes in
+                rotational period over time.
+            </p>
+            <p><strong>Further reading:</strong></p>
+            <ul>
+                <li><a href="https://astro4edu.org/resources/glossary/term/484/" target="_blank" rel="noopener noreferrer">Tidal locking — astro4edu glossary</a></li>
+                <li><a href="https://arxiv.org/pdf/1101.2156.pdf" target="_blank" rel="noopener noreferrer">Tidal evolution of close-in extra-solar planets (Ferraz-Mello et al., 2011) — arXiv</a></li>
+            </ul>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>
