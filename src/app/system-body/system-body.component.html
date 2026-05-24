@@ -16,8 +16,8 @@
             <span *ngIf="isActualShepherd()" class="badge badge-blue clickable"
                 [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
                 (click)="showShepherdingHillLimitChart()">Shepherd</span>
-            <span *ngIf="body.bodyData.isLandable" [class]="'badge ' + getLandableBadgeClass()"
-                [matTooltip]="getLandableTooltip()">
+            <span *ngIf="body.bodyData.isLandable" [class]="'badge clickable ' + getLandableBadgeClass()"
+                [matTooltip]="getLandableTooltip()" (click)="showOnFootSafetyDialog()">
                 <img src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
             </span>
             <span *ngIf="getSpinResonance() !== 'none' || body.bodyData.rotationalPeriodTidallyLocked"
@@ -1129,6 +1129,151 @@
                 <li><a href="https://arxiv.org/pdf/1101.2156.pdf" target="_blank" rel="noopener noreferrer">Tidal
                         evolution of close-in extra-solar planets (Ferraz-Mello et al., 2011) — arXiv</a></li>
             </ul>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Close</button>
+        </mat-dialog-actions>
+    </div>
+</ng-template>
+
+<ng-template #onFootSafetyDialogTemplate>
+    <div class="on-foot-safety-dialog">
+        <h2 mat-dialog-title>On-Foot Safety Analysis &mdash; {{ onFootSafetyDialogData.bodyName }}</h2>
+        <mat-dialog-content>
+
+            <!-- Verdict -->
+            <p class="intro">
+                <ng-container *ngIf="onFootSafetyDialogData.gravity && onFootSafetyDialogData.gravity > 2.7">
+                    <strong class="safety-red">&#x26A0; Cannot disembark.</strong>
+                    Gravity of {{ onFootSafetyDialogData.gravity | number:'0.2-2' }} g exceeds the 2.7 g threshold
+                    &mdash;
+                    the SRV bay will not permit on-foot activities regardless of temperature.
+                </ng-container>
+                <ng-container *ngIf="!onFootSafetyDialogData.gravity || onFootSafetyDialogData.gravity <= 2.7">
+                    <ng-container *ngIf="onFootSafetyDialogData.badgeClass === 'badge-green'">
+                        <strong class="safety-green">&#x2713; Safe to disembark.</strong>
+                        The estimated temperature range is within safe limits across both the cooler and warmer sides of
+                        this body.
+                    </ng-container>
+                    <ng-container *ngIf="onFootSafetyDialogData.badgeClass === 'badge-orange'">
+                        <strong class="safety-amber">&#x26A0; Partial risk.</strong>
+                        Part of the estimated temperature range falls outside safe limits &mdash; conditions may be
+                        hazardous depending on location. Seek out the safer side as indicated below.
+                    </ng-container>
+                    <ng-container *ngIf="onFootSafetyDialogData.badgeClass === 'badge-red'">
+                        <strong class="safety-red">&#x2717; Not safe to disembark.</strong>
+                        The entire estimated temperature range is outside safe limits &mdash; the suit cannot protect
+                        you here.
+                    </ng-container>
+                    <ng-container *ngIf="onFootSafetyDialogData.badgeClass === 'badge-gray'">
+                        <strong>Unknown.</strong> Insufficient data to assess on-foot safety.
+                    </ng-container>
+                </ng-container>
+            </p>
+
+            <!-- Key facts -->
+            <ul>
+                <li><strong>Surface temperature:</strong>
+                    {{ onFootSafetyDialogData.surfaceTemperature | number:'0.2-2' }} K</li>
+                <li><strong>Estimated cool side (p5th percentile):</strong>
+                    {{ onFootSafetyDialogData.estimatedMin | number:'0.2-2' }} K</li>
+                <li><strong>Estimated warm side (p95th percentile):</strong>
+                    {{ onFootSafetyDialogData.estimatedMax | number:'0.2-2' }} K</li>
+                <li *ngIf="onFootSafetyDialogData.gravity"><strong>Gravity:</strong>
+                    {{ onFootSafetyDialogData.gravity | number:'0.2-2' }} g</li>
+                <li><strong>Atmosphere:</strong> {{ onFootSafetyDialogData.atmosphereType || 'None' }}</li>
+            </ul>
+
+            <!-- Day/night side assessment -->
+            <p class="explanation" *ngIf="onFootSafetyDialogData.estimatedMin !== null">
+                <strong>Cool side vs warm side:</strong><br>
+                The cool-side estimate represents shaded, polar, or night-side locations (5th percentile of observed
+                organic temperatures on bodies with matching characteristics). The warm-side estimate represents
+                sun-facing or equatorial locations (95th percentile).<br><br>
+
+                Cool side ({{ onFootSafetyDialogData.estimatedMin | number:'0.0-0' }} K):
+                <ng-container
+                    *ngIf="onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700">
+                    <strong class="safety-green">safe to disembark.</strong>
+                </ng-container>
+                <ng-container *ngIf="onFootSafetyDialogData.estimatedMin < 182">
+                    <strong class="safety-amber">battery drain risk.</strong>
+                </ng-container>
+                <ng-container *ngIf="onFootSafetyDialogData.estimatedMin >= 700">
+                    <strong class="safety-red">risk of injury or death.</strong>
+                </ng-container>
+                <br>
+                Warm side ({{ onFootSafetyDialogData.estimatedMax | number:'0.0-0' }} K):
+                <ng-container
+                    *ngIf="onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700">
+                    <strong class="safety-green">safe to disembark.</strong>
+                </ng-container>
+                <ng-container *ngIf="onFootSafetyDialogData.estimatedMax < 182">
+                    <strong class="safety-amber">battery drain risk.</strong>
+                </ng-container>
+                <ng-container *ngIf="onFootSafetyDialogData.estimatedMax >= 700">
+                    <strong class="safety-red">risk of injury or death.</strong>
+                </ng-container>
+
+                <br><br>
+                <ng-container
+                    *ngIf="onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700 && (onFootSafetyDialogData.estimatedMax < 182 || onFootSafetyDialogData.estimatedMax >= 700)">
+                    <strong>Recommendation:</strong> Favour the cooler, shaded or night-side locations.
+                </ng-container>
+                <ng-container
+                    *ngIf="onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700 && onFootSafetyDialogData.estimatedMin < 182">
+                    <strong>Recommendation:</strong> Favour the warmer, sun-facing or day-side locations.
+                </ng-container>
+                <ng-container
+                    *ngIf="onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700 && onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700">
+                    <strong>Both sides are within safe limits.</strong> No particular location preference needed.
+                </ng-container>
+                <ng-container
+                    *ngIf="(onFootSafetyDialogData.estimatedMin < 182 || onFootSafetyDialogData.estimatedMin >= 700) && (onFootSafetyDialogData.estimatedMax < 182 || onFootSafetyDialogData.estimatedMax >= 700)">
+                    <strong class="safety-red">Caution:</strong> Neither side is estimated to be within safe limits.
+                </ng-container>
+            </p>
+
+            <!-- Thresholds -->
+            <p class="explanation"><strong>On-foot safety thresholds:</strong></p>
+            <ul>
+                <li><strong>&lt; 182 K</strong> &mdash; battery drain risk. The suit's thermal management cannot cope
+                    with extreme cold and battery life is severely reduced.</li>
+                <li><strong>182 &ndash; 699 K</strong> &mdash; safe to disembark.</li>
+                <li><strong>&ge; 700 K</strong> &mdash; risk of injury or death. The suit cannot protect against
+                    extreme heat.</li>
+                <li><strong>&gt; 2.7 g</strong> &mdash; disembarking is blocked by the SRV bay regardless of
+                    temperature.</li>
+            </ul>
+
+            <!-- How min/max was determined -->
+            <p class="explanation">
+                <strong>How are the estimated temperatures calculated?</strong><br>
+                The min and max figures come from a dataset of <strong>3,301,198 organic temperature
+                    measurements</strong> collected from EDSM and in-game journal data. For each reading the on-foot
+                temperature was compared against the body's surface temperature to produce a <em>deltaT</em> value.
+                The 5th and 95th percentiles of these deltas give a ~90% coverage interval:<br><br>
+                <em>Est. min = surface temperature + p5 deltaT</em><br>
+                <em>Est. max = surface temperature + p95 deltaT</em>
+            </p>
+            <ul>
+                <li><strong>p5 deltaT applied:</strong> {{ onFootSafetyDialogData.p5Delta | number:'0.2-2' }} K</li>
+                <li><strong>p95 deltaT applied:</strong> {{ onFootSafetyDialogData.p95Delta | number:'0.2-2' }} K</li>
+                <li><strong>Lookup table matched:</strong> {{ onFootSafetyDialogData.lookupSource }}</li>
+            </ul>
+            <p>
+                The lookup uses a priority chain: (1) subType + atmosphere combination, (2) subType with confirmed zero
+                pressure, (3) subType alone, (4) atmosphere type alone, (5) surface pressure class, (6) global
+                fallback. The most specific match available for this body was used.
+            </p>
+
+            <!-- Download -->
+            <p>
+                <button mat-stroked-button (click)="downloadOnFootReferenceData()">
+                    Download full reference table (CSV)
+                </button>
+            </p>
+
         </mat-dialog-content>
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>

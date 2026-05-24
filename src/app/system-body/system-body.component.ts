@@ -215,6 +215,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChild('jsonDialogTitle') jsonDialogTitle!: ElementRef<HTMLElement>;
   @ViewChild('rocheLimitDialogTemplate') rocheLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('tidalLockDialogTemplate') tidalLockDialogTemplate!: TemplateRef<any>;
+  @ViewChild('onFootSafetyDialogTemplate') onFootSafetyDialogTemplate!: TemplateRef<any>;
   @ViewChild('jetAngleDialogTemplate') jetAngleDialogTemplate!: TemplateRef<any>;
   @ViewChild('apoPeriDialogTemplate') apoPeriDialogTemplate!: TemplateRef<any>;
   public styleClass = "child-container-default";
@@ -2893,6 +2894,131 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public tidalLockDialogData: any = null;
+  public onFootSafetyDialogData: any = null;
+
+  private getLookupSource(
+    subType: string | null | undefined,
+    atmosphereType: string | null | undefined,
+    surfacePressure: number | null | undefined,
+  ): string {
+    const st = subType?.trim() || null;
+    const at = atmosphereType?.trim() || null;
+    if (st && at && DELTA_BY_SUBTYPE_ATMOSPHERE[`${st}|${at}`]) {
+      return `SubType + Atmosphere (${st} / ${at})`;
+    }
+    const noAtm = (surfacePressure != null && surfacePressure === 0) || at === 'nan';
+    if (noAtm && st && DELTA_BY_SUBTYPE_NO_ATM[st]) return `SubType + No Atmosphere (${st})`;
+    if (st && DELTA_BY_SUBTYPE[st]) return `SubType (${st})`;
+    if (at && DELTA_BY_ATMOSPHERE[at]) return `Atmosphere type (${at})`;
+    if (surfacePressure != null) {
+      let pc = '';
+      if (surfacePressure === 0) pc = 'None';
+      else if (surfacePressure < 0.01) pc = 'Trace';
+      else if (surfacePressure < 0.1) pc = 'Thin';
+      if (pc && DELTA_BY_PRESSURE[pc]) return `Pressure class (${pc})`;
+    }
+    return 'Global fallback';
+  }
+
+  private getLookupDelta(
+    subType: string | null | undefined,
+    atmosphereType: string | null | undefined,
+    surfacePressure: number | null | undefined,
+  ): TempDelta {
+    const st = subType?.trim() || null;
+    const at = atmosphereType?.trim() || null;
+    if (st && at) {
+      const row = DELTA_BY_SUBTYPE_ATMOSPHERE[`${st}|${at}`];
+      if (row) return row;
+    }
+    const noAtm = (surfacePressure != null && surfacePressure === 0) || at === 'nan';
+    if (noAtm && st) {
+      const row = DELTA_BY_SUBTYPE_NO_ATM[st];
+      if (row) return row;
+    }
+    if (st) {
+      const row = DELTA_BY_SUBTYPE[st];
+      if (row) return row;
+    }
+    if (at) {
+      const row = DELTA_BY_ATMOSPHERE[at];
+      if (row) return row;
+    }
+    if (surfacePressure != null) {
+      let pc = '';
+      if (surfacePressure === 0) pc = 'None';
+      else if (surfacePressure < 0.01) pc = 'Trace';
+      else if (surfacePressure < 0.1) pc = 'Thin';
+      if (pc && DELTA_BY_PRESSURE[pc]) return DELTA_BY_PRESSURE[pc];
+    }
+    return DELTA_GLOBAL;
+  }
+
+  public showOnFootSafetyDialog(): void {
+    const bd = this.body.bodyData;
+    const surfTemp = bd.surfaceTemperature ?? null;
+    const estRange = surfTemp ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure) : null;
+    const delta = this.getLookupDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
+    this.onFootSafetyDialogData = {
+      bodyName: bd.name,
+      subType: bd.subType,
+      atmosphereType: bd.atmosphereType || null,
+      surfacePressure: bd.surfacePressure ?? null,
+      surfaceTemperature: surfTemp,
+      gravity: bd.gravity ?? null,
+      estimatedMin: estRange?.min ?? null,
+      estimatedMax: estRange?.max ?? null,
+      badgeClass: this.getLandableBadgeClass(),
+      lookupSource: this.getLookupSource(bd.subType, bd.atmosphereType, bd.surfacePressure),
+      p5Delta: delta.p5,
+      p95Delta: delta.p95,
+    };
+    const dialogRef = this.dialog.open(this.onFootSafetyDialogTemplate, {
+      width: '650px',
+      maxWidth: '90vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop'
+    });
+    dialogRef.afterOpened().subscribe(() => {
+      setTimeout(() => {
+        const container = document.querySelector('.on-foot-safety-dialog .mat-mdc-dialog-content, .on-foot-safety-dialog mat-dialog-content');
+        if (container) container.scrollTop = 0;
+      });
+    });
+  }
+
+  public downloadOnFootReferenceData(): void {
+    const rows: string[] = ['Source,SubType,AtmosphereType,p5_delta_K,p95_delta_K'];
+    for (const key of Object.keys(DELTA_BY_SUBTYPE_ATMOSPHERE)) {
+      const [st, at] = key.split('|');
+      const d = DELTA_BY_SUBTYPE_ATMOSPHERE[key];
+      rows.push(`subtype+atmosphere,"${st}","${at}",${d.p5},${d.p95}`);
+    }
+    for (const st of Object.keys(DELTA_BY_SUBTYPE_NO_ATM)) {
+      const d = DELTA_BY_SUBTYPE_NO_ATM[st];
+      rows.push(`subtype+no-atmosphere,"${st}","No atmosphere",${d.p5},${d.p95}`);
+    }
+    for (const st of Object.keys(DELTA_BY_SUBTYPE)) {
+      const d = DELTA_BY_SUBTYPE[st];
+      rows.push(`subtype,"${st}",,${d.p5},${d.p95}`);
+    }
+    for (const at of Object.keys(DELTA_BY_ATMOSPHERE)) {
+      const d = DELTA_BY_ATMOSPHERE[at];
+      rows.push(`atmosphere,,"${at}",${d.p5},${d.p95}`);
+    }
+    for (const pc of Object.keys(DELTA_BY_PRESSURE)) {
+      const d = DELTA_BY_PRESSURE[pc];
+      rows.push(`pressure_class,,"${pc} pressure",${d.p5},${d.p95}`);
+    }
+    rows.push(`global,,,${DELTA_GLOBAL.p5},${DELTA_GLOBAL.p95}`);
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'on-foot-temperature-reference.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   public showJetAngleDialog(): void {
     // Generate the chart image for the dialog and then open it
