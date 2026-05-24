@@ -6,7 +6,7 @@
             <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()"
                 matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}<span *ngIf="classifyNeutronStar()"> ({{
                     classifyNeutronStar() }})</span></span>
-            <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition"
+            <span *ngIf="body.bodyData.atmosphereType || body.bodyData.atmosphereComposition || getWhiteDwarfAtmosphere()"
                 [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip"
                 class="atmosphere-type">
                 - {{ getAtmosphereDisplay() }}

@@ -517,12 +517,54 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getAtmosphereCompositionTooltip(): string {
-    if (!this.body.bodyData.atmosphereComposition) {
-      return '';
+    if (this.body.bodyData.atmosphereComposition) {
+      return Object.entries(this.body.bodyData.atmosphereComposition)
+        .map(([gas, percentage]) => `${gas}: ${percentage.toFixed(2)}%`)
+        .join('\n');
     }
-    return Object.entries(this.body.bodyData.atmosphereComposition)
-      .map(([gas, percentage]) => `${gas}: ${percentage.toFixed(2)}%`)
-      .join('\n');
+    const subType = this.body.bodyData.subType;
+    if (subType?.startsWith('White Dwarf')) {
+      const match = subType.match(/White Dwarf \(([^)]+)\)/);
+      if (match) {
+        const tooltipMap: { [key: string]: string } = {
+          'DA': 'DA — Only hydrogen Balmer lines visible.\n~28.9% of white dwarfs in the galaxy.',
+          'DAB': 'DAB — Hydrogen dominant with detectable helium lines.\nIntermediate between DA and DB types. ~12.9% of white dwarfs.',
+          'DAV': 'DAV — Pulsating hydrogen-atmosphere white dwarf.\nShows brightness variations due to non-radial oscillations. ~3.3% of white dwarfs.',
+          'DAZ': 'DAZ — Hydrogen atmosphere with metal absorption lines.\nMetals likely accreted from disrupted planetesimals. ~0.5% of white dwarfs.',
+          'DB': 'DB — Only helium I lines visible, no hydrogen.\nForms when a DA loses its hydrogen layer. ~5.2% of white dwarfs.',
+          'DBV': 'DBV — Pulsating helium-atmosphere white dwarf.\nShows brightness variations due to non-radial oscillations. ~1.0% of white dwarfs.',
+          'DBZ': 'DBZ — Helium atmosphere with metal absorption lines.\nMetals likely accreted from disrupted planetesimals. ~0.1% of white dwarfs.',
+          'DC': 'DC — No detectable spectral lines.\nFeatureless continuum; temperature too low for spectral features. ~44.3% of white dwarfs.',
+          'DCV': 'DCV — Pulsating white dwarf with no detectable spectral lines.\nVariable featureless spectrum. ~3.8% of white dwarfs.',
+          'DQ': 'DQ — Carbon Swan bands or atomic carbon lines visible.\nCarbon dredged up from the core into the helium envelope. <0.1% of white dwarfs.',
+        };
+        return tooltipMap[match[1]] ?? '';
+      }
+    }
+    return '';
+  }
+
+  public getWhiteDwarfAtmosphere(): string | null {
+    const subType = this.body.bodyData.subType;
+    if (!subType?.startsWith('White Dwarf')) {
+      return null;
+    }
+    const match = subType.match(/White Dwarf \(([^)]+)\)/);
+    if (!match) return null;
+    const spectralCode = match[1];
+    const atmosphereMap: { [key: string]: string } = {
+      'DA': 'Hydrogen Dominated',
+      'DAB': 'Hydrogen and Helium',
+      'DAV': 'Hydrogen Dominated (Variable)',
+      'DAZ': 'Hydrogen with Metals',
+      'DB': 'Helium Dominated',
+      'DBV': 'Helium Dominated (Variable)',
+      'DBZ': 'Helium with Metals',
+      'DC': 'Featureless Spectrum',
+      'DCV': 'Featureless Spectrum (Variable)',
+      'DQ': 'Carbon Features',
+    };
+    return atmosphereMap[spectralCode] ?? null;
   }
 
   public getAtmosphereDisplay(): string {
@@ -534,7 +576,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
         .reduce((max, [gas, percentage]) => percentage > max[1] ? [gas, percentage] : max);
       return `${largest[0]} ${largest[1].toFixed(2)}%`;
     }
-    return '';
+    return this.getWhiteDwarfAtmosphere() ?? '';
   }
 
   public getApoapsis(): number {
