@@ -430,12 +430,23 @@
                         <div class="body-data-section-header">Atmosphere & Environment</div>
                         <div *ngIf="body.bodyData.surfaceTemperature" class="body-data-entry">
                             <div>
-                                Surface temperature
+                                {{ body.bodyData.type === 'Star' ? 'Surface Temperature' : 'Average Surface Temperature'
+                                }}
                             </div>
                             <div [matTooltip]="body.bodyData.surfaceTemperature + ' K'">
                                 {{ body.bodyData.surfaceTemperature | number:'0.2-2' }} K
                             </div>
                         </div>
+                        <ng-container *ngIf="body.bodyData.isLandable && getEstimatedTempRange() as estTemp">
+                            <div class="body-data-entry">
+                                <div>Min Surface Temperature Estimate</div>
+                                <div [matTooltip]="estTemp.min + ' K'">{{ estTemp.min | number:'0.2-2' }} K</div>
+                            </div>
+                            <div class="body-data-entry">
+                                <div>Max Surface Temperature Estimate</div>
+                                <div [matTooltip]="estTemp.max + ' K'">{{ estTemp.max | number:'0.2-2' }} K</div>
+                            </div>
+                        </ng-container>
                         <div *ngIf="body.bodyData.surfacePressure != null && body.bodyData.surfacePressure !== 0"
                             class="body-data-entry">
                             <div>
