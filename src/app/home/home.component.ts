@@ -386,6 +386,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   public searchErrorMessage: string = "";
   public data: CanonnBiostats | null = null;
   public bodies: SystemBody[] = [];
+  public anchorBodyId: number | null = null;
   public searchControl = new FormControl('');
   public filteredSystems: Observable<string[]> = of([]);
   public edastroData: EdastroData | null = null;
@@ -561,6 +562,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           relativeTo: this.activatedRoute,
           queryParams,
           queryParamsHandling: 'merge',
+          preserveFragment: true,
         });
     }
     this.searchInput = data.system.name;
@@ -765,6 +767,23 @@ export class HomeComponent implements OnInit, AfterViewInit {
     bodiesFlat.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
+
+    const hash = window.location.hash;
+    if (hash) {
+      const match = hash.match(/^#body-(\d+)$/);
+      if (match) {
+        this.anchorBodyId = parseInt(match[1], 10);
+      }
+      // Wait for Angular to render the body elements, then scroll
+      setTimeout(() => {
+        const el = document.querySelector(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+    } else {
+      this.anchorBodyId = null;
+    }
   }
 
   private isNumeric(value: string) {

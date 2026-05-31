@@ -18,6 +18,24 @@
     align-items: center
 }
 
+.body-anchor-link {
+    font-size: 11px;
+    color: #888;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.15s, color 0.15s;
+
+    &:hover {
+        opacity: 1;
+        color: #ccc;
+    }
+
+    &--copied {
+        opacity: 1;
+        color: #4caf50;
+    }
+}
+
 .body-title .materials-badges {
     display: flex;
     gap: 4px;

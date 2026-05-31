@@ -1,7 +1,8 @@
-<div class="body-container" [ngClass]="styleClass">
+<div class="body-container" [ngClass]="styleClass" [id]="'body-' + body.bodyData.bodyId">
     <div class="body-title">
         <div class="title-left">
             <b>{{ getBodyDisplayName(body.bodyData.name) }}</b>
+            <fa-icon [icon]="faLink" [class]="'body-anchor-link' + (bodyLinkCopied ? ' body-anchor-link--copied' : '')" (click)="copyBodyLink()" [matTooltip]="bodyLinkCopied ? 'Copied!' : 'Copy link to body'"></fa-icon>
             <span *ngIf="body.bodyData.subType">-</span>
             <span *ngIf="body.bodyData.subType" [matTooltip]="getSolidCompositionTooltip()"
                 matTooltipClass="multiline-tooltip">{{ body.bodyData.subType }}<span *ngIf="classifyNeutronStar()"> ({{
@@ -722,7 +723,7 @@
     <div class="system-body-end"></div>
     <div class="child-bodies">
         <app-system-body *ngFor="let body of body.subBodies; trackBy: trackByBody; last as isLast" [body]="body"
-            [isLast]="isLast" [forceExpanded]="forceExpanded" [edGalaxyData]="edGalaxyData"></app-system-body>
+            [isLast]="isLast" [forceExpanded]="forceExpanded || isAnchorBody" [anchorBodyId]="anchorBodyId" [edGalaxyData]="edGalaxyData"></app-system-body>
     </div>
 </div>
 

@@ -162,7 +162,7 @@ function isTempSafe(temp: number): boolean {
 
 import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges } from '@angular/core';
 import { SystemBody } from '../home/home.component';
-import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock } from '@fortawesome/free-solid-svg-icons';
+import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
@@ -203,11 +203,13 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public readonly faSquareCaretUp = faSquareCaretUp;
   public readonly faCode = faCode;
   public readonly faLock = faLock;
+  public readonly faLink = faLink;
   @Input() body!: SystemBody;
   @Input() edGalaxyData: any = null;
   @Input() isRoot: boolean = false;
   @Input() isLast: boolean = false;
   @Input() forceExpanded: boolean = false;
+  @Input() anchorBodyId: number | null = null;
   @ViewChildren(SystemBodyComponent) childComponents!: QueryList<SystemBodyComponent>;
   @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('invisibleRingDialogTemplate') invisibleRingDialogTemplate!: TemplateRef<any>;
@@ -294,6 +296,45 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       return encodeURIComponent(value ?? '');
     } catch (e) {
       return '';
+    }
+  }
+
+  public bodyLinkCopied = false;
+
+  private containsAnchorBody(body: SystemBody): boolean {
+    if (this.anchorBodyId === null) { return false; }
+    if (body.bodyData.bodyId === this.anchorBodyId) { return true; }
+    return body.subBodies.some(child => this.containsAnchorBody(child));
+  }
+
+  public get isAnchorBody(): boolean {
+    return this.anchorBodyId !== null && this.body.bodyData.bodyId === this.anchorBodyId;
+  }
+
+  public copyBodyLink(): void {
+    const bodyId = this.body?.bodyData?.bodyId;
+    if (bodyId === undefined || bodyId === null) { return; }
+    const url = `${window.location.href.split('#')[0]}#body-${bodyId}`;
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      this.bodyLinkCopied = true;
+      setTimeout(() => { this.bodyLinkCopied = false; }, 1500);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        this.bodyLinkCopied = true;
+        setTimeout(() => { this.bodyLinkCopied = false; }, 1500);
+      }).catch(fallback);
+    } else {
+      fallback();
     }
   }
 
@@ -430,7 +471,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
         this.body.bodyData.subType?.includes('Wolf-Rayet') ||
         this.body.bodyData.subType?.includes('Herbig') ||
         !!this.body.bodyData.isLandable;
-      this.expanded = this.forceExpanded || isInteresting;
+      this.expanded = this.forceExpanded || isInteresting || this.containsAnchorBody(this.body);
     }
     this.isExpanded = this.expanded;
 
