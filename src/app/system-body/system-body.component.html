@@ -31,7 +31,7 @@
       }
       @if (body().bodyData.isLandable) {
         <span [class]="'badge clickable ' + getLandableBadgeClass()"
-          [matTooltip]="getLandableTooltip()" (click)="showOnFootSafetyDialog()">
+          [matTooltip]="getLandableTooltip()" [attr.aria-label]="getLandableTooltip()" (click)="showOnFootSafetyDialog()">
           <img alt="" src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
         </span>
       }
@@ -125,24 +125,24 @@
         </div>
       }
       @if (expandable && !expanded) {
-        <div (click)="toggleExpand()" class="clickable" matTooltip="Expand">
+        <div (click)="toggleExpand()" class="clickable" matTooltip="Expand" aria-label="Expand body details">
           <fa-icon [icon]="faSquareCaretDown"></fa-icon>
         </div>
       }
       @if (expandable && expanded) {
-        <div (click)="toggleExpand()" class="clickable" matTooltip="Collapse">
+        <div (click)="toggleExpand()" class="clickable" matTooltip="Collapse" aria-label="Collapse body details">
           <fa-icon [icon]="faSquareCaretUp"></fa-icon>
         </div>
       }
       @if (hasChildren() && getChildrenExpandedState()) {
         <div (click)="toggleChildren()" class="clickable"
-          matTooltip="Collapse all children">
+          matTooltip="Collapse all children" aria-label="Collapse all child bodies">
           <fa-icon [icon]="faSquareCaretUp"></fa-icon>
         </div>
       }
       @if (hasChildren() && !getChildrenExpandedState()) {
         <div (click)="toggleChildren()" class="clickable"
-          matTooltip="Expand all children">
+          matTooltip="Expand all children" aria-label="Expand all child bodies">
           <fa-icon [icon]="faSquareCaretDown"></fa-icon>
         </div>
       }
@@ -155,7 +155,8 @@
       }
       <button class="json-button" (click)="showBodyJsonDialog($event)"
         (contextmenu)="copyBodyJson(); $event.preventDefault()"
-        matTooltip="View body JSON (right-click to copy)">
+        matTooltip="View body JSON (right-click to copy)"
+        aria-label="View body JSON (right-click to copy)">
         <fa-icon [icon]="faCode"></fa-icon>
       </button>
     </div>
@@ -909,7 +910,8 @@
                       <p>Generating visualization...</p>
                     </div>
                   }
-                  <canvas width="700" height="500"></canvas>
+                  <canvas width="700" height="500" role="img"
+                    [attr.aria-label]="'Logarithmic orbital diagram showing the orbit of ' + hillLimitDialogData.bodyName + ' relative to the rings of ' + hillLimitDialogData.parentName + ', with the Hill sphere extent used for shepherding analysis. The numeric analysis results follow below.'"></canvas>
                 </div>
                 <div class="values">
                   <p><strong>Analysis Results</strong></p>
@@ -1022,7 +1024,9 @@ distribution, and long-term dynamical evolution.</p>
     </p>
     @if (jetAngleChartDataUrl) {
       <div>
-        <img [src]="jetAngleChartDataUrl" alt="Fit chart" style="max-width:100%; border:1px solid #ddd;" />
+        <img [src]="jetAngleChartDataUrl"
+          alt="Bubble plot of neutron-star jet-cone angle against rotational period and radius, with bubble colour indicating stellar age and bubble size the jet angle."
+          class="jet-angle-chart-image" />
       </div>
     }
   </mat-dialog-content>
@@ -1197,7 +1201,7 @@ distribution, and long-term dynamical evolution.</p>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>
-            <button mat-button (click)="copyBodyJson()">Copy to Clipboard</button>
+            <button mat-button (click)="copyBodyJson()">{{ bodyJsonCopied ? 'Copied!' : 'Copy to Clipboard' }}</button>
         </mat-dialog-actions>
     </div>
 </ng-template>
@@ -1230,7 +1234,8 @@ distribution, and long-term dynamical evolution.</p>
                     <p>Generating chart...</p>
                 </div>
 }
-                <canvas #rocheCanvas width="700" height="400"></canvas>
+                <canvas #rocheCanvas width="700" height="400" role="img"
+                  [attr.aria-label]="'Roche limit chart for ' + rocheLimitDialogData.ringName + ' around ' + rocheLimitDialogData.parentName + ', plotting the rigid and fluid Roche limits against particle density. See the summary below for the values.'"></canvas>
             </div>
 
             <div class="ring-summary">
@@ -1254,6 +1259,7 @@ distribution, and long-term dynamical evolution.</p>
   </ng-template>
 
   <ng-template #tidalLockDialogTemplate>
+    @if (tidalLockDialogData) {
     <div class="tidal-lock-dialog">
       <h2 mat-dialog-title>Tidal Locking & Synchronous Rotation</h2>
       <mat-dialog-content>
@@ -1328,9 +1334,11 @@ distribution, and long-term dynamical evolution.</p>
     <button mat-button mat-dialog-close>Close</button>
   </mat-dialog-actions>
 </div>
+    }
 </ng-template>
 
 <ng-template #onFootSafetyDialogTemplate>
+  @if (onFootSafetyDialogData) {
   <div class="on-foot-safety-dialog">
     <h2 mat-dialog-title>On-Foot Safety Analysis &mdash; {{ onFootSafetyDialogData.bodyName }}</h2>
     <mat-dialog-content>
@@ -1380,8 +1388,8 @@ distribution, and long-term dynamical evolution.</p>
 <li><strong>Atmosphere:</strong> {{ onFootSafetyDialogData.atmosphereType || 'None' }}</li>
 </ul>
 
-<!-- Day/night side assessment -->
-@if (onFootSafetyDialogData.estimatedMin !== null) {
+<!-- Day/night side assessment (min and max are always populated together) -->
+@if (onFootSafetyDialogData.estimatedMin !== null && onFootSafetyDialogData.estimatedMax !== null) {
   <p class="explanation">
     <strong>Cool side vs warm side:</strong><br>
     The cool-side estimate represents shaded, polar, or night-side locations (5th percentile of observed
@@ -1469,4 +1477,5 @@ The 5th and 95th percentiles of these deltas give a ~90% coverage interval:<br><
   <button mat-button mat-dialog-close>Close</button>
 </mat-dialog-actions>
 </div>
+}
 </ng-template>

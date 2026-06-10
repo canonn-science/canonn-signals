@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, DestroyRef, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, ChangeDetectorRef, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppService, EdastroData, EdastroSystem, IndependentOutpost } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -17,6 +17,7 @@ import { SystemBodyComponent } from '../system-body/system-body.component';
 import { RegionMapComponent } from '../region-map/region-map.component';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { BODY_TYPE } from '../data/body-types';
+import { logger } from '../data/logger';
 
 @Component({
     selector: 'app-home',
@@ -148,7 +149,7 @@ export class HomeComponent implements OnInit {
       const result = `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${mid3}-${seq}`;
       return result;
     } catch (e) {
-      console.error('[getPGName] Error:', e);
+      logger.error('[getPGName] Error:', e);
       return '';
     }
   }
@@ -388,6 +389,7 @@ export class HomeComponent implements OnInit {
   public anchorBodyId: number | null = null;
   public searchControl = new FormControl('');
   public filteredSystems: Observable<string[]> = of([]);
+  private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
   public edastroData: EdastroData | null = null;
   private systemMapping: Map<string, { systemName?: string, id64?: number }> = new Map();
   public independentOutposts: IndependentOutpost[] = [];
@@ -410,10 +412,12 @@ export class HomeComponent implements OnInit {
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(value => {
-        if (value && value.length >= 3) {
-          return this.getSystemSuggestions(value);
+        // Suppress suggestions while a search is running so a late-resolving lookup
+        // can't reopen the panel over the loading/results view.
+        if (this.searching || !value || value.length < 3) {
+          return of([]);
         }
-        return of([]);
+        return this.getSystemSuggestions(value);
       })
     );
 
@@ -443,6 +447,8 @@ export class HomeComponent implements OnInit {
     this.searching = true;
     this.searchError = false;
     this.searchErrorMessage = '';
+    // Close any open suggestion panel as the search takes over.
+    this.autocompleteTrigger()?.closePanel();
     this.searchControl.disable();
 
     // Load test system
@@ -587,7 +593,7 @@ export class HomeComponent implements OnInit {
             }
           },
           // edastro data is optional - silently ignore failures.
-          error: error => console.error('EdAstro data error:', error),
+          error: error => logger.error('EdAstro data error:', error),
         });
     }
 

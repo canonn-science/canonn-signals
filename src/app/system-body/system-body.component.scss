@@ -25,14 +25,14 @@
 
 .body-anchor-link {
     font-size: 11px;
-    color: #888;
+    color: var(--color-text-muted);
     cursor: pointer;
     opacity: 0.4;
     transition: opacity 0.15s, color 0.15s;
 
     &:hover {
         opacity: 1;
-        color: #ccc;
+        color: var(--color-text-subtle);
     }
 
     &--copied {
@@ -56,8 +56,8 @@
 
 .body-title .materials-badges .json-button {
     background: none;
-    border: 1px solid #666;
-    color: #ccc;
+    border: 1px solid var(--color-border-muted);
+    color: var(--color-text-subtle);
     padding: 2px 6px;
     font-size: 10px;
     border-radius: 2px;
@@ -66,7 +66,7 @@
 }
 
 .body-title .materials-badges .json-button:hover {
-    background-color: #555;
+    background-color: var(--color-surface-hover);
     color: var(--color-white)
 }
 
@@ -336,7 +336,7 @@
 .hill-limit-dialog mat-dialog-content .warning,
 .invisible-ring-dialog mat-dialog-content .warning {
     padding: 12px;
-    background: #3a3a2a;
+    background: var(--color-callout-warning-bg);
     border-left: 4px solid var(--color-warning);
     border-radius: 4px
 }
@@ -345,7 +345,7 @@
 .invisible-ring-dialog mat-dialog-content .disclaimer {
     padding: 12px;
     background: var(--color-surface-2);
-    border-left: 4px solid #6b9fff;
+    border-left: 4px solid var(--color-callout-info-border);
     border-radius: 4px;
     font-size: 0.9em
 }
@@ -391,8 +391,8 @@
 .hill-limit-dialog mat-dialog-content .conclusion,
 .invisible-ring-dialog mat-dialog-content .conclusion {
     padding: 12px;
-    background: #3a2a2a;
-    border-left: 4px solid #f66;
+    background: var(--color-callout-danger-bg);
+    border-left: 4px solid var(--color-callout-danger-border);
     border-radius: 4px;
     font-style: italic
 }
@@ -400,8 +400,8 @@
 .hill-limit-dialog mat-dialog-content .conclusion-safe,
 .invisible-ring-dialog mat-dialog-content .conclusion-safe {
     padding: 12px;
-    background: #2a3a2a;
-    border-left: 4px solid #6f6;
+    background: var(--color-callout-success-bg);
+    border-left: 4px solid var(--color-callout-success-border);
     border-radius: 4px;
     font-style: italic
 }
@@ -434,14 +434,14 @@
 .hill-limit-dialog .chart-loading p {
     margin: 0;
     font-size: 14px;
-    color: #666
+    color: var(--color-text-on-light-muted)
 }
 
 .hill-limit-dialog mat-dialog-actions,
 .invisible-ring-dialog mat-dialog-actions,
 .json-dialog mat-dialog-actions {
     padding: 16px 24px;
-    border-top: 1px solid #333
+    border-top: 1px solid var(--color-surface-5)
 }
 
 .hill-limit-dialog mat-dialog-actions button,
@@ -510,7 +510,7 @@
 
 .roche-dialog .chart-loading p {
     margin: 12px 0 0 0;
-    color: #333;
+    color: var(--color-text-on-light);
     font-size: 14px;
     font-weight: 500
 }
@@ -547,7 +547,7 @@
 .roche-dialog .ring-entry {
     margin-bottom: 12px;
     padding: 8px;
-    background: #333;
+    background: var(--color-surface-5);
     border-radius: 3px;
     font-size: 13px;
     line-height: 1.6
@@ -584,7 +584,7 @@
 .json-dialog mat-dialog-content pre {
     margin: 0;
     padding: 16px 24px;
-    color: #d4d4d4;
+    color: var(--color-text-code);
     font-family: Consolas, Monaco, 'Courier New', monospace;
     font-size: 12px;
     line-height: 1.5;
@@ -595,6 +595,11 @@
 
 .json-dialog mat-dialog-actions {
     background: var(--color-surface-2)
+}
+
+.jet-angle-chart-image {
+    max-width: 100%;
+    border: 1px solid var(--color-border-on-light)
 }
 
 .json-dialog mat-dialog-actions button {

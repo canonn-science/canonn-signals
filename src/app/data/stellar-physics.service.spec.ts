@@ -74,4 +74,39 @@ describe('StellarPhysicsService', () => {
       expect(fromSeconds).toBeCloseTo(fromDays!, 9);
     });
   });
+
+  describe('classifyNeutronStar', () => {
+    const SEC = 86400; // seconds per day; period args below are in days
+
+    it('returns null when any required value is missing', () => {
+      expect(service.classifyNeutronStar(undefined, 1, 0.001, 8)).toBeNull();
+      expect(service.classifyNeutronStar(1.5, null, 0.001, 8)).toBeNull();
+      expect(service.classifyNeutronStar(1.5, 1, undefined, 8)).toBeNull();
+      expect(service.classifyNeutronStar(1.5, 1, 0.001, undefined)).toBeNull();
+    });
+
+    it('classifies a sub-10ms rotator as a millisecond pulsar', () => {
+      expect(service.classifyNeutronStar(1.5, 1, 0.005 / SEC, 8)).toBe('Millisecond Pulsar');
+      expect(service.classifyNeutronStar(2.5, 1, 0.005 / SEC, 8)).toBe('Hyper-Massive Millisecond Pulsar');
+    });
+
+    it('classifies standard and anomalous-mass pulsars (< 5s)', () => {
+      expect(service.classifyNeutronStar(1.5, 1, 2 / SEC, 8)).toBe('Standard Pulsar');
+      expect(service.classifyNeutronStar(2.5, 1, 2 / SEC, 8)).toBe('Anomalous Mass Pulsar');
+    });
+
+    it('classifies slow-period pulsars (5–30s)', () => {
+      expect(service.classifyNeutronStar(1.5, 1, 10 / SEC, 8)).toBe('Slow-Period Pulsar');
+      expect(service.classifyNeutronStar(2.5, 1, 10 / SEC, 8)).toBe('Anomalous Mass Slow-Period Pulsar');
+    });
+
+    it('distinguishes magnetars from pulsars by absolute magnitude (30s–1h)', () => {
+      expect(service.classifyNeutronStar(1.5, 1, 100 / SEC, 8)).toBe('Ultra-Long Period Magnetar');
+      expect(service.classifyNeutronStar(1.5, 1, 100 / SEC, 12)).toBe('Ultra-Long Period Pulsar');
+    });
+
+    it('classifies a multi-hour rotator as an anomalous slow-rotator', () => {
+      expect(service.classifyNeutronStar(1.5, 1, 7200 / SEC, 8)).toBe('Anomalous Slow-Rotator');
+    });
+  });
 });

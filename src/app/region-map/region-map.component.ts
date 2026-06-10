@@ -6,6 +6,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, of, tap } from 'rxjs';
 import { IndependentOutpost } from '../app.service';
+import { logger } from '../data/logger';
 
 /** Minimal shape of the system data the region map needs. */
 export interface RegionMapSystem {
@@ -141,7 +142,7 @@ export class RegionMapComponent implements OnChanges {
         },
         error: error => {
           this.svgLoading = false;
-          console.error('Error loading region map:', error);
+          logger.error('Error loading region map:', error);
         },
       });
   }
@@ -205,7 +206,7 @@ export class RegionMapComponent implements OnChanges {
       (regionElement as HTMLElement).style.strokeOpacity = '1';
       (regionElement as HTMLElement).style.strokeWidth = '2';
     } else {
-      console.warn('Region element not found for ID:', regionId);
+      logger.warn('Region element not found for ID:', regionId);
     }
 
     // Add red dot at system coordinates

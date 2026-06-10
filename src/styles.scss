@@ -5,6 +5,13 @@
 
 @import 'material-icons/iconfont/material-icons.css';
 
+// Self-hosted Roboto (the font Angular Material's typography requests by name).
+// Bundling it avoids a third-party request and the "font blocked" warning that
+// occurs when the browser falls back to resolving a locally-installed copy.
+@import '@fontsource/roboto/300.css';
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/500.css';
+
 // Include the common styles for Angular Material. We include this here so that you only
 // have to load a single css file for Angular Material in your app.
 // Be sure that you only ever include this mixin once!
@@ -57,6 +64,34 @@ $dark-theme: mat.m2-define-dark-theme((color: (primary: mat.m2-define-palette(ma
   --color-safety-green: #4caf50;
   --color-safety-amber: #ff9800;
   --color-safety-red: #f44336;
+
+  /* Low-emphasis text/border/surface variants used by the body views & dialogs. */
+  --color-text-muted: #888;       /* faint controls (e.g. the anchor-link icon) */
+  --color-text-subtle: #ccc;      /* low-emphasis light text */
+  --color-text-code: #d4d4d4;     /* monospace/code text */
+  --color-border-muted: #666;     /* subtle borders/dividers on dark surfaces */
+  --color-surface-hover: #555;    /* hover fill on a dark surface */
+  --color-surface-5: #333;        /* darkest inset panel / divider on dialogs */
+
+  /* Dark text shown on the light (white) chart panels inside dialogs. */
+  --color-text-on-light: #333;
+  --color-text-on-light-muted: #666;
+  --color-border-on-light: #ddd;
+
+  /* Callout boxes inside the analysis dialogs (tinted fill + accent left border). */
+  --color-callout-warning-bg: #3a3a2a;
+  --color-callout-info-border: #6b9fff;
+  --color-callout-danger-bg: #3a2a2a;
+  --color-callout-danger-border: #f66;
+  --color-callout-success-bg: #2a3a2a;
+  --color-callout-success-border: #6f6;
+
+  /* Geometry for the body-tree connector lines (drawn with pseudo-elements).
+     Deriving every offset from these keeps the elbows aligned if they change. */
+  --tree-color: var(--color-surface);
+  --tree-thickness: 4px;
+  --tree-indent: 56px;   /* horizontal distance from a child back to the trunk */
+  --tree-elbow-y: 20px;  /* vertical offset of the branch into each child */
 }
 
 /* You can add global styles to this file, and also import other style files */
@@ -105,43 +140,42 @@ a:hover,
   min-width: 500px;
 }
 
+/* Vertical trunk running the full height of a non-last child. */
 .child-container-default::after,
 .child-container-title-only::after {
   position: absolute;
-  content: " ";
-  border-left: 4px solid var(--color-surface);
+  content: "";
+  top: calc(-1 * var(--tree-thickness));
+  left: calc(-1 * var(--tree-indent));
+  width: 0;
   height: 100%;
-  width: 0px;
-  top: -4px;
-  left: -56px;
+  border-left: var(--tree-thickness) solid var(--tree-color);
 }
 
+/* Horizontal branch from the trunk into each child. */
 .child-container-default::before,
 .child-container-title-only::before {
   position: absolute;
-  content: " ";
-  height: 0px;
-  width: 56px;
-  top: 20px;
-  left: -56px;
-  border-bottom: 4px solid var(--color-surface);
+  content: "";
+  top: var(--tree-elbow-y);
+  left: calc(-1 * var(--tree-indent));
+  width: var(--tree-indent);
+  height: 0;
+  border-bottom: var(--tree-thickness) solid var(--tree-color);
 }
 
+/* Last child: the trunk stops at the elbow and rounds into the branch. */
 .child-container-default-last::after,
 .child-container-title-only-last::after {
   position: absolute;
-  content: " ";
-  border-left: 4px solid var(--color-surface);
-  top: -4px;
-  left: -56px;
-  border-bottom: 4px solid var(--color-surface);
-  width: 52px;
-  border-radius: 0px 0px 0px 4px;
-}
-
-.child-container-default-last::after,
-.child-container-title-only-last::after {
-  height: 24px;
+  content: "";
+  top: calc(-1 * var(--tree-thickness));
+  left: calc(-1 * var(--tree-indent));
+  width: calc(var(--tree-indent) - var(--tree-thickness));
+  height: calc(var(--tree-elbow-y) + var(--tree-thickness));
+  border-left: var(--tree-thickness) solid var(--tree-color);
+  border-bottom: var(--tree-thickness) solid var(--tree-color);
+  border-radius: 0 0 0 4px;
 }
 
 hr {

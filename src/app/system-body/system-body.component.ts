@@ -1,5 +1,5 @@
 import {
-  estimateTempRange, isTempSafe, TempDelta,
+  estimateTempRange, isTempSafe, lookupTempDelta,
   DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
   DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
 } from '../data/temperature-estimation';
@@ -20,6 +20,8 @@ import { MatButton } from '@angular/material/button';
 import { ClickableDirective } from '../clickable.directive';
 import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
+import { OrbitalRelationsService } from '../data/orbital-relations.service';
+import { ChartRenderingService, RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 
 @Component({
@@ -29,6 +31,8 @@ import { BODY_TYPE } from '../data/body-types';
     changeDetection: ChangeDetectionStrategy.OnPush,
     animations: [
         trigger("grow", [
+            // overflow is set statically (not interpolated) so the animator only tweens
+            // height — animating overflow is unsupported and logs a console warning.
             transition(":enter", [
                 // :enter is alias to 'void => *'
                 style({ height: "0", overflow: "hidden" }),
@@ -36,7 +40,8 @@ import { BODY_TYPE } from '../data/body-types';
             ]),
             transition(":leave", [
                 // :leave is alias to '* => void'
-                animate(250, style({ height: 0, overflow: "hidden" }))
+                style({ overflow: "hidden" }),
+                animate(250, style({ height: 0 }))
             ])
         ])
     ],
@@ -49,6 +54,8 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   private readonly destroyRef = inject(DestroyRef);
   private readonly physics = inject(BodyPhysicsService);
   private readonly stellarPhysics = inject(StellarPhysicsService);
+  private readonly orbitalRelations = inject(OrbitalRelationsService);
+  private readonly chartRenderer = inject(ChartRenderingService);
 
   // Expose Math.abs for template use
   abs(value: number): number {
@@ -105,9 +112,9 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
   public hoveredIndex: number = -1;
 
-  public hillLimitDialogData: any = null;
-  public invisibleRingDialogData: any = null;
-  public rocheLimitDialogData: any = null;
+  public hillLimitDialogData: HillChartData | null = null;
+  public invisibleRingDialogData: InvisibleRingDialogData | null = null;
+  public rocheLimitDialogData: RocheChartData | null = null;
   public isChartLoading: boolean = false;
   public jetAngleChartDataUrl: string | null = null;
   public readonly jetSampleCsv: string = `System,Body,Rotation Period [s],Radius [Ls],Angle [deg],age
@@ -134,6 +141,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public cachedMaterialBadges: { name: string, class: string, tooltip: string }[] = [];
   public cachedHotspotsList: { displayName: string; count: number; wikiUrl: string; description: string }[] = [];
   public cachedSurfacePressureTooltip: string = '';
+  public cachedAtmosphereDisplay: string = '';
+  public cachedSolidCompositionTooltip: string = '';
 
   public cachedRingResourceTypes: Set<string> = new Set();
 
@@ -155,6 +164,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public bodyLinkCopied = false;
+  public bodyJsonCopied = false;
 
   private containsAnchorBody(body: SystemBody): boolean {
     const anchorBodyId = this.anchorBodyId();
@@ -172,17 +182,17 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     const bodyId = this.body()?.bodyData?.bodyId;
     if (bodyId === undefined || bodyId === null) { return; }
     const url = `${window.location.href.split('#')[0]}#body-${bodyId}`;
-    navigator.clipboard.writeText(url).then(() => {
-      this.setBodyLinkCopied();
-    });
+    navigator.clipboard?.writeText(url)
+      .then(() => this.flashCopied('bodyLinkCopied'))
+      .catch(() => { /* clipboard unavailable */ });
   }
 
-  /** Flash the "Copied!" state, notifying the scheduler since this runs in async (promise/timeout) callbacks under zoneless. */
-  private setBodyLinkCopied(): void {
-    this.bodyLinkCopied = true;
+  /** Flash a "Copied!" state for 1.5s, notifying the scheduler since this runs in async (promise/timeout) callbacks under zoneless. */
+  private flashCopied(key: 'bodyLinkCopied' | 'bodyJsonCopied'): void {
+    this[key] = true;
     this.cdr.markForCheck();
     setTimeout(() => {
-      this.bodyLinkCopied = false;
+      this[key] = false;
       this.cdr.markForCheck();
     }, 1500);
   }
@@ -218,8 +228,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       return;
     }
 
-    this.detectTrojanStatus();
-    this.detectRosetteStatus();
+    const trojan = this.orbitalRelations.detectTrojanStatus(body);
+    this.trojanStatus = trojan.lagrangePoint;
+    this.trojanHostStatus = trojan.isHost;
+    this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
     this.cachedNextPeriapsis = this.calculateNextPeriapsis();
     this.cachedNextApoapsis = this.calculateNextApoapsis();
     this.cachedRocheExcess = this.calculateRocheExcess();
@@ -357,6 +369,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.cachedSpinResonance = this.computeSpinResonance();
     this.cachedJetConeAngle = this.computeJetConeAngle();
     this.cachedConfirmedBiologyCount = this.biologySignals.filter(b => !b.isGuess).length;
+    this.cachedAtmosphereDisplay = this.computeAtmosphereDisplay();
+    this.cachedSolidCompositionTooltip = this.computeSolidCompositionTooltip();
+    this.computeLandableAndTemp();
   }
 
   public toggleExpand(): void {
@@ -495,6 +510,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getAtmosphereDisplay(): string {
+    return this.cachedAtmosphereDisplay;
+  }
+
+  private computeAtmosphereDisplay(): string {
     const body = this.body();
     if (body.bodyData.atmosphereType) {
       return body.bodyData.atmosphereType;
@@ -731,10 +750,11 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
 
-  // Orbital-position math (Kepler solver + hierarchical system-frame positioning)
-  // lives in OrbitalMechanicsService so it can be unit-tested without the component.
-
   public getSolidCompositionTooltip(): string {
+    return this.cachedSolidCompositionTooltip;
+  }
+
+  private computeSolidCompositionTooltip(): string {
     const body = this.body();
     if (!body.bodyData.solidComposition) {
       return '';
@@ -807,7 +827,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public copyBodyJson(): void {
     const jsonText = JSON.stringify(this.body().bodyData, null, 2);
-    navigator.clipboard.writeText(jsonText);
+    navigator.clipboard?.writeText(jsonText)
+      .then(() => this.flashCopied('bodyJsonCopied'))
+      .catch(() => { /* clipboard unavailable */ });
   }
 
   public getFormattedBodyJson(): string {
@@ -935,7 +957,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.isChartLoading = true;
 
-    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
+    this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -944,7 +966,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Draw chart after dialog opens
     setTimeout(() => {
-      this.drawRocheChart();
+      this.renderRocheChart();
       this.isChartLoading = false;
       this.cdr.markForCheck();
     }, 100);
@@ -1027,7 +1049,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.isChartLoading = true;
 
-    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
+    this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -1036,7 +1058,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Draw chart after dialog opens
     setTimeout(() => {
-      this.drawRocheChart();
+      this.renderRocheChart();
       this.isChartLoading = false;
       this.cdr.markForCheck();
     }, 100);
@@ -1169,7 +1191,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.isChartLoading = true;
 
-    const dialogRef = this.dialog.open(this.hillLimitDialogTemplate(), {
+    this.dialog.open(this.hillLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -1178,467 +1200,26 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Draw chart after dialog opens with a longer delay
     setTimeout(() => {
-      this.drawShepherdingHillChart();
+      this.renderShepherdingHillChart();
       this.isChartLoading = false;
       this.cdr.markForCheck();
     }, 200);
   }
 
-  private drawRocheChart(): void {
-    const canvas = document.querySelector('.roche-dialog canvas') as HTMLCanvasElement;
-    if (!canvas || !this.rocheLimitDialogData) {
-      return;
+  /** Locates the open Roche dialog's canvas and renders the prepared chart data into it. */
+  private renderRocheChart(): void {
+    const canvas = document.querySelector('.roche-dialog canvas') as HTMLCanvasElement | null;
+    if (canvas && this.rocheLimitDialogData) {
+      this.chartRenderer.drawRocheChart(canvas, this.rocheLimitDialogData);
     }
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const data = this.rocheLimitDialogData;
-    const width = canvas.width;
-    const height = canvas.height;
-    const padding = 60;
-    const chartWidth = width - 2 * padding;
-    const chartHeight = height - 2 * padding;
-
-    // Clear canvas
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-
-    // Find data ranges - use log scale for Y-axis
-    const minDensity = Math.min(...data.densityRange);
-    const maxDensity = Math.max(...data.densityRange);
-
-    // Get all distances including ring positions for proper scaling
-    const allDistances = [...data.rigidLimits, ...data.fluidLimits];
-    data.rings.forEach((ring: any) => {
-      allDistances.push(ring.innerRadius);
-      allDistances.push(ring.outerRadius);
-    });
-    const maxDistance = Math.max(...allDistances);
-    const minDistance = Math.min(...allDistances) * 0.5; // Start slightly below minimum for visibility
-
-    // Helper functions - logarithmic Y scale
-    const scaleX = (density: number) => padding + ((density - minDensity) / (maxDensity - minDensity)) * chartWidth;
-    const scaleY = (distance: number) => {
-      if (distance <= 0) return height - padding;
-      const logMin = Math.log10(minDistance);
-      const logMax = Math.log10(maxDistance);
-      const logDist = Math.log10(distance);
-      return height - padding - ((logDist - logMin) / (logMax - logMin)) * chartHeight;
-    };
-
-    // Draw axes
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.stroke();
-
-    // Draw logarithmic grid lines with labels
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 1;
-    const logMin = Math.log10(minDistance);
-    const logMax = Math.log10(maxDistance);
-    const logRange = logMax - logMin;
-
-    // Draw grid at powers of 10
-    for (let logVal = Math.ceil(logMin); logVal <= Math.floor(logMax); logVal++) {
-      const distance = Math.pow(10, logVal);
-      const y = scaleY(distance);
-      ctx.beginPath();
-      ctx.moveTo(padding, y);
-      ctx.lineTo(width - padding, y);
-      ctx.stroke();
-    }
-
-    // Draw rigid limit line
-    ctx.strokeStyle = '#ff6b6b';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    for (let i = 0; i < data.densityRange.length; i++) {
-      const x = scaleX(data.densityRange[i]);
-      const y = scaleY(data.rigidLimits[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Draw fluid limit line
-    ctx.strokeStyle = '#4dabf7';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    for (let i = 0; i < data.densityRange.length; i++) {
-      const x = scaleX(data.densityRange[i]);
-      const y = scaleY(data.fluidLimits[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Draw ring positions as horizontal bands with vertical density line
-    const ringColors = ['#51cf66', '#ffa94d', '#748ffc', '#ff6b6b', '#20c997'];
-    data.rings.forEach((ring: any, index: number) => {
-      const color = ringColors[index % ringColors.length];
-      const x = scaleX(ring.density);
-      const yInner = scaleY(ring.innerRadius);
-      const yOuter = scaleY(ring.outerRadius);
-
-      // Draw translucent horizontal bar for ring extent
-      const rgb = color === '#51cf66' ? '81, 207, 102' :
-        color === '#ffa94d' ? '255, 169, 77' :
-          color === '#748ffc' ? '116, 143, 252' :
-            color === '#ff6b6b' ? '255, 107, 107' : '32, 201, 151';
-      ctx.fillStyle = `rgba(${rgb}, 0.2)`;
-      ctx.fillRect(padding, yOuter, chartWidth, yInner - yOuter);
-
-      // Draw horizontal lines at inner and outer radius
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(padding, yInner);
-      ctx.lineTo(width - padding, yInner);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(padding, yOuter);
-      ctx.lineTo(width - padding, yOuter);
-      ctx.stroke();
-
-      // Draw vertical line at the assumed density
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.moveTo(x, padding);
-      ctx.lineTo(x, height - padding);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw density marker
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, height - padding, 6, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Label the density line
-      ctx.fillStyle = color;
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'center';
-      ctx.save();
-      ctx.translate(x, padding + 15 + (index * 18));
-      ctx.fillText(`${ring.density.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg/m³`, 0, 0);
-      ctx.restore();
-    });
-
-    // Draw axis labels
-    ctx.fillStyle = '#333';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-
-    // X-axis labels
-    for (let i = 0; i <= 5; i++) {
-      const density = minDensity + ((maxDensity - minDensity) / 5) * i;
-      const x = scaleX(density);
-      ctx.fillText(density.toFixed(0), x, height - padding + 20);
-    }
-
-    // Y-axis labels (logarithmic scale - powers of 10)
-    ctx.textAlign = 'right';
-    for (let logVal = Math.ceil(logMin); logVal <= Math.floor(logMax); logVal++) {
-      const distance = Math.pow(10, logVal);
-      const y = scaleY(distance);
-      // Format large numbers with scientific notation or comma separation
-      let label = distance >= 1000000
-        ? (distance / 1000000).toFixed(1) + 'M'
-        : distance >= 1000
-          ? (distance / 1000).toFixed(0) + 'k'
-          : distance.toFixed(0);
-      ctx.fillText(label, padding - 10, y + 4);
-    }
-
-    // Draw axis titles
-    ctx.font = 'bold 14px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Particle Density (kg/m³)', width / 2, height - 10);
-
-    ctx.save();
-    ctx.translate(15, height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Roche Limit Distance (km, log scale)', 0, 0);
-    ctx.restore();
-
-    // Draw legend
-    const legendX = width - padding - 120;
-    const legendY = padding + 20;
-
-    ctx.strokeStyle = '#ff6b6b';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(legendX, legendY);
-    ctx.lineTo(legendX + 30, legendY);
-    ctx.stroke();
-    ctx.fillStyle = '#333';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('Rigid limit', legendX + 35, legendY + 4);
-
-    ctx.strokeStyle = '#4dabf7';
-    ctx.beginPath();
-    ctx.moveTo(legendX, legendY + 20);
-    ctx.lineTo(legendX + 30, legendY + 20);
-    ctx.stroke();
-    ctx.fillText('Fluid limit', legendX + 35, legendY + 24);
-
-    ctx.strokeStyle = '#51cf66';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(legendX, legendY + 40);
-    ctx.lineTo(legendX + 30, legendY + 40);
-    ctx.stroke();
-    const positionLabel = this.rocheLimitDialogData.isBody ? 'Body position' : 'Ring position';
-    ctx.fillText(positionLabel, legendX + 35, legendY + 44);
   }
 
-  private drawShepherdingHillChart(): void {
-    const canvas = document.querySelector('.hill-limit-dialog canvas') as HTMLCanvasElement;
-    if (!canvas || !this.hillLimitDialogData) {
-      return;
+  /** Locates the open Hill-limit dialog's canvas and renders the shepherding diagram into it. */
+  private renderShepherdingHillChart(): void {
+    const canvas = document.querySelector('.hill-limit-dialog canvas') as HTMLCanvasElement | null;
+    if (canvas && this.hillLimitDialogData) {
+      this.chartRenderer.drawShepherdingHillChart(canvas, this.hillLimitDialogData);
     }
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      return;
-    }
-
-
-    const data = this.hillLimitDialogData;
-    const width = canvas.width;
-    const height = canvas.height;
-    const centerX = 80; // Bottom left origin
-    const centerY = height - 80;
-
-    // Clear canvas
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-
-
-    // Determine scale - find minimum and maximum radii from all features
-    let minRadius = data.parentRadius;
-    let maxRadius = Math.max(
-      data.outermostRingRadius * 1.1,
-      data.bodyApoapsis + data.hillRadius
-    );
-
-    // Find the smallest inner radius from rings for better scaling
-    if (data.rings && data.rings.length > 0) {
-      const smallestInner = Math.min(...data.rings.map((r: any) => r.innerRadius || minRadius));
-      minRadius = Math.min(minRadius, smallestInner * 0.8); // Start slightly below smallest ring
-    }
-
-
-    // Use logarithmic scale for better visibility of inner rings
-    const minLog = Math.log10(Math.max(minRadius, 1));
-    const maxLog = Math.log10(maxRadius);
-    const availableRadius = Math.min(width - centerX - 40, centerY - 40); // Quarter circle space
-
-    // Helper to convert km to pixels using logarithmic scale
-    const toPixels = (km: number) => {
-      if (km <= 0) return 0;
-      const logValue = Math.log10(km);
-      return ((logValue - minLog) / (maxLog - minLog)) * availableRadius;
-    };
-
-    // Draw parent body at origin (bottom left)
-    ctx.fillStyle = '#ff922b';
-    ctx.beginPath();
-    const parentRadiusPx = toPixels(data.parentRadius);
-    ctx.arc(centerX, centerY, Math.max(parentRadiusPx, 8), 0, Math.PI * 2);
-    ctx.fill();
-
-    // Label parent
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 11px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('Parent', centerX + 10, centerY - 5);
-
-    // Draw rings as quarter-circle arcs (top-right quadrant from bottom-left origin)
-    // Use a single green colour for all rings to match the legend and improve
-    // visibility when rings are very thin.
-    const ringColors = ['#51cf66', '#51cf66', '#51cf66', '#51cf66', '#51cf66'];
-    const startAngle = -Math.PI / 2; // Start at top (12 o'clock from origin)
-    const endAngle = 0; // End at right (3 o'clock from origin)
-
-    data.rings.forEach((ring: any, index: number) => {
-      const color = ringColors[index % ringColors.length];
-      const innerRadiusPx = toPixels(ring.innerRadius);
-      const outerRadiusPx = toPixels(ring.outerRadius);
-
-      // Draw ring as two arcs (inner and outer)
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-
-      // Outer arc
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, outerRadiusPx, startAngle, endAngle);
-      ctx.stroke();
-
-      // Inner arc
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, innerRadiusPx, startAngle, endAngle);
-      ctx.stroke();
-
-      // Fill between arcs with transparency
-      const rgb = color === '#51cf66' ? '81, 207, 102' :
-        color === '#ffa94d' ? '255, 169, 77' :
-          color === '#748ffc' ? '116, 143, 252' :
-            color === '#ff6b6b' ? '255, 107, 107' : '32, 201, 151';
-
-      ctx.fillStyle = `rgba(${rgb}, 0.2)`;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, innerRadiusPx, startAngle, endAngle);
-      ctx.lineTo(centerX + outerRadiusPx * Math.cos(endAngle), centerY + outerRadiusPx * Math.sin(endAngle));
-      ctx.arc(centerX, centerY, outerRadiusPx, endAngle, startAngle, true);
-      ctx.closePath();
-      ctx.fill();
-
-      // Label ring at 45 degrees
-      ctx.fillStyle = color;
-      ctx.font = '10px Arial';
-      ctx.textAlign = 'center';
-      const labelAngle = -Math.PI / 4; // 45 degrees
-      const labelRadius = (innerRadiusPx + outerRadiusPx) / 2;
-      const labelX = centerX + labelRadius * Math.cos(labelAngle);
-      const labelY = centerY + labelRadius * Math.sin(labelAngle);
-      ctx.fillText(`R${index + 1}`, labelX, labelY);
-    });
-
-    // Draw body orbital position as a solid quarter arc
-    const bodyOrbitRadiusPx = toPixels(data.bodyOrbitalRadius);
-    ctx.strokeStyle = '#4c6ef5';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, bodyOrbitRadiusPx, startAngle, endAngle);
-    ctx.stroke();
-
-    // Draw body position marker at 45 degrees
-    const bodyAngle = -Math.PI / 4;
-    const bodyX = centerX + bodyOrbitRadiusPx * Math.cos(bodyAngle);
-    const bodyY = centerY + bodyOrbitRadiusPx * Math.sin(bodyAngle);
-    ctx.fillStyle = '#4c6ef5';
-    ctx.beginPath();
-    ctx.arc(bodyX, bodyY, 5, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Draw Hill sphere limits as dashed quarter arcs on either side
-    const hillInnerRadiusPx = toPixels(Math.max(data.bodyOrbitalRadius - data.hillRadius, data.parentRadius));
-    const hillOuterRadiusPx = toPixels(data.bodyOrbitalRadius + data.hillRadius);
-
-    ctx.strokeStyle = '#f03e3e';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-
-    // Inner Hill limit
-    if (data.bodyOrbitalRadius - data.hillRadius > data.parentRadius) {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, hillInnerRadiusPx, startAngle, endAngle);
-      ctx.stroke();
-    }
-
-    // Outer Hill limit
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, hillOuterRadiusPx, startAngle, endAngle);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
-
-    // Add distance markers with logarithmic spacing
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([1, 3]);
-
-    // Calculate nice logarithmic intervals
-    const logRange = maxLog - minLog;
-    const numMarkers = 6;
-
-    for (let i = 0; i <= numMarkers; i++) {
-      const logValue = minLog + (logRange / numMarkers) * i;
-      const dist = Math.pow(10, logValue);
-      const radiusPx = toPixels(dist);
-
-      if (radiusPx > parentRadiusPx && radiusPx < availableRadius) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radiusPx, startAngle, endAngle);
-        ctx.stroke();
-
-        // Label at the right edge
-        ctx.fillStyle = '#999';
-        ctx.font = '9px Arial';
-        ctx.textAlign = 'left';
-        const label = dist >= 1000000
-          ? (dist / 1000000).toFixed(1) + 'M km'
-          : dist >= 1000
-            ? (dist / 1000).toFixed(0) + 'k km'
-            : dist.toFixed(0) + ' km';
-        ctx.fillText(label, centerX + radiusPx + 5, centerY);
-      }
-    }
-
-    ctx.setLineDash([]);
-
-    // Draw title
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 14px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('Orbital View - Shepherding Analysis (Log Scale)', 20, 25);
-
-    // Draw legend in top right
-    const legendX = width - 180;
-    const legendY = 50;
-
-    ctx.fillStyle = '#333';
-    ctx.font = '11px Arial';
-    ctx.textAlign = 'left';
-
-    // Ring legend
-    ctx.fillStyle = 'rgba(81, 207, 102, 0.3)';
-    ctx.fillRect(legendX, legendY, 15, 10);
-    ctx.strokeStyle = '#51cf66';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(legendX, legendY, 15, 10);
-    ctx.fillStyle = '#333';
-    ctx.fillText('Ring boundaries', legendX + 20, legendY + 9);
-
-    // Body orbit
-    ctx.strokeStyle = '#4c6ef5';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(legendX, legendY + 30);
-    ctx.lineTo(legendX + 15, legendY + 30);
-    ctx.stroke();
-    ctx.fillStyle = '#333';
-    ctx.fillText('Body orbit', legendX + 20, legendY + 34);
-
-    // Hill sphere
-    ctx.strokeStyle = '#f03e3e';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(legendX, legendY + 55);
-    ctx.lineTo(legendX + 15, legendY + 55);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#333';
-    ctx.fillText('Hill sphere extent', legendX + 20, legendY + 59);
-
-    // Parent body
-    ctx.fillStyle = '#ff922b';
-    ctx.beginPath();
-    ctx.arc(legendX + 7, legendY + 80, 5, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.fillStyle = '#333';
-    ctx.fillText('Parent body', legendX + 20, legendY + 84);
   }
 
   public getSpinResonance(): string {
@@ -1746,253 +1327,83 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public classifyNeutronStar(): string | null {
-    const body = this.body();
-    if (body.bodyData.type !== BODY_TYPE.Star || body.bodyData.subType !== 'Neutron Star') {
+    const bd = this.body().bodyData;
+    if (bd.type !== BODY_TYPE.Star || bd.subType !== 'Neutron Star') {
       return null;
     }
-
-    const mass = body.bodyData.solarMasses;
-    const radius = body.bodyData.solarRadius;
-    const periodDays = body.bodyData.rotationalPeriod;
-    const absMag = body.bodyData.absoluteMagnitude;
-
-    if (mass === undefined || radius === undefined || periodDays === undefined || absMag === undefined) {
-      return null;
-    }
-
-    const period = periodDays * 86400; // Convert days to seconds
-
-    const isHighMass = mass > 2.1;
-
-    if (period < 0.01) {
-      return isHighMass ? "Hyper-Massive Millisecond Pulsar" : "Millisecond Pulsar";
-    }
-
-    if (period >= 0.01 && period < 5) {
-      return isHighMass ? "Anomalous Mass Pulsar" : "Standard Pulsar";
-    }
-
-    if (period >= 5 && period < 30) {
-      return isHighMass ? "Anomalous Mass Slow-Period Pulsar" : "Slow-Period Pulsar";
-    }
-
-    if (period >= 30 && period < 3600) {
-      return absMag < 10 ? "Ultra-Long Period Magnetar" : "Ultra-Long Period Pulsar";
-    }
-
-    if (period >= 3600) {
-      return "Anomalous Slow-Rotator";
-    }
-
-    return "Unclassified Compact Object";
+    return this.stellarPhysics.classifyNeutronStar(
+      bd.solarMasses, bd.solarRadius, bd.rotationalPeriod, bd.absoluteMagnitude,
+    );
   }
 
 
 
   public getLandableBadgeClass(): string {
-    const body = this.body();
-    if (!body.bodyData.isLandable) {
-      return 'badge-gray';
-    }
-
-    // High gravity — disembarking not possible
-    if (body.bodyData.gravity && body.bodyData.gravity > 2.7) {
-      return 'badge-red';
-    }
-
-    const surfTemp = body.bodyData.surfaceTemperature;
-    if (!surfTemp) {
-      return 'badge-gray';
-    }
-
-    const { min, max } = estimateTempRange(
-      surfTemp,
-      body.bodyData.subType,
-      body.bodyData.atmosphereType,
-      body.bodyData.surfacePressure,
-    );
-
-    const safeMin = isTempSafe(min);
-    const safeMax = isTempSafe(max);
-    const safeSurf = isTempSafe(surfTemp);
-
-    if (safeMin && safeMax) {
-      return 'badge-green';
-    } else if (safeMin || safeMax || safeSurf) {
-      return 'badge-orange';
-    } else {
-      return 'badge-red';
-    }
+    return this.cachedLandableBadgeClass;
   }
 
   public getLandableTooltip(): string {
-    // High gravity takes precedence
-    const body = this.body();
-    if (body.bodyData.gravity && body.bodyData.gravity > 2.7) {
-      return 'Landable: High gravity. Disembarking not possible';
-    }
-
-    const surfTemp = body.bodyData.surfaceTemperature;
-    if (!surfTemp) {
-      return 'Landable: No temperature data available';
-    }
-
-    const { min, max } = estimateTempRange(
-      surfTemp,
-      body.bodyData.subType,
-      body.bodyData.atmosphereType,
-      body.bodyData.surfacePressure,
-    );
-
-    const rangeInfo = `Est. range ${Math.round(min)}–${Math.round(max)} K`;
-    const tooCold = min < 182;
-    const tooHot = max >= 700;
-
-    if (tooCold && tooHot) {
-      return `Landable: Battery drain risk and risk of injury or death`;
-    } else if (tooHot) {
-      return `Landable: Risk of injury or death`;
-    } else if (tooCold) {
-      return `Landable: Battery drain risk`;
-    } else {
-      return `Landable: Safe to disembark`;
-    }
+    return this.cachedLandableTooltip;
   }
 
   public getEstimatedTempRange(): { min: number; max: number } | null {
-    const surfTemp = this.body().bodyData.surfaceTemperature;
-    if (!surfTemp) return null;
-    return estimateTempRange(
-      surfTemp,
-      this.body().bodyData.subType,
-      this.body().bodyData.atmosphereType,
-      this.body().bodyData.surfacePressure,
-    );
+    return this.cachedEstimatedTempRange;
+  }
+
+  /**
+   * Estimates the on-foot temperature range once and derives the landable badge colour
+   * and tooltip from it, so the three template bindings share a single lookup instead
+   * of each recomputing estimateTempRange on every change-detection pass.
+   */
+  private computeLandableAndTemp(): void {
+    const bd = this.body().bodyData;
+    const surfTemp = bd.surfaceTemperature;
+    const range = surfTemp
+      ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure)
+      : null;
+    this.cachedEstimatedTempRange = range;
+
+    // Badge colour
+    if (!bd.isLandable) {
+      this.cachedLandableBadgeClass = 'badge-gray';
+    } else if (bd.gravity && bd.gravity > 2.7) {
+      this.cachedLandableBadgeClass = 'badge-red';
+    } else if (!surfTemp || !range) {
+      this.cachedLandableBadgeClass = 'badge-gray';
+    } else {
+      const safeMin = isTempSafe(range.min);
+      const safeMax = isTempSafe(range.max);
+      const safeSurf = isTempSafe(surfTemp);
+      this.cachedLandableBadgeClass = (safeMin && safeMax) ? 'badge-green'
+        : (safeMin || safeMax || safeSurf) ? 'badge-orange'
+          : 'badge-red';
+    }
+
+    // Tooltip (high gravity takes precedence)
+    if (bd.gravity && bd.gravity > 2.7) {
+      this.cachedLandableTooltip = 'Landable: High gravity. Disembarking not possible';
+    } else if (!surfTemp || !range) {
+      this.cachedLandableTooltip = 'Landable: No temperature data available';
+    } else {
+      const tooCold = range.min < 182;
+      const tooHot = range.max >= 700;
+      this.cachedLandableTooltip = (tooCold && tooHot) ? 'Landable: Battery drain risk and risk of injury or death'
+        : tooHot ? 'Landable: Risk of injury or death'
+          : tooCold ? 'Landable: Battery drain risk'
+            : 'Landable: Safe to disembark';
+    }
   }
 
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
+  private cachedEstimatedTempRange: { min: number; max: number } | null = null;
+  private cachedLandableBadgeClass = 'badge-gray';
+  private cachedLandableTooltip = '';
   private cachedNextPeriapsis: { date: Date, days: number } | null = null;
   private cachedNextApoapsis: { date: Date, days: number } | null = null;
   private cachedChildrenExpandedState: boolean = false;
   private cachedRocheExcess: number | null = null;
-
-  private detectTrojanStatus(): void {
-    this.trojanStatus = null;
-    this.trojanHostStatus = false;
-
-    const body = this.body();
-    if (!body.parent || !body.bodyData.orbitalPeriod || !body.bodyData.semiMajorAxis ||
-      body.bodyData.argOfPeriapsis === undefined) {
-      return;
-    }
-
-    // Check L3, L4, L5 (same orbital distance)
-    const sameSMABodies = body.parent.subBodies.filter(sibling => {
-      const bodyValue = this.body();
-      return sibling !== bodyValue &&
-      sibling.bodyData.orbitalPeriod === bodyValue.bodyData.orbitalPeriod &&
-      sibling.bodyData.semiMajorAxis === bodyValue.bodyData.semiMajorAxis &&
-      sibling.bodyData.argOfPeriapsis !== undefined;
-    }
-    );
-
-    // If this body has co-orbital neighbours at both +60° and −60°, it is the host planet
-    // of the Trojan pair (the "massive" reference body). It should not itself be labelled
-    // as a Trojan, so bail out early.
-    let hasLeadingTrojan = false;
-    let hasTrailingTrojan = false;
-    for (const sibling of sameSMABodies) {
-      const diff = ((sibling.bodyData.argOfPeriapsis! - body.bodyData.argOfPeriapsis! + 540) % 360) - 180;
-      if (Math.abs(diff - 60) < 1) hasLeadingTrojan = true;
-      if (Math.abs(diff + 60) < 1) hasTrailingTrojan = true;
-    }
-    if (hasLeadingTrojan && hasTrailingTrojan) {
-      this.trojanHostStatus = true; // This body has Trojans at both L4 and L5 — it is the host, not a Trojan itself.
-      return;
-    }
-
-    for (const sibling of sameSMABodies) {
-      const argDiff = Math.abs(body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
-      const normalizedDiff = Math.min(argDiff, 360 - argDiff);
-
-      if (Math.abs(normalizedDiff - 60) < 1) {
-        // Use a signed angular difference (normalised to [−180, 180]) so that wrap-around
-        // values such as 300° vs 0° are handled correctly.
-        const relativePos = ((body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis! + 540) % 360) - 180;
-        this.trojanStatus = relativePos > 0 ? 'L4' : 'L5';
-        return;
-      } else if (Math.abs(normalizedDiff - 180) < 1) {
-        this.trojanStatus = 'L3';
-        return;
-      }
-    }
-
-    // Check L1, L2 (different orbital distances, same period)
-    const samePeriodBodies = body.parent.subBodies.filter(sibling => {
-      const bodyValue = this.body();
-      return sibling !== bodyValue &&
-      sibling.bodyData.orbitalPeriod === bodyValue.bodyData.orbitalPeriod &&
-      sibling.bodyData.semiMajorAxis !== bodyValue.bodyData.semiMajorAxis &&
-      sibling.bodyData.argOfPeriapsis !== undefined &&
-      sibling.bodyData.ascendingNode !== undefined;
-    }
-    );
-
-    for (const sibling of samePeriodBodies) {
-      const argDiff = Math.abs(body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
-      const nodeDiff = Math.abs((body.bodyData.ascendingNode || 0) - (sibling.bodyData.ascendingNode || 0));
-
-      if (argDiff < 5 && nodeDiff < 5) {
-        if (body.bodyData.semiMajorAxis! < sibling.bodyData.semiMajorAxis!) {
-          this.trojanStatus = 'L1';
-        } else {
-          this.trojanStatus = 'L2';
-        }
-        return;
-      }
-    }
-  }
-
-  private detectRosetteStatus(): void {
-    this.rosetteStatus = null;
-
-    const bodyValue = this.body();
-    if (!bodyValue.parent || !bodyValue.bodyData.orbitalPeriod || !bodyValue.bodyData.semiMajorAxis ||
-      bodyValue.bodyData.argOfPeriapsis === undefined) {
-      return;
-    }
-
-    const rosetteGroup = bodyValue.parent.subBodies.filter(sibling => {
-      const body = this.body();
-      return sibling.bodyData.orbitalPeriod === body.bodyData.orbitalPeriod &&
-      sibling.bodyData.semiMajorAxis === body.bodyData.semiMajorAxis &&
-      sibling.bodyData.argOfPeriapsis !== undefined;
-    }
-    );
-
-    if (rosetteGroup.length < 3) return;
-
-    const angles = rosetteGroup.map(body => body.bodyData.argOfPeriapsis!).sort((a, b) => a - b);
-    const expectedSpacing = 360 / rosetteGroup.length;
-
-    let isRosette = true;
-    for (let i = 0; i < angles.length; i++) {
-      const nextIndex = (i + 1) % angles.length;
-      let spacing = angles[nextIndex] - angles[i];
-      if (spacing < 0) spacing += 360;
-
-      if (Math.abs(spacing - expectedSpacing) > 5) {
-        isRosette = false;
-        break;
-      }
-    }
-
-    if (isRosette) {
-      this.rosetteStatus = `Rosette (${rosetteGroup.length})`;
-    }
-  }
 
   public getJetConeAngle(): number | null {
     return this.cachedJetConeAngle;
@@ -2117,72 +1528,14 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     return this.physics.rocheExcess(this.body());
   }
 
-  public tidalLockDialogData: any = null;
-  public onFootSafetyDialogData: any = null;
-
-  private getLookupSource(
-    subType: string | null | undefined,
-    atmosphereType: string | null | undefined,
-    surfacePressure: number | null | undefined,
-  ): string {
-    const st = subType?.trim() || null;
-    const at = atmosphereType?.trim() || null;
-    if (st && at && DELTA_BY_SUBTYPE_ATMOSPHERE[`${st}|${at}`]) {
-      return `SubType + Atmosphere (${st} / ${at})`;
-    }
-    const noAtm = (surfacePressure != null && surfacePressure === 0) || at === 'nan';
-    if (noAtm && st && DELTA_BY_SUBTYPE_NO_ATM[st]) return `SubType + No Atmosphere (${st})`;
-    if (st && DELTA_BY_SUBTYPE[st]) return `SubType (${st})`;
-    if (at && DELTA_BY_ATMOSPHERE[at]) return `Atmosphere type (${at})`;
-    if (surfacePressure != null) {
-      let pc = '';
-      if (surfacePressure === 0) pc = 'None';
-      else if (surfacePressure < 0.01) pc = 'Trace';
-      else if (surfacePressure < 0.1) pc = 'Thin';
-      if (pc && DELTA_BY_PRESSURE[pc]) return `Pressure class (${pc})`;
-    }
-    return 'Global fallback';
-  }
-
-  private getLookupDelta(
-    subType: string | null | undefined,
-    atmosphereType: string | null | undefined,
-    surfacePressure: number | null | undefined,
-  ): TempDelta {
-    const st = subType?.trim() || null;
-    const at = atmosphereType?.trim() || null;
-    if (st && at) {
-      const row = DELTA_BY_SUBTYPE_ATMOSPHERE[`${st}|${at}`];
-      if (row) return row;
-    }
-    const noAtm = (surfacePressure != null && surfacePressure === 0) || at === 'nan';
-    if (noAtm && st) {
-      const row = DELTA_BY_SUBTYPE_NO_ATM[st];
-      if (row) return row;
-    }
-    if (st) {
-      const row = DELTA_BY_SUBTYPE[st];
-      if (row) return row;
-    }
-    if (at) {
-      const row = DELTA_BY_ATMOSPHERE[at];
-      if (row) return row;
-    }
-    if (surfacePressure != null) {
-      let pc = '';
-      if (surfacePressure === 0) pc = 'None';
-      else if (surfacePressure < 0.01) pc = 'Trace';
-      else if (surfacePressure < 0.1) pc = 'Thin';
-      if (pc && DELTA_BY_PRESSURE[pc]) return DELTA_BY_PRESSURE[pc];
-    }
-    return DELTA_GLOBAL;
-  }
+  public tidalLockDialogData: TidalLockDialogData | null = null;
+  public onFootSafetyDialogData: OnFootSafetyDialogData | null = null;
 
   public showOnFootSafetyDialog(): void {
     const bd = this.body().bodyData;
     const surfTemp = bd.surfaceTemperature ?? null;
     const estRange = surfTemp ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure) : null;
-    const delta = this.getLookupDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
+    const { delta, source } = lookupTempDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
     this.onFootSafetyDialogData = {
       bodyName: bd.name,
       subType: bd.subType,
@@ -2193,7 +1546,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       estimatedMin: estRange?.min ?? null,
       estimatedMax: estRange?.max ?? null,
       badgeClass: this.getLandableBadgeClass(),
-      lookupSource: this.getLookupSource(bd.subType, bd.atmosphereType, bd.surfacePressure),
+      lookupSource: source,
       p5Delta: delta.p5,
       p95Delta: delta.p95,
     };
@@ -2247,7 +1600,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public showJetAngleDialog(): void {
     // Generate the chart image for the dialog and then open it
     try {
-      this.jetAngleChartDataUrl = this.generateJetAngleChart();
+      this.jetAngleChartDataUrl = this.chartRenderer.generateJetAngleChart(this.jetSampleCsv);
     } catch {
       // If chart generation fails, clear URL and still open dialog
       this.jetAngleChartDataUrl = null;
@@ -2261,185 +1614,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     });
   }
 
-
-
-  private generateJetAngleChart(): string | null {
-    // Parse CSV
-    const rows = this.parseCsv(this.jetSampleCsv);
-    if (!rows || rows.length === 0) return null;
-
-    // Model parameters (used for sigmoid overlay)
-    const Amin = -83.8389;
-    const Amax = -60.8896;
-    const k = 2.2037;
-    const x0 = -5.0497;
-    const alpha = 0.001517;
-
-    // Build points with combined predictor x, actual angle y, and residual (actual - predicted_full)
-    const pts: { x: number; y: number; residual: number }[] = [];
-    for (const r of rows) {
-      const rot = r['Rotation Period [s]'] ? Number(r['Rotation Period [s]']) : null;
-      const sr = r['Radius [Ls]'] ? Number(r['Radius [Ls]']) : null;
-      const age = r['age'] ? Number(r['age']) : null;
-      const angle = r['Angle [deg]'] ? Number(r['Angle [deg]']) : null;
-      if (rot === null || sr === null || age === null || angle === null) continue;
-      const rotDays = rot / 86400;
-      if (!(rotDays > 0)) continue;
-      const x = Math.log(sr / Math.sqrt(rotDays)) + alpha * Math.log(age);
-      const predictedFull = this.computePredictedAngleForSample(rot, sr, age);
-      if (predictedFull === null) continue;
-      const residual = angle - predictedFull; // positive => under-predicted (actual > predicted)
-      pts.push({ x, y: angle, residual });
-    }
-
-    if (pts.length === 0) return null;
-
-    // x-range and sampling for sigmoid overlay
-    const xs = pts.map(p => p.x);
-    const xmin = Math.min(...xs) - 0.2;
-    const xmax = Math.max(...xs) + 0.2;
-    const sampleCount = 300;
-    const sigmoidCurve: { x: number; y: number }[] = [];
-    for (let i = 0; i <= sampleCount; i++) {
-      const x = xmin + (i / sampleCount) * (xmax - xmin);
-      const denom = 1 + Math.exp(-k * (x - x0));
-      const y = Amin + (Amax - Amin) / denom;
-      sigmoidCurve.push({ x, y });
-    }
-
-    // Canvas setup
-    const width = 780;
-    const height = 360;
-    const padding = 50;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d')!;
-
-    // background
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, width, height);
-
-    // For bubble plot: x = rotational period (days), y = solarRadius (Ls), color = age, size = angle (deg)
-    // Build arrays
-    const bubblePts: { x: number; y: number; age: number; angle: number }[] = [];
-    for (const r of rows) {
-      const rot = r['Rotation Period [s]'] ? Number(r['Rotation Period [s]']) : null;
-      const sr = r['Radius [Ls]'] ? Number(r['Radius [Ls]']) : null;
-      const age = r['age'] ? Number(r['age']) : null;
-      const angle = r['Angle [deg]'] ? Number(r['Angle [deg]']) : null;
-      if (rot === null || sr === null || age === null || angle === null) continue;
-      const rotDays = rot / 86400;
-      if (!(rotDays > 0)) continue;
-      bubblePts.push({ x: rotDays, y: sr, age, angle });
-    }
-    if (bubblePts.length === 0) return null;
-
-    // compute ranges
-    const xvals = bubblePts.map(p => p.x);
-    const yvals = bubblePts.map(p => p.y);
-    const ageVals = bubblePts.map(p => p.age);
-    const angleVals = bubblePts.map(p => p.angle);
-    const xminB = Math.min(...xvals);
-    const xmaxB = Math.max(...xvals);
-    const yminB = Math.min(...yvals);
-    const ymaxB = Math.max(...yvals);
-    const ageMin = Math.min(...ageVals);
-    const ageMax = Math.max(...ageVals);
-    const angleMin = Math.min(...angleVals);
-    const angleMax = Math.max(...angleVals);
-
-    const xToPx = (x: number) => padding + ((Math.log10(x) - Math.log10(xminB)) / (Math.log10(xmaxB) - Math.log10(xminB))) * (width - padding * 2);
-    const yToPx = (y: number) => (height - padding) - ((y - yminB) / (ymaxB - yminB)) * (height - padding * 2);
-
-    // axes
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.stroke();
-
-    // draw bubbles
-    for (const p of bubblePts) {
-      const px = xToPx(p.x);
-      const py = yToPx(p.y);
-      // size scale (map angle to radius between 4 and 18)
-      const size = 4 + 14 * ((p.angle - angleMin) / (angleMax - angleMin || 1));
-      // color map age -> hue (older = more red)
-      const t = (p.age - ageMin) / (ageMax - ageMin || 1);
-      const hue = 240 - 240 * t; // 240 blue -> 0 red
-      const color = `hsl(${hue},70%,50%)`;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(px, py, size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-
-    // axes labels
-    ctx.fillStyle = '#000';
-    ctx.font = '13px Arial';
-    ctx.fillText('Rotational period (days) [log scale]', width / 2 - 90, height - 12);
-    ctx.save();
-    ctx.translate(14, height / 2 + 30);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Solar radius (Ls)', 0, 0);
-    ctx.restore();
-
-    // color legend (age)
-    const legendX = width - padding - 140;
-    const legendY = padding + 10;
-    ctx.fillStyle = '#000';
-    ctx.fillText('Age (older → red)', legendX, legendY - 6);
-    for (let i = 0; i <= 4; i++) {
-      const ty = legendY + i * 12;
-      const tt = i / 4;
-      const hue = 240 - 240 * tt;
-      ctx.fillStyle = `hsl(${hue},70%,50%)`;
-      ctx.fillRect(legendX, ty, 12, 10);
-      ctx.fillStyle = '#000';
-      const ageLabel = Math.round(ageMin + tt * (ageMax - ageMin));
-      ctx.fillText(ageLabel.toString(), legendX + 18, ty + 9);
-    }
-
-    // size legend (angle)
-    ctx.fillStyle = '#000';
-    ctx.fillText('Size = jet angle (deg)', legendX, legendY + 70);
-    const sY = legendY + 84;
-    const smallR = 6;
-    const largeR = 16;
-    ctx.beginPath(); ctx.arc(legendX + 12, sY, smallR, 0, Math.PI * 2); ctx.fillStyle = '#888'; ctx.fill();
-    ctx.fillStyle = '#000'; ctx.fillText(Math.round(angleMin).toString(), legendX + 32, sY + 4);
-    ctx.beginPath(); ctx.arc(legendX + 12, sY + 28, largeR, 0, Math.PI * 2); ctx.fillStyle = '#888'; ctx.fill();
-    ctx.fillStyle = '#000'; ctx.fillText(Math.round(angleMax).toString(), legendX + 32, sY + 32 + 4);
-
-    return canvas.toDataURL('image/png');
-  }
-
-  private parseCsv(text: string): Array<Record<string, string>> {
-    if (!text) return [];
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length === 0) return [];
-    const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-    const rows: Array<Record<string, string>> = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-      const obj: Record<string, string> = {};
-      for (let j = 0; j < header.length; j++) {
-        obj[header[j]] = cols[j] ?? '';
-      }
-      rows.push(obj);
-    }
-    return rows;
-  }
-
-  private computePredictedAngleForSample(rotSeconds: number | null, solarRadius: number | null, age: number | null): number | null {
-    return this.stellarPhysics.jetConeAngleFromSeconds(rotSeconds, solarRadius, age);
-  }
 
   public showTidalLockDialog(): void {
     const rot = this.body().bodyData.rotationalPeriod;
@@ -2487,6 +1661,41 @@ interface BiologySignal {
   signal: string;
   codex: CanonnCodexEntry | null | undefined;
   isGuess: boolean;
+}
+
+interface InvisibleRingDialogData {
+  ringName: string;
+  innerRadius: number;
+  outerRadius: number;
+  width: number;
+  area: number;
+  mass: number;
+  density: number;
+  isInvisible: boolean;
+}
+
+interface TidalLockDialogData {
+  rotationalPeriod: number | undefined;
+  orbitalPeriod: number | undefined;
+  difference: number | null;
+  solarDay: number | null;
+  resonance: string;
+  tidallyLocked: boolean;
+}
+
+interface OnFootSafetyDialogData {
+  bodyName: string;
+  subType: string;
+  atmosphereType: string | null;
+  surfacePressure: number | null;
+  surfaceTemperature: number | null;
+  gravity: number | null;
+  estimatedMin: number | null;
+  estimatedMax: number | null;
+  badgeClass: string;
+  lookupSource: string;
+  p5Delta: number;
+  p95Delta: number;
 }
 
 const genus: { [key: string]: string } = {

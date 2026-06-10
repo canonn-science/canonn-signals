@@ -23,7 +23,7 @@ describe('SystemBodyComponent', () => {
     fixture = TestBed.createComponent(SystemBodyComponent);
     component = fixture.componentInstance;
     // Intentionally not calling detectChanges(): the template requires a populated
-    // `body` input; these tests exercise the pure orbital-mechanics helpers directly.
+    // `body` input; these tests exercise the component's pure helpers directly.
   });
 
   it('should create', () => {
@@ -41,7 +41,4 @@ describe('SystemBodyComponent', () => {
     expect(component.getEccentricityAnalysis(0.6)).toBe('Eccentric');
     expect(component.getEccentricityAnalysis(0.9)).toBe('Highly Eccentric');
   });
-
-  // Orbital-position math moved to OrbitalMechanicsService; see
-  // orbital-mechanics.service.spec.ts for its coverage.
 });

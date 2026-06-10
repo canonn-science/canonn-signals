@@ -95,4 +95,40 @@ export class StellarPhysicsService {
     if (!rotSeconds) { return null; }
     return this.jetConeAngle(Number(rotSeconds) / SECONDS_PER_DAY, solarRadius, age);
   }
+
+  /**
+   * Descriptive classification of a neutron star from its mass, rotation period and
+   * absolute magnitude (period in days). Returns null when any required value is
+   * missing, so callers can fall back to the generic "Neutron Star" label.
+   */
+  classifyNeutronStar(
+    solarMasses: number | null | undefined,
+    solarRadius: number | null | undefined,
+    rotationalPeriodDays: number | null | undefined,
+    absoluteMagnitude: number | null | undefined,
+  ): string | null {
+    if (solarMasses === undefined || solarMasses === null ||
+      solarRadius === undefined || solarRadius === null ||
+      rotationalPeriodDays === undefined || rotationalPeriodDays === null ||
+      absoluteMagnitude === undefined || absoluteMagnitude === null) {
+      return null;
+    }
+
+    const period = rotationalPeriodDays * SECONDS_PER_DAY; // seconds
+    const isHighMass = solarMasses > 2.1;
+
+    if (period < 0.01) {
+      return isHighMass ? 'Hyper-Massive Millisecond Pulsar' : 'Millisecond Pulsar';
+    }
+    if (period < 5) {
+      return isHighMass ? 'Anomalous Mass Pulsar' : 'Standard Pulsar';
+    }
+    if (period < 30) {
+      return isHighMass ? 'Anomalous Mass Slow-Period Pulsar' : 'Slow-Period Pulsar';
+    }
+    if (period < 3600) {
+      return absoluteMagnitude < 10 ? 'Ultra-Long Period Magnetar' : 'Ultra-Long Period Pulsar';
+    }
+    return 'Anomalous Slow-Rotator';
+  }
 }

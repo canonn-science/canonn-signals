@@ -101,54 +101,78 @@ export const DELTA_BY_PRESSURE: { [key: string]: TempDelta } = {
 
 export const DELTA_GLOBAL: TempDelta = { p5: -51.0, p95: 98.5 };
 
-export function estimateTempRange(
-  surfaceTemp: number,
+/** A resolved temperature delta together with a human-readable description of the rule that produced it. */
+export interface TempDeltaLookup {
+  delta: TempDelta;
+  source: string;
+}
+
+/** Coarse pressure class ("None"/"Trace"/"Thin") for a surface pressure, or null. */
+function pressureClass(surfacePressure: number | null | undefined): string | null {
+  if (surfacePressure == null) return null;
+  if (surfacePressure === 0) return 'None';
+  if (surfacePressure < 0.01) return 'Trace';
+  if (surfacePressure < 0.1) return 'Thin';
+  return null;
+}
+
+/**
+ * Single source of truth for the temperature-delta lookup priority: most specific
+ * (subtype+atmosphere) down to the global fallback. `estimateTempRange`, the badge
+ * colouring and the on-foot dialog all derive from this so they can never disagree.
+ */
+export function lookupTempDelta(
   subType: string | null | undefined,
   atmosphereType: string | null | undefined,
   surfacePressure: number | null | undefined,
-): { min: number; max: number } {
+): TempDeltaLookup {
   const st = subType?.trim() || null;
   const at = atmosphereType?.trim() || null;
 
   // 1. (subType, atmosphereType) combined — most specific
   if (st && at) {
     const row = DELTA_BY_SUBTYPE_ATMOSPHERE[`${st}|${at}`];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
+    if (row) return { delta: row, source: `SubType + Atmosphere (${st} / ${at})` };
   }
 
   // 2. No-atmosphere: subType + confirmed zero pressure (or sentinel "nan")
   const noAtm = (surfacePressure != null && surfacePressure === 0) || at === 'nan';
   if (noAtm && st) {
     const row = DELTA_BY_SUBTYPE_NO_ATM[st];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
+    if (row) return { delta: row, source: `SubType + No Atmosphere (${st})` };
   }
 
   // 3. subType alone
   if (st) {
     const row = DELTA_BY_SUBTYPE[st];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
+    if (row) return { delta: row, source: `SubType (${st})` };
   }
 
   // 4. atmosphereType
   if (at) {
     const row = DELTA_BY_ATMOSPHERE[at];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
+    if (row) return { delta: row, source: `Atmosphere type (${at})` };
   }
 
   // 5. Pressure-class coarse fallback
-  if (surfacePressure != null) {
-    let pc = '';
-    if (surfacePressure === 0) pc = 'None';
-    else if (surfacePressure < 0.01) pc = 'Trace';
-    else if (surfacePressure < 0.1) pc = 'Thin';
-    if (pc) {
-      const row = DELTA_BY_PRESSURE[pc];
-      if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
-    }
+  const pc = pressureClass(surfacePressure);
+  if (pc) {
+    const row = DELTA_BY_PRESSURE[pc];
+    if (row) return { delta: row, source: `Pressure class (${pc})` };
   }
 
   // 6. Global fallback
-  return { min: surfaceTemp + DELTA_GLOBAL.p5, max: surfaceTemp + DELTA_GLOBAL.p95 };
+  return { delta: DELTA_GLOBAL, source: 'Global fallback' };
+}
+
+export function estimateTempRange(
+  surfaceTemp: number,
+  subType: string | null | undefined,
+  atmosphereType: string | null | undefined,
+  surfacePressure: number | null | undefined,
+): { min: number; max: number } {
+  const { delta } = lookupTempDelta(subType, atmosphereType, surfacePressure);
+  return { min: surfaceTemp + delta.p5, max: surfaceTemp + delta.p95 };
 }
 
 export function isTempSafe(temp: number): boolean {
