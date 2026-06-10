@@ -1,15 +1,12 @@
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject } from 'rxjs';
-import { Component, OnInit, ElementRef, AfterViewInit, DestroyRef, viewChild, inject } from '@angular/core';
+import { Component, OnInit, ElementRef, DestroyRef, ChangeDetectorRef, viewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppService, EdastroData, EdastroSystem, IndependentOutpost, BodyNameOverride } from '../app.service';
+import { AppService, EdastroData, EdastroSystem, IndependentOutpost } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { faFileCode } from '@fortawesome/free-solid-svg-icons';
-import { environment } from 'src/environments/environment';
-import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest, take } from 'rxjs';
+import { Observable, of, debounceTime, distinctUntilChanged, switchMap, map, tap, combineLatest, take, firstValueFrom } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ChangeDetectorRef } from '@angular/core';
 import { PGSystem } from 'src/assets/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -36,7 +33,7 @@ import { AsyncPipe, DecimalPipe } from '@angular/common';
     ],
     imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, MatIcon, SystemBodyComponent, AsyncPipe, DecimalPipe]
 })
-export class HomeComponent implements OnInit, AfterViewInit {
+export class HomeComponent implements OnInit {
   private readonly httpClient = inject(HttpClient);
   readonly appService = inject(AppService);
   private readonly activatedRoute = inject(ActivatedRoute);
@@ -115,7 +112,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   formatSimbadId(ident: string): string {
     return ident ? ident.replace(/^@/, '') : '';
   }
-  public edGalaxyData: any = null;
+  public edGalaxyData: EdGalaxyData | null = null;
   // Simbad cache and file loading logic removed (now using API)
 
   // Convert id64 to PGName using PGSystem, formatted for Elite Dangerous
@@ -150,104 +147,67 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   fetchEdGalaxyData(systemName: string, id64: number, coords?: { x: number, y: number, z: number }) {
-    // Get PGName from id64
     const pgName = this.getPGName(id64);
 
-    // Check if system name is a valid PG system name
-    const isPGSystem = PGSystem.isPGSystemName(systemName);
+    // Fallback used whenever we don't (or can't) resolve Simbad data.
+    const setFallback = () => {
+      this.edGalaxyData = { PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined };
+      this.cdr.markForCheck();
+    };
 
-    // If PGName is the same as system name, skip Simbad API call
-    if (pgName.toLowerCase() === systemName.toLowerCase()) {
-      this.edGalaxyData = {
-        PGName: pgName,
-        SystemAddress: id64,
-        Name: systemName,
-        Simbad: undefined
-      };
-      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
-        this.cdr.markForCheck();
-      }
+    // Skip the Simbad lookup for procedurally-generated systems: when the
+    // PGName matches the system name, the name is a valid PG name, or it
+    // contains "Sector". Simbad only has hand-authored systems.
+    if (pgName.toLowerCase() === systemName.toLowerCase()
+      || PGSystem.isPGSystemName(systemName)
+      || systemName.toLowerCase().includes('sector')) {
+      setFallback();
       return;
     }
 
-    // Only call Simbad if the system name is NOT a PG system (hand-authored systems only)
-    // Also skip if the system name contains "Sector" (indicates a PG system)
-    if (isPGSystem || systemName.toLowerCase().includes('sector')) {
-      this.edGalaxyData = {
-        PGName: pgName,
-        SystemAddress: id64,
-        Name: systemName,
-        Simbad: undefined
-      };
-      if (this.cdr && typeof this.cdr.markForCheck === 'function') {
-        this.cdr.markForCheck();
-      }
-      return;
-    }
-
-    // Call the new API for Simbad data
+    // Call the API for Simbad data
     let url = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/simbad?system_address=${id64}&name=${encodeURIComponent(systemName)}`;
     if (coords) {
       url += `&x=${coords.x}&y=${coords.y}&z=${coords.z}`;
     }
-    this.httpClient.get<any>(url).subscribe(
-      (result) => {
+    this.httpClient.get<SimbadApiResponse>(url).subscribe({
+      next: result => {
         // Remap API response to expected structure for edGalaxyData
-        // API returns: { name, system_address, ra_j2000, dec_j2000, simbad_name, simbad_ident, ... }
+        const hasSimbad = result.simbad_name || result.simbad_ident
+          || result.ra_j2000 !== undefined || result.dec_j2000 !== undefined;
         this.edGalaxyData = {
           PGName: pgName,
           SystemAddress: result.system_address,
           Name: result.name,
-          Simbad: (result.simbad_name || result.simbad_ident || result.ra_j2000 !== undefined || result.dec_j2000 !== undefined) ? {
+          Simbad: hasSimbad ? {
             Name: result.simbad_name,
             Ident: result.simbad_ident,
             RAJ2000: result.ra_j2000,
             DEJ2000: result.dec_j2000
           } : undefined
         };
-        if (this.cdr && typeof this.cdr.markForCheck === 'function') {
-          this.cdr.markForCheck();
-        }
+        this.cdr.markForCheck();
       },
-      err => {
-        // Even if Simbad API fails, still populate edGalaxyData with PGName
-        this.edGalaxyData = {
-          PGName: pgName,
-          SystemAddress: id64,
-          Name: systemName,
-          Simbad: undefined
-        };
-        if (this.cdr && typeof this.cdr.markForCheck === 'function') {
-          this.cdr.markForCheck();
-        }
-      }
-    );
-  }
-  // End of fetchEdGalaxyData
-
-  // lookupSimbadData removed: Simbad data is now fetched directly from the API in fetchEdGalaxyData
-
-  ngOnChanges(): void {
-    this.updateEdGalaxyData();
+      // Even if the Simbad API fails, still populate edGalaxyData with PGName.
+      error: () => setFallback(),
+    });
   }
 
   updateEdGalaxyData() {
-    if (this.data?.system?.name && this.data?.system?.id64) {
-      const currentName = this.data.system.name;
-      const currentId64 = this.data.system.id64;
-      if (this.lastSimbadSystemName !== currentName || this.lastSimbadId64 !== currentId64) {
-        // Clear previous data immediately when switching systems
-        this.edGalaxyData = null;
-        if (this.cdr && typeof this.cdr.markForCheck === 'function') {
-          this.cdr.markForCheck();
-        }
-        this.lastSimbadSystemName = currentName;
-        this.lastSimbadId64 = currentId64;
-        this.fetchEdGalaxyData(currentName, currentId64, this.data?.system?.coords);
-      } else {
-      }
-    } else {
+    if (!this.data?.system?.name || !this.data?.system?.id64) {
+      return;
     }
+    const currentName = this.data.system.name;
+    const currentId64 = this.data.system.id64;
+    if (this.lastSimbadSystemName === currentName && this.lastSimbadId64 === currentId64) {
+      return;
+    }
+    // Clear previous data immediately when switching systems
+    this.edGalaxyData = null;
+    this.cdr.markForCheck();
+    this.lastSimbadSystemName = currentName;
+    this.lastSimbadId64 = currentId64;
+    this.fetchEdGalaxyData(currentName, currentId64, this.data.system.coords);
   }
   openSignalsPage(systemName: string) {
     const url = `?system=${encodeURIComponent(systemName)}`;
@@ -365,10 +325,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private readonly GNOSIS_CACHE_DURATION = 3600000; // 1 hour in milliseconds
   private independentOutposts: IndependentOutpost[] = [];
   readonly regionMapContainer = viewChild.required<ElementRef<HTMLDivElement>>('regionMapContainer');
-  readonly gecImage = viewChild<ElementRef<HTMLImageElement>>('gecImage');
-  readonly gecContainer = viewChild<ElementRef<HTMLDivElement>>('gecContainer');
-
-  // Removed duplicate constructor
 
   public ngOnInit(): void {
     this.loadCredits();
@@ -406,10 +362,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
       });
   }
 
-  public ngAfterViewInit(): void {
-    // SVG will be loaded after data is set
-  }
-
   public search(): void {
     const input = this.searchControl.value || this.searchInput;
     if (this.searching || !input) {
@@ -429,16 +381,14 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Load test system
     if (this.searchInput.toLowerCase() === 'test') {
       this.httpClient.get<CanonnBiostats>('assets/test-system.json')
-        .subscribe(
-          data => {
+        .subscribe({
+          next: data => {
             this.processBodies(data);
             this.searching = false;
             this.searchControl.enable();
           },
-          error => {
-            this.searchFailed();
-          }
-        );
+          error: () => this.searchFailed(),
+        });
       return;
     }
 
@@ -460,8 +410,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
       // Try Spansh if not found in EdAstro
       this.httpClient.get<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
-        .subscribe(
-          data => {
+        .subscribe({
+          next: data => {
             const systems = data.min_max || [];
             // Use case-insensitive comparison to find the system
             const system = systems.find(s => s.name.toLowerCase() === this.searchInput.toLowerCase());
@@ -471,10 +421,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
               this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
             }
           },
-          error => {
-            this.searchFailed('Typeahead API error: Unable to search for systems. Please try again later.');
-          }
-        );
+          error: () => this.searchFailed('Typeahead API error: Unable to search for systems. Please try again later.'),
+        });
     });
   }
 
@@ -488,14 +436,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   private searchBySystemAddress(systemAddress: number): void {
     this.httpClient.get<CanonnBiostats>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=${systemAddress}&caller=Signals`)
-      .subscribe(
-        data => {
-          if (!data) {
-            this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
-            return;
-          }
-          // Check if the response indicates no spansh data or missing system info
-          if (!data.system || !data.system.name) {
+      .subscribe({
+        next: data => {
+          // A missing payload or system info means Spansh has no data for it yet.
+          if (!data || !data.system || !data.system.name) {
             this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
             return;
           }
@@ -506,7 +450,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           this.searchControl.enable();
           this.cdr.markForCheck();
         },
-        error => {
+        error: error => {
           // Check for specific error messages
           const errorMessage = error?.error?.message || error?.message || '';
           if (errorMessage.toLowerCase().includes('no spansh data')) {
@@ -516,8 +460,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
           } else {
             this.searchFailed(`Biostats API error: ${errorMessage || 'Unable to load system data'}. Please try again later.`);
           }
-        }
-      );
+        },
+      });
   }
 
   private processBodies(data: CanonnBiostats): void {
@@ -563,8 +507,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Fetch edastro data only if we don't have it or it's a different system
     if (isDifferentSystem || !this.edastroData) {
       this.appService.getEdastroData(data.system.id64)
-        .subscribe(
-          edastroData => {
+        .subscribe({
+          next: edastroData => {
             if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
               this.edastroData = edastroData;
               if (edastroData.mainImage) {
@@ -573,11 +517,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
               this.cdr.markForCheck();
             }
           },
-          error => {
-            console.error('EdAstro data error:', error);
-            // Silently handle error - edastro data is optional
-          }
-        );
+          // edastro data is optional - silently ignore failures.
+          error: error => console.error('EdAstro data error:', error),
+        });
     }
 
     const bodiesFlat: SystemBody[] = [];
@@ -772,7 +714,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
 
     const spansQuery = this.httpClient.get<{ values: string[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
-      .pipe(switchMap(response => of((response.values || []).map(name => this.decodeHtmlEntities(name)))));
+      .pipe(map(response => (response.values || []).map(name => this.decodeHtmlEntities(name))));
 
     const edastroQuery = this.appService.edastroSystems.pipe(
       switchMap(systems => {
@@ -791,7 +733,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         const lookupPromises = systemsWithoutId64.map(system => {
           const systemName = system.galMapSearch || system.name;
           const decodedSystemName = this.decodeHtmlEntities(systemName);
-          return this.appService.galMapSearch(decodedSystemName).toPromise()
+          return firstValueFrom(this.appService.galMapSearch(decodedSystemName))
             .then(result => {
               const found = result?.min_max?.find(s => s.name === decodedSystemName);
               return found ? { ...system, id64: found.id64 } : null;
@@ -808,7 +750,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     );
 
     const result$ = combineLatest([spansQuery, edastroQuery]).pipe(
-      switchMap(([spansSuggestions, edastroSuggestions]) => {
+      map(([spansSuggestions, edastroSuggestions]) => {
         // Store mapping for EdAstro systems
         this.appService.edastroSystems.pipe(take(1)).subscribe(systems => {
           systems.forEach(system => {
@@ -840,7 +782,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           return a.localeCompare(b);
         });
 
-        return of(sorted.slice(0, 20));
+        return sorted.slice(0, 20);
       }),
       takeUntilDestroyed(this.destroyRef)
     );
@@ -921,8 +863,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Load the SVG from the assets folder
     this.httpClient.get('assets/region-map/RegionMap.svg', { responseType: 'text' })
-      .subscribe(
-        svgContent => {
+      .subscribe({
+        next: svgContent => {
           const regionMapContainerValue = this.regionMapContainer();
           if (regionMapContainerValue && regionMapContainerValue.nativeElement) {
             regionMapContainerValue.nativeElement.innerHTML = svgContent;
@@ -951,10 +893,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
             this.highlightRegion();
           }
         },
-        error => {
-          console.error('Error loading region map:', error);
-        }
-      );
+        error: error => console.error('Error loading region map:', error),
+      });
   }
 
   private highlightRegion(): void {
@@ -1018,9 +958,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Add known systems markers
     this.addKnownSystemMarkers(svgElement);
-
-    // Debug GEC image sizing
-    this.debugGecImageSize();
   }
 
   private zoomToRegion(regionPath: SVGPathElement, svgElement: SVGSVGElement): void {
@@ -1317,10 +1254,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Fetch fresh data
     return this.httpClient.get<GnosisData>('https://us-central1-canonn-api-236217.cloudfunctions.net/query/gnosis')
       .pipe(
-        switchMap(data => {
+        tap(data => {
           this.gnosisData = data;
           this.gnosisLastFetched = now;
-          return of(data);
         }),
         takeUntilDestroyed(this.destroyRef)
       );
@@ -1441,23 +1377,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Add the group to the SVG
     svgElement.appendChild(group);
-  }
-
-  private debugGecImageSize(): void {
-    setTimeout(() => {
-      const gecContainer = this.gecContainer();
-      if (gecContainer && this.gecImage()) {
-
-        const systemDataDiv = gecContainer.nativeElement.parentElement;
-
-
-
-
-        const svgElement = this.regionMapContainer().nativeElement.querySelector('svg');
-        if (svgElement) {
-        }
-      }
-    }, 500);
   }
 
   private addSystemMarker(svgElement: SVGSVGElement): void {
@@ -1676,4 +1595,25 @@ export interface GnosisData {
   departure: string;
   desc: string;
   system: string;
+}
+
+export interface EdGalaxyData {
+  PGName: string;
+  SystemAddress: number;
+  Name: string;
+  Simbad?: {
+    Name?: string;
+    Ident?: string;
+    RAJ2000?: number;
+    DEJ2000?: number;
+  };
+}
+
+interface SimbadApiResponse {
+  name: string;
+  system_address: number;
+  ra_j2000?: number;
+  dec_j2000?: number;
+  simbad_name?: string;
+  simbad_ident?: string;
 }

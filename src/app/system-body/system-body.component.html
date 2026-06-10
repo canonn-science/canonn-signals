@@ -124,12 +124,12 @@
           <span style="font-size: 16px;">⚡</span>
         </div>
       }
-      @if (exandable && !expanded) {
+      @if (expandable && !expanded) {
         <div (click)="toggleExpand()" class="clickable" matTooltip="Expand">
           <fa-icon [icon]="faSquareCaretDown"></fa-icon>
         </div>
       }
-      @if (exandable && expanded) {
+      @if (expandable && expanded) {
         <div (click)="toggleExpand()" class="clickable" matTooltip="Collapse">
           <fa-icon [icon]="faSquareCaretUp"></fa-icon>
         </div>
@@ -160,7 +160,7 @@
       </button>
     </div>
   </div>
-  @if (isExpanded) {
+  @if (expanded) {
     <div class="system-body" [@grow]>
       <div class="body-image">
         @if (bodyCoronaImage) {

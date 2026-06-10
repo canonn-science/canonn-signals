@@ -5,7 +5,7 @@ import {
 } from '../data/temperature-estimation';
 import { Component, OnChanges, OnInit, ElementRef, AfterViewInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { SystemBody } from '../home/home.component';
+import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
@@ -57,7 +57,7 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public readonly faLock = faLock;
   public readonly faLink = faLink;
   readonly body = input.required<SystemBody>();
-  readonly edGalaxyData = input<any>(null);
+  readonly edGalaxyData = input<EdGalaxyData | null>(null);
   readonly isRoot = input<boolean>(false);
   readonly isLast = input<boolean>(false);
   readonly forceExpanded = input<boolean>(false);
@@ -94,9 +94,8 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public bodyImage: string = "";
   public bodyCoronaImage: string = "";
 
-  public exandable = false;
+  public expandable = false;
   public expanded = false;
-  public isExpanded = false;
 
   public hoveredIndex: number = -1;
 
@@ -136,10 +135,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     return this.appService.getBodyDisplayName(bodyName);
   }
 
-  public encodeURIComponent(value: any): string {
+  public encodeURIComponent(value: string | number | null | undefined): string {
     try {
       return encodeURIComponent(value ?? '');
-    } catch (e) {
+    } catch {
       return '';
     }
   }
@@ -302,7 +301,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
       this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
-    this.exandable = true;
+    this.expandable = true;
     if (this.expanded === false || this.expanded === undefined) {
       const isInteresting = this.hasSignals ||
         body.bodyData.subType === 'Earth-like world' ||
@@ -316,13 +315,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
         !!body.bodyData.isLandable;
       this.expanded = this.forceExpanded() || isInteresting || this.containsAnchorBody(body);
     }
-    this.isExpanded = this.expanded;
 
     if (this.isRoot()) {
       this.styleClass = "";
     }
     else if (!this.isLast()) {
-      if (!this.isExpanded) {
+      if (!this.expanded) {
         this.styleClass = "child-container-title-only";
       }
       else {
@@ -330,7 +328,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       }
     }
     else {
-      if (!this.isExpanded) {
+      if (!this.expanded) {
         this.styleClass = "child-container-title-only-last";
       }
       else {
@@ -348,7 +346,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public toggleExpand(): void {
     this.expanded = !this.expanded;
-    this.isExpanded = this.expanded;
     // Update cached state
     this.updateChildrenExpandedState();
     this.cdr.markForCheck();
@@ -377,7 +374,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     // Batch update all descendants
     allDescendants.forEach(component => {
       component.expanded = targetState;
-      component.isExpanded = targetState;
       component.cdr.markForCheck();
     });
 
@@ -710,7 +706,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.cachedSurfacePressureTooltip = `${atmStr}\n${kPaStr}\n${paStr}\n${psiStr}`;
   }
 
-  public trackByHotspot(index: number, hotspot: any): string {
+  public trackByHotspot(index: number, hotspot: { displayName: string }): string {
     return hotspot.displayName;
   }
 

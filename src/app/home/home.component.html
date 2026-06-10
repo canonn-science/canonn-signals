@@ -159,11 +159,11 @@
                                       <div class="system-data-section"
                                         >
                                         <div class="system-data-section-header">Simbad</div>
-                                        @if (edGalaxyData?.Simbad?.Name) {
+                                        @if (edGalaxyData.Simbad.Name) {
                                           <div class="system-data-entry">
                                             <div>Name</div>
                                             <div>
-                                              @if (edGalaxyData?.Simbad?.Ident) {
+                                              @if (edGalaxyData.Simbad.Ident) {
                                                 <span class="pgname-link"
                                                   (click)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)" title="Open in SIMBAD"
                                                   style="cursor:pointer;text-decoration:underline dotted;">
@@ -175,13 +175,13 @@
                                             </div>
                                           </div>
                                         }
-                                        @if (edGalaxyData?.Simbad?.RAJ2000) {
+                                        @if (edGalaxyData.Simbad.RAJ2000) {
                                           <div class="system-data-entry">
                                             <div>Right Ascension</div>
                                             <div>{{ formatRAJ2000(edGalaxyData.Simbad.RAJ2000) }}</div>
                                           </div>
                                         }
-                                        @if (edGalaxyData?.Simbad?.DEJ2000) {
+                                        @if (edGalaxyData.Simbad.DEJ2000) {
                                           <div class="system-data-entry">
                                             <div>Declination</div>
                                             <div>{{ formatDEJ2000(edGalaxyData.Simbad.DEJ2000) }}</div>

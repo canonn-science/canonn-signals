@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<defs>
+<radialGradient id="gGlow" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#5fe6f7" stop-opacity="0.7"/>
+<stop offset="1" stop-color="#5fe6f7" stop-opacity="0"/></radialGradient>
+<linearGradient id="rTop" x1="0" y1="0" x2="0.3" y2="1">
+<stop offset="0" stop-color="#f2ffff"/><stop offset="1" stop-color="#bdf4ff"/></linearGradient>
+<linearGradient id="rLeft" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#a6f0ff"/><stop offset="0.5" stop-color="#46cfe8"/><stop offset="1" stop-color="#127aa0"/></linearGradient>
+<linearGradient id="rRight" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#5ad2ea"/><stop offset="0.5" stop-color="#1c9cbe"/><stop offset="1" stop-color="#085a7e"/></linearGradient>
+<linearGradient id="bTopL" x1="0" y1="0" x2="0.5" y2="1">
+<stop offset="0" stop-color="#a99b86"/><stop offset="1" stop-color="#83776643"/></linearGradient>
+<linearGradient id="bTopR" x1="1" y1="0" x2="0.5" y2="1">
+<stop offset="0" stop-color="#998c79"/><stop offset="1" stop-color="#75695943"/></linearGradient>
+<linearGradient id="bLeft" x1="0.2" y1="0" x2="0.4" y2="1">
+<stop offset="0" stop-color="#82765f"/><stop offset="1" stop-color="#473f33"/></linearGradient>
+<linearGradient id="bRight" x1="0.8" y1="0" x2="0.6" y2="1">
+<stop offset="0" stop-color="#6b6051"/><stop offset="1" stop-color="#362f26"/></linearGradient></defs>
+<!-- cyan glow behind the relic top -->
+<ellipse cx="32" cy="17" rx="25" ry="16" fill="url(#gGlow)"/>
+
+<!-- STONE BASE -->
+<!-- front faces (down to the point) -->
+<path d="M 6 33 L 32.5 49 L 32.5 58 Z" fill="url(#bLeft)"/>
+<path d="M 58 34 L 32.5 49 L 32.5 58 Z" fill="url(#bRight)"/>
+<!-- lit top shelf the relic sits on -->
+<path d="M 6 33 L 16 37 L 32.5 49 Z" fill="url(#bTopL)"/>
+<path d="M 58 34 L 49.5 33.5 L 32.5 49 Z" fill="url(#bTopR)"/>
+<!-- rim highlight where top meets front, + crisp front edge -->
+<path d="M 6 33 L 32.5 49 L 58 34" fill="none" stroke="#b3a691" stroke-width="0.9" stroke-linecap="round" opacity="0.85"/>
+<line x1="32.5" y1="49" x2="32.5" y2="58" stroke="#221d17" stroke-width="0.7" stroke-linecap="round" opacity="0.7"/>
+<!-- seat shadow where the relic meets the base -->
+<path d="M 16 37 L 32.5 49 L 49.5 33.5" fill="none" stroke="#1c1812" stroke-width="0.8" opacity="0.55"/>
+
+<!-- RELIC: right face, left face, lit top -->
+<path d="M 32.5 22 L 49 6 L 49.5 33.5 L 32.5 49 Z" fill="url(#rRight)"/>
+<path d="M 17 7 L 32.5 22 L 32.5 49 L 16 37 Z" fill="url(#rLeft)"/>
+<path d="M 17 7 L 49 6 L 32.5 22 Z" fill="url(#rTop)"/>
+<g stroke="#e6fdff" stroke-width="0.55" opacity="0.5" stroke-linecap="round">
+<line x1="22.2" y1="12" x2="21.5" y2="41"/><line x1="27.3" y1="17" x2="27" y2="45"/>
+<line x1="38" y1="16.7" x2="38.2" y2="43.8"/><line x1="43.5" y1="11.3" x2="43.8" y2="38.6"/></g>
+<line x1="32.5" y1="22" x2="32.5" y2="49" stroke="#f0ffff" stroke-width="0.8" opacity="0.7" stroke-linecap="round"/>
+<path d="M 17 7 L 32.5 22 L 49 6 M 32.5 22 L 32.5 49" fill="none" stroke="#0a3a48" stroke-width="0.5" opacity="0.5"/>
+</svg>
