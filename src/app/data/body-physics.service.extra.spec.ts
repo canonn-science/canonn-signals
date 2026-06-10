@@ -133,6 +133,51 @@ describe('BodyPhysicsService (extended coverage)', () => {
     });
   });
 
+  describe('getParentRadiusAndDensity', () => {
+    it('returns null without a parent', () => {
+      expect(service.getParentRadiusAndDensity(node({ radius: 1000 }))).toBeNull();
+    });
+
+    it('returns null when the parent has no resolvable radius', () => {
+      const parent = node({ earthMasses: 100 });
+      expect(service.getParentRadiusAndDensity(node({ radius: 1000 }, parent))).toBeNull();
+    });
+
+    it('returns null when the parent has no resolvable mass/density', () => {
+      const parent = node({ radius: 50000 });
+      expect(service.getParentRadiusAndDensity(node({ radius: 1000 }, parent))).toBeNull();
+    });
+
+    it('returns the parent radius (km) and a positive bulk density for a valid parent', () => {
+      const parent = node({ earthMasses: 100, radius: 50000 });
+      const result = service.getParentRadiusAndDensity(node({ radius: 1000 }, parent))!;
+      expect(result).not.toBeNull();
+      expect(result.primaryRadius).toBe(50000);
+      expect(result.primaryDensity).toBeGreaterThan(0);
+    });
+  });
+
+  describe('rocheLimitCurves', () => {
+    it('samples 500–8000 kg/m³ in 100-step increments', () => {
+      const { densityRange } = service.rocheLimitCurves(50000, 3000);
+      expect(densityRange[0]).toBe(500);
+      expect(densityRange[densityRange.length - 1]).toBe(8000);
+      expect(densityRange.length).toBe(76); // (8000-500)/100 + 1
+    });
+
+    it('uses the 1.26 (rigid) and 2.456 (fluid) coefficients and decreases with density', () => {
+      const primaryRadius = 50000;
+      const primaryDensity = 3000;
+      const { densityRange, rigidLimits, fluidLimits } = service.rocheLimitCurves(primaryRadius, primaryDensity);
+      // At the first sample (density 500) the fluid/rigid ratio is exactly 2.456/1.26.
+      expect(fluidLimits[0] / rigidLimits[0]).toBeCloseTo(2.456 / 1.26, 6);
+      const expectedRigid0 = 1.26 * primaryRadius * Math.cbrt(primaryDensity / densityRange[0]);
+      expect(rigidLimits[0]).toBeCloseTo(expectedRigid0, 3);
+      // Limits shrink as particle density rises.
+      expect(rigidLimits[0]).toBeGreaterThan(rigidLimits[rigidLimits.length - 1]);
+    });
+  });
+
   describe('rocheExcess', () => {
     it('returns a positive excess for a dense body inside a stellar Roche limit (solar-mass body branch)', () => {
       const parent = node({ solarMasses: 1, solarRadius: 1 });

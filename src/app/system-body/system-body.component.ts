@@ -23,6 +23,10 @@ import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { ChartRenderingService, RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
+import { WHITE_DWARF_ATMOSPHERE, WHITE_DWARF_TOOLTIPS, whiteDwarfSpectralCode } from '../data/white-dwarf';
+import { MATERIAL_DATA } from '../data/materials';
+import { GENUS_NAMES } from '../data/genus';
+import { JET_SAMPLE_CSV } from '../data/jet-sample';
 
 @Component({
     selector: 'app-system-body',
@@ -117,17 +121,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   public rocheLimitDialogData: RocheChartData | null = null;
   public isChartLoading: boolean = false;
   public jetAngleChartDataUrl: string | null = null;
-  public readonly jetSampleCsv: string = `System,Body,Rotation Period [s],Radius [Ls],Angle [deg],age
-Hypaa,B1,1.789518,2.01,8.759363,12830
-Hypaa,B2,1.700175,2.04,11.40773,12860
-Hypaa,B3,2.27105,1.62,7.6653,12982
-Hypaa,B4,2.510701,1.52,6.9503,10680
-Hypaa,B5,3.352849,1.18,8.0145,7416
-Hypua,B6,1.026249,3.26,16.396,12296
-Phrooe,B7,4.044732,1.04,7.1671,12918
-Phrooe,B8,0.973363,3.3,16,6402
-Phrooe,B9,1.866787,1.95,9.1197,6346
-Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public apoPeriDialogData: {
     type: 'apo' | 'peri', date: Date, days: number, distanceKm?: number,
@@ -150,6 +143,30 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   private cachedJetConeAngle: number | null = null;
   private cachedSpinResonance = 'none';
   private cachedConfirmedBiologyCount = 0;
+
+  // Orbit/ring geometry and physics-service results, computed once per body change
+  // rather than on every change-detection pass (several are bound multiple times).
+  private cachedApoapsis = 0;
+  private cachedPeriapsis = 0;
+  private cachedRingWidth = 0;
+  private cachedRingArea = 0;
+  private cachedRingDensity = 0;
+  private cachedRingNotVisible = false;
+  private cachedPlanetaryDensity: PlanetaryDensity | null = null;
+  private cachedRigidRocheLimit: number | null = null;
+  private cachedFluidRocheLimit: number | null = null;
+  private cachedBodyRocheLimits: BodyRocheLimits | null = null;
+  private cachedShepherdingHillLimit: ShepherdingHillLimit | null = null;
+  private cachedIsActualShepherd = false;
+  private cachedIsShepherdingCandidate = false;
+  private cachedIsBodyWithinParentRings = false;
+  private cachedSignalsCount = 0;
+  private cachedAtmosphereCompositionTooltip = '';
+  private cachedSpinResonanceTooltip = '';
+  private cachedTangentialVelocity: number | null = null;
+  private cachedTangentialVelocityDisplay = '';
+  private cachedTangentialVelocityTooltip = '';
+  private cachedNeutronStarClass: string | null = null;
 
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
@@ -308,7 +325,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       }
       if (body.bodyData.signals.genuses && addGuessesAndGenuses) {
         for (const genusSiggnal of body.bodyData.signals.genuses) {
-          const genusName = genus[genusSiggnal] ?? genusSiggnal;
+          const genusName = GENUS_NAMES[genusSiggnal] ?? genusSiggnal;
           if (this.biologySignals.findIndex(b => b.signal.includes(genusName)) !== -1) {
             continue;
           }
@@ -372,6 +389,54 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.cachedAtmosphereDisplay = this.computeAtmosphereDisplay();
     this.cachedSolidCompositionTooltip = this.computeSolidCompositionTooltip();
     this.computeLandableAndTemp();
+    this.computeDerivedPhysics();
+  }
+
+  /**
+   * Computes the orbit/ring geometry and physics-service results that the template
+   * reads (several of them multiple times). Runs once per body change from
+   * ngOnChanges so these relatively expensive lookups don't repeat on every
+   * change-detection pass.
+   */
+  private computeDerivedPhysics(): void {
+    const body = this.body();
+    const bd = body.bodyData;
+
+    // Orbit extents (km).
+    const semiMajorAxisKm = (bd.semiMajorAxis ?? 0) * 149597870.7;
+    const eccentricity = bd.orbitalEccentricity ?? 0;
+    this.cachedApoapsis = semiMajorAxisKm * (1 + eccentricity);
+    this.cachedPeriapsis = semiMajorAxisKm * (1 - eccentricity);
+
+    // Ring geometry.
+    const outer = bd.outerRadius ?? 0;
+    const inner = bd.innerRadius ?? 0;
+    this.cachedRingWidth = outer - inner;
+    this.cachedRingArea = Math.PI * (outer * outer - inner * inner);
+    this.cachedRingDensity = this.cachedRingArea > 0 ? (bd.mass ?? 0) / this.cachedRingArea : 0;
+    this.cachedRingNotVisible = bd.type === BODY_TYPE.Ring
+      && this.cachedRingDensity < 0.1 && this.cachedRingWidth > 1000000;
+
+    // Physics-service delegations.
+    this.cachedPlanetaryDensity = this.physics.getPlanetaryDensity(bd);
+    this.cachedRigidRocheLimit = this.physics.calculateRigidRocheLimit(body);
+    this.cachedFluidRocheLimit = this.physics.calculateFluidRocheLimit(body);
+    this.cachedBodyRocheLimits = this.physics.calculateBodyRocheLimits(body);
+    this.cachedShepherdingHillLimit = this.physics.calculateShepherdingHillLimit(body);
+    this.cachedIsShepherdingCandidate = this.physics.isShepherdingCandidate(body);
+    this.cachedIsActualShepherd = this.physics.isActualShepherd(body);
+    this.cachedIsBodyWithinParentRings = this.physics.isBodyWithinParentRings(body);
+
+    // Signals and tooltips.
+    this.cachedSignalsCount = this.computeSignalsCount();
+    this.cachedAtmosphereCompositionTooltip = this.computeAtmosphereCompositionTooltip();
+    this.cachedSpinResonanceTooltip = this.computeSpinResonanceTooltip();
+
+    // Neutron-star / black-hole derived values.
+    this.cachedNeutronStarClass = this.computeClassifyNeutronStar();
+    this.cachedTangentialVelocity = this.computeTangentialVelocity();
+    this.cachedTangentialVelocityDisplay = this.computeTangentialVelocityDisplay();
+    this.cachedTangentialVelocityTooltip = this.computeTangentialVelocityTooltip();
   }
 
   public toggleExpand(): void {
@@ -436,77 +501,27 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getAtmosphereCompositionTooltip(): string {
+    return this.cachedAtmosphereCompositionTooltip;
+  }
+
+  private computeAtmosphereCompositionTooltip(): string {
     const body = this.body();
     if (body.bodyData.atmosphereComposition) {
       return Object.entries(body.bodyData.atmosphereComposition)
         .map(([gas, percentage]) => `${gas}: ${percentage.toFixed(2)}%`)
         .join('\n');
     }
-    const subType = body.bodyData.subType;
-    if (subType?.startsWith('White Dwarf')) {
-      const match = subType.match(/White Dwarf \(([^)]+)\)/);
-      if (match) {
-        const tooltipMap: { [key: string]: string } = {
-          'DA':  'DA — Only hydrogen Balmer lines visible.\n~28.9% of white dwarfs in the galaxy.',
-          'DAB': 'DAB — Hydrogen dominant with detectable helium lines.\nIntermediate between DA and DB types. ~12.9% of white dwarfs.',
-          'DAO': 'DAO — Hydrogen dominant with ionized helium (He II) lines also visible.\nTransitional type between the hydrogen-rich DA and ionized-helium DO sequences.',
-          'DAV': 'DAV — Pulsating hydrogen-atmosphere white dwarf.\nShows brightness variations due to non-radial oscillations. ~3.3% of white dwarfs.',
-          'DAZ': 'DAZ — Hydrogen atmosphere with metal absorption lines.\nMetals likely accreted from disrupted planetesimals. ~0.5% of white dwarfs.',
-          'DAP': 'DAP — Magnetic hydrogen-atmosphere white dwarf.\nMagnetic field detected via polarimetry or Zeeman splitting of hydrogen lines.',
-          'DB':  'DB — Only helium I lines visible, no hydrogen.\nForms when a DA loses its hydrogen layer. ~5.2% of white dwarfs.',
-          'DBV': 'DBV — Pulsating helium-atmosphere white dwarf.\nShows brightness variations due to non-radial oscillations. ~1.0% of white dwarfs.',
-          'DBZ': 'DBZ — Helium atmosphere with metal absorption lines.\nMetals likely accreted from disrupted planetesimals. ~0.1% of white dwarfs.',
-          'DBP': 'DBP — Magnetic helium-atmosphere white dwarf.\nMagnetic field detected via polarimetry or Zeeman splitting of helium lines.',
-          'DC':  'DC — No detectable spectral lines.\nFeatureless continuum; temperature too low for spectral features. ~44.3% of white dwarfs.',
-          'DCV': 'DCV — Pulsating white dwarf with no detectable spectral lines.\nVariable featureless spectrum. ~3.8% of white dwarfs.',
-          'DO':  'DO — Ionized helium (He II) dominant, very hot (>45,000 K).\nTransitional type between post-AGB stars and the cooler DB sequence.',
-          'DOV': 'DOV (GW Vir) — Pulsating ionized-helium white dwarf.\nAmong the hottest known pulsating stars; driven by carbon/oxygen ionization.',
-          'DOP': 'DOP — Magnetic ionized-helium white dwarf.\nVery hot DO type with a detectable magnetic field.',
-          'DQ':  'DQ — Carbon Swan bands or atomic carbon lines visible.\nCarbon dredged up from the core into the helium envelope. <0.1% of white dwarfs.',
-          'DZ':  'DZ — Metal absorption lines only; no hydrogen or helium lines.\nMetals accreted from disrupted planetesimals; hydrogen/helium layers too thin to detect.',
-          'DZA': 'DZA — Metal lines dominant with trace hydrogen also visible.\nAccreted metals with a thin residual hydrogen layer.',
-          'DZB': 'DZB — Metal lines dominant with trace helium also visible.\nAccreted metals in a helium-envelope white dwarf.',
-          'DZQ': 'DZQ — Metal lines with carbon features also present.\nRare combination of accreted metals and carbon dredge-up.',
-          'DX':  'DX — Spectral lines present but unidentifiable.\nUsed when the spectrum cannot be classified into any standard type.',
-        };
-        return tooltipMap[match[1]] ?? '';
-      }
+    const spectralCode = whiteDwarfSpectralCode(body.bodyData.subType);
+    if (spectralCode) {
+      return WHITE_DWARF_TOOLTIPS[spectralCode] ?? '';
     }
     return '';
   }
 
   public getWhiteDwarfAtmosphere(): string | null {
-    const subType = this.body().bodyData.subType;
-    if (!subType?.startsWith('White Dwarf')) {
-      return null;
-    }
-    const match = subType.match(/White Dwarf \(([^)]+)\)/);
-    if (!match) return null;
-    const spectralCode = match[1];
-    const atmosphereMap: { [key: string]: string } = {
-      'DA':  'Hydrogen Dominated',
-      'DAB': 'Hydrogen and Helium',
-      'DAO': 'Hydrogen and Ionized Helium',
-      'DAV': 'Hydrogen Dominated (Variable)',
-      'DAZ': 'Hydrogen with Metals',
-      'DAP': 'Hydrogen Dominated (Magnetic)',
-      'DB':  'Helium Dominated',
-      'DBV': 'Helium Dominated (Variable)',
-      'DBZ': 'Helium with Metals',
-      'DBP': 'Helium Dominated (Magnetic)',
-      'DC':  'Featureless Spectrum',
-      'DCV': 'Featureless Spectrum (Variable)',
-      'DO':  'Ionized Helium',
-      'DOV': 'Ionized Helium (Variable)',
-      'DOP': 'Ionized Helium (Magnetic)',
-      'DQ':  'Carbon Features',
-      'DZ':  'Metal Dominated',
-      'DZA': 'Metal Dominated (Hydrogen)',
-      'DZB': 'Metal Dominated (Helium)',
-      'DZQ': 'Metal and Carbon Features',
-      'DX':  'Unclassified Spectrum',
-    };
-    return atmosphereMap[spectralCode] ?? null;
+    const spectralCode = whiteDwarfSpectralCode(this.body().bodyData.subType);
+    if (!spectralCode) { return null; }
+    return WHITE_DWARF_ATMOSPHERE[spectralCode] ?? null;
   }
 
   public getAtmosphereDisplay(): string {
@@ -527,37 +542,27 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getApoapsis(): number {
-    const semiMajorAxisKm = (this.body().bodyData.semiMajorAxis ?? 0) * 149597870.7;
-    const eccentricity = this.body().bodyData.orbitalEccentricity ?? 0;
-    return semiMajorAxisKm * (1 + eccentricity);
+    return this.cachedApoapsis;
   }
 
   public getPeriapsis(): number {
-    const semiMajorAxisKm = (this.body().bodyData.semiMajorAxis ?? 0) * 149597870.7;
-    const eccentricity = this.body().bodyData.orbitalEccentricity ?? 0;
-    return semiMajorAxisKm * (1 - eccentricity);
+    return this.cachedPeriapsis;
   }
 
   public getRingWidth(): number {
-    const outer = this.body().bodyData.outerRadius ?? 0;
-    const inner = this.body().bodyData.innerRadius ?? 0;
-    return outer - inner;
+    return this.cachedRingWidth;
   }
 
   public getRingArea(): number {
-    const outer = this.body().bodyData.outerRadius ?? 0;
-    const inner = this.body().bodyData.innerRadius ?? 0;
-    return Math.PI * (outer * outer - inner * inner);
+    return this.cachedRingArea;
   }
 
   public getRingDensity(): number {
-    const mass = this.body().bodyData.mass ?? 0;
-    const area = this.getRingArea();
-    return area > 0 ? mass / area : 0;
+    return this.cachedRingDensity;
   }
 
   public getPlanetaryDensity(): PlanetaryDensity | null {
-    return this.physics.getPlanetaryDensity(this.body().bodyData);
+    return this.cachedPlanetaryDensity;
   }
 
   public radToDeg(value: number | null | undefined): number | null {
@@ -566,12 +571,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public isRingNotVisible(): boolean {
-    if (this.body().bodyData.type !== BODY_TYPE.Ring) {
-      return false;
-    }
-    const density = this.getRingDensity();
-    const width = this.getRingWidth();
-    return density < 0.1 && width > 1000000;
+    return this.cachedRingNotVisible;
   }
 
   public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
@@ -589,6 +589,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getSignalsCount(): number {
+    return this.cachedSignalsCount;
+  }
+
+  private computeSignalsCount(): number {
     // First check if the ring body itself has signals
     const body = this.body();
     if (body.bodyData.signals?.signals) {
@@ -718,19 +722,19 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   // Ring Hill-limit calculation removed. Shepherding uses calculateShepherdingHillLimit().
 
   public calculateShepherdingHillLimit(): ShepherdingHillLimit | null {
-    return this.physics.calculateShepherdingHillLimit(this.body());
+    return this.cachedShepherdingHillLimit;
   }
 
   public calculateRigidRocheLimit(): number | null {
-    return this.physics.calculateRigidRocheLimit(this.body());
+    return this.cachedRigidRocheLimit;
   }
 
   public calculateFluidRocheLimit(): number | null {
-    return this.physics.calculateFluidRocheLimit(this.body());
+    return this.cachedFluidRocheLimit;
   }
 
   public calculateBodyRocheLimits(): BodyRocheLimits | null {
-    return this.physics.calculateBodyRocheLimits(this.body());
+    return this.cachedBodyRocheLimits;
   }
 
   public getConfirmedBiologyCount(): number {
@@ -738,15 +742,15 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public isBodyWithinParentRings(): boolean {
-    return this.physics.isBodyWithinParentRings(this.body());
+    return this.cachedIsBodyWithinParentRings;
   }
 
   public isShepherdingCandidate(): boolean {
-    return this.physics.isShepherdingCandidate(this.body());
+    return this.cachedIsShepherdingCandidate;
   }
 
   public isActualShepherd(): boolean {
-    return this.physics.isActualShepherd(this.body());
+    return this.cachedIsActualShepherd;
   }
 
 
@@ -896,44 +900,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     const parent = body.parent.bodyData;
 
-    // Calculate parent density and radius
-    let primaryDensity = 0;
-    let primaryRadius = 0;
-
-    if (parent.radius) {
-      primaryRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      primaryRadius = parent.solarRadius * 695700;
-    } else {
+    const primary = this.physics.getParentRadiusAndDensity(body);
+    if (!primary) {
       return;
     }
-
-    if (parent.earthMasses && parent.radius) {
-      const massKg = parent.earthMasses * 5.972e24;
-      const radiusM = parent.radius * 1000;
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
-      primaryDensity = massKg / volume;
-    } else if (parent.solarMasses && parent.solarRadius) {
-      const radiusM = parent.solarRadius * 695700 * 1000;
-      const massKg = parent.solarMasses * 1.989e30;
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
-      primaryDensity = massKg / volume;
-    } else {
-      return;
-    }
-
-    // Generate chart data points
-    const densityRange = [];
-    const rigidLimits = [];
-    const fluidLimits = [];
-
-    for (let density = 500; density <= 8000; density += 100) {
-      densityRange.push(density);
-      const rigidLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
-      const fluidLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
-      rigidLimits.push(rigidLimit);
-      fluidLimits.push(fluidLimit);
-    }
+    const { primaryRadius } = primary;
+    const { densityRange, rigidLimits, fluidLimits } =
+      this.physics.rocheLimitCurves(primary.primaryRadius, primary.primaryDensity);
 
     // Get only the current ring
     const currentRing = {
@@ -981,31 +954,11 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     const parent = body.parent.bodyData;
 
-    // Calculate parent density and radius
-    let primaryDensity = 0;
-    let primaryRadius = 0;
-
-    if (parent.radius) {
-      primaryRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      primaryRadius = parent.solarRadius * 695700;
-    } else {
+    const primary = this.physics.getParentRadiusAndDensity(body);
+    if (!primary) {
       return;
     }
-
-    if (parent.earthMasses && parent.radius) {
-      const massKg = parent.earthMasses * 5.972e24;
-      const radiusM = parent.radius * 1000;
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
-      primaryDensity = massKg / volume;
-    } else if (parent.solarMasses && parent.solarRadius) {
-      const radiusM = parent.solarRadius * 695700 * 1000;
-      const massKg = parent.solarMasses * 1.989e30;
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
-      primaryDensity = massKg / volume;
-    } else {
-      return;
-    }
+    const { primaryRadius } = primary;
 
     // Calculate body density
     const bodyMassKg = body.bodyData.earthMasses! * 5.972e24;
@@ -1013,18 +966,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     const bodyVolume = (4 / 3) * Math.PI * Math.pow(bodyRadiusM, 3);
     const bodyDensity = bodyMassKg / bodyVolume;
 
-    // Generate chart data points
-    const densityRange = [];
-    const rigidLimits = [];
-    const fluidLimits = [];
-
-    for (let density = 500; density <= 8000; density += 100) {
-      densityRange.push(density);
-      const rigidLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
-      const fluidLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / density, 1 / 3);
-      rigidLimits.push(rigidLimit);
-      fluidLimits.push(fluidLimit);
-    }
+    const { densityRange, rigidLimits, fluidLimits } =
+      this.physics.rocheLimitCurves(primary.primaryRadius, primary.primaryDensity);
 
     // Create a "ring" representation using periapsis/apoapsis with body radius
     const bodyRadius = body.bodyData.radius!; // in km
@@ -1232,6 +1175,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getSpinResonanceTooltip(): string {
+    return this.cachedSpinResonanceTooltip;
+  }
+
+  private computeSpinResonanceTooltip(): string {
     const resonance = this.getSpinResonance();
     const body = this.body();
     if (resonance === 'none' && body.bodyData.rotationalPeriodTidallyLocked) {
@@ -1252,6 +1199,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getTangentialVelocity(): number | null {
+    return this.cachedTangentialVelocity;
+  }
+
+  private computeTangentialVelocity(): number | null {
     const bodyData = this.body().bodyData;
     if (!this.isBlackHoleOrNeutronStar() || !bodyData.rotationalPeriod) {
       return null;
@@ -1264,7 +1215,11 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getTangentialVelocityDisplay(): string {
-    const velocityKms = this.getTangentialVelocity();
+    return this.cachedTangentialVelocityDisplay;
+  }
+
+  private computeTangentialVelocityDisplay(): string {
+    const velocityKms = this.cachedTangentialVelocity;
     if (velocityKms === null) return '';
 
     const speedOfLight = 299792458; // m/s
@@ -1279,7 +1234,11 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getTangentialVelocityTooltip(): string {
-    const velocityKms = this.getTangentialVelocity();
+    return this.cachedTangentialVelocityTooltip;
+  }
+
+  private computeTangentialVelocityTooltip(): string {
+    const velocityKms = this.cachedTangentialVelocity;
     if (velocityKms === null) return '';
 
     return `${velocityKms.toFixed(3)} km/s`;
@@ -1327,6 +1286,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public classifyNeutronStar(): string | null {
+    return this.cachedNeutronStarClass;
+  }
+
+  private computeClassifyNeutronStar(): string | null {
     const bd = this.body().bodyData;
     if (bd.type !== BODY_TYPE.Star || bd.subType !== 'Neutron Star') {
       return null;
@@ -1474,44 +1437,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       return;
     }
 
-    const materialData: { [key: string]: { grade: string, abbrev: string } } = {
-      // Grade 1 (Very Rare)
-      'Antimony': { grade: 'badge-mat1', abbrev: 'Sb' },
-      'Polonium': { grade: 'badge-mat1', abbrev: 'Po' },
-      'Ruthenium': { grade: 'badge-mat1', abbrev: 'Ru' },
-      'Selenium': { grade: 'badge-mat1', abbrev: 'Se' },
-      'Technetium': { grade: 'badge-mat1', abbrev: 'Tc' },
-      'Tellurium': { grade: 'badge-mat1', abbrev: 'Te' },
-      'Yttrium': { grade: 'badge-mat1', abbrev: 'Y' },
-      // Grade 2 (Rare)
-      'Cadmium': { grade: 'badge-mat2', abbrev: 'Cd' },
-      'Mercury': { grade: 'badge-mat2', abbrev: 'Hg' },
-      'Molybdenum': { grade: 'badge-mat2', abbrev: 'Mo' },
-      'Niobium': { grade: 'badge-mat2', abbrev: 'Nb' },
-      'Tin': { grade: 'badge-mat2', abbrev: 'Sn' },
-      'Vanadium': { grade: 'badge-mat2', abbrev: 'V' },
-      // Grade 3 (Uncommon)
-      'Arsenic': { grade: 'badge-mat3', abbrev: 'As' },
-      'Chromium': { grade: 'badge-mat3', abbrev: 'Cr' },
-      'Germanium': { grade: 'badge-mat3', abbrev: 'Ge' },
-      'Manganese': { grade: 'badge-mat3', abbrev: 'Mn' },
-      'Phosphorus': { grade: 'badge-mat3', abbrev: 'P' },
-      'Tungsten': { grade: 'badge-mat3', abbrev: 'W' },
-      'Zinc': { grade: 'badge-mat3', abbrev: 'Zn' },
-      'Zirconium': { grade: 'badge-mat3', abbrev: 'Zr' },
-      // Grade 4 (Common)
-      'Carbon': { grade: 'badge-mat4', abbrev: 'C' },
-      'Iron': { grade: 'badge-mat4', abbrev: 'Fe' },
-      'Nickel': { grade: 'badge-mat4', abbrev: 'Ni' },
-      'Sulphur': { grade: 'badge-mat4', abbrev: 'S' }
-    };
-
     this.cachedMaterialBadges = Object.entries(body.bodyData.materials)
       .filter(([material, percentage]) => percentage > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([material, percentage]) => ({
-        name: materialData[material]?.abbrev || material,
-        class: materialData[material]?.grade || 'badge-gray',
+        name: MATERIAL_DATA[material]?.abbrev || material,
+        class: MATERIAL_DATA[material]?.grade || 'badge-gray',
         tooltip: `${material}: ${percentage.toFixed(2)}%`
       }));
   }
@@ -1600,7 +1531,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public showJetAngleDialog(): void {
     // Generate the chart image for the dialog and then open it
     try {
-      this.jetAngleChartDataUrl = this.chartRenderer.generateJetAngleChart(this.jetSampleCsv);
+      this.jetAngleChartDataUrl = this.chartRenderer.generateJetAngleChart(JET_SAMPLE_CSV);
     } catch {
       // If chart generation fails, clear URL and still open dialog
       this.jetAngleChartDataUrl = null;
@@ -1696,30 +1627,4 @@ interface OnFootSafetyDialogData {
   lookupSource: string;
   p5Delta: number;
   p95Delta: number;
-}
-
-const genus: { [key: string]: string } = {
-  "$Codex_Ent_Aleoids_Genus_Name;": "Aleoida",
-  "$Codex_Ent_Bacterial_Genus_Name;": "Bacterium",
-  "$Codex_Ent_Brancae_Name;": "Brain Tree",
-  "$Codex_Ent_Cactoid_Genus_Name;": "Cactoida",
-  "$Codex_Ent_Clepeus_Genus_Name;": "Clypeus",
-  "$Codex_Ent_Clypeus_Genus_Name;": "Clypeus",
-  "$Codex_Ent_Conchas_Genus_Name;": "Concha",
-  "$Codex_Ent_Cone_Name;": "Bark Mounds",
-  "$Codex_Ent_Electricae_Genus_Name;": "Electricae",
-  "$Codex_Ent_Fonticulus_Genus_Name;": "Fonticulua",
-  "$Codex_Ent_Fumerolas_Genus_Name;": "Fumerola",
-  "$Codex_Ent_Fungoids_Genus_Name;": "Fungoida",
-  "$Codex_Ent_Ground_Struct_Ice_Name;": "Crystalline Shards",
-  "$Codex_Ent_Osseus_Genus_Name;": "Osseus",
-  "$Codex_Ent_Recepta_Genus_Name;": "Recepta",
-  "$Codex_Ent_Seed_Name;": "Brain Trees",
-  "$Codex_Ent_Shrubs_Genus_Name;": "Frutexa",
-  "$Codex_Ent_Sphere_Name;": "Anemone",
-  "$Codex_Ent_Stratum_Genus_Name;": "Stratum",
-  "$Codex_Ent_Tube_Name;": "Sinuous Tubers",
-  "$Codex_Ent_Tubus_Genus_Name;": "Tubus",
-  "$Codex_Ent_Tussocks_Genus_Name;": "Tussock",
-  "$Codex_Ent_Vents_Name;": "Amphora Plant",
 }

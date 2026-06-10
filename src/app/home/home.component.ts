@@ -18,6 +18,7 @@ import { RegionMapComponent } from '../region-map/region-map.component';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { BODY_TYPE } from '../data/body-types';
 import { logger } from '../data/logger';
+import { decodeHtmlEntities } from '../data/html-entities';
 
 @Component({
     selector: 'app-home',
@@ -894,11 +895,7 @@ export class HomeComponent implements OnInit {
   }
 
   private decodeHtmlEntities(text: string): string {
-    // Safe: assigning to a detached <textarea>'s innerHTML decodes entities without
-    // executing markup (textarea content is parsed as text, not HTML).
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    return textarea.value;
+    return decodeHtmlEntities(text);
   }
 
   public getTotalBodyCount(): number {

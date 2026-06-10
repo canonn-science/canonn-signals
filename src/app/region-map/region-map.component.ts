@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, of, tap } from 'rxjs';
 import { IndependentOutpost } from '../app.service';
 import { logger } from '../data/logger';
+import { decodeHtmlEntities } from '../data/html-entities';
 
 /** Minimal shape of the system data the region map needs. */
 export interface RegionMapSystem {
@@ -74,12 +75,6 @@ export class RegionMapComponent implements OnChanges {
 
   private selectSystem(systemName: string): void {
     this.systemSelected.emit(systemName);
-  }
-
-  private decodeHtmlEntities(text: string): string {
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    return textarea.value;
   }
 
   private loadRegionMap(): void {
@@ -443,7 +438,7 @@ export class RegionMapComponent implements OnChanges {
       text.setAttribute('pointer-events', 'none');
       text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
       text.style.display = 'none';
-      text.textContent = this.decodeHtmlEntities(outpost.name);
+      text.textContent = decodeHtmlEntities(outpost.name);
 
       // Create background rect for text
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');

@@ -35,6 +35,19 @@ export interface BodyRocheLimits {
   apoapsis: number;
 }
 
+/** Radius (km) and bulk density (kg/m³) of a body's parent primary. */
+export interface PrimaryRadiusDensity {
+  primaryRadius: number;
+  primaryDensity: number;
+}
+
+/** Roche-limit curves sampled across a range of particle densities. */
+export interface RocheLimitCurves {
+  densityRange: number[];
+  rigidLimits: number[];
+  fluidLimits: number[];
+}
+
 /**
  * Pure astrophysics for a body and its parent: densities, Roche limits, Hill
  * spheres and ring-shepherding analysis. Extracted from SystemBodyComponent so
@@ -126,6 +139,38 @@ export class BodyPhysicsService {
     const unit = densityKgM3 < 10000 ? 'g/cm³' : 'kg/m³';
 
     return { value, unit, tooltip: `${densityKgM3} kg/m³` };
+  }
+
+  /**
+   * Radius (km) and bulk density (kg/m³) of a body's parent primary, or null when the
+   * parent exposes insufficient data. Single source of truth for the Roche/Hill chart
+   * dialogs, which previously recomputed this inline.
+   */
+  getParentRadiusAndDensity(body: SystemBody): PrimaryRadiusDensity | null {
+    if (!body.parent) { return null; }
+    const parent = body.parent.bodyData;
+    const primaryRadius = this.parentRadiusKmOrNull(parent);
+    if (primaryRadius === null) { return null; }
+    const primaryDensity = this.primaryDensityKgM3(parent);
+    if (primaryDensity === null) { return null; }
+    return { primaryRadius, primaryDensity };
+  }
+
+  /**
+   * Samples the rigid (1.26×) and fluid (2.456×) Roche-limit curves across particle
+   * densities of 500–8000 kg/m³ for plotting against ring/body positions.
+   */
+  rocheLimitCurves(primaryRadius: number, primaryDensity: number): RocheLimitCurves {
+    const densityRange: number[] = [];
+    const rigidLimits: number[] = [];
+    const fluidLimits: number[] = [];
+    for (let density = 500; density <= 8000; density += 100) {
+      densityRange.push(density);
+      const ratio = Math.pow(primaryDensity / density, 1 / 3);
+      rigidLimits.push(1.26 * primaryRadius * ratio);
+      fluidLimits.push(2.456 * primaryRadius * ratio);
+    }
+    return { densityRange, rigidLimits, fluidLimits };
   }
 
   /** Roche limit (km) for ring material orbiting the body's parent, for a given coefficient. */
