@@ -12,5 +12,11 @@ EXPOSE 4200 4201 4205 4206 9876
 # Switch to `root`.
 USER root
 
+# Install the Playwright browsers (Chromium + Firefox) and their system
+# dependencies for end-to-end tests. Keep the version in sync with the
+# `@playwright/test` dependency in package.json.
+ARG PLAYWRIGHT_VERSION=1.60.0
+RUN npx --yes playwright@${PLAYWRIGHT_VERSION} install --with-deps chromium firefox
+
 # Go! (And keep going.)
 CMD ["tail", "--follow", "/dev/null"]

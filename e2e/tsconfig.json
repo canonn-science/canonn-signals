@@ -1,0 +1,14 @@
+/* TypeScript config for the Playwright end-to-end tests. */
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../out-tsc/e2e",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "types": ["node"]
+  },
+  "include": [
+    "**/*.ts",
+    "../playwright.config.ts"
+  ]
+}
