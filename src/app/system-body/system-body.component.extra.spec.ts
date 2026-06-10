@@ -438,7 +438,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       // template binding doesn't re-stringify on every change-detection pass).
       // The dialog's focus setTimeout touches a viewChild that only exists inside the
       // dialog ng-template, so it's discarded in afterEach rather than run here.
-      component.showBodyJsonDialog(new MouseEvent('click'));
+      component.showBodyJsonDialog();
       expect(dialogOpenCalls).toBeGreaterThan(0);
       expect(component.getFormattedBodyJson()).toContain('"subType": "Rocky body"');
     });

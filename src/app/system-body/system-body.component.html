@@ -153,7 +153,7 @@
           [class]="'badge ' + material.class" (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ?
         material.tooltip : material.name }}</span>
       }
-      <button class="json-button" (click)="showBodyJsonDialog($event)"
+      <button class="json-button" (click)="showBodyJsonDialog()"
         (contextmenu)="copyBodyJson(); $event.preventDefault()"
         matTooltip="View body JSON (right-click to copy)"
         aria-label="View body JSON (right-click to copy)">

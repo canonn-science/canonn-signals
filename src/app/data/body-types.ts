@@ -10,5 +10,3 @@ export const BODY_TYPE = {
   Belt: 'Belt',
   Barycentre: 'Barycentre',
 } as const;
-
-export type BodyType = (typeof BODY_TYPE)[keyof typeof BODY_TYPE];

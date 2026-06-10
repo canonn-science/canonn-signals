@@ -719,7 +719,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   }
 
 
-  public showBodyJsonDialog(event: MouseEvent): void {
+  public showBodyJsonDialog(): void {
     this.getFormattedBodyJson.set(JSON.stringify(this.body().bodyData, null, 2));
     this.dialog.open(this.jsonDialogTemplate(), {
       width: '800px',
@@ -1229,7 +1229,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     }
 
     this.getMaterialBadges.set(Object.entries(body.bodyData.materials)
-      .filter(([material, percentage]) => percentage > 0)
+      .filter(([, percentage]) => percentage > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([material, percentage]) => ({
         name: MATERIAL_DATA[material]?.abbrev || material,
