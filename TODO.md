@@ -22,6 +22,46 @@ the test-coverage work on the `upgrade` branch. None have been fixed.
   [src/app/system-body/system-body.component.ts:1019](src/app/system-body/system-body.component.ts#L1019)
   and [:1080](src/app/system-body/system-body.component.ts#L1080) (`parent.mass * 1e12; // Mt to kg`).
 
+- [ ] **`spinResonance` silently fails for retrograde rotators** —
+  [src/app/data/stellar-physics.service.ts:29](src/app/data/stellar-physics.service.ts#L29).
+  Elite stores retrograde rotation as a *negative* `rotationalPeriod`, so
+  `rotationsPerOrbit = orbitalPeriod / rotationalPeriod` goes negative while every
+  `candidate = num/denom` is positive — no match is ever found and the result is `'none'`.
+  A retrograde tidally-locked (1:1) body is missed. Note the adjacent solar-day code
+  *does* `Math.abs` its periods ([system-body.component.ts:1557](src/app/system-body/system-body.component.ts#L1557)),
+  so the two disagree. Fix: take `Math.abs` of both periods.  
+  Pre-existing on `main` (logic extracted from `SystemBodyComponent`, not a regression):
+  [src/app/system-body/system-body.component.ts:2428](src/app/system-body/system-body.component.ts#L2428).
+
+- [ ] **`tangentialVelocityKms` returns a negative velocity for retrograde spinners** —
+  [src/app/data/stellar-physics.service.ts:49](src/app/data/stellar-physics.service.ts#L49).
+  Same root cause: a negative `rotationalPeriod` yields a negative km/s, which then renders
+  as e.g. "-12 km/s" or a negative fraction of c. Fix: use the magnitude of the period.  
+  Pre-existing on `main` (not a regression):
+  [src/app/system-body/system-body.component.ts:2481](src/app/system-body/system-body.component.ts#L2481).
+
+- [ ] **`rocheExcess` compares against the semi-major axis, not periapsis** —
+  [src/app/data/body-physics.service.ts:374](src/app/data/body-physics.service.ts#L374).
+  A Roche breach is set by *closest approach* (periapsis), but this tests `semiMajorAxis`. A
+  body on an eccentric orbit can read "safe" here yet dip inside the rigid limit at periapsis.
+  Also inconsistent with `calculateBodyRocheLimits`, which deliberately exposes
+  `periapsis`/`apoapsis` for exactly this comparison. Decide whether `rocheExcess` should use
+  periapsis.  
+  Pre-existing on `main` (not a regression):
+  [src/app/system-body/system-body.component.ts:2979](src/app/system-body/system-body.component.ts#L2979).
+
+## Approximations (document, not necessarily fix)
+
+- [ ] **Trojan/Lagrange detection keys off `argOfPeriapsis` alone** —
+  [src/app/data/orbital-relations.service.ts:63](src/app/data/orbital-relations.service.ts#L63).
+  The true angular separation of co-orbital bodies is a difference in *mean longitude*
+  (Ω + ω + M), not in argument-of-periapsis by itself. The ±60°/180° geometry is only correct
+  when the co-orbital siblings also share the same ascending node and mean anomaly. It's a
+  reasonable heuristic for ED's data, but it is an approximation rather than a rigorous L4/L5
+  test — worth a code comment so it isn't mistaken for exact.  
+  Pre-existing on `main` (not a regression):
+  [src/app/system-body/system-body.component.ts:2702](src/app/system-body/system-body.component.ts#L2702).
+
 ## pgnames (vendored procedural-generation code)
 
 - [ ] **`tryParse` rejects all `…AB-C d<n1>-<n2>` names** —
