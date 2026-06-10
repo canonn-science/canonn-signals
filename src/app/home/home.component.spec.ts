@@ -1,28 +1,45 @@
 import { of } from 'rxjs';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { HomeComponent } from './home.component';
+import { AppService } from '../app.service';
 
 /**
- * HomeComponent hosts a large, Material-heavy template. Rather than wire up every
- * Material module just to render it, these tests construct the component directly
- * with lightweight stubs and exercise its pure presentation helpers.
+ * HomeComponent hosts a large, Material-heavy template. These tests create the
+ * component via TestBed with lightweight provider stubs (without rendering the
+ * template) and exercise its pure presentation helpers.
  */
 describe('HomeComponent', () => {
   let component: HomeComponent;
+  let fixture: ComponentFixture<HomeComponent>;
 
   beforeEach(() => {
-    const httpStub: any = { get: () => of('') };
-    const appServiceStub: any = {
-      edastroSystems: of([]),
-      independentOutposts: of([]),
-      codexEntries: of([]),
-      getBodyDisplayName: (n: string) => n,
-    };
-    const activatedRouteStub: any = { queryParams: of({}) };
-    const routerStub: any = { navigate: () => Promise.resolve(true) };
-    const cdrStub: any = { markForCheck: () => {}, detectChanges: () => {} };
-
-    component = new HomeComponent(httpStub, appServiceStub, activatedRouteStub, routerStub, cdrStub);
+    TestBed.configureTestingModule({
+      imports: [HomeComponent],
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: HttpClient, useValue: { get: () => of('') } },
+        {
+          provide: AppService,
+          useValue: {
+            edastroSystems: of([]),
+            independentOutposts: of([]),
+            codexEntries: of([]),
+            getBodyDisplayName: (n: string) => n,
+          },
+        },
+        { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
+        { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    });
+    fixture = TestBed.createComponent(HomeComponent);
+    component = fixture.componentInstance;
+    // Intentionally not calling detectChanges(): these tests exercise the pure
+    // presentation helpers directly rather than rendering the Material template.
   });
 
   it('should create', () => {

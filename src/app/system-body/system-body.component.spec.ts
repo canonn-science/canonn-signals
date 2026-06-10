@@ -12,14 +12,14 @@ describe('SystemBodyComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [SystemBodyComponent],
-      providers: [
+    imports: [SystemBodyComponent],
+    providers: [
         provideZonelessChangeDetection(),
         { provide: AppService, useValue: { codexEntries: of([]), getBodyDisplayName: (n: string) => n } },
         { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(undefined) }) } },
-      ],
-      schemas: [NO_ERRORS_SCHEMA],
-    });
+    ],
+    schemas: [NO_ERRORS_SCHEMA],
+});
     fixture = TestBed.createComponent(SystemBodyComponent);
     component = fixture.componentInstance;
     // Intentionally not calling detectChanges(): the template requires a populated

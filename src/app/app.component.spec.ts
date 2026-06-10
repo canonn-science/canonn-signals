@@ -7,14 +7,14 @@ import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
   beforeEach(() => TestBed.configureTestingModule({
-    declarations: [AppComponent],
+    imports: [AppComponent],
     providers: [
-      provideZonelessChangeDetection(),
-      provideHttpClient(),
-      provideHttpClientTesting(),
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
     ],
     schemas: [NO_ERRORS_SCHEMA],
-  }));
+}));
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(AppComponent);

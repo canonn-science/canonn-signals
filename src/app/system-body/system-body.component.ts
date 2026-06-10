@@ -3,39 +3,47 @@ import {
   DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
   DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
 } from '../data/temperature-estimation';
-import { Component, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input } from '@angular/core';
+import { Component, OnChanges, OnInit, ElementRef, AfterViewInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
 import { MINING_RESOURCES } from '../data/mining-resources';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatTooltip } from '@angular/material/tooltip';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
+import { DecimalPipe, DatePipe } from '@angular/common';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { CdkScrollable } from '@angular/cdk/scrolling';
+import { MatButton } from '@angular/material/button';
 
-@UntilDestroy()
 @Component({
-  selector: 'app-system-body',
-  standalone: false,
-  templateUrl: './system-body.component.html',
-  styleUrls: ['./system-body.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  animations: [
-    trigger("grow", [ // Note the trigger name
-      transition(":enter", [
-        // :enter is alias to 'void => *'
-        style({ height: "0", overflow: "hidden" }),
-        animate(250, style({ height: "*" }))
-      ]),
-      transition(":leave", [
-        // :leave is alias to '* => void'
-        animate(250, style({ height: 0, overflow: "hidden" }))
-      ])
-    ])
-  ]
+    selector: 'app-system-body',
+    templateUrl: './system-body.component.html',
+    styleUrls: ['./system-body.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    animations: [
+        trigger("grow", [
+            transition(":enter", [
+                // :enter is alias to 'void => *'
+                style({ height: "0", overflow: "hidden" }),
+                animate(250, style({ height: "*" }))
+            ]),
+            transition(":leave", [
+                // :leave is alias to '* => void'
+                animate(250, style({ height: 0, overflow: "hidden" }))
+            ])
+        ])
+    ],
+    imports: [FaIconComponent, MatTooltip, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe, DatePipe]
 })
 export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
+  private readonly appService = inject(AppService);
+  private readonly dialog = inject(MatDialog);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
   // Expose Math.abs for template use
   abs(value: number): number {
     return Math.abs(value);
@@ -54,16 +62,16 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   readonly isLast = input<boolean>(false);
   readonly forceExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
-  @ViewChildren(SystemBodyComponent) childComponents!: QueryList<SystemBodyComponent>;
-  @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
-  @ViewChild('invisibleRingDialogTemplate') invisibleRingDialogTemplate!: TemplateRef<any>;
-  @ViewChild('jsonDialogTemplate') jsonDialogTemplate!: TemplateRef<any>;
-  @ViewChild('jsonDialogTitle') jsonDialogTitle!: ElementRef<HTMLElement>;
-  @ViewChild('rocheLimitDialogTemplate') rocheLimitDialogTemplate!: TemplateRef<any>;
-  @ViewChild('tidalLockDialogTemplate') tidalLockDialogTemplate!: TemplateRef<any>;
-  @ViewChild('onFootSafetyDialogTemplate') onFootSafetyDialogTemplate!: TemplateRef<any>;
-  @ViewChild('jetAngleDialogTemplate') jetAngleDialogTemplate!: TemplateRef<any>;
-  @ViewChild('apoPeriDialogTemplate') apoPeriDialogTemplate!: TemplateRef<any>;
+  readonly childComponents = viewChildren(SystemBodyComponent);
+  readonly hillLimitDialogTemplate = viewChild.required<TemplateRef<any>>('hillLimitDialogTemplate');
+  readonly invisibleRingDialogTemplate = viewChild.required<TemplateRef<any>>('invisibleRingDialogTemplate');
+  readonly jsonDialogTemplate = viewChild.required<TemplateRef<any>>('jsonDialogTemplate');
+  readonly jsonDialogTitle = viewChild.required<ElementRef<HTMLElement>>('jsonDialogTitle');
+  readonly rocheLimitDialogTemplate = viewChild.required<TemplateRef<any>>('rocheLimitDialogTemplate');
+  readonly tidalLockDialogTemplate = viewChild.required<TemplateRef<any>>('tidalLockDialogTemplate');
+  readonly onFootSafetyDialogTemplate = viewChild.required<TemplateRef<any>>('onFootSafetyDialogTemplate');
+  readonly jetAngleDialogTemplate = viewChild.required<TemplateRef<any>>('jetAngleDialogTemplate');
+  readonly apoPeriDialogTemplate = viewChild.required<TemplateRef<any>>('apoPeriDialogTemplate');
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -124,13 +132,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public cachedRingResourceTypes: Set<string> = new Set();
 
-  public constructor(
-    private readonly appService: AppService,
-    private readonly dialog: MatDialog,
-    private readonly cdr: ChangeDetectorRef
-  ) {
-  }
-
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
   }
@@ -161,25 +162,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     const bodyId = this.body()?.bodyData?.bodyId;
     if (bodyId === undefined || bodyId === null) { return; }
     const url = `${window.location.href.split('#')[0]}#body-${bodyId}`;
-    const fallback = () => {
-      const ta = document.createElement('textarea');
-      ta.value = url;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
+    navigator.clipboard.writeText(url).then(() => {
       this.setBodyLinkCopied();
-    };
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(() => {
-        this.setBodyLinkCopied();
-      }).catch(fallback);
-    } else {
-      fallback();
-    }
+    });
   }
 
   /** Flash the "Copied!" state, notifying the scheduler since this runs in async (promise/timeout) callbacks under zoneless. */
@@ -207,7 +192,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public ngOnInit(): void {
     this.appService.codexEntries
-      .pipe(untilDestroyed(this))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(c => {
         this.codex = c;
         this.ngOnChanges();
@@ -370,7 +355,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public toggleChildren(): void {
-    const childArray = this.childComponents.toArray();
+    const childArray = this.childComponents();
     const anyChildExpanded = childArray.some(child => child.expanded);
     const targetState = !anyChildExpanded;
 
@@ -383,8 +368,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       allDescendants.push(component);
 
       // Add grandchildren to queue
-      if (component.childComponents) {
-        queue.push(...component.childComponents.toArray());
+      const childComponents = component.childComponents();
+      if (childComponents) {
+        queue.push(...childComponents);
       }
     }
 
@@ -1420,7 +1406,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   private updateChildrenExpandedState(): void {
-    const childArray = this.childComponents?.toArray() || [];
+    const childArray = this.childComponents();
     this.cachedChildrenExpandedState = childArray.some(child => child.expanded);
     // Runs from an AfterViewInit setTimeout as well as event handlers; notify the
     // scheduler so the collapse/expand-all toggle reflects the new state under zoneless.
@@ -1451,16 +1437,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public copyBodyJson(): void {
     const jsonText = JSON.stringify(this.body().bodyData, null, 2);
-    const textArea = document.createElement('textarea');
-    textArea.value = jsonText;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
+    navigator.clipboard.writeText(jsonText);
   }
 
   public getFormattedBodyJson(): string {
@@ -1468,7 +1445,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public showBodyJsonDialog(event: MouseEvent): void {
-    this.dialog.open(this.jsonDialogTemplate, {
+    this.dialog.open(this.jsonDialogTemplate(), {
       width: '800px',
       autoFocus: false,
       restoreFocus: false
@@ -1476,8 +1453,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Focus the title after the dialog opens
     setTimeout(() => {
-      if (this.jsonDialogTitle) {
-        this.jsonDialogTitle.nativeElement.focus();
+      const jsonDialogTitle = this.jsonDialogTitle();
+      if (jsonDialogTitle) {
+        jsonDialogTitle.nativeElement.focus();
       }
     }, 100);
   }
@@ -1511,7 +1489,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       isInvisible
     };
 
-    this.dialog.open(this.invisibleRingDialogTemplate, {
+    this.dialog.open(this.invisibleRingDialogTemplate(), {
       width: '700px',
       maxWidth: '90vw',
       panelClass: 'invisible-ring-dialog'
@@ -1587,7 +1565,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.isChartLoading = true;
 
-    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate, {
+    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -1679,7 +1657,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.isChartLoading = true;
 
-    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate, {
+    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -1748,7 +1726,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       degreesToEvent
     };
 
-    this.dialog.open(this.apoPeriDialogTemplate, {
+    this.dialog.open(this.apoPeriDialogTemplate(), {
       width: '600px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -1821,7 +1799,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.isChartLoading = true;
 
-    const dialogRef = this.dialog.open(this.hillLimitDialogTemplate, {
+    const dialogRef = this.dialog.open(this.hillLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -2978,7 +2956,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       p5Delta: delta.p5,
       p95Delta: delta.p95,
     };
-    const dialogRef = this.dialog.open(this.onFootSafetyDialogTemplate, {
+    const dialogRef = this.dialog.open(this.onFootSafetyDialogTemplate(), {
       width: '650px',
       maxWidth: '90vw',
       hasBackdrop: true,
@@ -3035,7 +3013,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       // Debug removed
     }
 
-    this.dialog.open(this.jetAngleDialogTemplate, {
+    this.dialog.open(this.jetAngleDialogTemplate(), {
       width: '800px',
       maxWidth: '95vw',
       hasBackdrop: true,
@@ -3266,7 +3244,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       resonance,
       tidallyLocked: !!this.body().bodyData.rotationalPeriodTidallyLocked
     };
-    const dialogRef = this.dialog.open(this.tidalLockDialogTemplate, {
+    const dialogRef = this.dialog.open(this.tidalLockDialogTemplate(), {
       width: '600px',
       maxWidth: '90vw',
       hasBackdrop: true,

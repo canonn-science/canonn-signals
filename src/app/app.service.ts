@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of, timer } from 'rxjs';
 import { catchError, retry, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -13,6 +13,8 @@ const HTTP_RETRY_COUNT = 2;
   providedIn: 'root'
 })
 export class AppService {
+  private readonly httpClient = inject(HttpClient);
+
   /**
    * Wraps an HTTP GET with a timeout and exponential-backoff retry so that
    * transient network errors and slow/hung requests don't permanently break
@@ -40,9 +42,7 @@ export class AppService {
   private _independentOutposts: BehaviorSubject<IndependentOutpost[]> = new BehaviorSubject<IndependentOutpost[]>([]);
   public independentOutposts: Observable<IndependentOutpost[]> = this._independentOutposts.asObservable();
 
-  constructor(
-    private readonly httpClient: HttpClient
-  ) {
+  constructor() {
     this.resilientGet<CanonnCodex>("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref")
       .pipe(catchError(() => of({} as CanonnCodex)))
       .subscribe(c => {

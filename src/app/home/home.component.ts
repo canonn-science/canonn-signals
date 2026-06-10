@@ -1,48 +1,54 @@
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ElementRef, AfterViewInit, DestroyRef, viewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppService, EdastroData, EdastroSystem, IndependentOutpost, BodyNameOverride } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { faFileCode } from '@fortawesome/free-solid-svg-icons';
 import { environment } from 'src/environments/environment';
 import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest, take } from 'rxjs';
-import { FormControl } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
 import { PGSystem } from 'src/assets/pgnames/PGSystem';
+import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatAutocompleteTrigger, MatAutocomplete, MatOption } from '@angular/material/autocomplete';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { SystemBodyComponent } from '../system-body/system-body.component';
+import { AsyncPipe, DecimalPipe } from '@angular/common';
 
-@UntilDestroy()
 @Component({
-  selector: 'app-home',
-  standalone: false,
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss'],
-  animations: [
-    trigger('visibilityTrigger', [
-      transition(':enter', [
-        style({ opacity: 0 }),
-        animate('400ms', style({ opacity: "1" })),
-      ]),
-      transition(':leave', [
-        animate('200ms', style({ opacity: 0 }))
-      ])
-    ]),
-  ]
+    selector: 'app-home',
+    templateUrl: './home.component.html',
+    styleUrls: ['./home.component.scss'],
+    animations: [
+        trigger('visibilityTrigger', [
+            transition(':enter', [
+                style({ opacity: 0 }),
+                animate('400ms', style({ opacity: "1" })),
+            ]),
+            transition(':leave', [
+                animate('200ms', style({ opacity: 0 }))
+            ])
+        ]),
+    ],
+    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, MatIcon, SystemBodyComponent, AsyncPipe, DecimalPipe]
 })
 export class HomeComponent implements OnInit, AfterViewInit {
+  private readonly httpClient = inject(HttpClient);
+  readonly appService = inject(AppService);
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+
   private lastSimbadSystemName: string | null = null;
   private lastSimbadId64: number | null = null;
   public creditsHtml: string = '';
   // In-memory cache for typeahead suggestions
   private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
-  constructor(
-    private readonly httpClient: HttpClient,
-    public readonly appService: AppService,
-    private readonly activatedRoute: ActivatedRoute,
-    private readonly router: Router,
-    private readonly cdr: ChangeDetectorRef
-  ) { }
 
   private parseCreditsSection(markdown: string): string {
     // Extract #Credits or ##Credits section (robust)
@@ -324,16 +330,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     if (separator === 'tab') sep = '\t';
     if (separator === 'pipe') sep = '|';
     const text = `${coords.x}${sep}${coords.y}${sep}${coords.z}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-    } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
+    navigator.clipboard.writeText(text);
   }
 
   onCoordinatesMouseDown(event: MouseEvent) {
@@ -346,16 +343,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   copyId64ToClipboard() {
     if (!this.data?.system?.id64) return;
     const text = `${this.data.system.id64}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-    } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
+    navigator.clipboard.writeText(text);
   }
   public encodeURIComponent(value: string): string {
     return encodeURIComponent(value);
@@ -376,16 +364,16 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private gnosisLastFetched: number = 0;
   private readonly GNOSIS_CACHE_DURATION = 3600000; // 1 hour in milliseconds
   private independentOutposts: IndependentOutpost[] = [];
-  @ViewChild('regionMapContainer') regionMapContainer!: ElementRef<HTMLDivElement>;
-  @ViewChild('gecImage') gecImage?: ElementRef<HTMLImageElement>;
-  @ViewChild('gecContainer') gecContainer?: ElementRef<HTMLDivElement>;
+  readonly regionMapContainer = viewChild.required<ElementRef<HTMLDivElement>>('regionMapContainer');
+  readonly gecImage = viewChild<ElementRef<HTMLImageElement>>('gecImage');
+  readonly gecContainer = viewChild<ElementRef<HTMLDivElement>>('gecContainer');
 
   // Removed duplicate constructor
 
   public ngOnInit(): void {
     this.loadCredits();
     this.activatedRoute.queryParams
-      .pipe(untilDestroyed(this))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(q => {
         // Only trigger search if system is not already loaded
         if (this.searching) {
@@ -411,7 +399,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Subscribe to independentOutposts data
     this.appService.independentOutposts
-      .pipe(untilDestroyed(this))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(outposts => {
         this.independentOutposts = outposts;
         this.cdr.markForCheck();
@@ -854,7 +842,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
         return of(sorted.slice(0, 20));
       }),
-      untilDestroyed(this)
+      takeUntilDestroyed(this.destroyRef)
     );
 
     this.systemSuggestionsCache.set(cacheKey, result$);
@@ -918,12 +906,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private loadRegionMap(): void {
-    if (!this.regionMapContainer || !this.data) {
+    const regionMapContainer = this.regionMapContainer();
+    if (!regionMapContainer || !this.data) {
       return;
     }
 
     // Check if SVG already exists
-    const existingSvg = this.regionMapContainer.nativeElement.querySelector('svg');
+    const existingSvg = regionMapContainer.nativeElement.querySelector('svg');
     if (existingSvg) {
       // SVG already loaded, just update the highlighting and marker
       this.highlightRegion();
@@ -934,11 +923,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.httpClient.get('assets/region-map/RegionMap.svg', { responseType: 'text' })
       .subscribe(
         svgContent => {
-          if (this.regionMapContainer && this.regionMapContainer.nativeElement) {
-            this.regionMapContainer.nativeElement.innerHTML = svgContent;
+          const regionMapContainerValue = this.regionMapContainer();
+          if (regionMapContainerValue && regionMapContainerValue.nativeElement) {
+            regionMapContainerValue.nativeElement.innerHTML = svgContent;
 
             // Remove explicit width and height attributes from SVG
-            const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
+            const svgElement = regionMapContainerValue.nativeElement.querySelector('svg');
             if (svgElement) {
               svgElement.removeAttribute('width');
               svgElement.removeAttribute('height');
@@ -968,11 +958,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private highlightRegion(): void {
-    if (!this.regionMapContainer || !this.data || !this.data.system.region) {
+    const regionMapContainer = this.regionMapContainer();
+    if (!regionMapContainer || !this.data || !this.data.system.region) {
       return;
     }
 
-    const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
+    const svgElement = regionMapContainer.nativeElement.querySelector('svg');
     if (!svgElement) {
       return;
     }
@@ -1331,7 +1322,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           this.gnosisLastFetched = now;
           return of(data);
         }),
-        untilDestroyed(this)
+        takeUntilDestroyed(this.destroyRef)
       );
   }
 
@@ -1454,14 +1445,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   private debugGecImageSize(): void {
     setTimeout(() => {
-      if (this.gecContainer && this.gecImage) {
+      const gecContainer = this.gecContainer();
+      if (gecContainer && this.gecImage()) {
 
-        const systemDataDiv = this.gecContainer.nativeElement.parentElement;
+        const systemDataDiv = gecContainer.nativeElement.parentElement;
 
 
 
 
-        const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
+        const svgElement = this.regionMapContainer().nativeElement.querySelector('svg');
         if (svgElement) {
         }
       }

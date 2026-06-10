@@ -1,60 +1,67 @@
 <div class="home-container">
-    <div class="search-container">
-        <h2>System Signals</h2>
-        <p>Search to review system signals recorded by Canonn field researchers.</p>
-        <div class="search-field">
-            <mat-form-field class="input-full-width">
-                <mat-label>Search by system name, id64 or POI name</mat-label>
-                <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128"
-                    (keyup.enter)="search()">
-                <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">
-                    <mat-option *ngFor="let system of filteredSystems | async" [value]="system">
-                        {{ system }}
-                    </mat-option>
-                </mat-autocomplete>
-                <mat-error>System not found</mat-error>
-            </mat-form-field>
-            <button mat-flat-button color="primary" (click)="search()" [disabled]="searching"
-                aria-label="Search">
-                <mat-icon aria-hidden="true">search</mat-icon>
-            </button>
+  <div class="search-container">
+    <h2>System Signals</h2>
+    <p>Search to review system signals recorded by Canonn field researchers.</p>
+    <div class="search-field">
+      <mat-form-field class="input-full-width">
+        <mat-label>Search by system name, id64 or POI name</mat-label>
+        <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128"
+          (keyup.enter)="search()">
+          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">
+            @for (system of filteredSystems | async; track system) {
+              <mat-option [value]="system">
+                {{ system }}
+              </mat-option>
+            }
+          </mat-autocomplete>
+          <mat-error>System not found</mat-error>
+        </mat-form-field>
+        <button mat-flat-button color="primary" (click)="search()" [disabled]="searching"
+          aria-label="Search">
+          <mat-icon aria-hidden="true">search</mat-icon>
+        </button>
+      </div>
+      @if (searchError) {
+        <div class="error-message" style="min-width: 400px; max-width: 400px;">
+          <p style="white-space: pre-line; margin: 0; text-align: left;">{{ searchErrorMessage }}</p>
         </div>
-        <div *ngIf="searchError" class="error-message" style="min-width: 400px; max-width: 400px;">
-            <p style="white-space: pre-line; margin: 0; text-align: left;">{{ searchErrorMessage }}</p>
-        </div>
+      }
     </div>
     <div>
-        <img alt="" [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
-            style="width: 200px; height: 200px;" />
+      <img alt="" [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
+        style="width: 200px; height: 200px;" />
+      </div>
     </div>
-</div>
-<div class="system-container" *ngIf="data" @visibilityTrigger>
-    <div class="system-container-data">
-        <div class="system-info-box">
+    @if (data) {
+      <div class="system-container" @visibilityTrigger>
+        <div class="system-container-data">
+          <div class="system-info-box">
             <div class="system-title">
-                <span style="display: flex; align-items: center; gap: 4px;">
-                    <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> ({{ edastroData.name }})</span></span>
-                    <ng-container *ngIf="edastroData?.name">
-                        <a [href]="edastroData.poiUrl" target="_blank" rel="noopener noreferrer" title="View on the Galactic Exploration Catalog"
-                            style="margin-left: 4px; display: inline-flex; align-items: center;">
-                            <img src="assets/icons/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline"
-                                style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;"
-                                tabindex="0" />
-                        </a>
-                    </ng-container>
-                    <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" rel="noopener noreferrer"
-                        style="margin-left: 4px; display: inline-flex; align-items: center;">
-                        <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;"
-                            tabindex="0" />
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <span>{{ data.system.name }}@if (edastroData?.name) {
+                  <span> ({{ edastroData.name }})</span>
+                }</span>
+                @if (edastroData?.name) {
+                  <a [href]="edastroData.poiUrl" target="_blank" rel="noopener noreferrer" title="View on the Galactic Exploration Catalog"
+                    style="margin-left: 4px; display: inline-flex; align-items: center;">
+                    <img src="assets/icons/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline"
+                      style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;"
+                      tabindex="0" />
+                    </a>
+                  }
+                  <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" rel="noopener noreferrer"
+                    style="margin-left: 4px; display: inline-flex; align-items: center;">
+                    <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh"
+                      style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;"
+                      tabindex="0" />
                     </a>
                     <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank" rel="noopener noreferrer"
-                        style="display: inline-flex; align-items: center; margin-left: -0.4em;">
-                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON"
-                            title="View the spansh dump"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
-                            tabindex="0" />
-                    </a>
+                      style="display: inline-flex; align-items: center; margin-left: -0.4em;">
+                      <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON"
+                        title="View the spansh dump"
+                        style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
+                        tabindex="0" />
+                      </a>
                     <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)"
                         target="_blank" rel="noopener noreferrer" title="View on Inara"
                         style="margin-left: 4px; display: inline-flex; align-items: center;">
@@ -96,7 +103,8 @@
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
                             tabindex="0" />
                     </a>
-                    <a *ngIf="isVoyagerGoldenRecordSystem()"
+                    @if (isVoyagerGoldenRecordSystem()) {
+<a
                         href="https://science.nasa.gov/mission/voyager/golden-record-cover/" target="_blank" rel="noopener noreferrer"
                         style="margin-left: 4px; display: inline-flex; align-items: center;">
                         <img src="assets/icons/Voyager_Golden_Record_fx.png" alt="Voyager Golden Record"
@@ -104,22 +112,29 @@
                             style="max-height: 1.1em; width: 1.1em; display: block; pointer-events: auto; cursor: pointer;"
                             tabindex="0" />
                     </a>
+}
                 </span>
-                <span *ngIf="data.system.population !== null && data.system.population !== undefined"
+                @if (data.system.population !== null && data.system.population !== undefined) {
+<span
                     class="population">Population: {{ data.system.population | number }}</span>
+}
             </div>
-            <div class="edastro-summary" *ngIf="edastroData?.summary">
+            @if (edastroData?.summary) {
+<div class="edastro-summary">
                 <span class="summary-text">{{ edastroData.summary }}</span>
             </div>
+}
             <div class="system-data">
                 <div class="region-map-container" #regionMapContainer></div>
                 <div class="system-data-columns">
                     <div class="system-data-section">
                         <div class="system-data-section-header">Location</div>
-                        <div class="system-data-entry" *ngIf="edGalaxyData?.PGName">
+                        @if (edGalaxyData?.PGName) {
+<div class="system-data-entry">
                             <div>PG Name</div>
                             <div>{{ edGalaxyData.PGName }}</div>
                         </div>
+}
                         <div class="system-data-entry">
                             <div>Region</div>
                             <div>{{ data.system.region.name }}</div>
@@ -134,107 +149,138 @@
                             <div>Coordinates</div>
                             <div class="coordinates-copy" (click)="copyCoordinatesToClipboard('comma')"
                                 (contextmenu)="copyCoordinatesToClipboard('tab', $event)"
-                                (mousedown)="onCoordinatesMouseDown($event)"
-                                title="Left: comma, Right: tab, Middle: pipe">
-                                {{ data.system.coords.x }} / {{ data.system.coords.y }} / {{ data.system.coords.z }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="system-data-section"
-                        *ngIf="edGalaxyData?.Simbad?.Name || edGalaxyData?.Simbad?.RAJ2000 || edGalaxyData?.Simbad?.DEJ2000">
-                        <div class="system-data-section-header">Simbad</div>
-                        <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.Name">
-                            <div>Name</div>
-                            <div>
-                                <span *ngIf="edGalaxyData?.Simbad?.Ident; else plainSimbadName" class="pgname-link"
-                                    (click)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)" title="Open in SIMBAD"
-                                    style="cursor:pointer;text-decoration:underline dotted;">
-                                    {{ edGalaxyData.Simbad.Name }}
-                                </span>
-                                <ng-template #plainSimbadName>{{ edGalaxyData.Simbad.Name }}</ng-template>
-                            </div>
-                        </div>
-                        <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.RAJ2000">
-                            <div>Right Ascension</div>
-                            <div>{{ formatRAJ2000(edGalaxyData.Simbad.RAJ2000) }}</div>
-                        </div>
-                        <div class="system-data-entry" *ngIf="edGalaxyData?.Simbad?.DEJ2000">
-                            <div>Declination</div>
-                            <div>{{ formatDEJ2000(edGalaxyData.Simbad.DEJ2000) }}</div>
-                        </div>
-                    </div>
-
-                    <div class="system-data-section">
-                        <div class="system-data-section-header">Distances</div>
-                        <div class="system-data-entry" *ngFor="let dist of getSystemDistances()">
-                            <div class="distance-system-link" (click)="openSignalsPage(dist.name)"
-                                title="Open signals page for {{ dist.name }}">
-                                {{ dist.name }}
-                            </div>
-                            <div>{{ dist.distance | number: '1.1-1' }} ly</div>
-                        </div>
-                    </div>
-
-                    <div class="system-data-section" *ngIf="getNearestOutposts().length">
-                        <div class="system-data-section-header">Nearest DSSA</div>
-                        <div class="system-data-entry" *ngFor="let outpost of getNearestOutposts()">
-                            <div class="distance-system-link" (click)="openSignalsPage(outpost.systemName)"
-                                title="{{ outpost.systemName }}">
-                                {{ outpost.name }}
-                            </div>
-                            <div>{{ outpost.distance | number: '1.1-1' }} ly</div>
-                        </div>
-                    </div>
-                    <div class="system-data-section"
-                        *ngIf="data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length">
-                        <div class="system-data-section-header">Signals</div>
-                        <div class="system-data-entry" *ngIf="data.system.signals.cloud?.length">
-                            <div>Clouds</div>
-                            <div>
-                                <div *ngFor="let cloud of data.system.signals!.cloud">
-                                    {{ cloud }}
+                                          (mousedown)="onCoordinatesMouseDown($event)"
+                                          title="Left: comma, Right: tab, Middle: pipe">
+                                          {{ data.system.coords.x }} / {{ data.system.coords.y }} / {{ data.system.coords.z }}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    @if (edGalaxyData?.Simbad?.Name || edGalaxyData?.Simbad?.RAJ2000 || edGalaxyData?.Simbad?.DEJ2000) {
+                                      <div class="system-data-section"
+                                        >
+                                        <div class="system-data-section-header">Simbad</div>
+                                        @if (edGalaxyData?.Simbad?.Name) {
+                                          <div class="system-data-entry">
+                                            <div>Name</div>
+                                            <div>
+                                              @if (edGalaxyData?.Simbad?.Ident) {
+                                                <span class="pgname-link"
+                                                  (click)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)" title="Open in SIMBAD"
+                                                  style="cursor:pointer;text-decoration:underline dotted;">
+                                                  {{ edGalaxyData.Simbad.Name }}
+                                                </span>
+                                              } @else {
+                                                {{ edGalaxyData.Simbad.Name }}
+                                              }
+                                            </div>
+                                          </div>
+                                        }
+                                        @if (edGalaxyData?.Simbad?.RAJ2000) {
+                                          <div class="system-data-entry">
+                                            <div>Right Ascension</div>
+                                            <div>{{ formatRAJ2000(edGalaxyData.Simbad.RAJ2000) }}</div>
+                                          </div>
+                                        }
+                                        @if (edGalaxyData?.Simbad?.DEJ2000) {
+                                          <div class="system-data-entry">
+                                            <div>Declination</div>
+                                            <div>{{ formatDEJ2000(edGalaxyData.Simbad.DEJ2000) }}</div>
+                                          </div>
+                                        }
+                                      </div>
+                                    }
+                                    <div class="system-data-section">
+                                      <div class="system-data-section-header">Distances</div>
+                                      @for (dist of getSystemDistances(); track dist) {
+                                        <div class="system-data-entry">
+                                          <div class="distance-system-link" (click)="openSignalsPage(dist.name)"
+                                            title="Open signals page for {{ dist.name }}">
+                                            {{ dist.name }}
+                                          </div>
+                                          <div>{{ dist.distance | number: '1.1-1' }} ly</div>
+                                        </div>
+                                      }
+                                    </div>
+                                    @if (getNearestOutposts().length) {
+                                      <div class="system-data-section">
+                                        <div class="system-data-section-header">Nearest DSSA</div>
+                                        @for (outpost of getNearestOutposts(); track outpost) {
+                                          <div class="system-data-entry">
+                                            <div class="distance-system-link" (click)="openSignalsPage(outpost.systemName)"
+                                              title="{{ outpost.systemName }}">
+                                              {{ outpost.name }}
+                                            </div>
+                                            <div>{{ outpost.distance | number: '1.1-1' }} ly</div>
+                                          </div>
+                                        }
+                                      </div>
+                                    }
+                                    @if (data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length) {
+                                      <div class="system-data-section"
+                                        >
+                                        <div class="system-data-section-header">Signals</div>
+                                        @if (data.system.signals.cloud?.length) {
+                                          <div class="system-data-entry">
+                                            <div>Clouds</div>
+                                            <div>
+                                              @for (cloud of data.system.signals!.cloud; track cloud) {
+                                                <div>
+                                                  {{ cloud }}
+                                                </div>
+                                              }
+                                            </div>
+                                          </div>
+                                        }
+                                        @if (data.system.signals.anomaly?.length) {
+                                          <div class="system-data-entry">
+                                            <div>Anomalies</div>
+                                            <div>
+                                              @for (anomaly of data.system.signals!.anomaly; track anomaly) {
+                                                <div>
+                                                  {{ anomaly }}
+                                                </div>
+                                              }
+                                            </div>
+                                          </div>
+                                        }
+                                      </div>
+                                    }
+                                    @if (edastroData?.mainImage) {
+                                      <div class="system-data-section">
+                                        <div class="system-data-section-header">Galactic Exploration Catalog</div>
+                                        <div class="gec-image-panel">
+                                          <img [src]="edastroData.mainImage" alt="GEC Image" class="gec-main-image"
+                                            (error)="onGecImageError($event)" #gecImage />
+                                            @if (edastroData.description) {
+                                              <div class="gec-description">{{
+                                                edastroData.description }}
+                                              </div>
+                                            }
+                                          </div>
+                                        </div>
+                                      }
+                                    </div>
+                                  </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="system-data-entry" *ngIf="data.system.signals.anomaly?.length">
-                            <div>Anomalies</div>
-                            <div>
-                                <div *ngFor="let anomaly of data.system.signals!.anomaly">
-                                    {{ anomaly }}
+                                <div class="bodies">
+                                  @for (body of bodies; track trackByBody($index, body); let isLast = $last) {
+                                    <app-system-body [body]="body"
+                                      [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
+                                    [anchorBodyId]="anchorBodyId" [edGalaxyData]="edGalaxyData"></app-system-body>
+                                  }
                                 </div>
+                                <div class="credits-panel">
+                                  <div class="credits-title">
+                                    <span class="credits-title-text">Credits</span>
+                                    <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
+                                      rel="noopener noreferrer" aria-label="Donate via PayPal (fallback)">
+                                      <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
+                                    </a>
+                                  </div>
+                                  <div class="credits-detail">
+                                    <div [innerHTML]="creditsHtml"></div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="system-data-section" *ngIf="edastroData?.mainImage">
-                        <div class="system-data-section-header">Galactic Exploration Catalog</div>
-                        <div class="gec-image-panel">
-                            <img [src]="edastroData.mainImage" alt="GEC Image" class="gec-main-image"
-                                (error)="onGecImageError($event)" #gecImage />
-                            <div class="gec-description" *ngIf="edastroData.description">{{
-                                edastroData.description }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="bodies">
-            <app-system-body *ngFor="let body of bodies; trackBy: trackByBody; last as isLast" [body]="body"
-                [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
-                [anchorBodyId]="anchorBodyId" [edGalaxyData]="edGalaxyData"></app-system-body>
-        </div>
-        <div class="credits-panel">
-            <div class="credits-title">
-                <span class="credits-title-text">Credits</span>
-
-                <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
-                    rel="noopener noreferrer" aria-label="Donate via PayPal (fallback)">
-                    <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
-                </a>
-            </div>
-            <div class="credits-detail">
-                <div [innerHTML]="creditsHtml"></div>
-            </div>
-        </div>
-    </div>
-</div>
+                          }
