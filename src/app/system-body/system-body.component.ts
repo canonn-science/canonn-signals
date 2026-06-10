@@ -3,7 +3,7 @@ import {
   DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
   DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
 } from '../data/temperature-estimation';
-import { Component, OnChanges, OnInit, ElementRef, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject, afterNextRender } from '@angular/core';
+import { Component, OnChanges, OnInit, ElementRef, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject, afterNextRender, signal} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
@@ -131,43 +131,39 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   public formattedSolarMass: { display: string; tooltip: string } | null = null;
 
   // Cache for expensive computed properties
-  public cachedMaterialBadges: { name: string, class: string, tooltip: string }[] = [];
-  public cachedHotspotsList: { displayName: string; count: number; wikiUrl: string; description: string }[] = [];
-  public cachedSurfacePressureTooltip: string = '';
-  public cachedAtmosphereDisplay: string = '';
-  public cachedSolidCompositionTooltip: string = '';
-
-  public cachedRingResourceTypes: Set<string> = new Set();
-
+  public readonly getMaterialBadges = signal<{ name: string, class: string, tooltip: string }[]>([]);
+  public readonly getHotspotsList = signal<{ displayName: string; count: number; wikiUrl: string; description: string }[]>([]);
+  public readonly cachedSurfacePressureTooltip = signal('');
+  public readonly getAtmosphereDisplay = signal('');
+  public readonly getSolidCompositionTooltip = signal('');
+  public readonly getRingResourceTypes = signal<Set<string>>(new Set());
   // Cached values for template bindings that are read multiple times per render.
-  private cachedJetConeAngle: number | null = null;
-  private cachedSpinResonance = 'none';
-  private cachedConfirmedBiologyCount = 0;
-
+  public readonly getJetConeAngle = signal<number | null>(null);
+  public readonly getSpinResonance = signal('none');
+  public readonly getConfirmedBiologyCount = signal(0);
   // Orbit/ring geometry and physics-service results, computed once per body change
   // rather than on every change-detection pass (several are bound multiple times).
-  private cachedApoapsis = 0;
-  private cachedPeriapsis = 0;
-  private cachedRingWidth = 0;
-  private cachedRingArea = 0;
-  private cachedRingDensity = 0;
-  private cachedRingNotVisible = false;
-  private cachedPlanetaryDensity: PlanetaryDensity | null = null;
-  private cachedRigidRocheLimit: number | null = null;
-  private cachedFluidRocheLimit: number | null = null;
-  private cachedBodyRocheLimits: BodyRocheLimits | null = null;
-  private cachedShepherdingHillLimit: ShepherdingHillLimit | null = null;
-  private cachedIsActualShepherd = false;
-  private cachedIsShepherdingCandidate = false;
-  private cachedIsBodyWithinParentRings = false;
-  private cachedSignalsCount = 0;
-  private cachedAtmosphereCompositionTooltip = '';
-  private cachedSpinResonanceTooltip = '';
-  private cachedTangentialVelocity: number | null = null;
-  private cachedTangentialVelocityDisplay = '';
-  private cachedTangentialVelocityTooltip = '';
-  private cachedNeutronStarClass: string | null = null;
-
+  public readonly getApoapsis = signal(0);
+  public readonly getPeriapsis = signal(0);
+  public readonly getRingWidth = signal(0);
+  public readonly getRingArea = signal(0);
+  public readonly getRingDensity = signal(0);
+  public readonly isRingNotVisible = signal(false);
+  public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
+  public readonly calculateRigidRocheLimit = signal<number | null>(null);
+  public readonly calculateFluidRocheLimit = signal<number | null>(null);
+  public readonly calculateBodyRocheLimits = signal<BodyRocheLimits | null>(null);
+  public readonly calculateShepherdingHillLimit = signal<ShepherdingHillLimit | null>(null);
+  public readonly isActualShepherd = signal(false);
+  public readonly isShepherdingCandidate = signal(false);
+  public readonly isBodyWithinParentRings = signal(false);
+  public readonly getSignalsCount = signal(0);
+  public readonly getAtmosphereCompositionTooltip = signal('');
+  public readonly getSpinResonanceTooltip = signal('');
+  public readonly getTangentialVelocity = signal<number | null>(null);
+  public readonly getTangentialVelocityDisplay = signal('');
+  public readonly getTangentialVelocityTooltip = signal('');
+  public readonly classifyNeutronStar = signal<string | null>(null);
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
   }
@@ -249,9 +245,9 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     this.trojanStatus = trojan.lagrangePoint;
     this.trojanHostStatus = trojan.isHost;
     this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
-    this.cachedNextPeriapsis = this.calculateNextPeriapsis();
-    this.cachedNextApoapsis = this.calculateNextApoapsis();
-    this.cachedRocheExcess = this.calculateRocheExcess();
+    this.getNextPeriapsis.set(this.calculateNextPeriapsis());
+    this.getNextApoapsis.set(this.calculateNextApoapsis());
+    this.getRocheExcess.set(this.calculateRocheExcess());
 
     // Calculate formatted mass values once when body changes
     this.formattedEarthMass = body.bodyData.earthMasses
@@ -296,7 +292,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       this.biologySignals = [];
       if (body.bodyData.signals.biology) {
         for (const biologySignal of body.bodyData.signals.biology) {
-          const codexEntry = this.codex?.find(c => c.english_name == biologySignal);
+          const codexEntry = this.codex?.find(c => c.english_name === biologySignal);
           this.biologySignals.push({
             entryId: codexEntry?.entryid ?? 0,
             signal: biologySignal,
@@ -311,7 +307,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
           if (this.biologySignals.findIndex(b => b.signal == guessedSignal) !== -1) {
             continue;
           }
-          const codexEntry = this.codex?.find(c => c.english_name == guessedSignal);
+          const codexEntry = this.codex?.find(c => c.english_name === guessedSignal);
           if (codexEntry && this.biologySignals.findIndex(b => b.codex?.sub_class == codexEntry.sub_class) !== -1) {
             continue;
           }
@@ -329,7 +325,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
           if (this.biologySignals.findIndex(b => b.signal.includes(genusName)) !== -1) {
             continue;
           }
-          const codexEntry = this.codex?.find(c => c.category == genusName);
+          const codexEntry = this.codex?.find(c => c.category === genusName);
           this.biologySignals.push({
             entryId: codexEntry?.entryid ?? 0,
             signal: genusName,
@@ -383,11 +379,11 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     this.computeSurfacePressureTooltip();
 
     // Cache values read several times per render from the template.
-    this.cachedSpinResonance = this.computeSpinResonance();
-    this.cachedJetConeAngle = this.computeJetConeAngle();
-    this.cachedConfirmedBiologyCount = this.biologySignals.filter(b => !b.isGuess).length;
-    this.cachedAtmosphereDisplay = this.computeAtmosphereDisplay();
-    this.cachedSolidCompositionTooltip = this.computeSolidCompositionTooltip();
+    this.getSpinResonance.set(this.computeSpinResonance());
+    this.getJetConeAngle.set(this.computeJetConeAngle());
+    this.getConfirmedBiologyCount.set(this.biologySignals.filter(b => !b.isGuess).length);
+    this.getAtmosphereDisplay.set(this.computeAtmosphereDisplay());
+    this.getSolidCompositionTooltip.set(this.computeSolidCompositionTooltip());
     this.computeLandableAndTemp();
     this.computeDerivedPhysics();
   }
@@ -405,38 +401,38 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     // Orbit extents (km).
     const semiMajorAxisKm = (bd.semiMajorAxis ?? 0) * 149597870.7;
     const eccentricity = bd.orbitalEccentricity ?? 0;
-    this.cachedApoapsis = semiMajorAxisKm * (1 + eccentricity);
-    this.cachedPeriapsis = semiMajorAxisKm * (1 - eccentricity);
+    this.getApoapsis.set(semiMajorAxisKm * (1 + eccentricity));
+    this.getPeriapsis.set(semiMajorAxisKm * (1 - eccentricity));
 
     // Ring geometry.
     const outer = bd.outerRadius ?? 0;
     const inner = bd.innerRadius ?? 0;
-    this.cachedRingWidth = outer - inner;
-    this.cachedRingArea = Math.PI * (outer * outer - inner * inner);
-    this.cachedRingDensity = this.cachedRingArea > 0 ? (bd.mass ?? 0) / this.cachedRingArea : 0;
-    this.cachedRingNotVisible = bd.type === BODY_TYPE.Ring
-      && this.cachedRingDensity < 0.1 && this.cachedRingWidth > 1000000;
+    this.getRingWidth.set(outer - inner);
+    this.getRingArea.set(Math.PI * (outer * outer - inner * inner));
+    this.getRingDensity.set(this.getRingArea() > 0 ? (bd.mass ?? 0) / this.getRingArea() : 0);
+    this.isRingNotVisible.set(bd.type === BODY_TYPE.Ring
+      && this.getRingDensity() < 0.1 && this.getRingWidth() > 1000000);
 
     // Physics-service delegations.
-    this.cachedPlanetaryDensity = this.physics.getPlanetaryDensity(bd);
-    this.cachedRigidRocheLimit = this.physics.calculateRigidRocheLimit(body);
-    this.cachedFluidRocheLimit = this.physics.calculateFluidRocheLimit(body);
-    this.cachedBodyRocheLimits = this.physics.calculateBodyRocheLimits(body);
-    this.cachedShepherdingHillLimit = this.physics.calculateShepherdingHillLimit(body);
-    this.cachedIsShepherdingCandidate = this.physics.isShepherdingCandidate(body);
-    this.cachedIsActualShepherd = this.physics.isActualShepherd(body);
-    this.cachedIsBodyWithinParentRings = this.physics.isBodyWithinParentRings(body);
+    this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
+    this.calculateRigidRocheLimit.set(this.physics.calculateRigidRocheLimit(body));
+    this.calculateFluidRocheLimit.set(this.physics.calculateFluidRocheLimit(body));
+    this.calculateBodyRocheLimits.set(this.physics.calculateBodyRocheLimits(body));
+    this.calculateShepherdingHillLimit.set(this.physics.calculateShepherdingHillLimit(body));
+    this.isShepherdingCandidate.set(this.physics.isShepherdingCandidate(body));
+    this.isActualShepherd.set(this.physics.isActualShepherd(body));
+    this.isBodyWithinParentRings.set(this.physics.isBodyWithinParentRings(body));
 
     // Signals and tooltips.
-    this.cachedSignalsCount = this.computeSignalsCount();
-    this.cachedAtmosphereCompositionTooltip = this.computeAtmosphereCompositionTooltip();
-    this.cachedSpinResonanceTooltip = this.computeSpinResonanceTooltip();
+    this.getSignalsCount.set(this.computeSignalsCount());
+    this.getAtmosphereCompositionTooltip.set(this.computeAtmosphereCompositionTooltip());
+    this.getSpinResonanceTooltip.set(this.computeSpinResonanceTooltip());
 
     // Neutron-star / black-hole derived values.
-    this.cachedNeutronStarClass = this.computeClassifyNeutronStar();
-    this.cachedTangentialVelocity = this.computeTangentialVelocity();
-    this.cachedTangentialVelocityDisplay = this.computeTangentialVelocityDisplay();
-    this.cachedTangentialVelocityTooltip = this.computeTangentialVelocityTooltip();
+    this.classifyNeutronStar.set(this.computeClassifyNeutronStar());
+    this.getTangentialVelocity.set(this.computeTangentialVelocity());
+    this.getTangentialVelocityDisplay.set(this.computeTangentialVelocityDisplay());
+    this.getTangentialVelocityTooltip.set(this.computeTangentialVelocityTooltip());
   }
 
   public toggleExpand(): void {
@@ -489,9 +485,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return body.subBodies && body.subBodies.length > 0;
   }
 
-  public getChildrenExpandedState(): boolean {
-    return this.cachedChildrenExpandedState;
-  }
 
   public getEccentricityAnalysis(eccentricity: number): string {
     if (eccentricity === 0) return 'Circular';
@@ -500,9 +493,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return 'Highly Eccentric';
   }
 
-  public getAtmosphereCompositionTooltip(): string {
-    return this.cachedAtmosphereCompositionTooltip;
-  }
 
   private computeAtmosphereCompositionTooltip(): string {
     const body = this.body();
@@ -524,9 +514,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return WHITE_DWARF_ATMOSPHERE[spectralCode] ?? null;
   }
 
-  public getAtmosphereDisplay(): string {
-    return this.cachedAtmosphereDisplay;
-  }
 
   private computeAtmosphereDisplay(): string {
     const body = this.body();
@@ -541,38 +528,17 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return this.getWhiteDwarfAtmosphere() ?? '';
   }
 
-  public getApoapsis(): number {
-    return this.cachedApoapsis;
-  }
 
-  public getPeriapsis(): number {
-    return this.cachedPeriapsis;
-  }
 
-  public getRingWidth(): number {
-    return this.cachedRingWidth;
-  }
 
-  public getRingArea(): number {
-    return this.cachedRingArea;
-  }
 
-  public getRingDensity(): number {
-    return this.cachedRingDensity;
-  }
 
-  public getPlanetaryDensity(): PlanetaryDensity | null {
-    return this.cachedPlanetaryDensity;
-  }
 
   public radToDeg(value: number | null | undefined): number | null {
     if (value === null || value === undefined) return null;
     return value * 180 / Math.PI;
   }
 
-  public isRingNotVisible(): boolean {
-    return this.cachedRingNotVisible;
-  }
 
   public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
     return {
@@ -588,9 +554,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     };
   }
 
-  public getSignalsCount(): number {
-    return this.cachedSignalsCount;
-  }
 
   /**
    * The hotspot/signal map for this body: its own `signals.signals`, or — for a ring
@@ -619,11 +582,11 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     const signals = this.resolveSignalsMap();
 
     if (!signals) {
-      this.cachedHotspotsList = [];
+      this.getHotspotsList.set([]);
       return;
     }
 
-    this.cachedHotspotsList = Object.entries(signals).map(([key, count]) => {
+    this.getHotspotsList.set(Object.entries(signals).map(([key, count]) => {
       const resource = MINING_RESOURCES[key];
       const displayName = resource?.name || key;
       let description = resource?.description || '';
@@ -635,15 +598,12 @@ export class SystemBodyComponent implements OnInit, OnChanges {
         wikiUrl: `https://elite-dangerous.fandom.com/wiki/${encodeURIComponent(displayName)}`,
         description
       };
-    });
+    }));
   }
 
-  public getHotspotsList(): { displayName: string; count: number; wikiUrl: string; description: string }[] {
-    return this.cachedHotspotsList;
-  }
 
   private computeRingResourceTypes(): void {
-    const hotspots = this.cachedHotspotsList;
+    const hotspots = this.getHotspotsList();
     const types = new Set<string>();
 
     hotspots.forEach(hotspot => {
@@ -655,17 +615,14 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       }
     });
 
-    this.cachedRingResourceTypes = types;
+    this.getRingResourceTypes.set(types);
   }
 
-  public getRingResourceTypes(): Set<string> {
-    return this.cachedRingResourceTypes;
-  }
 
   private computeSurfacePressureTooltip(): void {
     const p = this.body()?.bodyData?.surfacePressure;
     if (p === null || p === undefined) {
-      this.cachedSurfacePressureTooltip = '';
+      this.cachedSurfacePressureTooltip.set('');
       return;
     }
 
@@ -681,7 +638,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     const paStr = `${Math.round(pa).toLocaleString()} Pa`;
     const psiStr = `${psi.toFixed(2)} psi`;
 
-    this.cachedSurfacePressureTooltip = `${atmStr}\n${kPaStr}\n${paStr}\n${psiStr}`;
+    this.cachedSurfacePressureTooltip.set(`${atmStr}\n${kPaStr}\n${paStr}\n${psiStr}`);
   }
 
   public trackByHotspot(index: number, hotspot: { displayName: string }): string {
@@ -697,44 +654,15 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       .join('\n');
   }
 
-  // Ring Hill-limit calculation removed. Shepherding uses calculateShepherdingHillLimit().
-
-  public calculateShepherdingHillLimit(): ShepherdingHillLimit | null {
-    return this.cachedShepherdingHillLimit;
-  }
-
-  public calculateRigidRocheLimit(): number | null {
-    return this.cachedRigidRocheLimit;
-  }
-
-  public calculateFluidRocheLimit(): number | null {
-    return this.cachedFluidRocheLimit;
-  }
-
-  public calculateBodyRocheLimits(): BodyRocheLimits | null {
-    return this.cachedBodyRocheLimits;
-  }
-
-  public getConfirmedBiologyCount(): number {
-    return this.cachedConfirmedBiologyCount;
-  }
-
-  public isBodyWithinParentRings(): boolean {
-    return this.cachedIsBodyWithinParentRings;
-  }
-
-  public isShepherdingCandidate(): boolean {
-    return this.cachedIsShepherdingCandidate;
-  }
-
-  public isActualShepherd(): boolean {
-    return this.cachedIsActualShepherd;
-  }
 
 
-  public getSolidCompositionTooltip(): string {
-    return this.cachedSolidCompositionTooltip;
-  }
+
+
+
+
+
+
+
 
   private computeSolidCompositionTooltip(): string {
     const body = this.body();
@@ -779,7 +707,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
   private updateChildrenExpandedState(): void {
     const childArray = this.childComponents();
-    this.cachedChildrenExpandedState = childArray.some(child => child.expanded);
+    this.getChildrenExpandedState.set(childArray.some(child => child.expanded));
     // Runs from an after-render hook as well as event handlers; notify the scheduler
     // so the collapse/expand-all toggle reflects the new state under zoneless.
     this.cdr.markForCheck();
@@ -807,18 +735,18 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     this.hoveredIndex = index;
   }
 
+  // The pretty-printed body JSON shown in (and copied from) the JSON dialog. Cached when
+  // the dialog opens so the template binding doesn't re-stringify on every CD pass.
+  public readonly getFormattedBodyJson = signal('');
   public copyBodyJson(): void {
-    const jsonText = JSON.stringify(this.body().bodyData, null, 2);
-    navigator.clipboard?.writeText(jsonText)
+    navigator.clipboard?.writeText(this.getFormattedBodyJson())
       .then(() => this.flashCopied('bodyJsonCopied'))
       .catch(() => { /* clipboard unavailable */ });
   }
 
-  public getFormattedBodyJson(): string {
-    return JSON.stringify(this.body().bodyData, null, 2);
-  }
 
   public showBodyJsonDialog(event: MouseEvent): void {
+    this.getFormattedBodyJson.set(JSON.stringify(this.body().bodyData, null, 2));
     this.dialog.open(this.jsonDialogTemplate(), {
       width: '800px',
       autoFocus: false,
@@ -833,8 +761,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       }
     }, 100);
   }
-
-  // Ring Hill-limit dialog removed.
 
   public showInvisibleRingExplanation(): void {
     const body = this.body();
@@ -908,19 +834,19 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
     this.isChartLoading = true;
 
-    this.dialog.open(this.rocheLimitDialogTemplate(), {
+    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop'
     });
 
-    // Draw chart after dialog opens
-    setTimeout(() => {
+    // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
+    dialogRef.afterOpened().subscribe(() => {
       this.renderRocheChart();
       this.isChartLoading = false;
       this.cdr.markForCheck();
-    }, 100);
+    });
   }
 
   public showBodyRocheLimitChart(): void {
@@ -970,19 +896,19 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
     this.isChartLoading = true;
 
-    this.dialog.open(this.rocheLimitDialogTemplate(), {
+    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop'
     });
 
-    // Draw chart after dialog opens
-    setTimeout(() => {
+    // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
+    dialogRef.afterOpened().subscribe(() => {
       this.renderRocheChart();
       this.isChartLoading = false;
       this.cdr.markForCheck();
-    }, 100);
+    });
   }
 
   public showApoPeriDialog(type: 'apo' | 'peri'): void {
@@ -1047,13 +973,9 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
     const parent = body.parent.bodyData;
 
-    // Get parent radius
-    let parentRadius = 0;
-    if (parent.radius) {
-      parentRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      parentRadius = parent.solarRadius * 695700;
-    } else {
+    // Get parent radius (km), preferring an explicit radius over a solar-radius conversion.
+    const parentRadius = this.stellarPhysics.radiusKm(parent.radius, parent.solarRadius);
+    if (parentRadius === null) {
       return;
     }
 
@@ -1103,19 +1025,19 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
     this.isChartLoading = true;
 
-    this.dialog.open(this.hillLimitDialogTemplate(), {
+    const dialogRef = this.dialog.open(this.hillLimitDialogTemplate(), {
       width: '800px',
       maxWidth: '90vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop'
     });
 
-    // Draw chart after dialog opens with a longer delay
-    setTimeout(() => {
+    // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
+    dialogRef.afterOpened().subscribe(() => {
       this.renderShepherdingHillChart();
       this.isChartLoading = false;
       this.cdr.markForCheck();
-    }, 200);
+    });
   }
 
   /** Locates the open Roche dialog's canvas and renders the prepared chart data into it. */
@@ -1134,18 +1056,12 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     }
   }
 
-  public getSpinResonance(): string {
-    return this.cachedSpinResonance;
-  }
 
   private computeSpinResonance(): string {
     const bodyData = this.body().bodyData;
     return this.stellarPhysics.spinResonance(bodyData.rotationalPeriod, bodyData.orbitalPeriod);
   }
 
-  public getSpinResonanceTooltip(): string {
-    return this.cachedSpinResonanceTooltip;
-  }
 
   private computeSpinResonanceTooltip(): string {
     const resonance = this.getSpinResonance();
@@ -1167,9 +1083,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return resonance + ' spin resonance';
   }
 
-  public getTangentialVelocity(): number | null {
-    return this.cachedTangentialVelocity;
-  }
 
   private computeTangentialVelocity(): number | null {
     const bodyData = this.body().bodyData;
@@ -1183,12 +1096,9 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return this.stellarPhysics.tangentialVelocityKms(bodyData.rotationalPeriod, radiusKm);
   }
 
-  public getTangentialVelocityDisplay(): string {
-    return this.cachedTangentialVelocityDisplay;
-  }
 
   private computeTangentialVelocityDisplay(): string {
-    const velocityKms = this.cachedTangentialVelocity;
+    const velocityKms = this.getTangentialVelocity();
     if (velocityKms === null) return '';
 
     const speedOfLight = 299792458; // m/s
@@ -1202,12 +1112,9 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return `${velocityKms.toFixed(0)} km/s`;
   }
 
-  public getTangentialVelocityTooltip(): string {
-    return this.cachedTangentialVelocityTooltip;
-  }
 
   private computeTangentialVelocityTooltip(): string {
-    const velocityKms = this.cachedTangentialVelocity;
+    const velocityKms = this.getTangentialVelocity();
     if (velocityKms === null) return '';
 
     return `${velocityKms.toFixed(3)} km/s`;
@@ -1254,9 +1161,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return this.formatPeriodDays(days);
   }
 
-  public classifyNeutronStar(): string | null {
-    return this.cachedNeutronStarClass;
-  }
 
   private computeClassifyNeutronStar(): string | null {
     const bd = this.body().bodyData;
@@ -1270,17 +1174,8 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
 
 
-  public getLandableBadgeClass(): string {
-    return this.cachedLandableBadgeClass;
-  }
 
-  public getLandableTooltip(): string {
-    return this.cachedLandableTooltip;
-  }
 
-  public getEstimatedTempRange(): { min: number; max: number } | null {
-    return this.cachedEstimatedTempRange;
-  }
 
   /**
    * Estimates the on-foot temperature range once and derives the landable badge colour
@@ -1293,54 +1188,49 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     const range = surfTemp
       ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure)
       : null;
-    this.cachedEstimatedTempRange = range;
+    this.getEstimatedTempRange.set(range);
 
     // Badge colour
     if (!bd.isLandable) {
-      this.cachedLandableBadgeClass = 'badge-gray';
+      this.getLandableBadgeClass.set('badge-gray');
     } else if (bd.gravity && bd.gravity > 2.7) {
-      this.cachedLandableBadgeClass = 'badge-red';
+      this.getLandableBadgeClass.set('badge-red');
     } else if (!surfTemp || !range) {
-      this.cachedLandableBadgeClass = 'badge-gray';
+      this.getLandableBadgeClass.set('badge-gray');
     } else {
       const safeMin = isTempSafe(range.min);
       const safeMax = isTempSafe(range.max);
       const safeSurf = isTempSafe(surfTemp);
-      this.cachedLandableBadgeClass = (safeMin && safeMax) ? 'badge-green'
+      this.getLandableBadgeClass.set((safeMin && safeMax) ? 'badge-green'
         : (safeMin || safeMax || safeSurf) ? 'badge-orange'
-          : 'badge-red';
+          : 'badge-red');
     }
 
     // Tooltip (high gravity takes precedence)
     if (bd.gravity && bd.gravity > 2.7) {
-      this.cachedLandableTooltip = 'Landable: High gravity. Disembarking not possible';
+      this.getLandableTooltip.set('Landable: High gravity. Disembarking not possible');
     } else if (!surfTemp || !range) {
-      this.cachedLandableTooltip = 'Landable: No temperature data available';
+      this.getLandableTooltip.set('Landable: No temperature data available');
     } else {
       const tooCold = range.min < 182;
       const tooHot = range.max >= 700;
-      this.cachedLandableTooltip = (tooCold && tooHot) ? 'Landable: Battery drain risk and risk of injury or death'
+      this.getLandableTooltip.set((tooCold && tooHot) ? 'Landable: Battery drain risk and risk of injury or death'
         : tooHot ? 'Landable: Risk of injury or death'
           : tooCold ? 'Landable: Battery drain risk'
-            : 'Landable: Safe to disembark';
+            : 'Landable: Safe to disembark');
     }
   }
 
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
-  private cachedEstimatedTempRange: { min: number; max: number } | null = null;
-  private cachedLandableBadgeClass = 'badge-gray';
-  private cachedLandableTooltip = '';
-  private cachedNextPeriapsis: { date: Date, days: number } | null = null;
-  private cachedNextApoapsis: { date: Date, days: number } | null = null;
-  private cachedChildrenExpandedState: boolean = false;
-  private cachedRocheExcess: number | null = null;
-
-  public getJetConeAngle(): number | null {
-    return this.cachedJetConeAngle;
-  }
-
+  public readonly getEstimatedTempRange = signal<{ min: number; max: number } | null>(null);
+  public readonly getLandableBadgeClass = signal('badge-gray');
+  public readonly getLandableTooltip = signal('');
+  public readonly getNextPeriapsis = signal<{ date: Date, days: number } | null>(null);
+  public readonly getNextApoapsis = signal<{ date: Date, days: number } | null>(null);
+  public readonly getChildrenExpandedState = signal<boolean>(false);
+  public readonly getRocheExcess = signal<number | null>(null);
   private computeJetConeAngle(): number | null {
     // Only apply to neutron stars with the required inputs.
     const bodyData = this.body().bodyData;
@@ -1358,38 +1248,26 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo');
   }
 
-  public getNextPeriapsis(): { date: Date, days: number } | null {
-    return this.cachedNextPeriapsis;
-  }
 
-  public getNextApoapsis(): { date: Date, days: number } | null {
-    return this.cachedNextApoapsis;
-  }
 
   private computeMaterialBadges(): void {
     const body = this.body();
     if (!body.bodyData.materials) {
-      this.cachedMaterialBadges = [];
+      this.getMaterialBadges.set([]);
       return;
     }
 
-    this.cachedMaterialBadges = Object.entries(body.bodyData.materials)
+    this.getMaterialBadges.set(Object.entries(body.bodyData.materials)
       .filter(([material, percentage]) => percentage > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([material, percentage]) => ({
         name: MATERIAL_DATA[material]?.abbrev || material,
         class: MATERIAL_DATA[material]?.grade || 'badge-gray',
         tooltip: `${material}: ${percentage.toFixed(2)}%`
-      }));
+      })));
   }
 
-  public getMaterialBadges(): { name: string, class: string, tooltip: string }[] {
-    return this.cachedMaterialBadges;
-  }
 
-  public getRocheExcess(): number | null {
-    return this.cachedRocheExcess;
-  }
 
   private calculateRocheExcess(): number | null {
     return this.physics.rocheExcess(this.body());

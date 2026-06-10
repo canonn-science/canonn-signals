@@ -19,6 +19,7 @@ import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { BODY_TYPE } from '../data/body-types';
 import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
+import { CREDITS_HTML } from '../data/credits.generated';
 
 @Component({
     selector: 'app-home',
@@ -47,41 +48,12 @@ export class HomeComponent implements OnInit {
 
   private lastSimbadSystemName: string | null = null;
   private lastSimbadId64: number | null = null;
-  public creditsHtml: string = '';
+  // Credits are extracted from readme.md at build time by scripts/generate-credits.js.
+  // Bound via [innerHTML], which Angular sanitizes; the source is a trusted local file.
+  public creditsHtml: string = CREDITS_HTML;
   // In-memory cache for typeahead suggestions
   private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
 
-  /**
-   * Builds the credits HTML from the bundled (trusted) readme.md. The result is bound
-   * via [innerHTML], which Angular sanitizes; the markdown source is a local asset, not
-   * user input. Only simple links and list items are emitted.
-   */
-  private parseCreditsSection(markdown: string): string {
-    // Extract #Credits or ##Credits section (robust)
-    const creditsMatch = markdown.match(/^#{1,2}\s*Credits\s*$([\s\S]*)/m);
-    if (!creditsMatch) {
-      return '';
-    }
-    let creditsText = creditsMatch[1].trim();
-    // Convert markdown links to HTML links
-    creditsText = creditsText.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    // Convert markdown list to HTML
-    let html = creditsText.replace(/\* (.+)/g, '<li>$1</li>');
-    if (/^<li>/.test(html)) {
-      html = `<ul>${html}</ul>`;
-    }
-    return html;
-  }
-
-  private loadCredits(): void {
-    this.httpClient.get('assets/readme.md', { responseType: 'text' }).subscribe({
-      next: md => {
-        this.creditsHtml = this.parseCreditsSection(md);
-        this.cdr.markForCheck();
-      },
-      error: () => { },
-    });
-  }
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
     window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank', 'noopener,noreferrer');
@@ -392,7 +364,6 @@ export class HomeComponent implements OnInit {
   public independentOutposts: IndependentOutpost[] = [];
 
   public ngOnInit(): void {
-    this.loadCredits();
     this.activatedRoute.queryParams
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(q => {
@@ -427,6 +398,18 @@ export class HomeComponent implements OnInit {
         // nearest-outpost list so the panel reflects them.
         this.recomputeDerivedSystemData();
         this.cdr.markForCheck();
+      });
+
+    // Maintain the display-name -> systemName/id64 lookup used by onSystemSelected,
+    // driven by the EdAstro feed rather than rebuilt inside the typeahead stream.
+    this.appService.edastroSystems
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(systems => {
+        for (const system of systems) {
+          const displayName = this.decodeHtmlEntities(system.name);
+          const systemName = system.galMapSearch ? this.decodeHtmlEntities(system.galMapSearch) : displayName;
+          this.systemMapping.set(displayName, { systemName, id64: system.id64 });
+        }
       });
   }
 
@@ -464,8 +447,9 @@ export class HomeComponent implements OnInit {
     }
 
     if (this.isNumeric(this.searchInput)) {
-      const systemAddress = parseInt(this.searchInput);
-      this.searchBySystemAddress(systemAddress);
+      // Pass the raw digit string (not parseInt) so 64-bit system addresses that exceed
+      // Number.MAX_SAFE_INTEGER keep full precision when used in the biostats API query.
+      this.searchBySystemAddress(this.searchInput);
       return;
     }
 
@@ -506,7 +490,7 @@ export class HomeComponent implements OnInit {
     this.searching = false;
   }
 
-  private searchBySystemAddress(systemAddress: number): void {
+  private searchBySystemAddress(systemAddress: number | string): void {
     this.appService.getBiostats(systemAddress)
       .subscribe({
         next: data => {
@@ -656,7 +640,7 @@ export class HomeComponent implements OnInit {
         continue;
       }
       for (const parent of body.bodyData.parents) {
-        if (typeof parent.Planet != 'undefined') {
+        if (typeof parent.Planet !== 'undefined') {
           let parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Planet);
           if (!parentBody) {
             parentBody = {
@@ -673,7 +657,7 @@ export class HomeComponent implements OnInit {
             bodiesFlat.push(parentBody);
           }
         }
-        if (typeof parent.Star != 'undefined') {
+        if (typeof parent.Star !== 'undefined') {
           let parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Star);
           if (!parentBody) {
             parentBody = {
@@ -690,7 +674,7 @@ export class HomeComponent implements OnInit {
             bodiesFlat.push(parentBody);
           }
         }
-        if (typeof parent.Null != 'undefined') {
+        if (typeof parent.Null !== 'undefined') {
           let parentBody = bodiesFlat.find(b => b.bodyData.bodyId === parent.Null);
           if (!parentBody) {
             parentBody = {
@@ -710,7 +694,13 @@ export class HomeComponent implements OnInit {
       }
     }
 
-    for (let i = 0; i <= 1; i++) {
+    // Two passes are required to attach every body to its parent. `parents` is ordered
+    // nearest-first, so on pass 0 we link each body to its immediate parent — but that
+    // parent may itself be a barycentre/body that hasn't been linked to *its* parent yet.
+    // Pass 1 walks the chain again now that those intermediate links exist, so deeper
+    // grandchild → ... → root relationships resolve. (Pass 0 stops at the first parent;
+    // pass 1 climbs until it reaches an already-linked ancestor.)
+    for (let pass = 0; pass <= 1; pass++) {
       for (const body of bodiesFlat) {
         if (body.bodyData.parents && body.bodyData.parents.length > 0) {
           let currentBody = body;
@@ -726,7 +716,7 @@ export class HomeComponent implements OnInit {
                 currentBody.parent = parentBody;
               }
               currentBody = parentBody;
-              if (i === 0 || currentBody.parent) {
+              if (pass === 0 || currentBody.parent) {
                 break;
               }
             }
@@ -824,15 +814,8 @@ export class HomeComponent implements OnInit {
 
     const result$ = combineLatest([spansQuery, edastroQuery]).pipe(
       map(([spansSuggestions, edastroSuggestions]) => {
-        // Store mapping for EdAstro systems
-        this.appService.edastroSystems.pipe(take(1)).subscribe(systems => {
-          systems.forEach(system => {
-            const displayName = this.decodeHtmlEntities(system.name);
-            const systemName = system.galMapSearch ? this.decodeHtmlEntities(system.galMapSearch) : displayName;
-            this.systemMapping.set(displayName, { systemName, id64: system.id64 });
-          });
-        });
-
+        // (display name -> systemName/id64 mapping is maintained from the edastroSystems
+        // feed in ngOnInit, not rebuilt here on every keystroke.)
         const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
         const queryLower = query.toLowerCase();
 
@@ -906,8 +889,9 @@ export class HomeComponent implements OnInit {
     return body.bodyData.bodyId;
   }
 
-  public onGecImageError(event: any): void {
-    // Force reload for GIFs that might have loading issues
+  public onGecImageError(event: Event): void {
+    // Some GEC GIFs intermittently fail to decode on first load; force a one-shot
+    // reload with a cache-busting query param so a transient failure self-heals.
     const img = event.target as HTMLImageElement;
     if (img.src.toLowerCase().includes('.gif')) {
       setTimeout(() => {

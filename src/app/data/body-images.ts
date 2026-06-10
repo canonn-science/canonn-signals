@@ -731,7 +731,7 @@ export class BodyImage {
         {
             path: "ELWv1",
             subType: "Earth-like world",
-            isApplicable: (body: CanonnBiostatsBody) => body.earthMasses == 1 && body.surfaceTemperature == 288,
+            isApplicable: (body: CanonnBiostatsBody) => body.earthMasses === 1 && body.surfaceTemperature === 288,
         },
         {
             path: "ELWv7",
@@ -1118,7 +1118,7 @@ export class BodyImage {
             path: "RBDv6",
             subType: "Rocky body",
             landable: false,
-            isApplicable: (body: CanonnBiostatsBody) => body.surfaceTemperature == 55,
+            isApplicable: (body: CanonnBiostatsBody) => body.surfaceTemperature === 55,
         },
         {
             path: "RBDv2",
@@ -1317,10 +1317,10 @@ export class BodyImage {
                 else if (body.subType.includes("ammonia-based life")) {
                     giantClass = "ammonia-based life";
                 }
-                else if (body.subType == "Helium gas giant" || body.subType == "Helium-rich gas giant") {
+                else if (body.subType === "Helium gas giant" || body.subType === "Helium-rich gas giant") {
                     giantClass = "helium";
                 }
-                else if (body.subType == "Water giant") {
+                else if (body.subType === "Water giant") {
                     giantClass = "water";
                 }
                 for (const gasGiantImage of this.gasGiantImages) {
@@ -1355,7 +1355,7 @@ export class BodyImage {
                     if (terrestrialBodyImage.maxEarthMasses && (body.earthMasses ?? 0) > terrestrialBodyImage.maxEarthMasses) {
                         continue;
                     }
-                    if (typeof terrestrialBodyImage.atmosphere != 'undefined') {
+                    if (typeof terrestrialBodyImage.atmosphere !== 'undefined') {
                         if (typeof terrestrialBodyImage.atmosphere === 'boolean') {
                             if (terrestrialBodyImage.atmosphere !== !!body.atmosphereType) {
                                 continue;

@@ -434,11 +434,13 @@ describe('SystemBodyComponent (extended coverage)', () => {
 
     it('opens the JSON dialog and exposes formatted JSON', () => {
       render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
-      expect(component.getFormattedBodyJson()).toContain('"subType": "Rocky body"');
+      // The pretty-printed JSON is prepared when the dialog opens (cached so the
+      // template binding doesn't re-stringify on every change-detection pass).
       // The dialog's focus setTimeout touches a viewChild that only exists inside the
       // dialog ng-template, so it's discarded in afterEach rather than run here.
       component.showBodyJsonDialog(new MouseEvent('click'));
       expect(dialogOpenCalls).toBeGreaterThan(0);
+      expect(component.getFormattedBodyJson()).toContain('"subType": "Rocky body"');
     });
 
     it('downloads the on-foot reference CSV without throwing', () => {

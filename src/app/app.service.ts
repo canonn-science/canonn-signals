@@ -107,8 +107,9 @@ export class AppService {
     return this.resilientGet<TypeaheadResponse>(`${CANONN_QUERY_BASE}/typeahead?q=${encodeURIComponent(query)}`);
   }
 
-  /** Loads the per-system biostats payload (bodies, signals, coordinates). */
-  public getBiostats(systemAddress: number): Observable<CanonnBiostats> {
+  /** Loads the per-system biostats payload (bodies, signals, coordinates). Accepts the
+   *  address as a string to preserve 64-bit precision for very large system addresses. */
+  public getBiostats(systemAddress: number | string): Observable<CanonnBiostats> {
     return this.resilientGet<CanonnBiostats>(`${CANONN_QUERY_BASE}/codex/biostats?id=${systemAddress}&caller=Signals`);
   }
 

@@ -29,7 +29,7 @@ describe('HomeComponent (extended coverage)', () => {
           return value instanceof Error ? throwError(() => value) : of(value);
         }
       }
-      // readme.md is fetched as text; default to an empty string so parseCreditsSection is safe.
+      // Unmatched text requests default to an empty string; other requests to an empty object.
       return of(url.includes('readme.md') ? '' : {});
     });
     navigate = vi.fn(() => Promise.resolve(true));
@@ -103,12 +103,9 @@ describe('HomeComponent (extended coverage)', () => {
       expect((component as any).stripParentName('Test 1 A Ring', 'Test 1')).toBe('A Ring');
     });
 
-    it('builds credits HTML from a markdown Credits section', () => {
-      const md = '# Intro\nblah\n## Credits\n* [Canonn](https://canonn.science)\n* Plain item';
-      const html = (component as any).parseCreditsSection(md);
-      expect(html).toContain('<ul>');
-      expect(html).toContain('<a href="https://canonn.science"');
-      expect((component as any).parseCreditsSection('no credits here')).toBe('');
+    it('exposes the build-time generated credits HTML', () => {
+      expect(component.creditsHtml).toContain('<ul>');
+      expect(component.creditsHtml).toContain('<a href="');
     });
 
     it('counts the Voyager Golden Record pulsars', () => {
@@ -120,15 +117,19 @@ describe('HomeComponent (extended coverage)', () => {
   });
 
   describe('ngOnInit wiring', () => {
-    it('loads credits and reacts to the outpost feed', () => {
-      httpResponses.set('assets/readme.md', '## Credits\n* [X](https://x.io)');
+    it('reacts to the outpost feed', () => {
       component.ngOnInit();
-      expect(component.creditsHtml).toContain('<a href="https://x.io"');
 
       component.data = { system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any;
       independentOutposts$.next([{ name: 'Near', galMapSearch: 'Near', coordinates: [1, 1, 1], type: 'independentOutpost' }]);
       expect(component.independentOutposts.length).toBe(1);
       expect(component.getNearestOutposts().length).toBe(1);
+    });
+
+    it('maintains the display-name -> systemName/id64 map from the EdAstro feed', () => {
+      component.ngOnInit();
+      edastroSystems$.next([{ name: 'Display Name', galMapSearch: 'Real Sys', id64: 42 }]);
+      expect((component as any).systemMapping.get('Display Name')).toEqual({ systemName: 'Real Sys', id64: 42 });
     });
   });
 
@@ -154,6 +155,17 @@ describe('HomeComponent (extended coverage)', () => {
       component.searchControl.setValue('999');
       component.search();
       expect(component.data?.system.id64).toBe(999);
+    });
+
+    it('passes a 64-bit system address through as a string (no parseInt precision loss)', () => {
+      // 18 digits — beyond Number.MAX_SAFE_INTEGER, where parseInt would round.
+      const big = '123456789012345678';
+      httpResponses.set(`/biostats?id=${big}`, {
+        system: { name: 'Big Addr', id64: 1, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
+      });
+      component.searchControl.setValue(big);
+      component.search();
+      expect((TestBed.inject(AppService) as any).getBiostats).toHaveBeenCalledWith(big);
     });
 
     it('reports a not-found system address gracefully', () => {
@@ -283,7 +295,7 @@ describe('HomeComponent (extended coverage)', () => {
 
     it('reloads a broken GIF after a delay', () => {
       const img = { src: 'assets/Orbit2.gif' } as HTMLImageElement;
-      component.onGecImageError({ target: img });
+      component.onGecImageError({ target: img } as unknown as Event);
       vi.runOnlyPendingTimers();
       expect(img.src).toContain('?t=');
     });

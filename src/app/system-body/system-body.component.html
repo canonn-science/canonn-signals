@@ -581,7 +581,7 @@
                   <div>
                     Surface pressure
                   </div>
-                  <div [matTooltip]="cachedSurfacePressureTooltip || ''" matTooltipClass="multiline-tooltip">
+                  <div [matTooltip]="cachedSurfacePressureTooltip() || ''" matTooltipClass="multiline-tooltip">
                     {{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres
                   </div>
                 </div>
