@@ -7,7 +7,7 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { faFileCode } from '@fortawesome/free-solid-svg-icons';
 import { environment } from 'src/environments/environment';
-import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest } from 'rxjs';
+import { Observable, of, debounceTime, distinctUntilChanged, switchMap, combineLatest, take } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
 import { PGSystem } from 'src/assets/pgnames/PGSystem';
@@ -15,6 +15,7 @@ import { PGSystem } from 'src/assets/pgnames/PGSystem';
 @UntilDestroy()
 @Component({
   selector: 'app-home',
+  standalone: false,
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   animations: [
@@ -51,7 +52,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
     let creditsText = creditsMatch[1].trim();
     // Convert markdown links to HTML links
-    creditsText = creditsText.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    creditsText = creditsText.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     // Convert markdown list to HTML
     let html = creditsText.replace(/\* (.+)/g, '<li>$1</li>');
     if (/^<li>/.test(html)) {
@@ -61,19 +62,22 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private loadCredits(): void {
-    this.httpClient.get('assets/readme.md', { responseType: 'text' }).subscribe(md => {
-      this.creditsHtml = this.parseCreditsSection(md);
-    }, err => {
+    this.httpClient.get('assets/readme.md', { responseType: 'text' }).subscribe({
+      next: md => {
+        this.creditsHtml = this.parseCreditsSection(md);
+        this.cdr.markForCheck();
+      },
+      error: () => { },
     });
   }
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
-    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank');
+    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank', 'noopener,noreferrer');
   }
   openSimbadPage(ident: string) {
     if (!ident) return;
     const id = this.formatSimbadId(ident);
-    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(id)}`, '_blank');
+    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(id)}`, '_blank', 'noopener,noreferrer');
   }
 
   // Format RAJ2000 (degrees) to '19h 21m 45.0s' (rounded to 0.1s, padded)
@@ -113,18 +117,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
     try {
       // Accept id64 as string or number, always convert via string to preserve precision
       const id64BigInt = BigInt(typeof id64 === 'string' ? id64 : id64.toString());
-      console.log(`[getPGName] Input id64: ${id64BigInt}`);
 
       const pgSystem = PGSystem.fromSystemAddress(id64BigInt);
-      console.log(`[getPGName] PGSystem result:`, {
-        regionName: pgSystem.regionName,
-        mid1a: pgSystem.mid1a,
-        mid1b: pgSystem.mid1b,
-        mid2: pgSystem.mid2,
-        mid3: pgSystem.mid3,
-        sizeClass: pgSystem.sizeClass,
-        sequence: pgSystem.sequence
-      });
 
       // Format with canonical casing:
       // Region name: title case
@@ -142,7 +136,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
       const seq = Math.trunc(pgSystem.sequence);
 
       const result = `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${mid3}-${seq}`;
-      console.log(`[getPGName] Final result: "${result}"`);
       return result;
     } catch (e) {
       console.error('[getPGName] Error:', e);
@@ -153,16 +146,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
   fetchEdGalaxyData(systemName: string, id64: number, coords?: { x: number, y: number, z: number }) {
     // Get PGName from id64
     const pgName = this.getPGName(id64);
-    console.log('[fetchEdGalaxyData] pgName:', pgName);
-    console.log('[fetchEdGalaxyData] systemName:', systemName);
 
     // Check if system name is a valid PG system name
     const isPGSystem = PGSystem.isPGSystemName(systemName);
-    console.log('[fetchEdGalaxyData] isPGSystemName result:', isPGSystem);
 
     // If PGName is the same as system name, skip Simbad API call
     if (pgName.toLowerCase() === systemName.toLowerCase()) {
-      console.log('[fetchEdGalaxyData] PGName matches system name, skipping Simbad API call');
       this.edGalaxyData = {
         PGName: pgName,
         SystemAddress: id64,
@@ -178,7 +167,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Only call Simbad if the system name is NOT a PG system (hand-authored systems only)
     // Also skip if the system name contains "Sector" (indicates a PG system)
     if (isPGSystem || systemName.toLowerCase().includes('sector')) {
-      console.log('[fetchEdGalaxyData] PG system detected, skipping Simbad API call');
       this.edGalaxyData = {
         PGName: pgName,
         SystemAddress: id64,
@@ -191,7 +179,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    console.log('[fetchEdGalaxyData] Hand-authored system, calling Simbad API');
     // Call the new API for Simbad data
     let url = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/simbad?system_address=${id64}&name=${encodeURIComponent(systemName)}`;
     if (coords) {
@@ -212,13 +199,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
             DEJ2000: result.dec_j2000
           } : undefined
         };
-        console.log('[fetchEdGalaxyData] edGalaxyData:', this.edGalaxyData);
         if (this.cdr && typeof this.cdr.markForCheck === 'function') {
           this.cdr.markForCheck();
         }
       },
       err => {
-        console.log('[fetchEdGalaxyData] Simbad API error:', err);
         // Even if Simbad API fails, still populate edGalaxyData with PGName
         this.edGalaxyData = {
           PGName: pgName,
@@ -244,7 +229,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     if (this.data?.system?.name && this.data?.system?.id64) {
       const currentName = this.data.system.name;
       const currentId64 = this.data.system.id64;
-      console.log('[updateEdGalaxyData] currentName:', currentName, 'currentId64:', currentId64);
       if (this.lastSimbadSystemName !== currentName || this.lastSimbadId64 !== currentId64) {
         // Clear previous data immediately when switching systems
         this.edGalaxyData = null;
@@ -253,18 +237,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
         }
         this.lastSimbadSystemName = currentName;
         this.lastSimbadId64 = currentId64;
-        console.log('[updateEdGalaxyData] Calling fetchEdGalaxyData');
         this.fetchEdGalaxyData(currentName, currentId64, this.data?.system?.coords);
       } else {
-        console.log('[updateEdGalaxyData] Already fetched for this system');
       }
     } else {
-      console.log('[updateEdGalaxyData] Missing system name or id64');
     }
   }
   openSignalsPage(systemName: string) {
     const url = `?system=${encodeURIComponent(systemName)}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
   referenceSystems = [
     { name: 'Sol', coords: { x: 0, y: 0, z: 0 } },
@@ -433,6 +414,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       .pipe(untilDestroyed(this))
       .subscribe(outposts => {
         this.independentOutposts = outposts;
+        this.cdr.markForCheck();
       });
   }
 
@@ -479,7 +461,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
 
     // Check EdAstro cache first (case-insensitive)
-    this.appService.edastroSystems.subscribe(edastroSystems => {
+    this.appService.edastroSystems.pipe(take(1)).subscribe(edastroSystems => {
       const edastroSystem = edastroSystems.find(s =>
         this.decodeHtmlEntities(s.name).toLowerCase() === this.searchInput.toLowerCase()
       );
@@ -513,6 +495,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.searchError = true;
     this.searchErrorMessage = message;
     this.searchControl.enable();
+    this.cdr.markForCheck();
   }
 
   private searchBySystemAddress(systemAddress: number): void {
@@ -533,6 +516,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           this.updateEdGalaxyData();
           this.searching = false;
           this.searchControl.enable();
+          this.cdr.markForCheck();
         },
         error => {
           // Check for specific error messages
@@ -598,8 +582,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
               if (edastroData.mainImage) {
                 this.appService.setBackgroundImage(edastroData.mainImage);
               }
-              // Check image after DOM update
-              setTimeout(() => this.checkGecImage(), 500);
+              this.cdr.markForCheck();
             }
           },
           error => {
@@ -784,6 +767,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
     } else {
       this.anchorBodyId = null;
     }
+
+    // Zoneless: this method runs inside async HTTP callbacks, so explicitly
+    // notify the change-detection scheduler that bound state (data/bodies) changed.
+    this.cdr.markForCheck();
   }
 
   private isNumeric(value: string) {
@@ -835,7 +822,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     const result$ = combineLatest([spansQuery, edastroQuery]).pipe(
       switchMap(([spansSuggestions, edastroSuggestions]) => {
         // Store mapping for EdAstro systems
-        this.appService.edastroSystems.subscribe(systems => {
+        this.appService.edastroSystems.pipe(take(1)).subscribe(systems => {
           systems.forEach(system => {
             const displayName = this.decodeHtmlEntities(system.name);
             const systemName = system.galMapSearch ? this.decodeHtmlEntities(system.galMapSearch) : displayName;
@@ -926,16 +913,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
   }
 
-  public onGecImageLoad(event: any): void {
-    // Debug removed
-  }
-
-  private checkGecImage(): void {
-    const gecSection = document.querySelector('.system-data-section');
-    const img = document.querySelector('.gec-main-image') as HTMLImageElement;
-    // Debug removed
-  }
-
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
   }
@@ -954,7 +931,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
 
     // Load the SVG from the assets folder
-    this.httpClient.get('assets/EliteDangerousRegionMap/RegionMap.svg', { responseType: 'text' })
+    this.httpClient.get('assets/region-map/RegionMap.svg', { responseType: 'text' })
       .subscribe(
         svgContent => {
           if (this.regionMapContainer && this.regionMapContainer.nativeElement) {
@@ -1081,11 +1058,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     const regionId = regionPath.id; // e.g., "Region_01"
     const regionNumber = regionId ? parseInt(regionId.replace('Region_', ''), 10) : 0;
 
-    console.log('=== ZOOM TO REGION DEBUG ===');
-    console.log('Region ID:', regionId);
-    console.log('Region Number:', regionNumber);
-    console.log('Is Inner Orion Spur (region 18):', regionNumber === 18);
-    console.log('============================');
 
     // Calculate scale factor for markers
     const scaleFactor = 2048 / size;
@@ -1093,7 +1065,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
     if (regionNumber === 18) {
       this.fetchGnosisData().subscribe(gnosisData => {
-        console.log('Gnosis data received:', gnosisData);
         if (gnosisData) {
           this.addGnosisMarker(svgElement, bbox);
           // Scale the Gnosis marker after it's added
@@ -1346,27 +1317,16 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private fetchGnosisData(): Observable<GnosisData | null> {
     // Check if we have cached data and if it's still fresh
     const now = Date.now();
-    console.log('=== FETCH GNOSIS DEBUG ===');
-    console.log('Current time:', now);
-    console.log('Last fetched:', this.gnosisLastFetched);
-    console.log('Cache age (ms):', now - this.gnosisLastFetched);
-    console.log('Cache duration (ms):', this.GNOSIS_CACHE_DURATION);
-    console.log('Has cached data:', !!this.gnosisData);
 
     if (this.gnosisData && (now - this.gnosisLastFetched) < this.GNOSIS_CACHE_DURATION) {
-      console.log('Using cached Gnosis data:', this.gnosisData);
-      console.log('=========================');
       return of(this.gnosisData);
     }
 
-    console.log('Fetching fresh Gnosis data from API...');
-    console.log('=========================');
 
     // Fetch fresh data
     return this.httpClient.get<GnosisData>('https://us-central1-canonn-api-236217.cloudfunctions.net/query/gnosis')
       .pipe(
         switchMap(data => {
-          console.log('Fresh Gnosis data received:', data);
           this.gnosisData = data;
           this.gnosisLastFetched = now;
           return of(data);
@@ -1376,19 +1336,14 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private addGnosisMarker(svgElement: SVGSVGElement, regionBbox: DOMRect): void {
-    console.log('=== ADD GNOSIS MARKER DEBUG ===');
-    console.log('Gnosis data:', this.gnosisData);
 
     if (!this.gnosisData) {
-      console.log('No Gnosis data available');
-      console.log('================================');
       return;
     }
 
     // Remove existing Gnosis marker if any
     const existingMarker = svgElement.querySelector('#gnosis-marker');
     if (existingMarker) {
-      console.log('Removing existing Gnosis marker');
       existingMarker.remove();
     }
 
@@ -1400,38 +1355,23 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     const [x, y, z] = this.gnosisData.coords;
 
-    console.log('Gnosis ED coordinates:', { x, y, z });
 
     // Apply transformation formula
     const tx = ((x - (-49985)) * 83 / 4096);
     const tz = ((z - (-24105)) * 83 / 4096);
     const finalY = 2048 - tz;
 
-    console.log('Gnosis SVG coordinates:', { tx, finalY });
-    console.log('Region bbox:', {
-      x: regionBbox.x,
-      y: regionBbox.y,
-      width: regionBbox.width,
-      height: regionBbox.height,
-      right: regionBbox.x + regionBbox.width,
-      bottom: regionBbox.y + regionBbox.height
-    });
 
     // Check if Gnosis is within the region bounds
     const inBounds = !(tx < regionBbox.x || tx > regionBbox.x + regionBbox.width ||
       finalY < regionBbox.y || finalY > regionBbox.y + regionBbox.height);
 
-    console.log('Gnosis in region bounds:', inBounds);
 
     if (!inBounds) {
       // Gnosis is not in this region, don't display it
-      console.log('Gnosis is NOT in this region, skipping marker');
-      console.log('================================');
       return;
     }
 
-    console.log('Adding Gnosis marker to SVG');
-    console.log('================================');
 
     // Create a group for the marker
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1515,50 +1455,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private debugGecImageSize(): void {
     setTimeout(() => {
       if (this.gecContainer && this.gecImage) {
-        console.log('=== GEC IMAGE DEBUG ===');
 
         const systemDataDiv = this.gecContainer.nativeElement.parentElement;
-        console.log('Parent (system-data) dimensions:', {
-          width: systemDataDiv?.clientWidth,
-          height: systemDataDiv?.clientHeight,
-          offsetWidth: systemDataDiv?.offsetWidth,
-          offsetHeight: systemDataDiv?.offsetHeight
-        });
 
-        console.log('Container dimensions:', {
-          width: this.gecContainer.nativeElement.clientWidth,
-          height: this.gecContainer.nativeElement.clientHeight,
-          offsetWidth: this.gecContainer.nativeElement.offsetWidth,
-          offsetHeight: this.gecContainer.nativeElement.offsetHeight
-        });
 
-        console.log('Container computed style:', {
-          height: getComputedStyle(this.gecContainer.nativeElement).height,
-          maxHeight: getComputedStyle(this.gecContainer.nativeElement).maxHeight,
-          overflow: getComputedStyle(this.gecContainer.nativeElement).overflow
-        });
 
-        console.log('Image dimensions:', {
-          width: this.gecImage.nativeElement.clientWidth,
-          height: this.gecImage.nativeElement.clientHeight,
-          offsetWidth: this.gecImage.nativeElement.offsetWidth,
-          offsetHeight: this.gecImage.nativeElement.offsetHeight,
-          naturalWidth: this.gecImage.nativeElement.naturalWidth,
-          naturalHeight: this.gecImage.nativeElement.naturalHeight
-        });
-        console.log('Image computed style:', {
-          width: getComputedStyle(this.gecImage.nativeElement).width,
-          height: getComputedStyle(this.gecImage.nativeElement).height,
-          maxWidth: getComputedStyle(this.gecImage.nativeElement).maxWidth,
-          minWidth: getComputedStyle(this.gecImage.nativeElement).minWidth,
-          maxHeight: getComputedStyle(this.gecImage.nativeElement).maxHeight
-        });
 
         const svgElement = this.regionMapContainer.nativeElement.querySelector('svg');
         if (svgElement) {
-          console.log('SVG height:', svgElement.clientHeight);
         }
-        console.log('======================');
       }
     }, 500);
   }
@@ -1629,12 +1534,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
       // Debug removed
     }, 100);
   }
-}
-
-interface EDSMSystemV1 {
-  name: string;
-  id: number;
-  id64: number;
 }
 
 interface CanonnBiostats {

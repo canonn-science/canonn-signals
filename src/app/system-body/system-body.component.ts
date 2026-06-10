@@ -1,172 +1,15 @@
-// ...existing code...
-// ---------------------------------------------------------------------------
-// On-foot temperature estimation — ported from estimate_body_temp.py
-// Based on 3,301,198 organic temperature measurements from EDSM/journal data.
-// deltaT = organic_temp − surfaceTemperature; p5/p95 give ~90 % coverage.
-// ---------------------------------------------------------------------------
-
-interface TempDelta { p5: number; p95: number; }
-
-const DELTA_BY_SUBTYPE_ATMOSPHERE: { [key: string]: TempDelta } = {
-  'High metal content world|Thin Carbon dioxide': { p5: -50.07, p95: 79.65 },
-  'High metal content world|Thin Ammonia': { p5: -44.46, p95: 67.94 },
-  'High metal content world|Thin Sulphur dioxide': { p5: -43.64, p95: 115.86 },
-  'High metal content world|Thin Water': { p5: -152.46, p95: 144.51 },
-  'High metal content world|Thin Nitrogen': { p5: -18.69, p95: 52.82 },
-  'High metal content world|Thin Carbon dioxide-rich': { p5: -36.25, p95: 90.03 },
-  'High metal content world|Thin Oxygen': { p5: -45.88, p95: 84.50 },
-  'High metal content world|Thin Argon': { p5: -9.58, p95: 49.60 },
-  'High metal content world|Thin Methane': { p5: 3.64, p95: 34.13 },
-  'High metal content world|Hot thin Carbon dioxide': { p5: -176.98, p95: 244.73 },
-  'High metal content world|Thin Helium': { p5: -13.49, p95: 14.96 },
-  'High metal content world|Thin Methane-rich': { p5: 12.77, p95: 47.72 },
-  'High metal content world|Thin Argon-rich': { p5: 5.91, p95: 87.40 },
-  'High metal content world|No atmosphere': { p5: -125.65, p95: 368.60 },
-  'Icy body|Thin Argon': { p5: -19.20, p95: 35.26 },
-  'Icy body|Thin Methane': { p5: -17.40, p95: 39.76 },
-  'Icy body|Thin Neon': { p5: -8.43, p95: 18.89 },
-  'Icy body|Thin Nitrogen': { p5: -14.92, p95: 30.84 },
-  'Icy body|Thin Argon-rich': { p5: -22.44, p95: 34.79 },
-  'Icy body|Thin Sulphur dioxide': { p5: -50.63, p95: 78.29 },
-  'Icy body|Thin Neon-rich': { p5: -16.29, p95: 25.94 },
-  'Icy body|Thin Oxygen': { p5: -42.40, p95: 70.10 },
-  'Icy body|Thin Helium': { p5: -1.38, p95: 5.60 },
-  'Icy body|Thin Ammonia': { p5: -31.87, p95: 66.39 },
-  'Metal-rich body|nan': { p5: -415.76, p95: 3363.08 },
-  'Rocky Ice world|Thin Argon': { p5: -15.69, p95: 39.13 },
-  'Rocky Ice world|Thin Nitrogen': { p5: -3.62, p95: 30.87 },
-  'Rocky Ice world|Thin Sulphur dioxide': { p5: -8.59, p95: 84.55 },
-  'Rocky Ice world|Thin Methane': { p5: -11.11, p95: 39.60 },
-  'Rocky Ice world|Thin Oxygen': { p5: -4.68, p95: 77.49 },
-  'Rocky Ice world|Thin Neon': { p5: -5.22, p95: 21.96 },
-  'Rocky Ice world|Thin Argon-rich': { p5: 0.04, p95: 28.52 },
-  'Rocky Ice world|Thin Ammonia': { p5: -50.90, p95: 67.13 },
-  'Rocky Ice world|Thin Neon-rich': { p5: -19.28, p95: 17.91 },
-  'Rocky Ice world|Thin Water-rich': { p5: 37.00, p95: 117.19 },
-  'Rocky body|Thin Carbon dioxide': { p5: -43.91, p95: 66.45 },
-  'Rocky body|Thin Ammonia': { p5: -43.06, p95: 64.20 },
-  'Rocky body|Thin Water': { p5: -142.39, p95: 170.16 },
-  'Rocky body|Thin Sulphur dioxide': { p5: -51.51, p95: 113.72 },
-  'Rocky body|Thin Methane': { p5: -29.34, p95: 38.53 },
-  'Rocky body|Thin Nitrogen': { p5: -17.54, p95: 43.52 },
-  'Rocky body|Thin Oxygen': { p5: -68.40, p95: 94.47 },
-  'Rocky body|Thin Carbon dioxide-rich': { p5: -24.32, p95: 93.52 },
-  'Rocky body|Thin Argon': { p5: -22.75, p95: 50.47 },
-  'Rocky body|Hot thin Carbon dioxide': { p5: -189.00, p95: 291.56 },
-  'Rocky body|No atmosphere': { p5: -89.76, p95: 75.56 },
-  'High metal content world|nan': { p5: -152.96, p95: 317.71 },
-  'Icy body|nan': { p5: -43.46, p95: 77.88 },
-  'Rocky Ice world|nan': { p5: -43.82, p95: 74.45 },
-  'Rocky body|nan': { p5: -119.56, p95: 126.05 },
-};
-
-const DELTA_BY_SUBTYPE_NO_ATM: { [key: string]: TempDelta } = {
-  'High metal content world': { p5: -152.96, p95: 317.71 },
-  'Icy body': { p5: -43.46, p95: 77.88 },
-  'Metal-rich body': { p5: -415.76, p95: 3363.08 },
-  'Rocky Ice world': { p5: -43.82, p95: 74.45 },
-  'Rocky body': { p5: -119.56, p95: 126.05 },
-};
-
-const DELTA_BY_SUBTYPE: { [key: string]: TempDelta } = {
-  'High metal content world': { p5: -52.88, p95: 101.05 },
-  'Icy body': { p5: -17.45, p95: 37.97 },
-  'Metal-rich body': { p5: -415.14, p95: 3234.31 },
-  'Rocky Ice world': { p5: -15.23, p95: 47.49 },
-  'Rocky body': { p5: -60.29, p95: 105.96 },
-};
-
-const DELTA_BY_ATMOSPHERE: { [key: string]: TempDelta } = {
-  'Thin Carbon dioxide': { p5: -45.83, p95: 71.08 },
-  'Thin Ammonia': { p5: -43.71, p95: 66.15 },
-  'Thin Argon': { p5: -18.77, p95: 36.70 },
-  'Thin Sulphur dioxide': { p5: -45.59, p95: 114.53 },
-  'Thin Water': { p5: -144.12, p95: 168.18 },
-  'Thin Methane': { p5: -22.91, p95: 39.64 },
-  'Thin Nitrogen': { p5: -15.01, p95: 36.66 },
-  'Thin Neon': { p5: -8.40, p95: 18.96 },
-  'Thin Oxygen': { p5: -42.19, p95: 74.61 },
-  'Thin Argon-rich': { p5: -22.08, p95: 35.03 },
-  'Thin Neon-rich': { p5: -17.27, p95: 25.88 },
-  'Thin Carbon dioxide-rich': { p5: -36.34, p95: 90.70 },
-  'Thin Helium': { p5: -3.20, p95: 6.03 },
-  'Thin Methane-rich': { p5: 9.31, p95: 45.49 },
-  'Thin Water-rich': { p5: 7.82, p95: 116.54 },
-  'Hot thin Carbon dioxide': { p5: -188.96, p95: 266.37 },
-  'No atmosphere': { p5: -105.74, p95: 352.35 },
-};
-
-const DELTA_BY_PRESSURE: { [key: string]: TempDelta } = {
-  'None': { p5: -149.60, p95: 343.44 },
-  'Trace': { p5: -37.56, p95: 73.00 },
-  'Thin': { p5: -66.95, p95: 113.94 },
-};
-
-const DELTA_GLOBAL: TempDelta = { p5: -51.0, p95: 98.5 };
-
-function estimateTempRange(
-  surfaceTemp: number,
-  subType: string | null | undefined,
-  atmosphereType: string | null | undefined,
-  surfacePressure: number | null | undefined,
-): { min: number; max: number } {
-  const st = subType?.trim() || null;
-  const at = atmosphereType?.trim() || null;
-
-  // 1. (subType, atmosphereType) combined — most specific
-  if (st && at) {
-    const row = DELTA_BY_SUBTYPE_ATMOSPHERE[`${st}|${at}`];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
-  }
-
-  // 2. No-atmosphere: subType + confirmed zero pressure (or sentinel "nan")
-  const noAtm = (surfacePressure != null && surfacePressure === 0) || at === 'nan';
-  if (noAtm && st) {
-    const row = DELTA_BY_SUBTYPE_NO_ATM[st];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
-  }
-
-  // 3. subType alone
-  if (st) {
-    const row = DELTA_BY_SUBTYPE[st];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
-  }
-
-  // 4. atmosphereType
-  if (at) {
-    const row = DELTA_BY_ATMOSPHERE[at];
-    if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
-  }
-
-  // 5. Pressure-class coarse fallback
-  if (surfacePressure != null) {
-    let pc = '';
-    if (surfacePressure === 0) pc = 'None';
-    else if (surfacePressure < 0.01) pc = 'Trace';
-    else if (surfacePressure < 0.1) pc = 'Thin';
-    if (pc) {
-      const row = DELTA_BY_PRESSURE[pc];
-      if (row) return { min: surfaceTemp + row.p5, max: surfaceTemp + row.p95 };
-    }
-  }
-
-  // 6. Global fallback
-  return { min: surfaceTemp + DELTA_GLOBAL.p5, max: surfaceTemp + DELTA_GLOBAL.p95 };
-}
-
-function isTempSafe(temp: number): boolean {
-  return temp >= 182 && temp < 700;
-}
-
-// ---------------------------------------------------------------------------
-
-import { Component, Input, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges } from '@angular/core';
+import {
+  estimateTempRange, isTempSafe, TempDelta,
+  DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
+  DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
+} from '../data/temperature-estimation';
+import { Component, OnChanges, OnInit, ViewChild, ElementRef, AfterViewInit, ViewChildren, QueryList, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input } from '@angular/core';
 import { SystemBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { BodyImage } from '../data/body-images';
-import { MINING_RESOURCES, MiningResource } from '../data/mining-resources';
+import { MINING_RESOURCES } from '../data/mining-resources';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
@@ -174,6 +17,7 @@ import { MatDialog } from '@angular/material/dialog';
 @UntilDestroy()
 @Component({
   selector: 'app-system-body',
+  standalone: false,
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -204,12 +48,12 @@ export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
   public readonly faCode = faCode;
   public readonly faLock = faLock;
   public readonly faLink = faLink;
-  @Input() body!: SystemBody;
-  @Input() edGalaxyData: any = null;
-  @Input() isRoot: boolean = false;
-  @Input() isLast: boolean = false;
-  @Input() forceExpanded: boolean = false;
-  @Input() anchorBodyId: number | null = null;
+  readonly body = input.required<SystemBody>();
+  readonly edGalaxyData = input<any>(null);
+  readonly isRoot = input<boolean>(false);
+  readonly isLast = input<boolean>(false);
+  readonly forceExpanded = input<boolean>(false);
+  readonly anchorBodyId = input<number | null>(null);
   @ViewChildren(SystemBodyComponent) childComponents!: QueryList<SystemBodyComponent>;
   @ViewChild('hillLimitDialogTemplate') hillLimitDialogTemplate!: TemplateRef<any>;
   @ViewChild('invisibleRingDialogTemplate') invisibleRingDialogTemplate!: TemplateRef<any>;
@@ -302,17 +146,19 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public bodyLinkCopied = false;
 
   private containsAnchorBody(body: SystemBody): boolean {
-    if (this.anchorBodyId === null) { return false; }
-    if (body.bodyData.bodyId === this.anchorBodyId) { return true; }
+    const anchorBodyId = this.anchorBodyId();
+    if (anchorBodyId === null) { return false; }
+    if (body.bodyData.bodyId === anchorBodyId) { return true; }
     return body.subBodies.some(child => this.containsAnchorBody(child));
   }
 
   public get isAnchorBody(): boolean {
-    return this.anchorBodyId !== null && this.body.bodyData.bodyId === this.anchorBodyId;
+    const anchorBodyId = this.anchorBodyId();
+    return anchorBodyId !== null && this.body().bodyData.bodyId === anchorBodyId;
   }
 
   public copyBodyLink(): void {
-    const bodyId = this.body?.bodyData?.bodyId;
+    const bodyId = this.body()?.bodyData?.bodyId;
     if (bodyId === undefined || bodyId === null) { return; }
     const url = `${window.location.href.split('#')[0]}#body-${bodyId}`;
     const fallback = () => {
@@ -325,17 +171,25 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      this.bodyLinkCopied = true;
-      setTimeout(() => { this.bodyLinkCopied = false; }, 1500);
+      this.setBodyLinkCopied();
     };
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
-        this.bodyLinkCopied = true;
-        setTimeout(() => { this.bodyLinkCopied = false; }, 1500);
+        this.setBodyLinkCopied();
       }).catch(fallback);
     } else {
       fallback();
     }
+  }
+
+  /** Flash the "Copied!" state, notifying the scheduler since this runs in async (promise/timeout) callbacks under zoneless. */
+  private setBodyLinkCopied(): void {
+    this.bodyLinkCopied = true;
+    this.cdr.markForCheck();
+    setTimeout(() => {
+      this.bodyLinkCopied = false;
+      this.cdr.markForCheck();
+    }, 1500);
   }
 
   public getEdGalaxyBodyId(b: SystemBody): number {
@@ -357,11 +211,15 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       .subscribe(c => {
         this.codex = c;
         this.ngOnChanges();
+        // OnPush + zoneless: codex arrives asynchronously, so notify the
+        // scheduler that the recomputed biology signals changed.
+        this.cdr.markForCheck();
       });
   }
 
   public ngOnChanges(changes?: SimpleChanges): void {
-    if (!this.body) {
+    const body = this.body();
+    if (!body) {
       return;
     }
 
@@ -372,48 +230,48 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.cachedRocheExcess = this.calculateRocheExcess();
 
     // Calculate formatted mass values once when body changes
-    this.formattedEarthMass = this.body.bodyData.earthMasses
-      ? this.formatEarthMass(this.body.bodyData.earthMasses)
+    this.formattedEarthMass = body.bodyData.earthMasses
+      ? this.formatEarthMass(body.bodyData.earthMasses)
       : null;
-    this.formattedSolarMass = this.body.bodyData.solarMasses
-      ? this.formatSolarMass(this.body.bodyData.solarMasses)
+    this.formattedSolarMass = body.bodyData.solarMasses
+      ? this.formatSolarMass(body.bodyData.solarMasses)
       : null;
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
 
-    const bodyImageResult = BodyImage.getBodyImagePath(this.body.bodyData);
+    const bodyImageResult = BodyImage.getBodyImagePath(body.bodyData);
     if (bodyImageResult) {
       this.bodyImage = `bodies/${bodyImageResult.path}.png`;
       if (bodyImageResult.coronaPath) {
         this.bodyCoronaImage = `bodies/${bodyImageResult.coronaPath}.png`;
       }
     }
-    else if (this.body.bodyData.type === "Ring") {
+    else if (body.bodyData.type === "Ring") {
       const asteroidIcon = this.getAsteroidIcon();
       this.bodyImage = asteroidIcon || `bodies/planets/terrestrial/Rings.png`;
     }
-    else if (this.body.bodyData.type === "Belt") {
+    else if (body.bodyData.type === "Belt") {
       const asteroidIcon = this.getAsteroidIcon();
       this.bodyImage = asteroidIcon || `bodies/planets/terrestrial/Belts.png`;
     }
-    else if (this.body.bodyData.type === "Barycentre") {
+    else if (body.bodyData.type === "Barycentre") {
       this.bodyImage = `Orbit2.gif`;
     }
 
-    if (this.body.bodyData.signals) {
-      this.humanSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;
-      this.otherSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Other;'] : 0;
-      this.geologySignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Geological;'] : 0;
-      this.biologySignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Biological;'] : 0;
-      this.thargoidSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Thargoid;'] : 0;
-      this.guardianSignalCount = this.body.bodyData.signals.signals ? this.body.bodyData.signals.signals['$SAA_SignalType_Guardian;'] : 0;
-      this.geologySignals = this.body.bodyData.signals.geology ?? [];
-      this.thargoidSignals = this.body.bodyData.signals.thargoid ?? [];
-      this.guardianSignals = this.body.bodyData.signals.guardian ?? [];
+    if (body.bodyData.signals) {
+      this.humanSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;
+      this.otherSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Other;'] : 0;
+      this.geologySignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Geological;'] : 0;
+      this.biologySignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Biological;'] : 0;
+      this.thargoidSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Thargoid;'] : 0;
+      this.guardianSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Guardian;'] : 0;
+      this.geologySignals = body.bodyData.signals.geology ?? [];
+      this.thargoidSignals = body.bodyData.signals.thargoid ?? [];
+      this.guardianSignals = body.bodyData.signals.guardian ?? [];
       this.biologySignals = [];
-      if (this.body.bodyData.signals.biology) {
-        for (const biologySignal of this.body.bodyData.signals.biology) {
+      if (body.bodyData.signals.biology) {
+        for (const biologySignal of body.bodyData.signals.biology) {
           const codexEntry = this.codex?.find(c => c.english_name == biologySignal);
           this.biologySignals.push({
             entryId: codexEntry?.entryid ?? 0,
@@ -424,8 +282,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
         }
       }
       const addGuessesAndGenuses = this.biologySignals.length < this.biologySignalCount;
-      if (this.body.bodyData.signals.guesses && addGuessesAndGenuses) {
-        for (const guessedSignal of this.body.bodyData.signals.guesses) {
+      if (body.bodyData.signals.guesses && addGuessesAndGenuses) {
+        for (const guessedSignal of body.bodyData.signals.guesses) {
           if (this.biologySignals.findIndex(b => b.signal == guessedSignal) !== -1) {
             continue;
           }
@@ -441,8 +299,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
           });
         }
       }
-      if (this.body.bodyData.signals.genuses && addGuessesAndGenuses) {
-        for (const genusSiggnal of this.body.bodyData.signals.genuses) {
+      if (body.bodyData.signals.genuses && addGuessesAndGenuses) {
+        for (const genusSiggnal of body.bodyData.signals.genuses) {
           const genusName = genus[genusSiggnal] ?? genusSiggnal;
           if (this.biologySignals.findIndex(b => b.signal.includes(genusName)) !== -1) {
             continue;
@@ -462,23 +320,23 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.exandable = true;
     if (this.expanded === false || this.expanded === undefined) {
       const isInteresting = this.hasSignals ||
-        this.body.bodyData.subType === 'Earth-like world' ||
-        this.body.bodyData.subType === 'Water world' ||
-        this.body.bodyData.subType === 'Ammonia world' ||
-        this.body.bodyData.subType === 'Black Hole' ||
-        this.body.bodyData.subType === 'Neutron Star' ||
-        this.body.bodyData.subType?.includes('White Dwarf') ||
-        this.body.bodyData.subType?.includes('Wolf-Rayet') ||
-        this.body.bodyData.subType?.includes('Herbig') ||
-        !!this.body.bodyData.isLandable;
-      this.expanded = this.forceExpanded || isInteresting || this.containsAnchorBody(this.body);
+        body.bodyData.subType === 'Earth-like world' ||
+        body.bodyData.subType === 'Water world' ||
+        body.bodyData.subType === 'Ammonia world' ||
+        body.bodyData.subType === 'Black Hole' ||
+        body.bodyData.subType === 'Neutron Star' ||
+        body.bodyData.subType?.includes('White Dwarf') ||
+        body.bodyData.subType?.includes('Wolf-Rayet') ||
+        body.bodyData.subType?.includes('Herbig') ||
+        !!body.bodyData.isLandable;
+      this.expanded = this.forceExpanded() || isInteresting || this.containsAnchorBody(body);
     }
     this.isExpanded = this.expanded;
 
-    if (this.isRoot) {
+    if (this.isRoot()) {
       this.styleClass = "";
     }
-    else if (!this.isLast) {
+    else if (!this.isLast()) {
       if (!this.isExpanded) {
         this.styleClass = "child-container-title-only";
       }
@@ -543,7 +401,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public hasChildren(): boolean {
-    return this.body.subBodies && this.body.subBodies.length > 0;
+    const body = this.body();
+    return body.subBodies && body.subBodies.length > 0;
   }
 
   public getChildrenExpandedState(): boolean {
@@ -558,12 +417,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getAtmosphereCompositionTooltip(): string {
-    if (this.body.bodyData.atmosphereComposition) {
-      return Object.entries(this.body.bodyData.atmosphereComposition)
+    const body = this.body();
+    if (body.bodyData.atmosphereComposition) {
+      return Object.entries(body.bodyData.atmosphereComposition)
         .map(([gas, percentage]) => `${gas}: ${percentage.toFixed(2)}%`)
         .join('\n');
     }
-    const subType = this.body.bodyData.subType;
+    const subType = body.bodyData.subType;
     if (subType?.startsWith('White Dwarf')) {
       const match = subType.match(/White Dwarf \(([^)]+)\)/);
       if (match) {
@@ -597,7 +457,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getWhiteDwarfAtmosphere(): string | null {
-    const subType = this.body.bodyData.subType;
+    const subType = this.body().bodyData.subType;
     if (!subType?.startsWith('White Dwarf')) {
       return null;
     }
@@ -631,11 +491,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getAtmosphereDisplay(): string {
-    if (this.body.bodyData.atmosphereType) {
-      return this.body.bodyData.atmosphereType;
+    const body = this.body();
+    if (body.bodyData.atmosphereType) {
+      return body.bodyData.atmosphereType;
     }
-    if (this.body.bodyData.atmosphereComposition) {
-      const largest = Object.entries(this.body.bodyData.atmosphereComposition)
+    if (body.bodyData.atmosphereComposition) {
+      const largest = Object.entries(body.bodyData.atmosphereComposition)
         .reduce((max, [gas, percentage]) => percentage > max[1] ? [gas, percentage] : max);
       return `${largest[0]} ${largest[1].toFixed(2)}%`;
     }
@@ -643,31 +504,31 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getApoapsis(): number {
-    const semiMajorAxisKm = (this.body.bodyData.semiMajorAxis ?? 0) * 149597870.7;
-    const eccentricity = this.body.bodyData.orbitalEccentricity ?? 0;
+    const semiMajorAxisKm = (this.body().bodyData.semiMajorAxis ?? 0) * 149597870.7;
+    const eccentricity = this.body().bodyData.orbitalEccentricity ?? 0;
     return semiMajorAxisKm * (1 + eccentricity);
   }
 
   public getPeriapsis(): number {
-    const semiMajorAxisKm = (this.body.bodyData.semiMajorAxis ?? 0) * 149597870.7;
-    const eccentricity = this.body.bodyData.orbitalEccentricity ?? 0;
+    const semiMajorAxisKm = (this.body().bodyData.semiMajorAxis ?? 0) * 149597870.7;
+    const eccentricity = this.body().bodyData.orbitalEccentricity ?? 0;
     return semiMajorAxisKm * (1 - eccentricity);
   }
 
   public getRingWidth(): number {
-    const outer = this.body.bodyData.outerRadius ?? 0;
-    const inner = this.body.bodyData.innerRadius ?? 0;
+    const outer = this.body().bodyData.outerRadius ?? 0;
+    const inner = this.body().bodyData.innerRadius ?? 0;
     return outer - inner;
   }
 
   public getRingArea(): number {
-    const outer = this.body.bodyData.outerRadius ?? 0;
-    const inner = this.body.bodyData.innerRadius ?? 0;
+    const outer = this.body().bodyData.outerRadius ?? 0;
+    const inner = this.body().bodyData.innerRadius ?? 0;
     return Math.PI * (outer * outer - inner * inner);
   }
 
   public getRingDensity(): number {
-    const mass = this.body.bodyData.mass ?? 0;
+    const mass = this.body().bodyData.mass ?? 0;
     const area = this.getRingArea();
     return area > 0 ? mass / area : 0;
   }
@@ -677,11 +538,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     let radiusKm: number = 0;
 
     // Get radius in km
-    if (this.body.bodyData.radius) {
-      radiusKm = this.body.bodyData.radius;
-    } else if (this.body.bodyData.solarRadius) {
+    const body = this.body();
+    if (body.bodyData.radius) {
+      radiusKm = body.bodyData.radius;
+    } else if (body.bodyData.solarRadius) {
       // Convert solar radius to km (1 solar radius = 695,700 km)
-      radiusKm = this.body.bodyData.solarRadius * 695700;
+      radiusKm = body.bodyData.solarRadius * 695700;
     } else {
       return null;
     }
@@ -689,10 +551,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     let massKg: number = 0;
 
     // Get mass in kg
-    if (this.body.bodyData.earthMasses) {
-      massKg = this.body.bodyData.earthMasses * 5.972e24; // Earth mass in kg
-    } else if (this.body.bodyData.solarMasses) {
-      massKg = this.body.bodyData.solarMasses * 1.989e30; // Solar mass in kg
+    if (body.bodyData.earthMasses) {
+      massKg = body.bodyData.earthMasses * 5.972e24; // Earth mass in kg
+    } else if (body.bodyData.solarMasses) {
+      massKg = body.bodyData.solarMasses * 1.989e30; // Solar mass in kg
     } else {
       return null;
     }
@@ -735,7 +597,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public isRingNotVisible(): boolean {
-    if (this.body.bodyData.type !== 'Ring') {
+    if (this.body().bodyData.type !== 'Ring') {
       return false;
     }
     const density = this.getRingDensity();
@@ -764,13 +626,14 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public getSignalsCount(): number {
     // First check if the ring body itself has signals
-    if (this.body.bodyData.signals?.signals) {
-      return Object.keys(this.body.bodyData.signals.signals).length;
+    const body = this.body();
+    if (body.bodyData.signals?.signals) {
+      return Object.keys(body.bodyData.signals.signals).length;
     }
 
     // For ring bodies, check the parent's rings array
-    if (this.body.bodyData.type === 'Ring' && this.body.parent?.bodyData.rings) {
-      const ringData = this.body.parent.bodyData.rings.find(r => r.name === this.body.bodyData.name);
+    if (body.bodyData.type === 'Ring' && body.parent?.bodyData.rings) {
+      const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
       if (ringData?.signals?.signals) {
         return Object.keys(ringData.signals.signals).length;
       }
@@ -783,12 +646,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     let signals: { [key: string]: number } | undefined;
 
     // First check if the ring body itself has signals
-    if (this.body.bodyData.signals?.signals) {
-      signals = this.body.bodyData.signals.signals;
+    const body = this.body();
+    if (body.bodyData.signals?.signals) {
+      signals = body.bodyData.signals.signals;
     }
     // For ring bodies, check the parent's rings array
-    else if (this.body.bodyData.type === 'Ring' && this.body.parent?.bodyData.rings) {
-      const ringData = this.body.parent.bodyData.rings.find(r => r.name === this.body.bodyData.name);
+    else if (body.bodyData.type === 'Ring' && body.parent?.bodyData.rings) {
+      const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
       if (ringData?.signals?.signals) {
         signals = ringData.signals.signals;
       }
@@ -839,7 +703,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   private computeSurfacePressureTooltip(): void {
-    const p = this.body?.bodyData?.surfacePressure;
+    const p = this.body()?.bodyData?.surfacePressure;
     if (p === null || p === undefined) {
       this.cachedSurfacePressureTooltip = '';
       return;
@@ -860,10 +724,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.cachedSurfacePressureTooltip = `${atmStr}\n${kPaStr}\n${paStr}\n${psiStr}`;
   }
 
-  public logTooltip(name: string, description: string): void {
-    // Debug logging removed
-  }
-
   public trackByHotspot(index: number, hotspot: any): string {
     return hotspot.displayName;
   }
@@ -872,12 +732,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     let signals: { [key: string]: number } | undefined;
 
     // First check if the ring body itself has signals
-    if (this.body.bodyData.signals?.signals) {
-      signals = this.body.bodyData.signals.signals;
+    const body = this.body();
+    if (body.bodyData.signals?.signals) {
+      signals = body.bodyData.signals.signals;
     }
     // For ring bodies, check the parent's rings array
-    else if (this.body.bodyData.type === 'Ring' && this.body.parent?.bodyData.rings) {
-      const ringData = this.body.parent.bodyData.rings.find(r => r.name === this.body.bodyData.name);
+    else if (body.bodyData.type === 'Ring' && body.parent?.bodyData.rings) {
+      const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
       if (ringData?.signals?.signals) {
         signals = ringData.signals.signals;
       }
@@ -903,14 +764,15 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     isFirstOutside: boolean;
   } | null {
     // Simple localized Hill sphere calculation for potential shepherding bodies
-    if (!this.body.parent || !this.isShepherdingCandidate()) {
+    const body = this.body();
+    if (!body.parent || !this.isShepherdingCandidate()) {
       return null;
     }
 
-    const parent = this.body.parent.bodyData;
-    const bodyMass = this.body.bodyData.earthMasses;
-    const semiMajorAxis = this.body.bodyData.semiMajorAxis;
-    const eccentricity = this.body.bodyData.orbitalEccentricity || 0;
+    const parent = body.parent.bodyData;
+    const bodyMass = body.bodyData.earthMasses;
+    const semiMajorAxis = body.bodyData.semiMajorAxis;
+    const eccentricity = body.bodyData.orbitalEccentricity || 0;
 
     if (!bodyMass || !semiMajorAxis) {
       return null;
@@ -959,7 +821,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     const withinRings = semiMajorAxisKm >= parentRadius && semiMajorAxisKm <= outermostRingRadius;
 
     // Check if first body outside
-    const siblings = this.body.parent.subBodies.filter(b =>
+    const siblings = body.parent.subBodies.filter(b =>
       b.bodyData.type !== 'Ring' &&
       b.bodyData.semiMajorAxis &&
       b.bodyData.semiMajorAxis > 0
@@ -973,7 +835,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       const dist = (b.bodyData.semiMajorAxis || 0) * 149597870.7;
       return dist > outermostRingRadius;
     });
-    const isFirstOutside = bodiesOutsideRings.length > 0 && bodiesOutsideRings[0] === this.body;
+    const isFirstOutside = bodiesOutsideRings.length > 0 && bodiesOutsideRings[0] === body;
 
     return {
       hillRadius,
@@ -990,11 +852,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public calculateRigidRocheLimit(): number | null {
     // Rigid body Roche limit (for solid bodies)
     // d = 2.456 * R_primary * (ρ_primary / ρ_satellite)^(1/3)
-    if (!this.body.parent) {
+    const body = this.body();
+    if (!body.parent) {
       return null;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
     let primaryRadius = 0;
     let primaryDensity = 0;
 
@@ -1032,7 +895,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Determine satellite density based on ring type (kg/m³)
     let satelliteDensity = 1000; // Default: icy rings (water ice)
-    const ringClass = this.body.bodyData.subType?.toLowerCase() || '';
+    const ringClass = body.bodyData.subType?.toLowerCase() || '';
 
     if (ringClass.includes('metal')) {
       satelliteDensity = 4500; // Metal-rich rings (iron/nickel)
@@ -1051,11 +914,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public calculateFluidRocheLimit(): number | null {
     // Fluid body Roche limit (for liquid bodies)
     // d = 2.456 * R_primary * (ρ_primary / ρ_satellite)^(1/3)
-    if (!this.body.parent) {
+    const body = this.body();
+    if (!body.parent) {
       return null;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
     let primaryRadius = 0;
     let primaryDensity = 0;
 
@@ -1093,7 +957,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Determine satellite density based on ring type (kg/m³)
     let satelliteDensity = 1000; // Default: icy rings (water ice)
-    const ringClass = this.body.bodyData.subType?.toLowerCase() || '';
+    const ringClass = body.bodyData.subType?.toLowerCase() || '';
 
     if (ringClass.includes('metal')) {
       satelliteDensity = 4500; // Metal-rich rings (iron/nickel)
@@ -1111,15 +975,16 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public calculateBodyRocheLimits(): { rigid: number; fluid: number; currentDistance: number; periapsis: number; apoapsis: number } | null {
     // Calculate Roche limits for planets/moons (not rings)
-    if (!this.body.parent || this.body.bodyData.type === 'Ring' || this.body.bodyData.type === 'Star') {
+    const body = this.body();
+    if (!body.parent || body.bodyData.type === 'Ring' || body.bodyData.type === 'Star') {
       return null;
     }
 
-    if (!this.body.bodyData.semiMajorAxis || !this.body.bodyData.radius || !this.body.bodyData.earthMasses) {
+    if (!body.bodyData.semiMajorAxis || !body.bodyData.radius || !body.bodyData.earthMasses) {
       return null;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
     let primaryRadius = 0;
     let primaryDensity = 0;
 
@@ -1148,17 +1013,17 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     // Calculate satellite (this body's) density
-    const satelliteMassKg = this.body.bodyData.earthMasses * 5.972e24;
-    const satelliteRadiusM = this.body.bodyData.radius * 1000;
+    const satelliteMassKg = body.bodyData.earthMasses * 5.972e24;
+    const satelliteRadiusM = body.bodyData.radius * 1000;
     const satelliteVolume = (4 / 3) * Math.PI * Math.pow(satelliteRadiusM, 3);
     const satelliteDensity = satelliteMassKg / satelliteVolume;
 
     const rigidLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
     const fluidLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
-    const currentDistance = this.body.bodyData.semiMajorAxis * 149597870.7; // AU to km
+    const currentDistance = body.bodyData.semiMajorAxis * 149597870.7; // AU to km
 
     // Calculate periapsis and apoapsis
-    const eccentricity = this.body.bodyData.orbitalEccentricity || 0;
+    const eccentricity = body.bodyData.orbitalEccentricity || 0;
     const periapsis = currentDistance * (1 - eccentricity);
     const apoapsis = currentDistance * (1 + eccentricity);
 
@@ -1171,21 +1036,22 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public isBodyWithinParentRings(): boolean {
     // Check if this body orbits within or near the parent's ring system
-    if (!this.body.parent || this.body.bodyData.type === 'Ring' || this.body.bodyData.type === 'Star') {
+    const body = this.body();
+    if (!body.parent || body.bodyData.type === 'Ring' || body.bodyData.type === 'Star') {
       return false;
     }
 
-    if (!this.body.bodyData.semiMajorAxis) {
+    if (!body.bodyData.semiMajorAxis) {
       return false;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
     if (!parent.rings || parent.rings.length === 0) {
       return false;
     }
 
     // Get body's orbital distance in km
-    const bodyDistanceKm = this.body.bodyData.semiMajorAxis * 149597870.7;
+    const bodyDistanceKm = body.bodyData.semiMajorAxis * 149597870.7;
 
     // Get parent radius in km
     let parentRadius = 0;
@@ -1219,21 +1085,22 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public isShepherdingCandidate(): boolean {
     // Identifies bodies that could have a shepherding effect on rings
     // Returns true if body's Hill sphere overlaps or is close to rings
-    if (!this.body.parent || this.body.bodyData.type === 'Ring' || this.body.bodyData.type === 'Star') {
+    const body = this.body();
+    if (!body.parent || body.bodyData.type === 'Ring' || body.bodyData.type === 'Star') {
       return false;
     }
 
-    if (!this.body.bodyData.semiMajorAxis) {
+    if (!body.bodyData.semiMajorAxis) {
       return false;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
     if (!parent.rings || parent.rings.length === 0) {
       return false;
     }
 
     // Get body's orbital distance in km
-    const bodyDistanceKm = this.body.bodyData.semiMajorAxis * 149597870.7;
+    const bodyDistanceKm = body.bodyData.semiMajorAxis * 149597870.7;
 
     // Get parent radius in km
     let parentRadius = 0;
@@ -1263,7 +1130,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // For bodies outside rings, check if Hill sphere is close enough to influence
     // Calculate Hill radius
-    const bodyMass = this.body.bodyData.earthMasses;
+    const bodyMass = body.bodyData.earthMasses;
     if (!bodyMass) {
       return false;
     }
@@ -1493,7 +1360,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   // Get all bodies in the system (traverse to root and collect all)
   private getAllSystemBodies(): SystemBody[] {
-    let root = this.body;
+    let root = this.body();
     while (root.parent) {
       root = root.parent;
     }
@@ -1513,22 +1380,24 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   // Ring Hill-limit calculation removed.
 
   public getSolidCompositionTooltip(): string {
-    if (!this.body.bodyData.solidComposition) {
+    const body = this.body();
+    if (!body.bodyData.solidComposition) {
       return '';
     }
-    return Object.entries(this.body.bodyData.solidComposition)
+    return Object.entries(body.bodyData.solidComposition)
       .map(([component, percentage]) => `${component}: ${percentage.toFixed(2)}%`)
       .join('\n');
   }
 
   private getAsteroidIcon(): string | null {
     // Only show icon for rings and belts
-    if (this.body.bodyData.type !== 'Ring' && this.body.bodyData.type !== 'Belt') {
+    const body = this.body();
+    if (body.bodyData.type !== 'Ring' && body.bodyData.type !== 'Belt') {
       return null;
     }
 
     // Get the subType (e.g., "Icy", "Metallic", "Metal Rich", "Rocky")
-    const subType = this.body.bodyData.subType;
+    const subType = body.bodyData.subType;
     if (!subType) {
       return null;
     }
@@ -1538,7 +1407,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     const iconName = subType.toLowerCase().replace(/ /g, '_');
 
     // Construct the filename based on type (without 'assets/' prefix as it's added in template)
-    if (this.body.bodyData.type === 'Belt') {
+    if (body.bodyData.type === 'Belt') {
       return `asteroids/cluster_${iconName}_01.png`;
     } else {
       // Ring
@@ -1553,6 +1422,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   private updateChildrenExpandedState(): void {
     const childArray = this.childComponents?.toArray() || [];
     this.cachedChildrenExpandedState = childArray.some(child => child.expanded);
+    // Runs from an AfterViewInit setTimeout as well as event handlers; notify the
+    // scheduler so the collapse/expand-all toggle reflects the new state under zoneless.
+    this.cdr.markForCheck();
   }
 
   public trackByMaterial(index: number, material: { name: string, class: string, tooltip: string }): string {
@@ -1578,7 +1450,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public copyBodyJson(): void {
-    const jsonText = JSON.stringify(this.body.bodyData, null, 2);
+    const jsonText = JSON.stringify(this.body().bodyData, null, 2);
     const textArea = document.createElement('textarea');
     textArea.value = jsonText;
     textArea.style.position = 'fixed';
@@ -1592,7 +1464,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getFormattedBodyJson(): string {
-    return JSON.stringify(this.body.bodyData, null, 2);
+    return JSON.stringify(this.body().bodyData, null, 2);
   }
 
   public showBodyJsonDialog(event: MouseEvent): void {
@@ -1613,19 +1485,20 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   // Ring Hill-limit dialog removed.
 
   public showInvisibleRingExplanation(): void {
-    if (this.body.bodyData.type !== 'Ring') {
+    const body = this.body();
+    if (body.bodyData.type !== 'Ring') {
       return;
     }
 
-    const innerRadius = this.body.bodyData.innerRadius || 0;
-    const outerRadius = this.body.bodyData.outerRadius || 0;
-    const mass = this.body.bodyData.mass || 0;
+    const innerRadius = body.bodyData.innerRadius || 0;
+    const outerRadius = body.bodyData.outerRadius || 0;
+    const mass = body.bodyData.mass || 0;
     const width = this.getRingWidth();
     const area = this.getRingArea();
     const density = this.getRingDensity();
     const isInvisible = density < 0.1 && width > 1000000;
 
-    const ringName = this.body.bodyData.name.split(' ').slice(1).join(' ') || this.body.bodyData.name;
+    const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
     this.invisibleRingDialogData = {
       ringName,
@@ -1646,11 +1519,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public showRocheLimitChart(): void {
-    if (!this.body.parent || this.body.bodyData.type !== 'Ring') {
+    const body = this.body();
+    if (!body.parent || body.bodyData.type !== 'Ring') {
       return;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
 
     // Calculate parent density and radius
     let primaryDensity = 0;
@@ -1693,16 +1567,16 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     // Get only the current ring
     const currentRing = {
-      name: this.body.bodyData.name,
-      innerRadius: this.body.bodyData.innerRadius || 0, // Already in km
-      outerRadius: this.body.bodyData.outerRadius || 0, // Already in km
-      type: this.body.bodyData.subType,
-      density: this.getRingDensityFromType(this.body.bodyData.subType)
+      name: body.bodyData.name,
+      innerRadius: body.bodyData.innerRadius || 0, // Already in km
+      outerRadius: body.bodyData.outerRadius || 0, // Already in km
+      type: body.bodyData.subType,
+      density: this.getRingDensityFromType(body.bodyData.subType)
     };
 
     this.rocheLimitDialogData = {
       parentName: parent.name,
-      ringName: this.body.bodyData.name,
+      ringName: body.bodyData.name,
       densityRange,
       rigidLimits,
       fluidLimits,
@@ -1724,16 +1598,18 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     setTimeout(() => {
       this.drawRocheChart();
       this.isChartLoading = false;
+      this.cdr.markForCheck();
     }, 100);
   }
 
   public showBodyRocheLimitChart(): void {
     const rocheLimits = this.calculateBodyRocheLimits();
-    if (!rocheLimits || !this.body.parent) {
+    const body = this.body();
+    if (!rocheLimits || !body.parent) {
       return;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
 
     // Calculate parent density and radius
     let primaryDensity = 0;
@@ -1762,8 +1638,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     // Calculate body density
-    const bodyMassKg = this.body.bodyData.earthMasses! * 5.972e24;
-    const bodyRadiusM = this.body.bodyData.radius! * 1000;
+    const bodyMassKg = body.bodyData.earthMasses! * 5.972e24;
+    const bodyRadiusM = body.bodyData.radius! * 1000;
     const bodyVolume = (4 / 3) * Math.PI * Math.pow(bodyRadiusM, 3);
     const bodyDensity = bodyMassKg / bodyVolume;
 
@@ -1781,9 +1657,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     // Create a "ring" representation using periapsis/apoapsis with body radius
-    const bodyRadius = this.body.bodyData.radius!; // in km
+    const bodyRadius = body.bodyData.radius!; // in km
     const bodyRing = {
-      name: this.body.bodyData.name,
+      name: body.bodyData.name,
       innerRadius: rocheLimits.periapsis - bodyRadius,
       outerRadius: rocheLimits.apoapsis + bodyRadius,
       type: 'Body Orbit',
@@ -1792,7 +1668,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.rocheLimitDialogData = {
       parentName: parent.name,
-      ringName: this.body.bodyData.name,
+      ringName: body.bodyData.name,
       densityRange,
       rigidLimits,
       fluidLimits,
@@ -1814,20 +1690,22 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     setTimeout(() => {
       this.drawRocheChart();
       this.isChartLoading = false;
+      this.cdr.markForCheck();
     }, 100);
   }
 
   public showApoPeriDialog(type: 'apo' | 'peri'): void {
     let data: { date: Date, days: number } | null = null;
     let distanceKm: number | undefined = undefined;
+    const body = this.body();
     if (type === 'apo') {
       data = this.getNextApoapsis();
-      if (this.body.bodyData.semiMajorAxis && this.body.bodyData.orbitalEccentricity !== undefined) {
+      if (body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined) {
         distanceKm = this.getApoapsis();
       }
     } else {
       data = this.getNextPeriapsis();
-      if (this.body.bodyData.semiMajorAxis && this.body.bodyData.orbitalEccentricity !== undefined) {
+      if (body.bodyData.semiMajorAxis && body.bodyData.orbitalEccentricity !== undefined) {
         distanceKm = this.getPeriapsis();
       }
     }
@@ -1841,10 +1719,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     let currentMeanAnomaly: number | undefined = undefined;
     let degreesToEvent: number | undefined = undefined;
 
-    if (this.body.bodyData.meanAnomaly !== undefined && this.body.bodyData.orbitalPeriod && this.body.bodyData.timestamps?.meanAnomaly) {
-      meanAnomaly = this.body.bodyData.meanAnomaly;
-      orbitalPeriod = this.body.bodyData.orbitalPeriod;
-      timestamp = new Date(this.body.bodyData.timestamps.meanAnomaly);
+    if (body.bodyData.meanAnomaly !== undefined && body.bodyData.orbitalPeriod && body.bodyData.timestamps?.meanAnomaly) {
+      meanAnomaly = body.bodyData.meanAnomaly;
+      orbitalPeriod = body.bodyData.orbitalPeriod;
+      timestamp = new Date(body.bodyData.timestamps.meanAnomaly);
       const timestampMs = timestamp.getTime();
       const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
       const orbitalCycles = elapsedDays / orbitalPeriod;
@@ -1880,11 +1758,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public showShepherdingHillLimitChart(): void {
     const hillData = this.calculateShepherdingHillLimit();
-    if (!hillData || !this.body.parent) {
+    const body = this.body();
+    if (!hillData || !body.parent) {
       return;
     }
 
-    const parent = this.body.parent.bodyData;
+    const parent = body.parent.bodyData;
 
     // Get parent radius
     let parentRadius = 0;
@@ -1926,7 +1805,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
     this.hillLimitDialogData = {
       parentName: parent.name,
-      bodyName: this.body.bodyData.name,
+      bodyName: body.bodyData.name,
       parentRadius,
       outermostRingRadius: hillData.outermostRingRadius,
       bodyOrbitalRadius: hillData.bodyOrbitalRadius,
@@ -1936,7 +1815,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       withinRings: hillData.withinRings,
       isFirstOutside: hillData.isFirstOutside,
       rings: ringData,
-      bodyRadius: this.body.bodyData.radius || 0,
+      bodyRadius: body.bodyData.radius || 0,
       shepherdStatus
     };
 
@@ -1953,6 +1832,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     setTimeout(() => {
       this.drawShepherdingHillChart();
       this.isChartLoading = false;
+      this.cdr.markForCheck();
     }, 200);
   }
 
@@ -2421,11 +2301,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getSpinResonance(): string {
-    if (!this.body.bodyData.rotationalPeriod || !this.body.bodyData.orbitalPeriod) {
+    const body = this.body();
+    if (!body.bodyData.rotationalPeriod || !body.bodyData.orbitalPeriod) {
       return 'none';
     }
 
-    const rotationsPerOrbit = this.body.bodyData.orbitalPeriod / this.body.bodyData.rotationalPeriod;
+    const rotationsPerOrbit = body.bodyData.orbitalPeriod / body.bodyData.rotationalPeriod;
     const maxDenominator = 5;
     const tolerance = 0.01;
 
@@ -2444,15 +2325,16 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public getSpinResonanceTooltip(): string {
     const resonance = this.getSpinResonance();
-    if (resonance === 'none' && this.body.bodyData.rotationalPeriodTidallyLocked) {
+    const body = this.body();
+    if (resonance === 'none' && body.bodyData.rotationalPeriodTidallyLocked) {
       return 'Tidally Locked not in a simple resonance';
     }
-    if (resonance === '1:1' && this.body.bodyData.rotationalPeriodTidallyLocked) {
-      if (this.body.parent?.bodyData.type === 'Star') {
-        if (this.body.bodyData.subType === 'Earth-like world') {
+    if (resonance === '1:1' && body.bodyData.rotationalPeriodTidallyLocked) {
+      if (body.parent?.bodyData.type === 'Star') {
+        if (body.bodyData.subType === 'Earth-like world') {
           return 'Eyeball earth';
         }
-        if (this.body.bodyData.subType === 'Water world') {
+        if (body.bodyData.subType === 'Water world') {
           return 'Eyeball water world';
         }
       }
@@ -2462,20 +2344,21 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getTangentialVelocity(): number | null {
-    if (!this.isBlackHoleOrNeutronStar() || !this.body.bodyData.rotationalPeriod) {
+    const body = this.body();
+    if (!this.isBlackHoleOrNeutronStar() || !body.bodyData.rotationalPeriod) {
       return null;
     }
 
     let radiusKm: number;
-    if (this.body.bodyData.radius) {
-      radiusKm = this.body.bodyData.radius;
-    } else if (this.body.bodyData.solarRadius) {
-      radiusKm = this.body.bodyData.solarRadius * 695700; // Convert solar radii to km
+    if (body.bodyData.radius) {
+      radiusKm = body.bodyData.radius;
+    } else if (body.bodyData.solarRadius) {
+      radiusKm = body.bodyData.solarRadius * 695700; // Convert solar radii to km
     } else {
       return null;
     }
 
-    const rotationalPeriodDays = this.body.bodyData.rotationalPeriod;
+    const rotationalPeriodDays = body.bodyData.rotationalPeriod;
     const rotationalPeriodSeconds = rotationalPeriodDays * 24 * 3600;
 
     const circumference = 2 * Math.PI * radiusKm * 1000; // Convert km to m
@@ -2507,9 +2390,10 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public isBlackHoleOrNeutronStar(): boolean {
-    return this.body.bodyData.type === 'Star' &&
-      (this.body.bodyData.subType === 'Black Hole' ||
-        this.body.bodyData.subType === 'Neutron Star');
+    const body = this.body();
+    return body.bodyData.type === 'Star' &&
+      (body.bodyData.subType === 'Black Hole' ||
+        body.bodyData.subType === 'Neutron Star');
   }
 
   private formatPeriodDays(days: number): string {
@@ -2535,26 +2419,27 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getRotationalPeriodDisplay(): string {
-    const days = this.body.bodyData.rotationalPeriod;
+    const days = this.body().bodyData.rotationalPeriod;
     if (!days) return '';
     return this.formatPeriodDays(days);
   }
 
   public getOrbitalPeriodDisplay(): string {
-    const days = this.body.bodyData.orbitalPeriod;
+    const days = this.body().bodyData.orbitalPeriod;
     if (!days) return '';
     return this.formatPeriodDays(days);
   }
 
   public classifyNeutronStar(): string | null {
-    if (this.body.bodyData.type !== 'Star' || this.body.bodyData.subType !== 'Neutron Star') {
+    const body = this.body();
+    if (body.bodyData.type !== 'Star' || body.bodyData.subType !== 'Neutron Star') {
       return null;
     }
 
-    const mass = this.body.bodyData.solarMasses;
-    const radius = this.body.bodyData.solarRadius;
-    const periodDays = this.body.bodyData.rotationalPeriod;
-    const absMag = this.body.bodyData.absoluteMagnitude;
+    const mass = body.bodyData.solarMasses;
+    const radius = body.bodyData.solarRadius;
+    const periodDays = body.bodyData.rotationalPeriod;
+    const absMag = body.bodyData.absoluteMagnitude;
 
     if (mass === undefined || radius === undefined || periodDays === undefined || absMag === undefined) {
       return null;
@@ -2590,25 +2475,26 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
 
   public getLandableBadgeClass(): string {
-    if (!this.body.bodyData.isLandable) {
+    const body = this.body();
+    if (!body.bodyData.isLandable) {
       return 'badge-gray';
     }
 
     // High gravity — disembarking not possible
-    if (this.body.bodyData.gravity && this.body.bodyData.gravity > 2.7) {
+    if (body.bodyData.gravity && body.bodyData.gravity > 2.7) {
       return 'badge-red';
     }
 
-    const surfTemp = this.body.bodyData.surfaceTemperature;
+    const surfTemp = body.bodyData.surfaceTemperature;
     if (!surfTemp) {
       return 'badge-gray';
     }
 
     const { min, max } = estimateTempRange(
       surfTemp,
-      this.body.bodyData.subType,
-      this.body.bodyData.atmosphereType,
-      this.body.bodyData.surfacePressure,
+      body.bodyData.subType,
+      body.bodyData.atmosphereType,
+      body.bodyData.surfacePressure,
     );
 
     const safeMin = isTempSafe(min);
@@ -2626,20 +2512,21 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public getLandableTooltip(): string {
     // High gravity takes precedence
-    if (this.body.bodyData.gravity && this.body.bodyData.gravity > 2.7) {
+    const body = this.body();
+    if (body.bodyData.gravity && body.bodyData.gravity > 2.7) {
       return 'Landable: High gravity. Disembarking not possible';
     }
 
-    const surfTemp = this.body.bodyData.surfaceTemperature;
+    const surfTemp = body.bodyData.surfaceTemperature;
     if (!surfTemp) {
       return 'Landable: No temperature data available';
     }
 
     const { min, max } = estimateTempRange(
       surfTemp,
-      this.body.bodyData.subType,
-      this.body.bodyData.atmosphereType,
-      this.body.bodyData.surfacePressure,
+      body.bodyData.subType,
+      body.bodyData.atmosphereType,
+      body.bodyData.surfacePressure,
     );
 
     const rangeInfo = `Est. range ${Math.round(min)}–${Math.round(max)} K`;
@@ -2658,13 +2545,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getEstimatedTempRange(): { min: number; max: number } | null {
-    const surfTemp = this.body.bodyData.surfaceTemperature;
+    const surfTemp = this.body().bodyData.surfaceTemperature;
     if (!surfTemp) return null;
     return estimateTempRange(
       surfTemp,
-      this.body.bodyData.subType,
-      this.body.bodyData.atmosphereType,
-      this.body.bodyData.surfacePressure,
+      this.body().bodyData.subType,
+      this.body().bodyData.atmosphereType,
+      this.body().bodyData.surfacePressure,
     );
   }
 
@@ -2680,17 +2567,20 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.trojanStatus = null;
     this.trojanHostStatus = false;
 
-    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis ||
-      this.body.bodyData.argOfPeriapsis === undefined) {
+    const body = this.body();
+    if (!body.parent || !body.bodyData.orbitalPeriod || !body.bodyData.semiMajorAxis ||
+      body.bodyData.argOfPeriapsis === undefined) {
       return;
     }
 
     // Check L3, L4, L5 (same orbital distance)
-    const sameSMABodies = this.body.parent.subBodies.filter(sibling =>
-      sibling !== this.body &&
-      sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
-      sibling.bodyData.semiMajorAxis === this.body.bodyData.semiMajorAxis &&
-      sibling.bodyData.argOfPeriapsis !== undefined
+    const sameSMABodies = body.parent.subBodies.filter(sibling => {
+      const bodyValue = this.body();
+      return sibling !== bodyValue &&
+      sibling.bodyData.orbitalPeriod === bodyValue.bodyData.orbitalPeriod &&
+      sibling.bodyData.semiMajorAxis === bodyValue.bodyData.semiMajorAxis &&
+      sibling.bodyData.argOfPeriapsis !== undefined;
+    }
     );
 
     // If this body has co-orbital neighbours at both +60° and −60°, it is the host planet
@@ -2699,7 +2589,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     let hasLeadingTrojan = false;
     let hasTrailingTrojan = false;
     for (const sibling of sameSMABodies) {
-      const diff = ((sibling.bodyData.argOfPeriapsis! - this.body.bodyData.argOfPeriapsis! + 540) % 360) - 180;
+      const diff = ((sibling.bodyData.argOfPeriapsis! - body.bodyData.argOfPeriapsis! + 540) % 360) - 180;
       if (Math.abs(diff - 60) < 1) hasLeadingTrojan = true;
       if (Math.abs(diff + 60) < 1) hasTrailingTrojan = true;
     }
@@ -2709,13 +2599,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     for (const sibling of sameSMABodies) {
-      const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
+      const argDiff = Math.abs(body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
       const normalizedDiff = Math.min(argDiff, 360 - argDiff);
 
       if (Math.abs(normalizedDiff - 60) < 1) {
         // Use a signed angular difference (normalised to [−180, 180]) so that wrap-around
         // values such as 300° vs 0° are handled correctly.
-        const relativePos = ((this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis! + 540) % 360) - 180;
+        const relativePos = ((body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis! + 540) % 360) - 180;
         this.trojanStatus = relativePos > 0 ? 'L4' : 'L5';
         return;
       } else if (Math.abs(normalizedDiff - 180) < 1) {
@@ -2725,20 +2615,22 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     // Check L1, L2 (different orbital distances, same period)
-    const samePeriodBodies = this.body.parent.subBodies.filter(sibling =>
-      sibling !== this.body &&
-      sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
-      sibling.bodyData.semiMajorAxis !== this.body.bodyData.semiMajorAxis &&
+    const samePeriodBodies = body.parent.subBodies.filter(sibling => {
+      const bodyValue = this.body();
+      return sibling !== bodyValue &&
+      sibling.bodyData.orbitalPeriod === bodyValue.bodyData.orbitalPeriod &&
+      sibling.bodyData.semiMajorAxis !== bodyValue.bodyData.semiMajorAxis &&
       sibling.bodyData.argOfPeriapsis !== undefined &&
-      sibling.bodyData.ascendingNode !== undefined
+      sibling.bodyData.ascendingNode !== undefined;
+    }
     );
 
     for (const sibling of samePeriodBodies) {
-      const argDiff = Math.abs(this.body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
-      const nodeDiff = Math.abs((this.body.bodyData.ascendingNode || 0) - (sibling.bodyData.ascendingNode || 0));
+      const argDiff = Math.abs(body.bodyData.argOfPeriapsis! - sibling.bodyData.argOfPeriapsis!);
+      const nodeDiff = Math.abs((body.bodyData.ascendingNode || 0) - (sibling.bodyData.ascendingNode || 0));
 
       if (argDiff < 5 && nodeDiff < 5) {
-        if (this.body.bodyData.semiMajorAxis! < sibling.bodyData.semiMajorAxis!) {
+        if (body.bodyData.semiMajorAxis! < sibling.bodyData.semiMajorAxis!) {
           this.trojanStatus = 'L1';
         } else {
           this.trojanStatus = 'L2';
@@ -2751,15 +2643,18 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   private detectRosetteStatus(): void {
     this.rosetteStatus = null;
 
-    if (!this.body.parent || !this.body.bodyData.orbitalPeriod || !this.body.bodyData.semiMajorAxis ||
-      this.body.bodyData.argOfPeriapsis === undefined) {
+    const bodyValue = this.body();
+    if (!bodyValue.parent || !bodyValue.bodyData.orbitalPeriod || !bodyValue.bodyData.semiMajorAxis ||
+      bodyValue.bodyData.argOfPeriapsis === undefined) {
       return;
     }
 
-    const rosetteGroup = this.body.parent.subBodies.filter(sibling =>
-      sibling.bodyData.orbitalPeriod === this.body.bodyData.orbitalPeriod &&
-      sibling.bodyData.semiMajorAxis === this.body.bodyData.semiMajorAxis &&
-      sibling.bodyData.argOfPeriapsis !== undefined
+    const rosetteGroup = bodyValue.parent.subBodies.filter(sibling => {
+      const body = this.body();
+      return sibling.bodyData.orbitalPeriod === body.bodyData.orbitalPeriod &&
+      sibling.bodyData.semiMajorAxis === body.bodyData.semiMajorAxis &&
+      sibling.bodyData.argOfPeriapsis !== undefined;
+    }
     );
 
     if (rosetteGroup.length < 3) return;
@@ -2786,14 +2681,15 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public getJetConeAngle(): number | null {
     // Only apply to neutron stars with required inputs
-    if (this.body.bodyData.type !== 'Star' || !this.body.bodyData.subType?.includes('Neutron Star') ||
-      !this.body.bodyData.rotationalPeriod || !this.body.bodyData.solarRadius || !this.body.bodyData.age) {
+    const body = this.body();
+    if (body.bodyData.type !== 'Star' || !body.bodyData.subType?.includes('Neutron Star') ||
+      !body.bodyData.rotationalPeriod || !body.bodyData.solarRadius || !body.bodyData.age) {
       return null;
     }
 
-    const rotationalPeriod = this.body.bodyData.rotationalPeriod;
-    const solarRadius = this.body.bodyData.solarRadius;
-    const age = this.body.bodyData.age;
+    const rotationalPeriod = body.bodyData.rotationalPeriod;
+    const solarRadius = body.bodyData.solarRadius;
+    const age = body.bodyData.age;
 
     if (rotationalPeriod <= 0 || solarRadius <= 0 || age <= 0) {
       return null;
@@ -2831,39 +2727,41 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
-    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod ||
-      !this.body.bodyData.timestamps?.meanAnomaly ||
-      !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
+    const body = this.body();
+    if (!body.bodyData.meanAnomaly || !body.bodyData.orbitalPeriod ||
+      !body.bodyData.timestamps?.meanAnomaly ||
+      !body.bodyData.orbitalEccentricity || body.bodyData.orbitalEccentricity === 0) {
       return null;
     }
 
-    const timestampMs = new Date(this.body.bodyData.timestamps.meanAnomaly).getTime();
+    const timestampMs = new Date(body.bodyData.timestamps.meanAnomaly).getTime();
     const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
-    const orbitalCycles = elapsedDays / this.body.bodyData.orbitalPeriod;
-    const currentMeanAnomaly = (this.body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
+    const orbitalCycles = elapsedDays / body.bodyData.orbitalPeriod;
+    const currentMeanAnomaly = (body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
 
     const degreesToPeriapsis = (360 - currentMeanAnomaly) % 360;
-    const daysToEvent = (degreesToPeriapsis / 360) * this.body.bodyData.orbitalPeriod;
+    const daysToEvent = (degreesToPeriapsis / 360) * body.bodyData.orbitalPeriod;
     const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
 
     return { date: eventDate, days: daysToEvent };
   }
 
   private calculateNextApoapsis(): { date: Date, days: number } | null {
-    if (!this.body.bodyData.meanAnomaly || !this.body.bodyData.orbitalPeriod ||
-      !this.body.bodyData.timestamps?.meanAnomaly ||
-      !this.body.bodyData.orbitalEccentricity || this.body.bodyData.orbitalEccentricity === 0) {
+    const body = this.body();
+    if (!body.bodyData.meanAnomaly || !body.bodyData.orbitalPeriod ||
+      !body.bodyData.timestamps?.meanAnomaly ||
+      !body.bodyData.orbitalEccentricity || body.bodyData.orbitalEccentricity === 0) {
       return null;
     }
 
-    const timestampMs = new Date(this.body.bodyData.timestamps.meanAnomaly).getTime();
+    const timestampMs = new Date(body.bodyData.timestamps.meanAnomaly).getTime();
     const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
-    const orbitalCycles = elapsedDays / this.body.bodyData.orbitalPeriod;
-    const currentMeanAnomaly = (this.body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
+    const orbitalCycles = elapsedDays / body.bodyData.orbitalPeriod;
+    const currentMeanAnomaly = (body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
 
     let degreesToApoapsis = (180 - currentMeanAnomaly) % 360;
     if (degreesToApoapsis < 0) degreesToApoapsis += 360;
-    const daysToEvent = (degreesToApoapsis / 360) * this.body.bodyData.orbitalPeriod;
+    const daysToEvent = (degreesToApoapsis / 360) * body.bodyData.orbitalPeriod;
     const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
 
     return { date: eventDate, days: daysToEvent };
@@ -2878,7 +2776,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   private computeMaterialBadges(): void {
-    if (!this.body.bodyData.materials) {
+    const body = this.body();
+    if (!body.bodyData.materials) {
       this.cachedMaterialBadges = [];
       return;
     }
@@ -2915,7 +2814,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       'Sulphur': { grade: 'badge-mat4', abbrev: 'S' }
     };
 
-    this.cachedMaterialBadges = Object.entries(this.body.bodyData.materials)
+    this.cachedMaterialBadges = Object.entries(body.bodyData.materials)
       .filter(([material, percentage]) => percentage > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([material, percentage]) => ({
@@ -2934,33 +2833,34 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   private calculateRocheExcess(): number | null {
-    if (!this.body.parent || !this.body.bodyData.semiMajorAxis || !this.body.bodyData.radius) {
+    const body = this.body();
+    if (!body.parent || !body.bodyData.semiMajorAxis || !body.bodyData.radius) {
       return null;
     }
 
     let parentRadius: number;
-    if (this.body.parent.bodyData.radius) {
-      parentRadius = this.body.parent.bodyData.radius * 1000; // Convert km to m
-    } else if (this.body.parent.bodyData.solarRadius) {
-      parentRadius = this.body.parent.bodyData.solarRadius * 695700000; // Convert solar radii to m
+    if (body.parent.bodyData.radius) {
+      parentRadius = body.parent.bodyData.radius * 1000; // Convert km to m
+    } else if (body.parent.bodyData.solarRadius) {
+      parentRadius = body.parent.bodyData.solarRadius * 695700000; // Convert solar radii to m
     } else {
       return null;
     }
 
     let parentMass: number;
-    if (this.body.parent.bodyData.solarMasses) {
-      parentMass = this.body.parent.bodyData.solarMasses * 1.989e30;
-    } else if (this.body.parent.bodyData.earthMasses) {
-      parentMass = this.body.parent.bodyData.earthMasses * 5.972e24;
+    if (body.parent.bodyData.solarMasses) {
+      parentMass = body.parent.bodyData.solarMasses * 1.989e30;
+    } else if (body.parent.bodyData.earthMasses) {
+      parentMass = body.parent.bodyData.earthMasses * 5.972e24;
     } else {
       return null;
     }
 
     let bodyMass: number;
-    if (this.body.bodyData.solarMasses) {
-      bodyMass = this.body.bodyData.solarMasses * 1.989e30;
-    } else if (this.body.bodyData.earthMasses) {
-      bodyMass = this.body.bodyData.earthMasses * 5.972e24;
+    if (body.bodyData.solarMasses) {
+      bodyMass = body.bodyData.solarMasses * 1.989e30;
+    } else if (body.bodyData.earthMasses) {
+      bodyMass = body.bodyData.earthMasses * 5.972e24;
 
     } else {
       return null;
@@ -2970,13 +2870,13 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       parentMass,
       parentRadius,
       bodyMass,
-      this.body.bodyData.radius * 1000, // Convert km to m
-      this.body.bodyData.semiMajorAxis * 149597870700 // Convert AU to m
+      body.bodyData.radius * 1000, // Convert km to m
+      body.bodyData.semiMajorAxis * 149597870700 // Convert AU to m
     );
 
 
 
-    return result.violates ? (result.rocheLimitM - this.body.bodyData.semiMajorAxis * 149597870700) / 1000 : null; // Convert back to km
+    return result.violates ? (result.rocheLimitM - body.bodyData.semiMajorAxis * 149597870700) / 1000 : null; // Convert back to km
   }
 
   private checkRigidRocheLimit(
@@ -3060,7 +2960,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public showOnFootSafetyDialog(): void {
-    const bd = this.body.bodyData;
+    const bd = this.body().bodyData;
     const surfTemp = bd.surfaceTemperature ?? null;
     const estRange = surfTemp ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure) : null;
     const delta = this.getLookupDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
@@ -3342,8 +3242,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public showTidalLockDialog(): void {
-    const rot = this.body.bodyData.rotationalPeriod;
-    const orb = this.body.bodyData.orbitalPeriod;
+    const rot = this.body().bodyData.rotationalPeriod;
+    const orb = this.body().bodyData.orbitalPeriod;
     let difference: number | null = null;
     let solarDay: number | null = null;
     if (rot && orb) {
@@ -3364,7 +3264,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       difference,
       solarDay,
       resonance,
-      tidallyLocked: !!this.body.bodyData.rotationalPeriodTidallyLocked
+      tidallyLocked: !!this.body().bodyData.rotationalPeriodTidallyLocked
     };
     const dialogRef = this.dialog.open(this.tidalLockDialogTemplate, {
       width: '600px',

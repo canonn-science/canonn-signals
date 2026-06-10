@@ -1,5 +1,5 @@
 {
-  "/api/edastro/*": {
+  "/api/edastro": {
     "target": "https://edastro.com",
     "secure": true,
     "changeOrigin": true,

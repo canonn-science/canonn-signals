@@ -14,8 +14,9 @@
                 </mat-autocomplete>
                 <mat-error>System not found</mat-error>
             </mat-form-field>
-            <button mat-flat-button color="primary" (click)="search()" [disabled]="searching">
-                <mat-icon>search</mat-icon>
+            <button mat-flat-button color="primary" (click)="search()" [disabled]="searching"
+                aria-label="Search">
+                <mat-icon aria-hidden="true">search</mat-icon>
             </button>
         </div>
         <div *ngIf="searchError" class="error-message" style="min-width: 400px; max-width: 400px;">
@@ -23,7 +24,7 @@
         </div>
     </div>
     <div>
-        <img [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
+        <img alt="" [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
             style="width: 200px; height: 200px;" />
     </div>
 </div>
@@ -32,22 +33,22 @@
         <div class="system-info-box">
             <div class="system-title">
                 <span style="display: flex; align-items: center; gap: 4px;">
-                    <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> ({{ edastroData?.name }})</span></span>
+                    <span>{{ data.system.name }}<span *ngIf="edastroData?.name"> ({{ edastroData.name }})</span></span>
                     <ng-container *ngIf="edastroData?.name">
-                        <a [href]="edastroData?.poiUrl" target="_blank" title="View on the Galactic Exploration Catalog"
+                        <a [href]="edastroData.poiUrl" target="_blank" rel="noopener noreferrer" title="View on the Galactic Exploration Catalog"
                             style="margin-left: 4px; display: inline-flex; align-items: center;">
                             <img src="assets/icons/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline"
                                 style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;"
                                 tabindex="0" />
                         </a>
                     </ng-container>
-                    <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank"
+                    <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" rel="noopener noreferrer"
                         style="margin-left: 4px; display: inline-flex; align-items: center;">
                         <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh"
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;"
                             tabindex="0" />
                     </a>
-                    <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank"
+                    <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank" rel="noopener noreferrer"
                         style="display: inline-flex; align-items: center; margin-left: -0.4em;">
                         <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON"
                             title="View the spansh dump"
@@ -55,13 +56,13 @@
                             tabindex="0" />
                     </a>
                     <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)"
-                        target="_blank" title="View on Inara"
+                        target="_blank" rel="noopener noreferrer" title="View on Inara"
                         style="margin-left: 4px; display: inline-flex; align-items: center;">
                         <img src="assets/icons/inara.png" alt="Inara"
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
                             tabindex="0" />
                     </a>
-                    <a [href]="'https://ravencolonial.com/#sys=' + encodeURIComponent(data.system.name)" target="_blank"
+                    <a [href]="'https://ravencolonial.com/#sys=' + encodeURIComponent(data.system.name)" target="_blank" rel="noopener noreferrer"
                         title="View on Raven Colonial"
                         style="margin-left: 4px; display: inline-flex; align-items: center;">
                         <img src="assets/icons/rcc-96.png" alt="Raven Colonial"
@@ -69,34 +70,34 @@
                             tabindex="0" />
                     </a>
                     <a [href]="'https://www.edsm.net/en/system?systemName=' + encodeURIComponent(data.system.name)"
-                        target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        target="_blank" rel="noopener noreferrer" style="margin-left: 4px; display: inline-flex; align-items: center;">
                         <img src="assets/icons/edsm-194x194.png" alt="EDSM" title="View on EDSM"
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
                             tabindex="0" />
                     </a>
                     <a [href]="'https://www.edsm.net/api-system-v1/bodies?systemName=' + encodeURIComponent(data.system.name)"
-                        target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
+                        target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
                         <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="EDSM JSON"
                             title="View the EDSM dump"
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
                             tabindex="0" />
                     </a>
                     <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
-                        target="_blank" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        target="_blank" rel="noopener noreferrer" style="margin-left: 4px; display: inline-flex; align-items: center;">
                         <img src="assets/icons/eddn.png" alt="ED Galaxy Data"
                             title="View on EDDN journals on ED Galaxy Data"
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
                             tabindex="0" />
                     </a>
                     <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
-                        target="_blank" style="display: inline-flex; align-items: center; margin-left: -0.5em;">
+                        target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; margin-left: -0.5em;">
                         <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="ED Galaxy Data"
                             title="View on EDDN journals on ED Galaxy Data"
                             style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
                             tabindex="0" />
                     </a>
                     <a *ngIf="isVoyagerGoldenRecordSystem()"
-                        href="https://science.nasa.gov/mission/voyager/golden-record-cover/" target="_blank"
+                        href="https://science.nasa.gov/mission/voyager/golden-record-cover/" target="_blank" rel="noopener noreferrer"
                         style="margin-left: 4px; display: inline-flex; align-items: center;">
                         <img src="assets/icons/Voyager_Golden_Record_fx.png" alt="Voyager Golden Record"
                             title="This pulsar is featured on the Voyager Golden Record cover"
@@ -108,7 +109,7 @@
                     class="population">Population: {{ data.system.population | number }}</span>
             </div>
             <div class="edastro-summary" *ngIf="edastroData?.summary">
-                <span class="summary-text">{{ edastroData?.summary }}</span>
+                <span class="summary-text">{{ edastroData.summary }}</span>
             </div>
             <div class="system-data">
                 <div class="region-map-container" #regionMapContainer></div>
@@ -187,7 +188,7 @@
                     <div class="system-data-section"
                         *ngIf="data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length">
                         <div class="system-data-section-header">Signals</div>
-                        <div class="system-data-entry" *ngIf="data.system.signals?.cloud?.length">
+                        <div class="system-data-entry" *ngIf="data.system.signals.cloud?.length">
                             <div>Clouds</div>
                             <div>
                                 <div *ngFor="let cloud of data.system.signals!.cloud">
@@ -195,7 +196,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="system-data-entry" *ngIf="data.system.signals?.anomaly?.length">
+                        <div class="system-data-entry" *ngIf="data.system.signals.anomaly?.length">
                             <div>Anomalies</div>
                             <div>
                                 <div *ngFor="let anomaly of data.system.signals!.anomaly">
@@ -207,10 +208,10 @@
                     <div class="system-data-section" *ngIf="edastroData?.mainImage">
                         <div class="system-data-section-header">Galactic Exploration Catalog</div>
                         <div class="gec-image-panel">
-                            <img [src]="edastroData?.mainImage" alt="GEC Image" class="gec-main-image"
-                                (error)="onGecImageError($event)" (load)="onGecImageLoad($event)" #gecImage />
-                            <div class="gec-description" *ngIf="edastroData?.description">{{
-                                edastroData?.description }}
+                            <img [src]="edastroData.mainImage" alt="GEC Image" class="gec-main-image"
+                                (error)="onGecImageError($event)" #gecImage />
+                            <div class="gec-description" *ngIf="edastroData.description">{{
+                                edastroData.description }}
                             </div>
                         </div>
                     </div>
@@ -226,7 +227,7 @@
             <div class="credits-title">
                 <span class="credits-title-text">Credits</span>
 
-                <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank"
+                <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
                     rel="noopener noreferrer" aria-label="Donate via PayPal (fallback)">
                     <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
                 </a>

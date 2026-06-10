@@ -1,18 +1,20 @@
 import { Component } from '@angular/core';
+import { Observable } from 'rxjs';
 import { AppService } from './app.service';
 
 @Component({
   selector: 'app-root',
+  standalone: false,
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
   public loading = false;
-  public backgroundImage = 'assets/bg1.jpg';
+  // Bound via the async pipe so the background updates under zoneless change
+  // detection without a manual subscription/markForCheck.
+  public readonly backgroundImage$: Observable<string>;
 
-  constructor(private appService: AppService) {
-    this.appService.backgroundImage$.subscribe(image => {
-      this.backgroundImage = image;
-    });
+  constructor(private readonly appService: AppService) {
+    this.backgroundImage$ = this.appService.backgroundImage$;
   }
 }

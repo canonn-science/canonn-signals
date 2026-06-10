@@ -11,18 +11,18 @@
 }
 
 .credits-panel {
-    background-color: #797979;
+    background-color: var(--color-border);
     padding: 4px;
-    border-right: 1px solid #393939;
-    border-left: 1px solid #393939;
-    border-bottom: 1px solid #393939;
+    border-right: 1px solid var(--color-surface);
+    border-left: 1px solid var(--color-surface);
+    border-bottom: 1px solid var(--color-surface);
     margin-top: 24px;
     border-radius: 4px;
 }
 
 .credits-title {
-    background-color: #393939;
-    color: #fff;
+    background-color: var(--color-surface);
+    color: var(--color-white);
     font-weight: bold;
     font-size: 18px;
     padding: 8px;
@@ -54,7 +54,7 @@
 }
 
 .credits-detail {
-    background-color: #797979;
+    background-color: var(--color-border);
     color: #f2f2f2;
     font-size: 13px;
     padding: 8px;
@@ -100,7 +100,7 @@
     background-color: rgba(211, 47, 47, 0.2);
     border: 1px solid rgba(211, 47, 47, 0.5);
     border-radius: 4px;
-    color: #ff6b6b;
+    color: var(--color-danger);
     text-align: center;
     backdrop-filter: blur(6px);
 }
@@ -126,8 +126,8 @@
     gap: 4px;
     padding: 8px;
     align-items: center;
-    background-color: #393939;
-    color: #ff9900;
+    background-color: var(--color-surface);
+    color: var(--color-accent);
     font-weight: bold;
     font-size: 150%;
     border-top-left-radius: 4px;
@@ -135,20 +135,20 @@
 }
 
 .system-container .system-container-data .system-title a {
-    color: #000
+    color: var(--color-black)
 }
 
 .system-container .system-container-data .system-title a:hover {
-    color: #797979
+    color: var(--color-border)
 }
 
 .system-container .system-container-data .system-title .edastro-name-link {
-    color: #ff9900;
+    color: var(--color-accent);
     text-decoration: none
 }
 
 .system-container .system-container-data .system-title .edastro-name-link:hover {
-    color: #797979
+    color: var(--color-border)
 }
 
 .system-container .system-container-data .system-title .edastro-icon-inline {
@@ -167,11 +167,11 @@
     align-items: center;
     gap: 8px;
     padding: 8px;
-    background-color: #797979;
-    color: #fff;
+    background-color: var(--color-border);
+    color: var(--color-white);
     font-size: 90%;
     font-weight: normal;
-    border: 1px solid #393939;
+    border: 1px solid var(--color-surface);
 }
 
 .system-container .system-container-data .edastro-summary .summary-text {
@@ -180,7 +180,7 @@
 
 .system-container .system-container-data .system-data {
     background-color: rgba(150, 150, 150, 0.7);
-    border: 1px solid #393939;
+    border: 1px solid var(--color-surface);
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
     display: flex;
@@ -237,8 +237,8 @@
 .system-container .system-container-data .system-data .system-data-section-header {
     font-weight: bold;
     font-size: 14px;
-    color: #000;
-    background-color: #d7d7d7;
+    color: var(--color-black);
+    background-color: var(--color-text-2);
     margin-top: 0;
     margin-bottom: 8px;
     padding: 4px 8px;

@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 
 import { SystemBodyComponent } from './system-body.component';
+import { AppService } from '../app.service';
 
 describe('SystemBodyComponent', () => {
   let component: SystemBodyComponent;
@@ -8,15 +12,34 @@ describe('SystemBodyComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [SystemBodyComponent]
+      declarations: [SystemBodyComponent],
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: AppService, useValue: { codexEntries: of([]), getBodyDisplayName: (n: string) => n } },
+        { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(undefined) }) } },
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
     });
     fixture = TestBed.createComponent(SystemBodyComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    // Intentionally not calling detectChanges(): the template requires a populated
+    // `body` input; these tests exercise the pure orbital-mechanics helpers directly.
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('exposes Math.abs via the abs() helper', () => {
+    expect(component.abs(-5)).toBe(5);
+    expect(component.abs(5)).toBe(5);
+  });
+
+  it('classifies orbital eccentricity', () => {
+    expect(component.getEccentricityAnalysis(0)).toBe('Circular');
+    expect(component.getEccentricityAnalysis(0.2)).toBe('Nearly Circular');
+    expect(component.getEccentricityAnalysis(0.6)).toBe('Eccentric');
+    expect(component.getEccentricityAnalysis(0.9)).toBe('Highly Eccentric');
   });
 
   describe('Orbital Position Calculations', () => {

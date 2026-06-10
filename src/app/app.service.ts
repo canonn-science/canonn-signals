@@ -1,12 +1,33 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of, timer } from 'rxjs';
+import { catchError, retry, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+
+/** Default per-request timeout for remote API calls (ms). */
+const HTTP_TIMEOUT_MS = 20000;
+/** Number of automatic retries for transient failures. */
+const HTTP_RETRY_COUNT = 2;
 
 @Injectable({
   providedIn: 'root'
 })
 export class AppService {
+  /**
+   * Wraps an HTTP GET with a timeout and exponential-backoff retry so that
+   * transient network errors and slow/hung requests don't permanently break
+   * the feature. Callers still receive the error if all retries fail.
+   */
+  private resilientGet<T>(url: string, timeoutMs: number = HTTP_TIMEOUT_MS): Observable<T> {
+    return this.httpClient.get<T>(url).pipe(
+      timeout(timeoutMs),
+      retry({
+        count: HTTP_RETRY_COUNT,
+        delay: (_error, retryIndex) => timer(Math.min(1000 * 2 ** (retryIndex - 1), 8000)),
+      }),
+    );
+  }
+
   private _codexEntries: BehaviorSubject<CanonnCodexEntry[]> = new BehaviorSubject<CanonnCodexEntry[]>([]);
   public codexEntries: Observable<CanonnCodexEntry[]> = this._codexEntries.asObservable();
 
@@ -22,7 +43,8 @@ export class AppService {
   constructor(
     private readonly httpClient: HttpClient
   ) {
-    this.httpClient.get<CanonnCodex>("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref")
+    this.resilientGet<CanonnCodex>("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref")
+      .pipe(catchError(() => of({} as CanonnCodex)))
       .subscribe(c => {
         this._codexEntries.next(Object.values(c));
       });
@@ -31,7 +53,9 @@ export class AppService {
       ? "https://edastro.com/gec/json/combined"
       : "/api/edastro/gec/json/combined";
 
-    this.httpClient.get<EdastroSystem[]>(edastroUrl)
+    // The combined GEC dataset can be several MB; give it a more generous timeout.
+    this.resilientGet<EdastroSystem[]>(edastroUrl, 60000)
+      .pipe(catchError(() => of([] as EdastroSystem[])))
       .subscribe(systems => {
         this._edastroSystems.next(systems);
 
@@ -54,7 +78,7 @@ export class AppService {
     const url = environment.production
       ? `https://edastro.com/gec/json/id64/${id64}`
       : `/api/edastro/gec/json/id64/${id64}`;
-    return this.httpClient.get<EdastroData>(url);
+    return this.resilientGet<EdastroData>(url);
   }
 
   public setBackgroundImage(imageUrl: string): void {
@@ -62,7 +86,7 @@ export class AppService {
   }
 
   public galMapSearch(systemName: string): Observable<{ min_max: { name: string, id64: number }[] }> {
-    return this.httpClient.get<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(systemName)}`);
+    return this.resilientGet<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(systemName)}`);
   }
 
   private bodyNameOverrides: BodyNameOverride[] = [

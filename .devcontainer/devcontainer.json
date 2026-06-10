@@ -1,0 +1,26 @@
+// Reference: https://code.visualstudio.com/docs/remote/containers#_devcontainerjson-reference
+{
+  "name": "Angular dev container",
+  "dockerFile": "Dockerfile",
+  "forwardPorts": [4200, 4201, 4205, 4206, 9876],
+  "mounts": [
+    {
+      "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.claude",
+      "target": "/root/.claude",
+      "type": "bind"
+    },
+  ],
+  "postCreateCommand": "pnpm install",
+  "containerEnv": {
+    "IS_SANDBOX": "1",
+    "NG_CLI_ANALYTICS": "false"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Angular.ng-template",
+        "Anthropic.claude-code"
+      ]
+    }
+  }
+}
