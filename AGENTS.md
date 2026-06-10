@@ -26,8 +26,8 @@ body tree. No backend in this repo.
 
 ## Architecture
 - `src/app/app.component.*` — shell (router outlet, background image via async pipe).
-- `src/app/home/home.component.*` — search + system overview; **large** (~1100 lines), holds search/region-map/markers logic.
-- `src/app/system-body/system-body.component.*` — recursive body renderer; still **large (~1700 lines)** but the heavy pure logic (orbital relations, physics, neutron-star classification, canvas charts, temperature lookup) has been extracted into `data/` services. Still the most complex component — **treat with care; prefer extracting more pure logic into a `data/` service over adding to it.**
+- `src/app/home/home.component.*` — search + system overview; **large** (~1035 lines), holds search/region-map/markers logic.
+- `src/app/system-body/system-body.component.*` — recursive body renderer; still **large (~1410 lines)** but the heavy pure logic (orbital relations, physics, neutron-star classification, canvas charts, temperature lookup) has been extracted into `data/` services. Still the most complex component — **treat with care; prefer extracting more pure logic into a `data/` service over adding to it.**
 - `src/app/app.service.ts` — shared state (BehaviorSubjects) + HTTP; use its `resilientGet()` (timeout + retry) for new API calls.
 - `src/app/data/*.ts` — pure data/lookup tables + pure functions (e.g. `temperature-estimation.ts` with `estimateTempRange`/`lookupTempDelta`, `body-images.ts`, `mining-resources.ts`) **and** the pure injectable services that back the body renderer:
   - `body-physics.service.ts` — densities, Roche limits, Hill spheres, ring-shepherding.
@@ -82,8 +82,8 @@ idioms; don't reintroduce the older patterns.
   `toSignal()` where it simplifies the view.
 - **OnPush** change detection on every new component (with signals it's effectively free). Until a
   component is fully signal-based, expensive values read from the template (lookups, allocations)
-  should be computed once in `ngOnChanges` and cached in a field — see the `compute*()` / `cached*`
-  pattern in `system-body.component.ts` — rather than recomputed on every CD pass.
+  should be computed once in `ngOnChanges` and stored in a writable signal — see the `compute*()`
+  methods feeding `getX.set(...)` in `system-body.component.ts` — rather than recomputed on every CD pass.
 - **No type-loose `any`** for component state (e.g. dialog payloads); declare an interface.
 - **Images**: use `NgOptimizedImage` (`ngSrc`) for static images where practical.
 - **Styling**: bind `[class.x]`/`[style.x]` or `[class]`/`[style]` objects instead of `ngClass`/`ngStyle`;
@@ -94,24 +94,29 @@ idioms; don't reintroduce the older patterns.
 
 ## Verifying changes
 Build + test must stay green: `npm run build` (rc=0; only pre-existing budget warnings are acceptable)
-and `ng test --watch=false` (currently 84/84). There is no browser in CI — Vitest/jsdom covers tests
+and `ng test --watch=false` (currently 275/275 across 20 spec files). There is no browser in CI — Vitest/jsdom covers tests
 (note: jsdom has no real `<canvas>`, so chart-rendering tests assert "doesn't throw" rather than pixels).
 
 ## Environment quirks (this sandbox)
-- `pnpm-workspace.yaml` carries `minimumReleaseAge: 0` (overrides a sandbox supply-chain policy that
-  otherwise blocks installing Angular's recent deps) plus an `allowBuilds` allowlist of the native
-  packages permitted to run install scripts (`@parcel/watcher`, `esbuild`, `lmdb`, `msgpackr-extract`,
-  `nice-napi`). This sandbox's pnpm gates build scripts on `allowBuilds`, **not** the standard pnpm
-  `onlyBuiltDependencies` key (which is inert here) — list every native dep in `allowBuilds` or
-  `pnpm install` aborts. **Keep these** or `pnpm install` fails. Use `pnpm` (not npm) for installs.
+- `pnpm-workspace.yaml` carries `minimumReleaseAge: 8640` (6 days) — a supply-chain delay that refuses
+  package versions published more recently than that, enforced by this sandbox's pnpm even under
+  `--frozen-lockfile`. The lockfile was re-resolved under this value, so too-fresh transitive deps were
+  pinned to older versions; raising it requires re-resolving again, lowering it is always safe.
+  `minimumReleaseAgeExclude` exempts `@fortawesome/angular-fontawesome` (its only Angular 22-compatible
+  release, `5.0.0`, has no older fallback so the gate can't apply). It also carries an `allowBuilds`
+  allowlist of native packages permitted to run install scripts (`@parcel/watcher`, `esbuild`, `lmdb`,
+  `msgpackr-extract`, `nice-napi`). This sandbox's pnpm gates build scripts on `allowBuilds`, **not** the
+  standard pnpm `onlyBuiltDependencies` key (which is inert here) — list every native dep in `allowBuilds`
+  or `pnpm install` aborts. **Keep these** or `pnpm install` fails. Use `pnpm` (not npm) for installs.
 - `ng update` is flaky here (its internal install can abort; the Material schematic can hang). Prefer
   `--migrate-only` for schematics, and `pnpm install` separately.
 
 ## Backlog
-The major Angular modernizations (standalone, control flow, signal inputs, `takeUntilDestroyed`,
-`provideHttpClient`) are complete. Remaining opportunities, to tackle opportunistically:
-- **`home.component.ts` (~1100 lines)** still mixes search, body-tree building and SIMBAD/PG-name
+Remaining opportunities,
+to tackle opportunistically:
+- **`home.component.ts` (~1035 lines)** mixes search, body-tree building and SIMBAD/PG-name
   formatting — extract the body-tree builder and name formatting into `data/` helpers/services.
-- **`system-body.component.ts` (~1700 lines)** — keep migrating its `cached*` fields + manual
-  `markForCheck()` to `computed()` signals, and extract any further pure logic into `data/` services.
+- **`system-body.component.ts` (~1410 lines)** — its derived values are computed in `ngOnChanges`
+  and pushed into writable signals (`getX.set(computeX())`); migrate these to true `computed()`
+  signals where their inputs allow, and extract any further pure logic into `data/` services.
 - Convert remaining BehaviorSubject state in `app.service.ts` to signals where it simplifies consumers.
