@@ -1,11 +1,11 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, ElementRef, DestroyRef, ChangeDetectorRef, viewChild, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, ChangeDetectorRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppService, EdastroData, EdastroSystem, IndependentOutpost } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { faFileCode } from '@fortawesome/free-solid-svg-icons';
-import { Observable, of, debounceTime, distinctUntilChanged, switchMap, map, tap, combineLatest, take, firstValueFrom } from 'rxjs';
+import { Observable, of, debounceTime, distinctUntilChanged, switchMap, map, combineLatest, take, firstValueFrom } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/assets/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
@@ -14,7 +14,9 @@ import { MatAutocompleteTrigger, MatAutocomplete, MatOption } from '@angular/mat
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { SystemBodyComponent } from '../system-body/system-body.component';
+import { RegionMapComponent } from '../region-map/region-map.component';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
+import { BODY_TYPE } from '../data/body-types';
 
 @Component({
     selector: 'app-home',
@@ -31,7 +33,7 @@ import { AsyncPipe, DecimalPipe } from '@angular/common';
             ])
         ]),
     ],
-    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, MatIcon, SystemBodyComponent, AsyncPipe, DecimalPipe]
+    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, MatIcon, SystemBodyComponent, RegionMapComponent, AsyncPipe, DecimalPipe]
 })
 export class HomeComponent implements OnInit {
   private readonly httpClient = inject(HttpClient);
@@ -47,6 +49,11 @@ export class HomeComponent implements OnInit {
   // In-memory cache for typeahead suggestions
   private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
 
+  /**
+   * Builds the credits HTML from the bundled (trusted) readme.md. The result is bound
+   * via [innerHTML], which Angular sanitizes; the markdown source is a local asset, not
+   * user input. Only simple links and list items are emitted.
+   */
   private parseCreditsSection(markdown: string): string {
     // Extract #Credits or ##Credits section (robust)
     const creditsMatch = markdown.match(/^#{1,2}\s*Credits\s*$([\s\S]*)/m);
@@ -249,36 +256,58 @@ export class HomeComponent implements OnInit {
     );
   }
 
+  // These are bound directly in the template, so they must be cheap and return a
+  // stable reference (the @for blocks track by object identity). They are computed
+  // once via recomputeDerivedSystemData() whenever their inputs change rather than
+  // on every change-detection pass.
+  private _systemDistances: { name: string, distance: number }[] = [];
+  private _nearestOutposts: { name: string, systemName: string, distance: number }[] = [];
+  private _totalBodyCount = 0;
+
   getSystemDistances(): { name: string, distance: number }[] {
-    if (!this.data?.system?.coords) return [];
-    const { x, y, z } = this.data.system.coords;
-    const currentName = (this.data.system.name || '').toLowerCase();
-    return this.referenceSystems
-      .filter(ref => ref.name.toLowerCase() !== currentName)
-      .map(ref => {
-        const dx = x - ref.coords.x;
-        const dy = y - ref.coords.y;
-        const dz = z - ref.coords.z;
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return { name: ref.name, distance: dist };
-      })
-      .sort((a, b) => a.distance - b.distance);
+    return this._systemDistances;
   }
 
   getNearestOutposts(): { name: string, systemName: string, distance: number }[] {
-    if (!this.data?.system?.coords || !this.independentOutposts?.length) return [];
-    const { x, y, z } = this.data.system.coords;
-    return this.independentOutposts
+    return this._nearestOutposts;
+  }
+
+  /**
+   * Recomputes the cached system distances, nearest outposts and total body count.
+   * Call this when the loaded system, the independent-outpost list, or the body
+   * tree changes — not from the template.
+   */
+  private recomputeDerivedSystemData(): void {
+    const coords = this.data?.system?.coords;
+    if (!coords) {
+      this._systemDistances = [];
+      this._nearestOutposts = [];
+      this._totalBodyCount = 0;
+      return;
+    }
+    const { x, y, z } = coords;
+    const distanceTo = (ox: number, oy: number, oz: number) =>
+      Math.sqrt((x - ox) ** 2 + (y - oy) ** 2 + (z - oz) ** 2);
+
+    const currentName = (this.data!.system.name || '').toLowerCase();
+    this._systemDistances = this.referenceSystems
+      .filter(ref => ref.name.toLowerCase() !== currentName)
+      .map(ref => ({ name: ref.name, distance: distanceTo(ref.coords.x, ref.coords.y, ref.coords.z) }))
+      .sort((a, b) => a.distance - b.distance);
+
+    this._nearestOutposts = (this.independentOutposts ?? [])
       .map(outpost => {
         const [ox, oy, oz] = outpost.coordinates;
-        const dx = x - ox;
-        const dy = y - oy;
-        const dz = z - oz;
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return { name: this.decodeHtmlEntities(outpost.name), systemName: outpost.galMapSearch, distance: dist };
+        return {
+          name: this.decodeHtmlEntities(outpost.name),
+          systemName: outpost.galMapSearch,
+          distance: distanceTo(ox, oy, oz),
+        };
       })
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 3);
+
+    this._totalBodyCount = this.countBodies(this.bodies);
   }
   copyCoordinatesToClipboard(separator?: 'comma' | 'tab' | 'pipe', event?: MouseEvent) {
     if (event) {
@@ -290,7 +319,12 @@ export class HomeComponent implements OnInit {
     if (separator === 'tab') sep = '\t';
     if (separator === 'pipe') sep = '|';
     const text = `${coords.x}${sep}${coords.y}${sep}${coords.z}`;
-    navigator.clipboard.writeText(text);
+    this.copyToClipboard(text);
+  }
+
+  /** Writes text to the clipboard, ignoring rejection (e.g. permissions/insecure context). */
+  private copyToClipboard(text: string): void {
+    navigator.clipboard?.writeText(text).catch(() => { /* clipboard unavailable */ });
   }
 
   onCoordinatesMouseDown(event: MouseEvent) {
@@ -302,14 +336,50 @@ export class HomeComponent implements OnInit {
   }
   copyId64ToClipboard() {
     if (!this.data?.system?.id64) return;
-    const text = `${this.data.system.id64}`;
-    navigator.clipboard.writeText(text);
+    this.copyToClipboard(`${this.data.system.id64}`);
   }
   public encodeURIComponent(value: string): string {
     return encodeURIComponent(value);
   }
   public readonly faFileCode = faFileCode;
-  public searching = false;
+  private _searching = false;
+  /** A system requested (e.g. via query param) while a search was already in flight. */
+  private pendingSystemRequest: string | null = null;
+
+  public get searching(): boolean {
+    return this._searching;
+  }
+
+  public set searching(value: boolean) {
+    const wasSearching = this._searching;
+    this._searching = value;
+    // When a search settles, apply any request that arrived while it was running so
+    // rapid system changes (e.g. clicking map markers) are not silently dropped.
+    if (wasSearching && !value && this.pendingSystemRequest) {
+      const next = this.pendingSystemRequest;
+      this.pendingSystemRequest = null;
+      if (!this.data || this.data.system.name !== next) {
+        this.loadSystem(next);
+      }
+    }
+  }
+
+  /**
+   * Populates the search box with a system name and kicks off a search. If a search
+   * is already in flight, the request is deferred and applied when that one settles
+   * (see the `searching` setter) so requests from any source — query params, the
+   * autocomplete, or region-map marker clicks — are never silently dropped.
+   */
+  private loadSystem(systemName: string): void {
+    if (this.searching) {
+      this.pendingSystemRequest = systemName;
+      return;
+    }
+    this.searchInput = systemName;
+    this.searchControl.setValue(systemName);
+    this.search();
+  }
+
   public searchInput: string = "";
   public searchError = false;
   public searchErrorMessage: string = "";
@@ -320,26 +390,20 @@ export class HomeComponent implements OnInit {
   public filteredSystems: Observable<string[]> = of([]);
   public edastroData: EdastroData | null = null;
   private systemMapping: Map<string, { systemName?: string, id64?: number }> = new Map();
-  private gnosisData: GnosisData | null = null;
-  private gnosisLastFetched: number = 0;
-  private readonly GNOSIS_CACHE_DURATION = 3600000; // 1 hour in milliseconds
-  private independentOutposts: IndependentOutpost[] = [];
-  readonly regionMapContainer = viewChild.required<ElementRef<HTMLDivElement>>('regionMapContainer');
+  public independentOutposts: IndependentOutpost[] = [];
 
   public ngOnInit(): void {
     this.loadCredits();
     this.activatedRoute.queryParams
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(q => {
-        // Only trigger search if system is not already loaded
-        if (this.searching) {
+        const requested = q["system"];
+        // Ignore when there's nothing to load or it's already the loaded system.
+        if (!requested || (this.data && this.data.system.name === requested)) {
           return;
         }
-        if (q["system"] && (!this.data || this.data.system.name !== q["system"])) {
-          this.searchInput = q["system"];
-          this.searchControl.setValue(q["system"]);
-          this.search();
-        }
+        // loadSystem defers automatically if a search is already in flight.
+        this.loadSystem(requested);
       });
 
     this.filteredSystems = this.searchControl.valueChanges.pipe(
@@ -358,6 +422,9 @@ export class HomeComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(outposts => {
         this.independentOutposts = outposts;
+        // Outposts can arrive after a system is already loaded; refresh the cached
+        // nearest-outpost list so the panel reflects them.
+        this.recomputeDerivedSystemData();
         this.cdr.markForCheck();
       });
   }
@@ -384,8 +451,9 @@ export class HomeComponent implements OnInit {
         .subscribe({
           next: data => {
             this.processBodies(data);
-            this.searching = false;
             this.searchControl.enable();
+            // Set last so the `searching` setter can drain a deferred request.
+            this.searching = false;
           },
           error: () => this.searchFailed(),
         });
@@ -427,11 +495,12 @@ export class HomeComponent implements OnInit {
   }
 
   private searchFailed(message: string = 'System not found'): void {
-    this.searching = false;
     this.searchError = true;
     this.searchErrorMessage = message;
     this.searchControl.enable();
     this.cdr.markForCheck();
+    // Set last so the `searching` setter can drain a deferred request.
+    this.searching = false;
   }
 
   private searchBySystemAddress(systemAddress: number): void {
@@ -446,9 +515,10 @@ export class HomeComponent implements OnInit {
           this.processBodies(data);
           // Ensure Simbad data is updated after setting this.data
           this.updateEdGalaxyData();
-          this.searching = false;
           this.searchControl.enable();
           this.cdr.markForCheck();
+          // Set last so the `searching` setter can drain a deferred request.
+          this.searching = false;
         },
         error: error => {
           // Check for specific error messages
@@ -501,8 +571,7 @@ export class HomeComponent implements OnInit {
       this.appService.setBackgroundImage('assets/bg1.jpg');
     }
 
-    // Load and highlight region map immediately
-    setTimeout(() => this.loadRegionMap(), 0);
+    // The <app-region-map> child re-renders from its [system]/[outposts] inputs.
 
     // Fetch edastro data only if we don't have it or it's a different system
     if (isDifferentSystem || !this.edastroData) {
@@ -541,7 +610,7 @@ export class HomeComponent implements OnInit {
               name: this.stripParentName(belt.name, systemBody.name),
               id64: 0,
               subType: belt.type,
-              type: "Belt",
+              type: BODY_TYPE.Belt,
               innerRadius: belt.innerRadius / 1000, // Convert m to km
               outerRadius: belt.outerRadius / 1000, // Convert m to km
               mass: belt.mass
@@ -562,7 +631,7 @@ export class HomeComponent implements OnInit {
               name: this.stripParentName(ring.name, systemBody.name),
               id64: ring.id64 || 0,
               subType: ring.type,
-              type: "Ring",
+              type: BODY_TYPE.Ring,
               innerRadius: ring.innerRadius / 1000, // Convert m to km
               outerRadius: ring.outerRadius / 1000, // Convert m to km
               mass: ring.mass,
@@ -593,7 +662,7 @@ export class HomeComponent implements OnInit {
                 name: `Unknown planet (${parent.Planet})`,
                 id64: 0,
                 subType: "",
-                type: "Planet",
+                type: BODY_TYPE.Planet,
               },
               subBodies: [],
               parent: null,
@@ -610,7 +679,7 @@ export class HomeComponent implements OnInit {
                 name: `Unknown star (${parent.Star})`,
                 id64: 0,
                 subType: "",
-                type: "Star",
+                type: BODY_TYPE.Star,
               },
               subBodies: [],
               parent: null,
@@ -627,7 +696,7 @@ export class HomeComponent implements OnInit {
                 name: `Unknown barycentre (${parent.Null})`,
                 id64: 0,
                 subType: "",
-                type: "Barycentre",
+                type: BODY_TYPE.Barycentre,
               },
               subBodies: [],
               parent: null,
@@ -680,6 +749,7 @@ export class HomeComponent implements OnInit {
     bodiesFlat.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
 
     this.bodies = bodiesFlat.filter(b => b.parent === null);
+    this.recomputeDerivedSystemData();
 
     const hash = window.location.hash;
     if (hash) {
@@ -791,6 +861,11 @@ export class HomeComponent implements OnInit {
     return result$;
   }
 
+  /** A marker on the region map was clicked; load that system. */
+  public onMarkerSelected(systemName: string): void {
+    this.loadSystem(systemName);
+  }
+
   public onSystemSelected(displayName: string): void {
     const mapping = this.systemMapping.get(displayName);
     if (mapping && mapping.id64) {
@@ -813,18 +888,19 @@ export class HomeComponent implements OnInit {
   }
 
   private decodeHtmlEntities(text: string): string {
+    // Safe: assigning to a detached <textarea>'s innerHTML decodes entities without
+    // executing markup (textarea content is parsed as text, not HTML).
     const textarea = document.createElement('textarea');
     textarea.innerHTML = text;
     return textarea.value;
   }
 
   public getTotalBodyCount(): number {
-    const countBodies = (bodies: SystemBody[]): number => {
-      return bodies.reduce((count, body) => {
-        return count + 1 + countBodies(body.subBodies);
-      }, 0);
-    };
-    return countBodies(this.bodies);
+    return this._totalBodyCount;
+  }
+
+  private countBodies(bodies: SystemBody[]): number {
+    return bodies.reduce((count, body) => count + 1 + this.countBodies(body.subBodies), 0);
   }
 
   public trackByBody(index: number, body: SystemBody): number {
@@ -832,8 +908,6 @@ export class HomeComponent implements OnInit {
   }
 
   public onGecImageError(event: any): void {
-    console.error('GEC image failed to load:', event.target.src);
-    console.error('Image error event:', event);
     // Force reload for GIFs that might have loading issues
     const img = event.target as HTMLImageElement;
     if (img.src.toLowerCase().includes('.gif')) {
@@ -847,604 +921,6 @@ export class HomeComponent implements OnInit {
     return this.appService.getBodyDisplayName(bodyName);
   }
 
-  private loadRegionMap(): void {
-    const regionMapContainer = this.regionMapContainer();
-    if (!regionMapContainer || !this.data) {
-      return;
-    }
-
-    // Check if SVG already exists
-    const existingSvg = regionMapContainer.nativeElement.querySelector('svg');
-    if (existingSvg) {
-      // SVG already loaded, just update the highlighting and marker
-      this.highlightRegion();
-      return;
-    }
-
-    // Load the SVG from the assets folder
-    this.httpClient.get('assets/region-map/RegionMap.svg', { responseType: 'text' })
-      .subscribe({
-        next: svgContent => {
-          const regionMapContainerValue = this.regionMapContainer();
-          if (regionMapContainerValue && regionMapContainerValue.nativeElement) {
-            regionMapContainerValue.nativeElement.innerHTML = svgContent;
-
-            // Remove explicit width and height attributes from SVG
-            const svgElement = regionMapContainerValue.nativeElement.querySelector('svg');
-            if (svgElement) {
-              svgElement.removeAttribute('width');
-              svgElement.removeAttribute('height');
-              svgElement.style.width = '100%';
-              svgElement.style.height = 'auto';
-              svgElement.style.borderRadius = '8px';
-
-              // Add click handler to reset zoom
-              svgElement.addEventListener('click', (event) => {
-                const currentViewBox = svgElement.getAttribute('viewBox');
-                // If we're zoomed in, any click resets to full view
-                if (currentViewBox !== '0 0 2048 2048') {
-                  event.stopPropagation();
-                  svgElement.setAttribute('viewBox', '0 0 2048 2048');
-                  this.updateMarkerScales(svgElement, 1);
-                }
-              });
-            }
-
-            this.highlightRegion();
-          }
-        },
-        error: error => console.error('Error loading region map:', error),
-      });
-  }
-
-  private highlightRegion(): void {
-    const regionMapContainer = this.regionMapContainer();
-    if (!regionMapContainer || !this.data || !this.data.system.region) {
-      return;
-    }
-
-    const svgElement = regionMapContainer.nativeElement.querySelector('svg');
-    if (!svgElement) {
-      return;
-    }
-
-    // Add custom styles to override hover and hide text
-    let styleElement = svgElement.querySelector('style#custom-region-styles');
-    if (!styleElement) {
-      styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-      styleElement.id = 'custom-region-styles';
-      styleElement.textContent = `
-        .regionText { display: none !important; }
-        .region { pointer-events: auto !important; cursor: pointer !important; }
-      `;
-      svgElement.insertBefore(styleElement, svgElement.firstChild);
-    }
-
-    // Reset all regions to default style and add click handlers
-    const allRegions = svgElement.querySelectorAll('path[id^="Region_"]');
-    allRegions.forEach(region => {
-      (region as HTMLElement).style.fill = 'darkorange';
-      (region as HTMLElement).style.fillOpacity = '0.1';
-      (region as HTMLElement).style.stroke = 'orange';
-      (region as HTMLElement).style.strokeOpacity = '1';
-      (region as HTMLElement).style.strokeWidth = '';
-
-      // Add click handler for zooming
-      region.addEventListener('click', (event) => {
-        const currentViewBox = svgElement.getAttribute('viewBox');
-        // Only zoom in if we're not already zoomed
-        if (currentViewBox === '0 0 2048 2048') {
-          event.stopPropagation();
-          this.zoomToRegion(region as SVGPathElement, svgElement);
-        }
-      });
-    });
-
-    // Highlight the current region
-    const regionId = `Region_${String(this.data.system.region.region).padStart(2, '0')}`;
-    const regionElement = svgElement.querySelector(`#${regionId}`);
-    if (regionElement) {
-      (regionElement as HTMLElement).style.fill = '#ff9900';
-      (regionElement as HTMLElement).style.fillOpacity = '0.6';
-      (regionElement as HTMLElement).style.stroke = '#ff9900';
-      (regionElement as HTMLElement).style.strokeOpacity = '1';
-      (regionElement as HTMLElement).style.strokeWidth = '2';
-    } else {
-      console.warn('Region element not found for ID:', regionId);
-    }
-
-    // Add red dot at system coordinates
-    this.addSystemMarker(svgElement);
-
-    // Add known systems markers
-    this.addKnownSystemMarkers(svgElement);
-  }
-
-  private zoomToRegion(regionPath: SVGPathElement, svgElement: SVGSVGElement): void {
-    // Get the bounding box of the region
-    const bbox = regionPath.getBBox();
-
-    // Add minimal padding (2% on each side)
-    const padding = Math.max(bbox.width, bbox.height) * 0.02;
-
-    // Calculate dimensions with padding
-    const paddedWidth = bbox.width + (padding * 2);
-    const paddedHeight = bbox.height + (padding * 2);
-
-    // Use the larger dimension to create a square viewBox
-    // This ensures the region touches the edges on its larger axis
-    const size = Math.max(paddedWidth, paddedHeight);
-
-    // Center the region in the square viewBox
-    const x = bbox.x - padding + (paddedWidth - size) / 2;
-    const y = bbox.y - padding + (paddedHeight - size) / 2;
-
-    // Set the viewBox to a square zoom
-    svgElement.setAttribute('viewBox', `${x} ${y} ${size} ${size}`);
-
-    // Get region ID from the path element
-    const regionId = regionPath.id; // e.g., "Region_01"
-    const regionNumber = regionId ? parseInt(regionId.replace('Region_', ''), 10) : 0;
-
-
-    // Calculate scale factor for markers
-    const scaleFactor = 2048 / size;
-
-    // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
-    if (regionNumber === 18) {
-      this.fetchGnosisData().subscribe(gnosisData => {
-        if (gnosisData) {
-          this.addGnosisMarker(svgElement, bbox);
-          // Scale the Gnosis marker after it's added
-          setTimeout(() => {
-            this.updateMarkerScales(svgElement, scaleFactor);
-          }, 50);
-        }
-      });
-    }
-
-    // Update marker scales immediately and again after a short delay
-    // to ensure all markers are scaled correctly
-    this.updateMarkerScales(svgElement, scaleFactor);
-    setTimeout(() => {
-      this.updateMarkerScales(svgElement, scaleFactor);
-    }, 50);
-
-    // Add a reset button or double-click handler to zoom out
-    svgElement.style.transition = 'viewBox 0.3s ease';
-  }
-
-  private updateMarkerScales(svgElement: SVGSVGElement, scaleFactor: number): void {
-    // Update all marker groups to scale inversely with zoom
-    const markers = svgElement.querySelectorAll('.known-system-marker, #system-marker');
-    markers.forEach(marker => {
-      const circle = marker.querySelector('circle');
-      if (circle) {
-        const cx = parseFloat(circle.getAttribute('cx') || '0');
-        const cy = parseFloat(circle.getAttribute('cy') || '0');
-        (marker as SVGGElement).setAttribute('transform', `translate(${cx}, ${cy}) scale(${1 / scaleFactor}) translate(${-cx}, ${-cy})`);
-      }
-
-      // Show/hide markers based on zoom level
-      const zoomLevel = marker.getAttribute('data-zoom-level');
-      if (zoomLevel === 'zoomed') {
-        // Show zoom-only markers when zoomed in (scaleFactor > 1)
-        (marker as HTMLElement).style.display = scaleFactor > 1 ? 'block' : 'none';
-      }
-    });
-  }
-
-  private addKnownSystemMarkers(svgElement: SVGSVGElement): void {
-    // Get current viewBox to determine zoom level
-    const viewBox = svgElement.getAttribute('viewBox');
-    const viewBoxValues = viewBox ? viewBox.split(' ').map(parseFloat) : [0, 0, 2048, 2048];
-    const viewBoxSize = Math.max(viewBoxValues[2], viewBoxValues[3]);
-    const currentScaleFactor = 2048 / viewBoxSize;
-
-    const knownSystems = [
-      { name: 'Varati', systemName: 'Varati', x: -178.65625, y: 77.12500, z: -87.12500, zoomLevel: 'always' },
-      { name: 'Canonnia', systemName: 'Canonnia', x: -9522.93750, y: -894.06250, z: 19791.87500, zoomLevel: 'always' },
-      { name: 'Hotel Canonnia', systemName: 'Prua Phoe MI-B b17-5', x: -5652.84375, y: -561.06250, z: 10815.34375, zoomLevel: 'always' },
-      { name: 'Miskatonic University', systemName: 'Byae Aowsy GR-N d6-52', x: 14407.6, y: 17.5, z: 44312.6, zoomLevel: 'always' },
-      { name: 'Col 70 Sector FY-N C21-3', systemName: 'Col 70 Sector FY-N C21-3', x: 275.34375, y: -371.34375, z: -680.96875, zoomLevel: 'zoomed' },
-      { name: "Explorer's Anchorage", systemName: 'Stuemeae FG-Y d7561', x: 28.68750, y: -19.78125, z: 25899.68750, zoomLevel: 'zoomed' }
-    ];
-
-    knownSystems.forEach(system => {
-      // Apply transformation formula
-      const tx = ((system.x - (-49985)) * 83 / 4096);
-      const tz = ((system.z - (-24105)) * 83 / 4096);
-      const finalY = 2048 - tz;
-
-      // Create a group for the marker and label
-      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      group.setAttribute('class', 'known-system-marker');
-
-      // Create a blue circle marker
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', tx.toString());
-      circle.setAttribute('cy', finalY.toString());
-      circle.setAttribute('r', '12');
-      circle.setAttribute('fill', 'blue');
-      circle.setAttribute('stroke', 'white');
-      circle.setAttribute('stroke-width', '1.5');
-      circle.setAttribute('opacity', '0.9');
-      circle.style.cursor = 'pointer';
-
-      // Add click handler to navigate to system
-      circle.addEventListener('click', () => {
-        this.searchInput = system.systemName;
-        this.searchControl.setValue(system.systemName);
-        this.search();
-      });
-
-      // Check viewBox to determine if we should position tooltip on left
-      // When zoomed, use viewBox bounds instead of full map coordinates
-      const viewBoxCenterX = viewBoxValues[0] + (viewBoxValues[2] / 2);
-      const isRightSide = tx > viewBoxCenterX;
-      const textX = isRightSide ? tx - 20 : tx + 20;
-
-      // Create tooltip text element (initially hidden)
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', textX.toString());
-      text.setAttribute('y', (finalY - 10).toString());
-      text.setAttribute('fill', 'white');
-      text.setAttribute('font-size', '80');
-      text.setAttribute('font-weight', 'bold');
-      text.setAttribute('pointer-events', 'none');
-      text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
-      text.style.display = 'none';
-      text.textContent = system.name;
-
-      // Create background rect for text
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('fill', 'rgba(0, 0, 0, 0.8)');
-      rect.setAttribute('rx', '10');
-      rect.setAttribute('pointer-events', 'none');
-      rect.style.display = 'none';
-
-      // Add hover events
-      circle.addEventListener('mouseenter', () => {
-        // Update rect size based on text
-        const bbox = text.getBBox();
-        rect.setAttribute('x', (bbox.x - 4).toString());
-        rect.setAttribute('y', (bbox.y - 2).toString());
-        rect.setAttribute('width', (bbox.width + 8).toString());
-        rect.setAttribute('height', (bbox.height + 4).toString());
-
-        rect.style.display = 'block';
-        text.style.display = 'block';
-      });
-
-      circle.addEventListener('mouseleave', () => {
-        rect.style.display = 'none';
-        text.style.display = 'none';
-      });
-
-      // Add elements to group
-      group.appendChild(circle);
-      group.appendChild(rect);
-      group.appendChild(text);
-
-      // Set visibility based on zoom level
-      if (system.zoomLevel === 'zoomed') {
-        group.style.display = currentScaleFactor > 1 ? 'block' : 'none';
-        group.setAttribute('data-zoom-level', 'zoomed');
-      } else {
-        group.setAttribute('data-zoom-level', 'always');
-      }
-
-      // Apply current scale immediately
-      if (currentScaleFactor !== 1) {
-        group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1 / currentScaleFactor}) translate(${-tx}, ${-finalY})`);
-      }
-
-      // Add the group to the SVG
-      svgElement.appendChild(group);
-    });
-
-    // Add independentOutpost markers as blue dots when zoomed in
-    this.independentOutposts.forEach(outpost => {
-      if (!outpost.coordinates || outpost.coordinates.length < 3) {
-        return; // Skip if coordinates are missing
-      }
-
-      const [x, y, z] = outpost.coordinates;
-
-      // Apply transformation formula
-      const tx = ((x - (-49985)) * 83 / 4096);
-      const tz = ((z - (-24105)) * 83 / 4096);
-      const finalY = 2048 - tz;
-
-      // Create a group for the marker and label
-      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      group.setAttribute('class', 'known-system-marker');
-
-      // Create a blue circle marker
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', tx.toString());
-      circle.setAttribute('cy', finalY.toString());
-      circle.setAttribute('r', '12');
-      circle.setAttribute('fill', 'blue');
-      circle.setAttribute('stroke', 'white');
-      circle.setAttribute('stroke-width', '1.5');
-      circle.setAttribute('opacity', '0.9');
-      circle.style.cursor = 'pointer';
-
-      // Add click handler to navigate to system
-      circle.addEventListener('click', () => {
-        this.searchInput = outpost.galMapSearch;
-        this.searchControl.setValue(outpost.galMapSearch);
-        this.search();
-      });
-
-      // Check viewBox to determine tooltip position based on distance from edges
-      const viewBoxLeft = viewBoxValues[0];
-      const viewBoxRight = viewBoxValues[0] + viewBoxValues[2];
-      const distanceFromLeft = tx - viewBoxLeft;
-      const distanceFromRight = viewBoxRight - tx;
-      const isRightSide = distanceFromLeft > distanceFromRight;
-      const textX = isRightSide ? tx - 15 : tx + 15;
-
-      // Create tooltip text element (initially hidden)
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', textX.toString());
-      text.setAttribute('y', (finalY - 8).toString());
-      text.setAttribute('fill', 'white');
-      text.setAttribute('font-size', '60');
-      text.setAttribute('font-weight', 'bold');
-      text.setAttribute('pointer-events', 'none');
-      text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
-      text.style.display = 'none';
-      text.textContent = this.decodeHtmlEntities(outpost.name);
-
-      // Create background rect for text
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('fill', 'rgba(0, 0, 0, 0.8)');
-      rect.setAttribute('rx', '8');
-      rect.setAttribute('pointer-events', 'none');
-      rect.style.display = 'none';
-
-      // Add hover events
-      circle.addEventListener('mouseenter', () => {
-        // Pre-calculate bbox to avoid delay
-        const bbox = text.getBBox();
-        rect.setAttribute('x', (bbox.x - 3).toString());
-        rect.setAttribute('y', (bbox.y - 1).toString());
-        rect.setAttribute('width', (bbox.width + 6).toString());
-        rect.setAttribute('height', (bbox.height + 2).toString());
-
-        rect.style.display = 'block';
-        text.style.display = 'block';
-      });
-
-      circle.addEventListener('mouseleave', () => {
-        rect.style.display = 'none';
-        text.style.display = 'none';
-      });
-
-      // Add elements to group
-      group.appendChild(circle);
-      group.appendChild(rect);
-      group.appendChild(text);
-
-      // Set visibility - only show when zoomed in
-      group.style.display = currentScaleFactor > 1 ? 'block' : 'none';
-      group.setAttribute('data-zoom-level', 'zoomed');
-
-      // Apply current scale immediately
-      if (currentScaleFactor !== 1) {
-        group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1 / currentScaleFactor}) translate(${-tx}, ${-finalY})`);
-      }
-
-      // Add the group to the SVG
-      svgElement.appendChild(group);
-    });
-  }
-
-  private fetchGnosisData(): Observable<GnosisData | null> {
-    // Check if we have cached data and if it's still fresh
-    const now = Date.now();
-
-    if (this.gnosisData && (now - this.gnosisLastFetched) < this.GNOSIS_CACHE_DURATION) {
-      return of(this.gnosisData);
-    }
-
-
-    // Fetch fresh data
-    return this.httpClient.get<GnosisData>('https://us-central1-canonn-api-236217.cloudfunctions.net/query/gnosis')
-      .pipe(
-        tap(data => {
-          this.gnosisData = data;
-          this.gnosisLastFetched = now;
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      );
-  }
-
-  private addGnosisMarker(svgElement: SVGSVGElement, regionBbox: DOMRect): void {
-
-    if (!this.gnosisData) {
-      return;
-    }
-
-    // Remove existing Gnosis marker if any
-    const existingMarker = svgElement.querySelector('#gnosis-marker');
-    if (existingMarker) {
-      existingMarker.remove();
-    }
-
-    // Get current viewBox to determine zoom level
-    const viewBox = svgElement.getAttribute('viewBox');
-    const viewBoxValues = viewBox ? viewBox.split(' ').map(parseFloat) : [0, 0, 2048, 2048];
-    const viewBoxSize = Math.max(viewBoxValues[2], viewBoxValues[3]);
-    const currentScaleFactor = 2048 / viewBoxSize;
-
-    const [x, y, z] = this.gnosisData.coords;
-
-
-    // Apply transformation formula
-    const tx = ((x - (-49985)) * 83 / 4096);
-    const tz = ((z - (-24105)) * 83 / 4096);
-    const finalY = 2048 - tz;
-
-
-    // Check if Gnosis is within the region bounds
-    const inBounds = !(tx < regionBbox.x || tx > regionBbox.x + regionBbox.width ||
-      finalY < regionBbox.y || finalY > regionBbox.y + regionBbox.height);
-
-
-    if (!inBounds) {
-      // Gnosis is not in this region, don't display it
-      return;
-    }
-
-
-    // Create a group for the marker
-    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    group.setAttribute('id', 'gnosis-marker');
-    group.setAttribute('class', 'known-system-marker');
-    group.setAttribute('data-zoom-level', 'zoomed');
-
-    // Create a blue circle marker
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', tx.toString());
-    circle.setAttribute('cy', finalY.toString());
-    circle.setAttribute('r', '12');
-    circle.setAttribute('fill', 'blue');
-    circle.setAttribute('stroke', 'white');
-    circle.setAttribute('stroke-width', '1.5');
-    circle.setAttribute('opacity', '0.9');
-    circle.style.cursor = 'pointer';
-
-    // Add click handler to navigate to system
-    circle.addEventListener('click', () => {
-      this.searchInput = this.gnosisData!.system;
-      this.searchControl.setValue(this.gnosisData!.system);
-      this.search();
-    });
-
-    // Position tooltip - use more conservative positioning for long text
-    // Check if we're in the right 60% of the map (not just right half)
-    const isRightSide = tx > 819; // 2048 * 0.4 = 819
-    const textX = isRightSide ? tx - 20 : tx + 20;
-
-    // Create tooltip text element
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', textX.toString());
-    text.setAttribute('y', (finalY - 10).toString());
-    text.setAttribute('fill', 'white');
-    text.setAttribute('font-size', '80');
-    text.setAttribute('font-weight', 'bold');
-    text.setAttribute('pointer-events', 'none');
-    text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
-    text.style.display = 'none';
-    text.textContent = `The Gnosis (${this.gnosisData.system})`;
-
-    // Create background rect for text
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('fill', 'rgba(0, 0, 0, 0.8)');
-    rect.setAttribute('rx', '10');
-    rect.setAttribute('pointer-events', 'none');
-    rect.style.display = 'none';
-
-    // Add hover events
-    circle.addEventListener('mouseenter', () => {
-      const bbox = text.getBBox();
-      rect.setAttribute('x', (bbox.x - 4).toString());
-      rect.setAttribute('y', (bbox.y - 2).toString());
-      rect.setAttribute('width', (bbox.width + 8).toString());
-      rect.setAttribute('height', (bbox.height + 4).toString());
-
-      rect.style.display = 'block';
-      text.style.display = 'block';
-    });
-
-    circle.addEventListener('mouseleave', () => {
-      rect.style.display = 'none';
-      text.style.display = 'none';
-    });
-
-    // Add elements to group
-    group.appendChild(circle);
-    group.appendChild(rect);
-    group.appendChild(text);
-
-    // Apply current scale immediately if zoomed
-    if (currentScaleFactor !== 1) {
-      group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1 / currentScaleFactor}) translate(${-tx}, ${-finalY})`);
-    }
-
-    // Add the group to the SVG
-    svgElement.appendChild(group);
-  }
-
-  private addSystemMarker(svgElement: SVGSVGElement): void {
-    if (!this.data || !this.data.system.coords) {
-      return;
-    }
-
-    // Remove any existing system marker
-    const existingMarker = svgElement.querySelector('#system-marker');
-    if (existingMarker) {
-      existingMarker.remove();
-    }
-
-    const coords = this.data.system.coords;
-
-    // Apply transformation formula
-    // Note: The region map uses X and Z coordinates (not Y)
-    // X is horizontal, Z is vertical on the 2D map
-    const tx = ((coords.x - (-49985)) * 83 / 4096);
-    const tz = ((coords.z - (-24105)) * 83 / 4096);
-
-    // Invert Z coordinate for SVG (SVG Y increases downward)
-    const finalY = 2048 - tz;
-
-    // Debug removed
-    // Debug removed
-
-    // Create a group for the marker
-    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    group.setAttribute('id', 'system-marker');
-
-    // Check SVG dimensions and viewBox
-    const viewBox = svgElement.getAttribute('viewBox');
-    const width = svgElement.getAttribute('width');
-    const height = svgElement.getAttribute('height');
-    // Debug removed
-
-    // Create a larger, more visible green circle marker with glow effect
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', tx.toString());
-    circle.setAttribute('cy', finalY.toString());
-    circle.setAttribute('r', '24');
-    circle.setAttribute('fill', 'green');
-    circle.setAttribute('stroke', 'white');
-    circle.setAttribute('stroke-width', '6');
-    circle.setAttribute('opacity', '1');
-    circle.setAttribute('filter', 'drop-shadow(0 0 16px rgba(0, 255, 0, 0.8))');
-
-    group.appendChild(circle);
-
-    // Add the marker group to the SVG, but before any known-system-marker elements
-    // This ensures blue dots (known systems) are always on top
-    const firstBlueMarker = svgElement.querySelector('.known-system-marker');
-    if (firstBlueMarker) {
-      svgElement.insertBefore(group, firstBlueMarker);
-    } else {
-      svgElement.appendChild(group);
-    }
-
-    // Verify the actual position after appending
-    // Debug removed
-
-    // Get the bounding box of the circle
-    setTimeout(() => {
-      const bbox = circle.getBBox();
-      // Debug removed
-    }, 100);
-  }
 }
 
 interface CanonnBiostats {
@@ -1587,14 +1063,6 @@ export interface SystemBody {
   bodyData: CanonnBiostatsBody;
   subBodies: SystemBody[];
   parent: SystemBody | null;
-}
-
-export interface GnosisData {
-  arrival: string;
-  coords: [number, number, number];
-  departure: string;
-  desc: string;
-  system: string;
 }
 
 export interface EdGalaxyData {

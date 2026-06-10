@@ -3,7 +3,7 @@ import {
   DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
   DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
 } from '../data/temperature-estimation';
-import { Component, OnChanges, OnInit, ElementRef, AfterViewInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject } from '@angular/core';
+import { Component, OnChanges, OnInit, ElementRef, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject, afterNextRender } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
@@ -17,6 +17,10 @@ import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import { MatButton } from '@angular/material/button';
+import { ClickableDirective } from '../clickable.directive';
+import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
+import { StellarPhysicsService } from '../data/stellar-physics.service';
+import { BODY_TYPE } from '../data/body-types';
 
 @Component({
     selector: 'app-system-body',
@@ -36,13 +40,15 @@ import { MatButton } from '@angular/material/button';
             ])
         ])
     ],
-    imports: [FaIconComponent, MatTooltip, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe, DatePipe]
+    imports: [FaIconComponent, MatTooltip, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe, DatePipe, ClickableDirective]
 })
-export class SystemBodyComponent implements OnInit, OnChanges, AfterViewInit {
+export class SystemBodyComponent implements OnInit, OnChanges {
   private readonly appService = inject(AppService);
   private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly physics = inject(BodyPhysicsService);
+  private readonly stellarPhysics = inject(StellarPhysicsService);
 
   // Expose Math.abs for template use
   abs(value: number): number {
@@ -130,6 +136,11 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   public cachedSurfacePressureTooltip: string = '';
 
   public cachedRingResourceTypes: Set<string> = new Set();
+
+  // Cached values for template bindings that are read multiple times per render.
+  private cachedJetConeAngle: number | null = null;
+  private cachedSpinResonance = 'none';
+  private cachedConfirmedBiologyCount = 0;
 
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
@@ -342,12 +353,26 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     this.computeRingResourceTypes();
     this.computeSurfacePressureTooltip();
 
+    // Cache values read several times per render from the template.
+    this.cachedSpinResonance = this.computeSpinResonance();
+    this.cachedJetConeAngle = this.computeJetConeAngle();
+    this.cachedConfirmedBiologyCount = this.biologySignals.filter(b => !b.isGuess).length;
   }
 
   public toggleExpand(): void {
     this.expanded = !this.expanded;
     // Update cached state
     this.updateChildrenExpandedState();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Sets this body's expanded state and schedules its own re-render. Exposed so an
+   * ancestor's "expand/collapse all" can drive descendants without reaching into
+   * their private change-detector.
+   */
+  public setExpandedState(expanded: boolean): void {
+    this.expanded = expanded;
     this.cdr.markForCheck();
   }
 
@@ -371,11 +396,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       }
     }
 
-    // Batch update all descendants
-    allDescendants.forEach(component => {
-      component.expanded = targetState;
-      component.cdr.markForCheck();
-    });
+    // Batch update all descendants via their own public API.
+    allDescendants.forEach(component => component.setExpandedState(targetState));
 
     // Update cached state and trigger change detection
     this.updateChildrenExpandedState();
@@ -515,62 +537,8 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     return area > 0 ? mass / area : 0;
   }
 
-  public getPlanetaryDensity(): { value: number; unit: string; tooltip: string } | null {
-    // Only calculate for planets and stars with both mass and radius
-    let radiusKm: number = 0;
-
-    // Get radius in km
-    const body = this.body();
-    if (body.bodyData.radius) {
-      radiusKm = body.bodyData.radius;
-    } else if (body.bodyData.solarRadius) {
-      // Convert solar radius to km (1 solar radius = 695,700 km)
-      radiusKm = body.bodyData.solarRadius * 695700;
-    } else {
-      return null;
-    }
-
-    let massKg: number = 0;
-
-    // Get mass in kg
-    if (body.bodyData.earthMasses) {
-      massKg = body.bodyData.earthMasses * 5.972e24; // Earth mass in kg
-    } else if (body.bodyData.solarMasses) {
-      massKg = body.bodyData.solarMasses * 1.989e30; // Solar mass in kg
-    } else {
-      return null;
-    }
-
-    // Calculate volume in m³ (radius is in km)
-    const radiusM = radiusKm * 1000;
-    const volumeM3 = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
-
-    // Calculate density in kg/m³
-    const densityKgM3 = massKg / volumeM3;
-
-    // Choose appropriate unit based on magnitude
-    let value: number;
-    let unit: string;
-
-    if (densityKgM3 < 1) {
-      // Use g/cm³ for very low densities (gas giants, some stars)
-      value = densityKgM3 / 1000;
-      unit = 'g/cm³';
-    } else if (densityKgM3 < 10000) {
-      // Use g/cm³ for typical planetary densities
-      value = densityKgM3 / 1000;
-      unit = 'g/cm³';
-    } else {
-      // Use kg/m³ for very high densities (neutron stars, etc.)
-      value = densityKgM3;
-      unit = 'kg/m³';
-    }
-
-    return {
-      value: value,
-      unit: unit,
-      tooltip: `${densityKgM3} kg/m³`
-    };
+  public getPlanetaryDensity(): PlanetaryDensity | null {
+    return this.physics.getPlanetaryDensity(this.body().bodyData);
   }
 
   public radToDeg(value: number | null | undefined): number | null {
@@ -579,17 +547,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public isRingNotVisible(): boolean {
-    if (this.body().bodyData.type !== 'Ring') {
+    if (this.body().bodyData.type !== BODY_TYPE.Ring) {
       return false;
     }
     const density = this.getRingDensity();
     const width = this.getRingWidth();
     return density < 0.1 && width > 1000000;
-  }
-
-  public getHillLimitExceeded(): number | null {
-    // Ring Hill-limit reporting removed. Shepherding bodies use dedicated UI.
-    return null;
   }
 
   public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
@@ -614,7 +577,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
 
     // For ring bodies, check the parent's rings array
-    if (body.bodyData.type === 'Ring' && body.parent?.bodyData.rings) {
+    if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
       const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
       if (ringData?.signals?.signals) {
         return Object.keys(ringData.signals.signals).length;
@@ -633,7 +596,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       signals = body.bodyData.signals.signals;
     }
     // For ring bodies, check the parent's rings array
-    else if (body.bodyData.type === 'Ring' && body.parent?.bodyData.rings) {
+    else if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
       const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
       if (ringData?.signals?.signals) {
         signals = ringData.signals.signals;
@@ -719,7 +682,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       signals = body.bodyData.signals.signals;
     }
     // For ring bodies, check the parent's rings array
-    else if (body.bodyData.type === 'Ring' && body.parent?.bodyData.rings) {
+    else if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
       const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
       if (ringData?.signals?.signals) {
         signals = ringData.signals.signals;
@@ -735,631 +698,41 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   // Ring Hill-limit calculation removed. Shepherding uses calculateShepherdingHillLimit().
 
-  public calculateShepherdingHillLimit(): {
-    hillRadius: number;
-    bodyOrbitalRadius: number;
-    bodyPeriapsis: number;
-    bodyApoapsis: number;
-    parentRadius: number;
-    outermostRingRadius: number;
-    withinRings: boolean;
-    isFirstOutside: boolean;
-  } | null {
-    // Simple localized Hill sphere calculation for potential shepherding bodies
-    const body = this.body();
-    if (!body.parent || !this.isShepherdingCandidate()) {
-      return null;
-    }
-
-    const parent = body.parent.bodyData;
-    const bodyMass = body.bodyData.earthMasses;
-    const semiMajorAxis = body.bodyData.semiMajorAxis;
-    const eccentricity = body.bodyData.orbitalEccentricity || 0;
-
-    if (!bodyMass || !semiMajorAxis) {
-      return null;
-    }
-
-    // Get parent mass
-    let parentMass = parent.earthMasses;
-    if (!parentMass && parent.solarMasses) {
-      parentMass = parent.solarMasses * 332950; // Convert to Earth masses
-    }
-
-    if (!parentMass) {
-      return null;
-    }
-
-    // Calculate Hill radius: r_H = a * (m / 3M)^(1/3)
-    // where a = semi-major axis, m = satellite mass, M = primary mass
-    const semiMajorAxisKm = semiMajorAxis * 149597870.7;
-    const massRatio = bodyMass / (3 * parentMass);
-    const hillRadius = semiMajorAxisKm * Math.pow(massRatio, 1 / 3);
-
-    // Calculate periapsis and apoapsis
-    const bodyPeriapsis = semiMajorAxisKm * (1 - eccentricity);
-    const bodyApoapsis = semiMajorAxisKm * (1 + eccentricity);
-
-    // Get parent radius
-    let parentRadius = 0;
-    if (parent.radius) {
-      parentRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      parentRadius = parent.solarRadius * 695700;
-    }
-
-    // Find outermost ring (convert from meters to km)
-    let outermostRingRadius = 0;
-    if (parent.rings) {
-      for (const ring of parent.rings) {
-        const outerRadiusKm = (ring.outerRadius || 0) / 1000;
-        if (outerRadiusKm > outermostRingRadius) {
-          outermostRingRadius = outerRadiusKm;
-        }
-      }
-    }
-
-    // Determine position relative to rings
-    const withinRings = semiMajorAxisKm >= parentRadius && semiMajorAxisKm <= outermostRingRadius;
-
-    // Check if first body outside
-    const siblings = body.parent.subBodies.filter(b =>
-      b.bodyData.type !== 'Ring' &&
-      b.bodyData.semiMajorAxis &&
-      b.bodyData.semiMajorAxis > 0
-    );
-    const sortedSiblings = siblings.sort((a, b) => {
-      const distA = (a.bodyData.semiMajorAxis || 0) * 149597870.7;
-      const distB = (b.bodyData.semiMajorAxis || 0) * 149597870.7;
-      return distA - distB;
-    });
-    const bodiesOutsideRings = sortedSiblings.filter(b => {
-      const dist = (b.bodyData.semiMajorAxis || 0) * 149597870.7;
-      return dist > outermostRingRadius;
-    });
-    const isFirstOutside = bodiesOutsideRings.length > 0 && bodiesOutsideRings[0] === body;
-
-    return {
-      hillRadius,
-      bodyOrbitalRadius: semiMajorAxisKm,
-      bodyPeriapsis,
-      bodyApoapsis,
-      parentRadius,
-      outermostRingRadius,
-      withinRings,
-      isFirstOutside
-    };
+  public calculateShepherdingHillLimit(): ShepherdingHillLimit | null {
+    return this.physics.calculateShepherdingHillLimit(this.body());
   }
 
   public calculateRigidRocheLimit(): number | null {
-    // Rigid body Roche limit (for solid bodies)
-    // d = 2.456 * R_primary * (ρ_primary / ρ_satellite)^(1/3)
-    const body = this.body();
-    if (!body.parent) {
-      return null;
-    }
-
-    const parent = body.parent.bodyData;
-    let primaryRadius = 0;
-    let primaryDensity = 0;
-
-    // Get primary radius in km
-    if (parent.radius) {
-      primaryRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      primaryRadius = parent.solarRadius * 695700; // Solar radius to km
-    } else {
-      return null;
-    }
-
-    // Calculate primary density in kg/m³
-    if (parent.earthMasses && parent.radius) {
-      // Planet with earthMasses
-      const massKg = parent.earthMasses * 5.972e24; // Earth masses to kg
-      const radiusM = parent.radius * 1000; // km to m
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
-      primaryDensity = massKg / volume; // kg/m³
-    } else if (parent.mass && parent.radius) {
-      // Body with mass in Mt
-      const massKg = parent.mass * 1e12; // Mt to kg
-      const radiusM = parent.radius * 1000; // km to m
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
-      primaryDensity = massKg / volume; // kg/m³
-    } else if (parent.solarMasses && parent.solarRadius) {
-      // Star with solar masses
-      const radiusM = parent.solarRadius * 695700 * 1000; // solar radius to m
-      const massKg = parent.solarMasses * 1.989e30; // kg
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
-      primaryDensity = massKg / volume; // kg/m³
-    } else {
-      return null;
-    }
-
-    // Determine satellite density based on ring type (kg/m³)
-    let satelliteDensity = 1000; // Default: icy rings (water ice)
-    const ringClass = body.bodyData.subType?.toLowerCase() || '';
-
-    if (ringClass.includes('metal')) {
-      satelliteDensity = 4500; // Metal-rich rings (iron/nickel)
-    } else if (ringClass.includes('metallic')) {
-      satelliteDensity = 4500; // Metallic rings
-    } else if (ringClass.includes('rocky')) {
-      satelliteDensity = 3000; // Rocky rings (silicates)
-    } else if (ringClass.includes('icy')) {
-      satelliteDensity = 1000; // Icy rings (water ice)
-    }
-
-    const rigidRocheLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
-    return rigidRocheLimit;
+    return this.physics.calculateRigidRocheLimit(this.body());
   }
 
   public calculateFluidRocheLimit(): number | null {
-    // Fluid body Roche limit (for liquid bodies)
-    // d = 2.456 * R_primary * (ρ_primary / ρ_satellite)^(1/3)
-    const body = this.body();
-    if (!body.parent) {
-      return null;
-    }
-
-    const parent = body.parent.bodyData;
-    let primaryRadius = 0;
-    let primaryDensity = 0;
-
-    // Get primary radius in km
-    if (parent.radius) {
-      primaryRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      primaryRadius = parent.solarRadius * 695700;
-    } else {
-      return null;
-    }
-
-    // Calculate primary density in kg/m³
-    if (parent.earthMasses && parent.radius) {
-      // Planet with earthMasses
-      const massKg = parent.earthMasses * 5.972e24; // Earth masses to kg
-      const radiusM = parent.radius * 1000; // km to m
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
-      primaryDensity = massKg / volume; // kg/m³
-    } else if (parent.mass && parent.radius) {
-      // Body with mass in Mt
-      const massKg = parent.mass * 1e12; // Mt to kg
-      const radiusM = parent.radius * 1000; // km to m
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
-      primaryDensity = massKg / volume; // kg/m³
-    } else if (parent.solarMasses && parent.solarRadius) {
-      // Star with solar masses
-      const radiusM = parent.solarRadius * 695700 * 1000; // solar radius to m
-      const massKg = parent.solarMasses * 1.989e30; // kg
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3); // m³
-      primaryDensity = massKg / volume; // kg/m³
-    } else {
-      return null;
-    }
-
-    // Determine satellite density based on ring type (kg/m³)
-    let satelliteDensity = 1000; // Default: icy rings (water ice)
-    const ringClass = body.bodyData.subType?.toLowerCase() || '';
-
-    if (ringClass.includes('metal')) {
-      satelliteDensity = 4500; // Metal-rich rings (iron/nickel)
-    } else if (ringClass.includes('metallic')) {
-      satelliteDensity = 4500; // Metallic rings
-    } else if (ringClass.includes('rocky')) {
-      satelliteDensity = 3000; // Rocky rings (silicates)
-    } else if (ringClass.includes('icy')) {
-      satelliteDensity = 1000; // Icy rings (water ice)
-    }
-
-    const fluidRocheLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
-    return fluidRocheLimit;
+    return this.physics.calculateFluidRocheLimit(this.body());
   }
 
-  public calculateBodyRocheLimits(): { rigid: number; fluid: number; currentDistance: number; periapsis: number; apoapsis: number } | null {
-    // Calculate Roche limits for planets/moons (not rings)
-    const body = this.body();
-    if (!body.parent || body.bodyData.type === 'Ring' || body.bodyData.type === 'Star') {
-      return null;
-    }
-
-    if (!body.bodyData.semiMajorAxis || !body.bodyData.radius || !body.bodyData.earthMasses) {
-      return null;
-    }
-
-    const parent = body.parent.bodyData;
-    let primaryRadius = 0;
-    let primaryDensity = 0;
-
-    // Get primary radius in km
-    if (parent.radius) {
-      primaryRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      primaryRadius = parent.solarRadius * 695700;
-    } else {
-      return null;
-    }
-
-    // Calculate primary density in kg/m³
-    if (parent.earthMasses && parent.radius) {
-      const massKg = parent.earthMasses * 5.972e24;
-      const radiusM = parent.radius * 1000;
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
-      primaryDensity = massKg / volume;
-    } else if (parent.solarMasses && parent.solarRadius) {
-      const radiusM = parent.solarRadius * 695700 * 1000;
-      const massKg = parent.solarMasses * 1.989e30;
-      const volume = (4 / 3) * Math.PI * Math.pow(radiusM, 3);
-      primaryDensity = massKg / volume;
-    } else {
-      return null;
-    }
-
-    // Calculate satellite (this body's) density
-    const satelliteMassKg = body.bodyData.earthMasses * 5.972e24;
-    const satelliteRadiusM = body.bodyData.radius * 1000;
-    const satelliteVolume = (4 / 3) * Math.PI * Math.pow(satelliteRadiusM, 3);
-    const satelliteDensity = satelliteMassKg / satelliteVolume;
-
-    const rigidLimit = 1.26 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
-    const fluidLimit = 2.456 * primaryRadius * Math.pow(primaryDensity / satelliteDensity, 1 / 3);
-    const currentDistance = body.bodyData.semiMajorAxis * 149597870.7; // AU to km
-
-    // Calculate periapsis and apoapsis
-    const eccentricity = body.bodyData.orbitalEccentricity || 0;
-    const periapsis = currentDistance * (1 - eccentricity);
-    const apoapsis = currentDistance * (1 + eccentricity);
-
-    return { rigid: rigidLimit, fluid: fluidLimit, currentDistance, periapsis, apoapsis };
+  public calculateBodyRocheLimits(): BodyRocheLimits | null {
+    return this.physics.calculateBodyRocheLimits(this.body());
   }
 
   public getConfirmedBiologyCount(): number {
-    return this.biologySignals.filter(b => !b.isGuess).length;
+    return this.cachedConfirmedBiologyCount;
   }
 
   public isBodyWithinParentRings(): boolean {
-    // Check if this body orbits within or near the parent's ring system
-    const body = this.body();
-    if (!body.parent || body.bodyData.type === 'Ring' || body.bodyData.type === 'Star') {
-      return false;
-    }
-
-    if (!body.bodyData.semiMajorAxis) {
-      return false;
-    }
-
-    const parent = body.parent.bodyData;
-    if (!parent.rings || parent.rings.length === 0) {
-      return false;
-    }
-
-    // Get body's orbital distance in km
-    const bodyDistanceKm = body.bodyData.semiMajorAxis * 149597870.7;
-
-    // Get parent radius in km
-    let parentRadius = 0;
-    if (parent.radius) {
-      parentRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      parentRadius = parent.solarRadius * 695700;
-    }
-
-    // Find the outermost ring (convert from meters to km)
-    let outermostRingRadius = 0;
-    for (const ring of parent.rings) {
-      const outerRadiusKm = (ring.outerRadius || 0) / 1000;
-      if (outerRadiusKm > outermostRingRadius) {
-        outermostRingRadius = outerRadiusKm;
-      }
-    }
-
-    if (outermostRingRadius === 0) {
-      return false;
-    }
-
-    // Show limits if body is between parent surface and outer ring edge
-    // or if body is close to the outer ring (within 20% of the ring system extent)
-    const ringSystemExtent = outermostRingRadius - parentRadius;
-    const proximityThreshold = outermostRingRadius + (ringSystemExtent * 0.2);
-
-    return bodyDistanceKm >= parentRadius && bodyDistanceKm <= proximityThreshold;
+    return this.physics.isBodyWithinParentRings(this.body());
   }
 
   public isShepherdingCandidate(): boolean {
-    // Identifies bodies that could have a shepherding effect on rings
-    // Returns true if body's Hill sphere overlaps or is close to rings
-    const body = this.body();
-    if (!body.parent || body.bodyData.type === 'Ring' || body.bodyData.type === 'Star') {
-      return false;
-    }
-
-    if (!body.bodyData.semiMajorAxis) {
-      return false;
-    }
-
-    const parent = body.parent.bodyData;
-    if (!parent.rings || parent.rings.length === 0) {
-      return false;
-    }
-
-    // Get body's orbital distance in km
-    const bodyDistanceKm = body.bodyData.semiMajorAxis * 149597870.7;
-
-    // Get parent radius in km
-    let parentRadius = 0;
-    if (parent.radius) {
-      parentRadius = parent.radius;
-    } else if (parent.solarRadius) {
-      parentRadius = parent.solarRadius * 695700;
-    }
-
-    // Find the outermost ring (convert from meters to km)
-    let outermostRingRadius = 0;
-    for (const ring of parent.rings) {
-      const outerRadiusKm = (ring.outerRadius || 0) / 1000;
-      if (outerRadiusKm > outermostRingRadius) {
-        outermostRingRadius = outerRadiusKm;
-      }
-    }
-
-    if (outermostRingRadius === 0) {
-      return false;
-    }
-
-    // Body is within rings if between parent and outermost ring
-    if (bodyDistanceKm >= parentRadius && bodyDistanceKm <= outermostRingRadius) {
-      return true;
-    }
-
-    // For bodies outside rings, check if Hill sphere is close enough to influence
-    // Calculate Hill radius
-    const bodyMass = body.bodyData.earthMasses;
-    if (!bodyMass) {
-      return false;
-    }
-
-    let parentMass = parent.earthMasses;
-    if (!parentMass && parent.solarMasses) {
-      parentMass = parent.solarMasses * 332950;
-    }
-
-    if (!parentMass) {
-      return false;
-    }
-
-    const massRatio = bodyMass / (3 * parentMass);
-    const hillRadius = bodyDistanceKm * Math.pow(massRatio, 1 / 3);
-
-    // Check if Hill sphere extends close to the rings
-    // Inner edge of Hill sphere
-    const hillInnerEdge = bodyDistanceKm - hillRadius;
-
-    // Body is a shepherding candidate if its Hill sphere comes within 20% of ring system width from the outer ring
-    const ringSystemWidth = outermostRingRadius - parentRadius;
-    const influenceDistance = outermostRingRadius + (ringSystemWidth * 0.2);
-
-    if (hillInnerEdge <= influenceDistance) {
-      return true;
-    }
-
-    return false;
+    return this.physics.isShepherdingCandidate(this.body());
   }
 
-  /**
-   * Returns true if the body is a true shepherd moon (Hill sphere close enough to ring edge)
-   */
   public isActualShepherd(): boolean {
-    const hillData = this.calculateShepherdingHillLimit();
-    if (!hillData) return false;
-    // Do not consider bodies inside rings as shepherds
-    if (hillData.withinRings) return false;
-
-    // Only consider bodies that are the first body outside the rings
-    if (!hillData.isFirstOutside) return false;
-
-    // Inner edge of the Hill sphere
-    const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
-
-    // Require the Hill sphere to actually reach (or slightly overlap) the outermost ring edge.
-    // Allow a small tolerance (5% of ring width or 1 km minimum) to avoid floating-point edge cases.
-    const ringWidth = Math.max(0, hillData.outermostRingRadius - hillData.parentRadius);
-    const tolerance = Math.max(1, ringWidth * 0.05);
-
-    return hillInnerEdge <= (hillData.outermostRingRadius + tolerance);
+    return this.physics.isActualShepherd(this.body());
   }
 
 
-  // Orbital mechanics helper: Convert Keplerian elements to 3D Cartesian position
-  private orbitalElementsToCartesian(
-    semiMajorAxisAU: number,
-    eccentricity: number,
-    inclinationDeg: number,
-    argPeriapsisDeg: number,
-    ascendingNodeDeg: number,
-    meanAnomalyDeg: number
-  ): { x: number; y: number; z: number } {
-    const a = semiMajorAxisAU * 149597870.7; // AU to km
-    const e = eccentricity;
-    const i = inclinationDeg * Math.PI / 180;
-    const w = argPeriapsisDeg * Math.PI / 180;
-    const omega = ascendingNodeDeg * Math.PI / 180;
-    const M = meanAnomalyDeg * Math.PI / 180;
-
-    // Solve Kepler's equation for eccentric anomaly E
-    let E = M;
-    for (let iter = 0; iter < 10; iter++) {
-      E = M + e * Math.sin(E);
-    }
-
-    // True anomaly
-    const nu = 2 * Math.atan2(
-      Math.sqrt(1 + e) * Math.sin(E / 2),
-      Math.sqrt(1 - e) * Math.cos(E / 2)
-    );
-
-    // Distance from focus
-    const r = a * (1 - e * Math.cos(E));
-
-    // Position in orbital plane
-    const xOrb = r * Math.cos(nu);
-    const yOrb = r * Math.sin(nu);
-
-    // Rotate to reference frame
-    const cosW = Math.cos(w);
-    const sinW = Math.sin(w);
-    const cosO = Math.cos(omega);
-    const sinO = Math.sin(omega);
-    const cosI = Math.cos(i);
-    const sinI = Math.sin(i);
-
-    const x = (cosO * cosW - sinO * sinW * cosI) * xOrb + (-cosO * sinW - sinO * cosW * cosI) * yOrb;
-    const y = (sinO * cosW + cosO * sinW * cosI) * xOrb + (-sinO * sinW + cosO * cosW * cosI) * yOrb;
-    const z = (sinW * sinI) * xOrb + (cosW * sinI) * yOrb;
-
-    return { x, y, z };
-  }
-
-  // Get position of a body in system coordinates, accounting for hierarchical parent-child relationships
-  // Each body in the chain uses its current orbital position (meanAnomalyDeg parameter)
-  private getBodyPositionInSystemFrame(body: SystemBody, meanAnomalyDeg: number): { x: number; y: number; z: number } | null {
-    const bodyData = body.bodyData;
-
-    // If no parent, this is the root body (at origin)
-    if (!body.parent) {
-      return { x: 0, y: 0, z: 0 };
-    }
-
-    // If no orbital data for a body that has a parent
-    if (!bodyData.semiMajorAxis) {
-      // Special case: bodyId 0 can be at origin even with a parent (primary star/barycentre)
-      if (bodyData.bodyId === 0) {
-        return { x: 0, y: 0, z: 0 };
-      }
-      // For any other body (including unknown barycentres), missing semiMajorAxis means we can't calculate position
-      return null;
-    }
-
-    // Check if all required orbital parameters are present
-    if (bodyData.orbitalEccentricity === null || bodyData.orbitalEccentricity === undefined ||
-      bodyData.orbitalInclination === null || bodyData.orbitalInclination === undefined ||
-      bodyData.argOfPeriapsis === null || bodyData.argOfPeriapsis === undefined ||
-      bodyData.ascendingNode === null || bodyData.ascendingNode === undefined) {
-      // Special case: bodyId 0 can be at origin even with missing parameters
-      if (bodyData.bodyId === 0) {
-        return { x: 0, y: 0, z: 0 };
-      }
-      // Missing orbital parameters for non-primary body (like unknown barycentres)
-      return null;
-    }
-
-    // Get orbital elements (convert from Elite Dangerous convention)
-    const sma = bodyData.semiMajorAxis;
-    const ecc = bodyData.orbitalEccentricity;
-    const inc = bodyData.orbitalInclination;
-    const argP = -bodyData.argOfPeriapsis;
-    const node = -bodyData.ascendingNode;
-
-    // Compute position relative to parent using this body's mean anomaly
-    const localPos = this.orbitalElementsToCartesian(sma, ecc, inc, argP, node, meanAnomalyDeg);
-
-    // Recursively get parent's position in system frame
-    // Parent uses its own current mean anomaly (from its bodyData or 0 if not orbiting)
-    const parentMeanAnomaly = body.parent.bodyData.meanAnomaly || 0;
-    const parentPos = this.getBodyPositionInSystemFrame(body.parent, parentMeanAnomaly);
-
-    if (!parentPos) {
-      // Parent chain has missing data - cannot calculate absolute position
-      return null;
-    }
-
-    // Transform to system coordinates by adding parent's position
-    return {
-      x: localPos.x + parentPos.x,
-      y: localPos.y + parentPos.y,
-      z: localPos.z + parentPos.z
-    };
-  }  // Calculate distance between two 3D points
-  private distance3D(p1: { x: number; y: number; z: number }, p2: { x: number; y: number; z: number }): number {
-    const dx = p1.x - p2.x;
-    const dy = p1.y - p2.y;
-    const dz = p1.z - p2.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  }
-
-  // Validate calculated distance against orbital mechanics constraints
-  private validateDistanceCalculation(body1: SystemBody, body2: SystemBody, calculatedDistance: number): void {
-    // Walk up the parent chain to find common ancestor and calculate theoretical min/max distances
-    const getParentChain = (body: SystemBody): SystemBody[] => {
-      const chain: SystemBody[] = [];
-      let current: SystemBody | null = body;
-      while (current) {
-        chain.push(current);
-        current = current.parent;
-      }
-      return chain;
-    };
-
-    const chain1 = getParentChain(body1);
-    const chain2 = getParentChain(body2);
-
-    // Find common ancestor (barycentre or star)
-    let commonAncestor: SystemBody | null = null;
-    for (const ancestor1 of chain1) {
-      if (chain2.includes(ancestor1)) {
-        commonAncestor = ancestor1;
-        break;
-      }
-    }
-
-    if (!commonAncestor) return; // No common ancestor found
-
-    // Calculate theoretical minimum distance: |periapsis1 - apoapsis2|
-    // For bodies orbiting a common parent, minimum distance occurs when one is at periapsis
-    // facing the other at apoapsis
-    const getOrbitalExtents = (body: SystemBody): { periapsis: number; apoapsis: number } | null => {
-      const data = body.bodyData;
-      if (!data.semiMajorAxis) return null;
-
-      const sma = data.semiMajorAxis * 149597870.7; // Convert AU to km
-      const ecc = data.orbitalEccentricity || 0;
-      const periapsis = sma * (1 - ecc);
-      const apoapsis = sma * (1 + ecc);
-
-      return { periapsis, apoapsis };
-    };
-
-    // Check each body in the chains up to common ancestor
-    const extents1 = getOrbitalExtents(body1);
-    const extents2 = getOrbitalExtents(body2);
-
-    if (extents1 && extents2) {
-      // Theoretical absolute minimum: difference between closest approaches
-      const theoreticalMin = Math.abs(extents1.periapsis - extents2.apoapsis);
-      const theoreticalMax = extents1.apoapsis + extents2.apoapsis;
-
-      // Silently validate - errors will be shown in debug info dialog if enabled
-    }
-  }
-
-  // Get all bodies in the system (traverse to root and collect all)
-  private getAllSystemBodies(): SystemBody[] {
-    let root = this.body();
-    while (root.parent) {
-      root = root.parent;
-    }
-
-    const allBodies: SystemBody[] = [];
-    const traverse = (body: SystemBody) => {
-      allBodies.push(body);
-      for (const child of body.subBodies) {
-        traverse(child);
-      }
-    };
-    traverse(root);
-    return allBodies;
-  }
-
-  // Calculate Hill limit considering all potential perturbers
-  // Ring Hill-limit calculation removed.
+  // Orbital-position math (Kepler solver + hierarchical system-frame positioning)
+  // lives in OrbitalMechanicsService so it can be unit-tested without the component.
 
   public getSolidCompositionTooltip(): string {
     const body = this.body();
@@ -1374,7 +747,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   private getAsteroidIcon(): string | null {
     // Only show icon for rings and belts
     const body = this.body();
-    if (body.bodyData.type !== 'Ring' && body.bodyData.type !== 'Belt') {
+    if (body.bodyData.type !== BODY_TYPE.Ring && body.bodyData.type !== BODY_TYPE.Belt) {
       return null;
     }
 
@@ -1389,7 +762,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     const iconName = subType.toLowerCase().replace(/ /g, '_');
 
     // Construct the filename based on type (without 'assets/' prefix as it's added in template)
-    if (body.bodyData.type === 'Belt') {
+    if (body.bodyData.type === BODY_TYPE.Belt) {
       return `asteroids/cluster_${iconName}_01.png`;
     } else {
       // Ring
@@ -1397,15 +770,16 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     }
   }
 
-  public ngAfterViewInit(): void {
-    setTimeout(() => this.updateChildrenExpandedState());
+  constructor() {
+    // Sync the cached collapse/expand-all state once the child components first render.
+    afterNextRender(() => this.updateChildrenExpandedState());
   }
 
   private updateChildrenExpandedState(): void {
     const childArray = this.childComponents();
     this.cachedChildrenExpandedState = childArray.some(child => child.expanded);
-    // Runs from an AfterViewInit setTimeout as well as event handlers; notify the
-    // scheduler so the collapse/expand-all toggle reflects the new state under zoneless.
+    // Runs from an after-render hook as well as event handlers; notify the scheduler
+    // so the collapse/expand-all toggle reflects the new state under zoneless.
     this.cdr.markForCheck();
   }
 
@@ -1460,7 +834,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public showInvisibleRingExplanation(): void {
     const body = this.body();
-    if (body.bodyData.type !== 'Ring') {
+    if (body.bodyData.type !== BODY_TYPE.Ring) {
       return;
     }
 
@@ -1494,7 +868,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public showRocheLimitChart(): void {
     const body = this.body();
-    if (!body.parent || body.bodyData.type !== 'Ring') {
+    if (!body.parent || body.bodyData.type !== BODY_TYPE.Ring) {
       return;
     }
 
@@ -1545,7 +919,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       innerRadius: body.bodyData.innerRadius || 0, // Already in km
       outerRadius: body.bodyData.outerRadius || 0, // Already in km
       type: body.bodyData.subType,
-      density: this.getRingDensityFromType(body.bodyData.subType)
+      density: this.physics.ringSatelliteDensityKgM3(body.bodyData.subType)
     };
 
     this.rocheLimitDialogData = {
@@ -1808,13 +1182,6 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       this.isChartLoading = false;
       this.cdr.markForCheck();
     }, 200);
-  }
-
-  private getRingDensityFromType(type: string): number {
-    const ringClass = type?.toLowerCase() || '';
-    if (ringClass.includes('metal')) return 4500;
-    if (ringClass.includes('rocky')) return 3000;
-    return 1000; // icy
   }
 
   private drawRocheChart(): void {
@@ -2275,26 +1642,12 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getSpinResonance(): string {
-    const body = this.body();
-    if (!body.bodyData.rotationalPeriod || !body.bodyData.orbitalPeriod) {
-      return 'none';
-    }
+    return this.cachedSpinResonance;
+  }
 
-    const rotationsPerOrbit = body.bodyData.orbitalPeriod / body.bodyData.rotationalPeriod;
-    const maxDenominator = 5;
-    const tolerance = 0.01;
-
-    for (let denom = 1; denom <= maxDenominator; denom++) {
-      for (let num = 1; num <= maxDenominator; num++) {
-        const candidate = num / denom;
-        const relError = Math.abs(candidate - rotationsPerOrbit) / candidate;
-        if (relError <= tolerance) {
-          return `${num}:${denom}`;
-        }
-      }
-    }
-
-    return 'none';
+  private computeSpinResonance(): string {
+    const bodyData = this.body().bodyData;
+    return this.stellarPhysics.spinResonance(bodyData.rotationalPeriod, bodyData.orbitalPeriod);
   }
 
   public getSpinResonanceTooltip(): string {
@@ -2304,7 +1657,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
       return 'Tidally Locked not in a simple resonance';
     }
     if (resonance === '1:1' && body.bodyData.rotationalPeriodTidallyLocked) {
-      if (body.parent?.bodyData.type === 'Star') {
+      if (body.parent?.bodyData.type === BODY_TYPE.Star) {
         if (body.bodyData.subType === 'Earth-like world') {
           return 'Eyeball earth';
         }
@@ -2318,27 +1671,15 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getTangentialVelocity(): number | null {
-    const body = this.body();
-    if (!this.isBlackHoleOrNeutronStar() || !body.bodyData.rotationalPeriod) {
+    const bodyData = this.body().bodyData;
+    if (!this.isBlackHoleOrNeutronStar() || !bodyData.rotationalPeriod) {
       return null;
     }
-
-    let radiusKm: number;
-    if (body.bodyData.radius) {
-      radiusKm = body.bodyData.radius;
-    } else if (body.bodyData.solarRadius) {
-      radiusKm = body.bodyData.solarRadius * 695700; // Convert solar radii to km
-    } else {
+    const radiusKm = this.stellarPhysics.radiusKm(bodyData.radius, bodyData.solarRadius);
+    if (radiusKm === null) {
       return null;
     }
-
-    const rotationalPeriodDays = body.bodyData.rotationalPeriod;
-    const rotationalPeriodSeconds = rotationalPeriodDays * 24 * 3600;
-
-    const circumference = 2 * Math.PI * radiusKm * 1000; // Convert km to m
-    const velocityMs = circumference / rotationalPeriodSeconds;
-
-    return velocityMs / 1000; // Convert m/s to km/s
+    return this.stellarPhysics.tangentialVelocityKms(bodyData.rotationalPeriod, radiusKm);
   }
 
   public getTangentialVelocityDisplay(): string {
@@ -2365,7 +1706,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public isBlackHoleOrNeutronStar(): boolean {
     const body = this.body();
-    return body.bodyData.type === 'Star' &&
+    return body.bodyData.type === BODY_TYPE.Star &&
       (body.bodyData.subType === 'Black Hole' ||
         body.bodyData.subType === 'Neutron Star');
   }
@@ -2406,7 +1747,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
 
   public classifyNeutronStar(): string | null {
     const body = this.body();
-    if (body.bodyData.type !== 'Star' || body.bodyData.subType !== 'Neutron Star') {
+    if (body.bodyData.type !== BODY_TYPE.Star || body.bodyData.subType !== 'Neutron Star') {
       return null;
     }
 
@@ -2654,50 +1995,16 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   public getJetConeAngle(): number | null {
-    // Only apply to neutron stars with required inputs
-    const body = this.body();
-    if (body.bodyData.type !== 'Star' || !body.bodyData.subType?.includes('Neutron Star') ||
-      !body.bodyData.rotationalPeriod || !body.bodyData.solarRadius || !body.bodyData.age) {
+    return this.cachedJetConeAngle;
+  }
+
+  private computeJetConeAngle(): number | null {
+    // Only apply to neutron stars with the required inputs.
+    const bodyData = this.body().bodyData;
+    if (bodyData.type !== BODY_TYPE.Star || !bodyData.subType?.includes('Neutron Star')) {
       return null;
     }
-
-    const rotationalPeriod = body.bodyData.rotationalPeriod;
-    const solarRadius = body.bodyData.solarRadius;
-    const age = body.bodyData.age;
-
-    if (rotationalPeriod <= 0 || solarRadius <= 0 || age <= 0) {
-      return null;
-    }
-
-    // Fitted parameters
-    const Amin = -83.8389;
-    const Amax = -60.8896;
-    const k = 2.2037;
-    const x0 = -5.0497;
-    const alpha = 0.001517;
-    const gamma_sr = 0.724671;
-    const gamma_rot = -0.025587;
-    const gamma_age = 0.045594;
-
-    // Step 2: combined predictor
-    // Using the requested form: x = LN(solarRadius / SQRT(rotationalPeriod)) + alpha * LN(age)
-    // LN(solarRadius / SQRT(rotationalPeriod)) = ln(solarRadius) - 0.5 * ln(rotationalPeriod)
-    const x = Math.log(solarRadius / Math.sqrt(rotationalPeriod)) + alpha * Math.log(age);
-
-    // Step 3: sigmoid
-    const denom = 1 + Math.exp(-k * (x - x0));
-    const angleSigmoid = Amin + (Amax - Amin) / denom;
-
-    // Step 4: quadratic corrections (use natural logs)
-    const ln_sr = Math.log(solarRadius);
-    const ln_rot = Math.log(rotationalPeriod);
-    const ln_age = Math.log(age);
-    const quad = gamma_sr * (ln_sr * ln_sr) + gamma_rot * (ln_rot * ln_rot) + gamma_age * (ln_age * ln_age);
-
-    // Step 5: combine
-    const anglePred = angleSigmoid + quad;
-
-    return anglePred;
+    return this.stellarPhysics.jetConeAngle(bodyData.rotationalPeriod, bodyData.solarRadius, bodyData.age);
   }
 
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
@@ -2807,69 +2114,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   private calculateRocheExcess(): number | null {
-    const body = this.body();
-    if (!body.parent || !body.bodyData.semiMajorAxis || !body.bodyData.radius) {
-      return null;
-    }
-
-    let parentRadius: number;
-    if (body.parent.bodyData.radius) {
-      parentRadius = body.parent.bodyData.radius * 1000; // Convert km to m
-    } else if (body.parent.bodyData.solarRadius) {
-      parentRadius = body.parent.bodyData.solarRadius * 695700000; // Convert solar radii to m
-    } else {
-      return null;
-    }
-
-    let parentMass: number;
-    if (body.parent.bodyData.solarMasses) {
-      parentMass = body.parent.bodyData.solarMasses * 1.989e30;
-    } else if (body.parent.bodyData.earthMasses) {
-      parentMass = body.parent.bodyData.earthMasses * 5.972e24;
-    } else {
-      return null;
-    }
-
-    let bodyMass: number;
-    if (body.bodyData.solarMasses) {
-      bodyMass = body.bodyData.solarMasses * 1.989e30;
-    } else if (body.bodyData.earthMasses) {
-      bodyMass = body.bodyData.earthMasses * 5.972e24;
-
-    } else {
-      return null;
-    }
-
-    const result = this.checkRigidRocheLimit(
-      parentMass,
-      parentRadius,
-      bodyMass,
-      body.bodyData.radius * 1000, // Convert km to m
-      body.bodyData.semiMajorAxis * 149597870700 // Convert AU to m
-    );
-
-
-
-    return result.violates ? (result.rocheLimitM - body.bodyData.semiMajorAxis * 149597870700) / 1000 : null; // Convert back to km
-  }
-
-  private checkRigidRocheLimit(
-    parentMassKg: number,
-    parentRadiusM: number,
-    satelliteMassKg: number,
-    satelliteRadiusM: number,
-    semiMajorAxisM: number
-  ): { rocheLimitM: number, violates: boolean } {
-    const rhoParent = parentMassKg / ((4 / 3) * Math.PI * Math.pow(parentRadiusM, 3));
-    const rhoSatellite = satelliteMassKg / ((4 / 3) * Math.PI * Math.pow(satelliteRadiusM, 3));
-
-    const rocheLimit = 1.26 * parentRadiusM * Math.pow(rhoParent / rhoSatellite, 1 / 3);
-    const violates = semiMajorAxisM < rocheLimit;
-
-
-
-
-    return { rocheLimitM: rocheLimit, violates };
+    return this.physics.rocheExcess(this.body());
   }
 
   public tidalLockDialogData: any = null;
@@ -3003,10 +2248,9 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
     // Generate the chart image for the dialog and then open it
     try {
       this.jetAngleChartDataUrl = this.generateJetAngleChart();
-    } catch (e) {
+    } catch {
       // If chart generation fails, clear URL and still open dialog
       this.jetAngleChartDataUrl = null;
-      // Debug removed
     }
 
     this.dialog.open(this.jetAngleDialogTemplate(), {
@@ -3194,25 +2438,7 @@ Phrooe,B10,1.117071,3.02,13.454,12938`;
   }
 
   private computePredictedAngleForSample(rotSeconds: number | null, solarRadius: number | null, age: number | null): number | null {
-    if (!rotSeconds || !solarRadius || !age) return null;
-    const rotDays = Number(rotSeconds) / 86400;
-    if (!(rotDays > 0) || !(solarRadius > 0) || !(age > 0)) return null;
-    const Amin = -83.8389;
-    const Amax = -60.8896;
-    const k = 2.2037;
-    const x0 = -5.0497;
-    const alpha = 0.001517;
-    const gamma_sr = 0.724671;
-    const gamma_rot = -0.025587;
-    const gamma_age = 0.045594;
-    const x = Math.log(solarRadius / Math.sqrt(rotDays)) + alpha * Math.log(age);
-    const denom = 1 + Math.exp(-k * (x - x0));
-    const angleSigmoid = Amin + (Amax - Amin) / denom;
-    const ln_sr = Math.log(solarRadius);
-    const ln_rot = Math.log(rotDays);
-    const ln_age = Math.log(age);
-    const quad = gamma_sr * (ln_sr * ln_sr) + gamma_rot * (ln_rot * ln_rot) + gamma_age * (ln_age * ln_age);
-    return angleSigmoid + quad;
+    return this.stellarPhysics.jetConeAngleFromSeconds(rotSeconds, solarRadius, age);
   }
 
   public showTidalLockDialog(): void {

@@ -43,74 +43,64 @@
                 }</span>
                 @if (edastroData?.name) {
                   <a [href]="edastroData.poiUrl" target="_blank" rel="noopener noreferrer" title="View on the Galactic Exploration Catalog"
-                    style="margin-left: 4px; display: inline-flex; align-items: center;">
+                    class="title-link">
                     <img src="assets/icons/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline"
-                      style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;"
-                      tabindex="0" />
+                      style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;" />
                     </a>
                   }
                   <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" rel="noopener noreferrer"
-                    style="margin-left: 4px; display: inline-flex; align-items: center;">
+                    class="title-link">
                     <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh"
-                      style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;"
-                      tabindex="0" />
+                      class="title-link-icon title-link-icon--rounded" />
                     </a>
                     <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank" rel="noopener noreferrer"
-                      style="display: inline-flex; align-items: center; margin-left: -0.4em;">
-                      <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON"
+                      class="title-link title-link--tight">
+                      <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="Spansh JSON"
                         title="View the spansh dump"
-                        style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
-                        tabindex="0" />
+                        class="title-link-icon" />
                       </a>
                     <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)"
                         target="_blank" rel="noopener noreferrer" title="View on Inara"
-                        style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        class="title-link">
                         <img src="assets/icons/inara.png" alt="Inara"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
-                            tabindex="0" />
+                            class="title-link-icon title-link-icon--light" />
                     </a>
                     <a [href]="'https://ravencolonial.com/#sys=' + encodeURIComponent(data.system.name)" target="_blank" rel="noopener noreferrer"
                         title="View on Raven Colonial"
-                        style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        class="title-link">
                         <img src="assets/icons/rcc-96.png" alt="Raven Colonial"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; border-radius: 4px;"
-                            tabindex="0" />
+                            class="title-link-icon title-link-icon--rounded" />
                     </a>
                     <a [href]="'https://www.edsm.net/en/system?systemName=' + encodeURIComponent(data.system.name)"
-                        target="_blank" rel="noopener noreferrer" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        target="_blank" rel="noopener noreferrer" class="title-link">
                         <img src="assets/icons/edsm-194x194.png" alt="EDSM" title="View on EDSM"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
-                            tabindex="0" />
+                            class="title-link-icon title-link-icon--light" />
                     </a>
                     <a [href]="'https://www.edsm.net/api-system-v1/bodies?systemName=' + encodeURIComponent(data.system.name)"
-                        target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; margin-left: -0.4em;">
+                        target="_blank" rel="noopener noreferrer" class="title-link title-link--tight">
                         <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="EDSM JSON"
                             title="View the EDSM dump"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
-                            tabindex="0" />
+                            class="title-link-icon" />
                     </a>
                     <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
-                        target="_blank" rel="noopener noreferrer" style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        target="_blank" rel="noopener noreferrer" class="title-link">
                         <img src="assets/icons/eddn.png" alt="ED Galaxy Data"
                             title="View on EDDN journals on ED Galaxy Data"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer; background: #fff; border-radius: 4px;"
-                            tabindex="0" />
+                            class="title-link-icon title-link-icon--light" />
                     </a>
                     <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
                         target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; margin-left: -0.5em;">
                         <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="ED Galaxy Data"
                             title="View on EDDN journals on ED Galaxy Data"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;"
-                            tabindex="0" />
+                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;" />
                     </a>
                     @if (isVoyagerGoldenRecordSystem()) {
 <a
                         href="https://science.nasa.gov/mission/voyager/golden-record-cover/" target="_blank" rel="noopener noreferrer"
-                        style="margin-left: 4px; display: inline-flex; align-items: center;">
+                        class="title-link">
                         <img src="assets/icons/Voyager_Golden_Record_fx.png" alt="Voyager Golden Record"
                             title="This pulsar is featured on the Voyager Golden Record cover"
-                            style="max-height: 1.1em; width: 1.1em; display: block; pointer-events: auto; cursor: pointer;"
-                            tabindex="0" />
+                            style="max-height: 1.1em; width: 1.1em; display: block; pointer-events: auto; cursor: pointer;" />
                     </a>
 }
                 </span>
@@ -125,7 +115,8 @@
             </div>
 }
             <div class="system-data">
-                <div class="region-map-container" #regionMapContainer></div>
+                <app-region-map [system]="data.system" [outposts]="independentOutposts"
+                    (systemSelected)="onMarkerSelected($event)"></app-region-map>
                 <div class="system-data-columns">
                     <div class="system-data-section">
                         <div class="system-data-section-header">Location</div>
@@ -141,13 +132,17 @@
                         </div>
                         <div class="system-data-entry">
                             <div>Id64</div>
-                            <div class="id64-copy" (click)="copyId64ToClipboard()" title="Click to copy Id64">
+                            <div class="id64-copy" role="button" tabindex="0" (click)="copyId64ToClipboard()"
+                                (keydown.enter)="copyId64ToClipboard()" (keydown.space)="$event.preventDefault(); copyId64ToClipboard()"
+                                title="Click to copy Id64">
                                 {{ data.system.id64 }}
                             </div>
                         </div>
                         <div class="system-data-entry">
                             <div>Coordinates</div>
-                            <div class="coordinates-copy" (click)="copyCoordinatesToClipboard('comma')"
+                            <div class="coordinates-copy" role="button" tabindex="0" (click)="copyCoordinatesToClipboard('comma')"
+                                (keydown.enter)="copyCoordinatesToClipboard('comma')"
+                                (keydown.space)="$event.preventDefault(); copyCoordinatesToClipboard('comma')"
                                 (contextmenu)="copyCoordinatesToClipboard('tab', $event)"
                                           (mousedown)="onCoordinatesMouseDown($event)"
                                           title="Left: comma, Right: tab, Middle: pipe">
@@ -164,8 +159,11 @@
                                             <div>Name</div>
                                             <div>
                                               @if (edGalaxyData.Simbad.Ident) {
-                                                <span class="pgname-link"
-                                                  (click)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)" title="Open in SIMBAD"
+                                                <span class="pgname-link" role="button" tabindex="0"
+                                                  (click)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)"
+                                                  (keydown.enter)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)"
+                                                  (keydown.space)="$event.preventDefault(); openSimbadPageRaw(edGalaxyData.Simbad.Ident)"
+                                                  title="Open in SIMBAD"
                                                   style="cursor:pointer;text-decoration:underline dotted;">
                                                   {{ edGalaxyData.Simbad.Name }}
                                                 </span>
@@ -193,7 +191,10 @@
                                       <div class="system-data-section-header">Distances</div>
                                       @for (dist of getSystemDistances(); track dist) {
                                         <div class="system-data-entry">
-                                          <div class="distance-system-link" (click)="openSignalsPage(dist.name)"
+                                          <div class="distance-system-link" role="button" tabindex="0"
+                                            (click)="openSignalsPage(dist.name)"
+                                            (keydown.enter)="openSignalsPage(dist.name)"
+                                            (keydown.space)="$event.preventDefault(); openSignalsPage(dist.name)"
                                             title="Open signals page for {{ dist.name }}">
                                             {{ dist.name }}
                                           </div>
@@ -206,7 +207,10 @@
                                         <div class="system-data-section-header">Nearest DSSA</div>
                                         @for (outpost of getNearestOutposts(); track outpost) {
                                           <div class="system-data-entry">
-                                            <div class="distance-system-link" (click)="openSignalsPage(outpost.systemName)"
+                                            <div class="distance-system-link" role="button" tabindex="0"
+                                              (click)="openSignalsPage(outpost.systemName)"
+                                              (keydown.enter)="openSignalsPage(outpost.systemName)"
+                                              (keydown.space)="$event.preventDefault(); openSignalsPage(outpost.systemName)"
                                               title="{{ outpost.systemName }}">
                                               {{ outpost.name }}
                                             </div>

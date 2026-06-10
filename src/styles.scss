@@ -45,6 +45,18 @@ $dark-theme: mat.m2-define-dark-theme((color: (primary: mat.m2-define-palette(ma
   --color-danger: #ff6b6b;
   --color-link: #fbd7b4;
   --color-link-hover: #feeddc;
+
+  /* Badge palette (light fills on a dark surface). */
+  --color-badge-red: #f99;
+  --color-badge-green: #9c9;
+  --color-badge-blue: #9cf;
+  --color-badge-cyan: #0ff;
+
+  /* Landing-safety traffic-light palette — single source of truth for the
+     .safety-* helpers and the on-foot safety indicators. */
+  --color-safety-green: #4caf50;
+  --color-safety-amber: #ff9800;
+  --color-safety-red: #f44336;
 }
 
 /* You can add global styles to this file, and also import other style files */
@@ -162,13 +174,13 @@ hr {
 }
 
 .safety-green {
-  color: #4caf50;
+  color: var(--color-safety-green);
 }
 
 .safety-amber {
-  color: #ff9800;
+  color: var(--color-safety-amber);
 }
 
 .safety-red {
-  color: #f44336;
+  color: var(--color-safety-red);
 }

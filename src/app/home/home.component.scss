@@ -3,6 +3,36 @@
     justify-content: center
 }
 
+/* External-resource icon links next to the system title. */
+.title-link {
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Sits flush against the preceding icon (e.g. a "JSON dump" beside its site link). */
+.title-link--tight {
+    margin-left: -0.4em;
+}
+
+.title-link-icon {
+    max-height: 1.1em;
+    width: auto;
+    display: block;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.title-link-icon--rounded {
+    border-radius: 4px;
+}
+
+/* Light backing so dark logos stay legible on the dark title bar. */
+.title-link-icon--light {
+    background: var(--color-white);
+    border-radius: 4px;
+}
+
 .bodies {
     background-color: rgba(150, 150, 150, 0.7);
     backdrop-filter: blur(6px);
@@ -189,24 +219,11 @@
     gap: 16px;
 }
 
-.system-container .system-container-data .system-data .region-map-container {
-    width: 20%;
-    min-width: 200px;
-    max-width: 300px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
+/* The region map sizing now lives in region-map.component.scss (:host). The host
+   element still participates in the .system-data flex row below. */
+.system-container .system-container-data .system-data app-region-map {
     flex-shrink: 0;
     align-self: flex-start;
-    overflow: visible;
-    height: fit-content;
-}
-
-.system-container .system-container-data .system-data .region-map-container svg {
-    width: 100% !important;
-    height: auto !important;
-    max-width: 100%;
-    overflow: visible
 }
 
 .system-container .system-container-data .system-data .system-data-columns {

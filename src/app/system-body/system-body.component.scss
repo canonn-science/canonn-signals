@@ -18,6 +18,11 @@
     align-items: center
 }
 
+/* signal icons: block removes inline baseline gap so they center vertically in the row */
+.body-title .title-left > div > img {
+    display: block;
+}
+
 .body-anchor-link {
     font-size: 11px;
     color: #888;
@@ -32,7 +37,7 @@
 
     &--copied {
         opacity: 1;
-        color: #4caf50;
+        color: var(--color-safety-green);
     }
 }
 
@@ -202,7 +207,7 @@
 .badge-mat1,
 .badge-red {
     color: var(--color-surface-3);
-    background-color: #f99
+    background-color: var(--color-badge-red)
 }
 
 .badge-mat2,
@@ -215,13 +220,13 @@
 .badge-green,
 .badge-purple {
     color: var(--color-surface-3);
-    background-color: #9c9
+    background-color: var(--color-badge-green)
 }
 
 .badge-mat4,
 .badge-blue {
     color: var(--color-surface-3);
-    background-color: #9cf
+    background-color: var(--color-badge-blue)
 }
 
 .badge-gray {
@@ -231,7 +236,7 @@
 
 .badge-cyan {
     color: var(--color-surface-3);
-    background-color: #0ff
+    background-color: var(--color-badge-cyan)
 }
 
 .badge-purple {

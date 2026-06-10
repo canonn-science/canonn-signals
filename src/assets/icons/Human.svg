@@ -1,23 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="26" height="26">
 <defs>
 <linearGradient id="hFrame" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#f0b000"/><stop offset="0.5" stop-color="#f07800"/><stop offset="1" stop-color="#7a3000"/></linearGradient>
-<linearGradient id="hFig" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#f0c000"/><stop offset="0.55" stop-color="#f08800"/><stop offset="1" stop-color="#a84800"/></linearGradient>
-<linearGradient id="hHair" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#c06000"/><stop offset="1" stop-color="#7a3000"/></linearGradient></defs>
+<linearGradient id="hFig" gradientUnits="userSpaceOnUse" x1="32" y1="6" x2="32" y2="53">
+<stop offset="0" stop-color="#f6cf3a"/><stop offset="0.5" stop-color="#f08c10"/><stop offset="1" stop-color="#9c4410"/></linearGradient></defs>
 <circle cx="32" cy="30" r="23" fill="none" stroke="url(#hFrame)" stroke-width="2.2"/>
-<g fill="url(#hFig)" stroke="#7a3200" stroke-width="0.5" stroke-linejoin="round">
-<path d="M 31.78 16.51 L 11.90 19.70 L 12.10 22.30 L 32.22 22.49 Z"/><path d="M 31.78 22.49 L 51.90 22.30 L 52.10 19.70 L 32.22 16.51 Z"/><path d="M 33.22 16.98 L 16.02 10.42 L 14.98 12.58 L 30.78 22.02 Z"/><path d="M 33.22 22.02 L 49.02 12.58 L 47.98 10.42 L 30.78 16.98 Z"/><path d="M 28.82 33.67 L 28.71 52.86 L 31.29 53.14 L 35.18 34.33 Z"/><path d="M 28.82 34.33 L 32.71 53.14 L 35.29 52.86 L 35.18 33.67 Z"/><path d="M 29.48 32.37 L 19.91 50.29 L 22.09 51.71 L 34.52 35.63 Z"/><path d="M 29.48 35.63 L 41.91 51.71 L 44.09 50.29 L 34.52 32.37 Z"/>
-<path d="M 28.8 19.5 L 35.2 19.5 L 34.4 27 L 35 34.5 L 29 34.5 L 29.6 27 Z"/>
+<g fill="url(#hFig)">
+<path d="M 31.85 16.50 L 11.94 19.20 L 12.06 21.80 L 32.15 22.50 Z"/><path d="M 31.85 22.50 L 51.94 21.80 L 52.06 19.20 L 32.15 16.50 Z"/><path d="M 33.51 17.14 L 20.15 10.49 L 18.85 12.51 L 30.49 21.86 Z"/><path d="M 33.51 21.86 L 45.15 12.51 L 43.85 10.49 L 30.49 17.14 Z"/><path d="M 29.18 31.79 L 20.80 49.27 L 23.20 50.73 L 34.82 35.21 Z"/><path d="M 29.18 35.21 L 40.80 50.73 L 43.20 49.27 L 34.82 31.79 Z"/>
+<path d="M 28.8 19.5 L 35.2 19.5 L 34.4 27 L 35 34 L 29 34 L 29.6 27 Z"/>
 <rect x="30.9" y="15" width="2.2" height="5"/>
 <circle cx="32" cy="11.8" r="3.9"/>
-</g>
-<path d="M 28.1 10.5 Q 27.4 6.3 32 6 Q 36.6 6.3 35.9 10.5 Q 34.1 8.2 32 8.4 Q 29.9 8.2 28.1 10.5 Z" fill="url(#hHair)"/>
-<g fill="url(#hFig)">
-<circle cx="11.8" cy="21" r="1.6"/><circle cx="52.2" cy="21" r="1.6"/>
-<circle cx="15.3" cy="11.6" r="1.4"/><circle cx="48.7" cy="11.6" r="1.4"/>
-<circle cx="21" cy="51" r="1.5"/><circle cx="43" cy="51" r="1.5"/>
-<circle cx="29.8" cy="53" r="1.5"/><circle cx="34.2" cy="53" r="1.5"/>
+<path d="M 28.1 10.5 Q 27.4 6.3 32 6 Q 36.6 6.3 35.9 10.5 Q 34.1 8.2 32 8.4 Q 29.9 8.2 28.1 10.5 Z"/>
 </g>
 </svg>

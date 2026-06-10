@@ -29,6 +29,8 @@ describe('HomeComponent', () => {
             independentOutposts: of([]),
             codexEntries: of([]),
             getBodyDisplayName: (n: string) => n,
+            getEdastroData: () => of(null),
+            setBackgroundImage: () => {},
           },
         },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
@@ -58,5 +60,76 @@ describe('HomeComponent', () => {
   it('strips a leading @ from a SIMBAD ident', () => {
     expect(component.formatSimbadId('@Sol')).toBe('Sol');
     expect(component.formatSimbadId('Sol')).toBe('Sol');
+  });
+
+  it('defers a marker/query request while a search is already in flight', () => {
+    // Simulate an in-flight search without driving the HTTP path.
+    (component as any)._searching = true;
+    component.onMarkerSelected('Colonia');
+    // The request is queued, not applied to the search box yet.
+    expect((component as any).pendingSystemRequest).toBe('Colonia');
+    expect(component.searchControl.value).not.toBe('Colonia');
+  });
+
+  describe('processBodies tree-building', () => {
+    function systemWith(bodies: any[]) {
+      return {
+        system: {
+          name: 'Test System',
+          id64: 1,
+          coords: { x: 0, y: 0, z: 0 },
+          region: { name: 'Inner Orion Spur', region: 18 },
+          population: 0,
+          bodies,
+        },
+      };
+    }
+
+    it('nests a planet under its parent star', () => {
+      const data = systemWith([
+        { bodyId: 0, name: 'Test A', type: 'Star', subType: '', id64: 1 },
+        { bodyId: 1, name: 'Test 1', type: 'Planet', subType: '', id64: 2, semiMajorAxis: 1, parents: [{ Star: 0 }] },
+      ]);
+
+      (component as any).processBodies(data);
+
+      // Only the root star is top-level; the planet hangs off it.
+      expect(component.bodies.length).toBe(1);
+      expect(component.bodies[0].bodyData.bodyId).toBe(0);
+      expect(component.bodies[0].subBodies.map(b => b.bodyData.bodyId)).toContain(1);
+      expect(component.getTotalBodyCount()).toBe(2);
+    });
+
+    it('attaches rings as child bodies of their planet', () => {
+      const data = systemWith([
+        { bodyId: 0, name: 'Test A', type: 'Star', subType: '', id64: 1 },
+        {
+          bodyId: 1, name: 'Test 1', type: 'Planet', subType: '', id64: 2, semiMajorAxis: 1, parents: [{ Star: 0 }],
+          rings: [{ name: 'Test 1 A Ring', type: 'Icy', innerRadius: 1000, outerRadius: 2000, mass: 1 }],
+        },
+      ]);
+
+      (component as any).processBodies(data);
+
+      const planet = component.bodies[0].subBodies.find(b => b.bodyData.bodyId === 1)!;
+      expect(planet).toBeTruthy();
+      const ring = planet.subBodies.find(b => b.bodyData.type === 'Ring');
+      expect(ring).toBeTruthy();
+      // Radii are converted from metres to km when attached.
+      expect(ring!.bodyData.innerRadius).toBe(1);
+    });
+
+    it('synthesises a placeholder for an unknown parent body', () => {
+      const data = systemWith([
+        { bodyId: 5, name: 'Lonely Moon', type: 'Planet', subType: '', id64: 9, semiMajorAxis: 1, parents: [{ Planet: 2 }] },
+      ]);
+
+      (component as any).processBodies(data);
+
+      // The missing parent (bodyId 2) is synthesised and becomes the root.
+      const root = component.bodies.find(b => b.bodyData.bodyId === 2);
+      expect(root).toBeTruthy();
+      expect(root!.subBodies.some(b => b.bodyData.bodyId === 5)).toBe(true);
+    });
   });
 });
