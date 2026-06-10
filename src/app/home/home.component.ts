@@ -175,11 +175,7 @@ export class HomeComponent implements OnInit {
     }
 
     // Call the API for Simbad data
-    let url = `https://us-central1-canonn-api-236217.cloudfunctions.net/query/simbad?system_address=${id64}&name=${encodeURIComponent(systemName)}`;
-    if (coords) {
-      url += `&x=${coords.x}&y=${coords.y}&z=${coords.z}`;
-    }
-    this.httpClient.get<SimbadApiResponse>(url).subscribe({
+    this.appService.getSimbad(id64, systemName, coords).subscribe({
       next: result => {
         // Remap API response to expected structure for edGalaxyData
         const hasSimbad = result.simbad_name || result.simbad_ident
@@ -484,7 +480,7 @@ export class HomeComponent implements OnInit {
       }
 
       // Try Spansh if not found in EdAstro
-      this.httpClient.get<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(this.searchInput)}`)
+      this.appService.galMapSearch(this.searchInput)
         .subscribe({
           next: data => {
             const systems = data.min_max || [];
@@ -511,7 +507,7 @@ export class HomeComponent implements OnInit {
   }
 
   private searchBySystemAddress(systemAddress: number): void {
-    this.httpClient.get<CanonnBiostats>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/biostats?id=${systemAddress}&caller=Signals`)
+    this.appService.getBiostats(systemAddress)
       .subscribe({
         next: data => {
           // A missing payload or system info means Spansh has no data for it yet.
@@ -790,7 +786,7 @@ export class HomeComponent implements OnInit {
       return this.systemSuggestionsCache.get(cacheKey)!;
     }
 
-    const spansQuery = this.httpClient.get<{ values: string[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(query)}`)
+    const spansQuery = this.appService.typeahead(query)
       .pipe(map(response => (response.values || []).map(name => this.decodeHtmlEntities(name))));
 
     const edastroQuery = this.appService.edastroSystems.pipe(
@@ -926,7 +922,7 @@ export class HomeComponent implements OnInit {
 
 }
 
-interface CanonnBiostats {
+export interface CanonnBiostats {
   system: {
     allegiance: string;
     bodies: CanonnBiostatsBody[];
@@ -1080,7 +1076,7 @@ export interface EdGalaxyData {
   };
 }
 
-interface SimbadApiResponse {
+export interface SimbadApiResponse {
   name: string;
   system_address: number;
   ra_j2000?: number;

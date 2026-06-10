@@ -11,7 +11,7 @@ describe('HomeComponent (extended coverage)', () => {
   let component: HomeComponent;
   let fixture: ComponentFixture<HomeComponent>;
   let httpResponses: Map<string, unknown>;
-  let httpGet: ReturnType<typeof vi.fn>;
+  let httpGet: ReturnType<typeof vi.fn<(url: string) => any>>;
   let navigate: ReturnType<typeof vi.fn>;
   let edastroSystems$: Subject<any[]>;
   let independentOutposts$: Subject<any[]>;
@@ -45,6 +45,8 @@ describe('HomeComponent (extended coverage)', () => {
         { provide: HttpClient, useValue: { get: httpGet } },
         {
           provide: AppService,
+          // The remote API methods delegate to the same URL-keyed httpGet mock so the
+          // existing `httpResponses` fixtures (keyed by URL substring) keep driving them.
           useValue: {
             edastroSystems: edastroSystems$,
             independentOutposts: independentOutposts$,
@@ -52,7 +54,10 @@ describe('HomeComponent (extended coverage)', () => {
             getBodyDisplayName: (n: string) => `${n}*`,
             getEdastroData,
             setBackgroundImage,
-            galMapSearch: vi.fn(() => of({ min_max: [] })),
+            galMapSearch: vi.fn((q: string) => httpGet(`/typeahead?q=${q}`)),
+            typeahead: vi.fn((q: string) => httpGet(`/typeahead?q=${q}`)),
+            getBiostats: vi.fn((id: number) => httpGet(`/codex/biostats?id=${id}&caller=Signals`)),
+            getSimbad: vi.fn((id: number, name: string) => httpGet(`/simbad?system_address=${id}&name=${name}`)),
           },
         },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } },

@@ -100,4 +100,80 @@ describe('OrbitalRelationsService', () => {
       expect(service.detectRosetteStatus(children[0])).toBeNull();
     });
   });
+
+  describe('meanAnomalyNow', () => {
+    const sampleTime = '2026-01-01T00:00:00Z';
+    const sampleMs = new Date(sampleTime).getTime();
+
+    it('returns the recorded mean anomaly at the sample instant', () => {
+      expect(service.meanAnomalyNow(90, 10, sampleTime, sampleMs)).toBeCloseTo(90, 6);
+    });
+
+    it('advances 180° after half an orbital period', () => {
+      const halfPeriod = sampleMs + 5 * 24 * 60 * 60 * 1000; // 5 of 10 days
+      expect(service.meanAnomalyNow(0, 10, sampleTime, halfPeriod)).toBeCloseTo(180, 6);
+    });
+
+    it('wraps a full orbit back into [0, 360)', () => {
+      const fullPeriod = sampleMs + 10 * 24 * 60 * 60 * 1000;
+      expect(service.meanAnomalyNow(0, 10, sampleTime, fullPeriod)).toBeCloseTo(0, 6);
+    });
+  });
+
+  describe('degreesToEvent', () => {
+    it('measures the angle to apoapsis from 180°', () => {
+      expect(service.degreesToEvent(0, 'apo')).toBe(180);
+      expect(service.degreesToEvent(270, 'apo')).toBe(270); // (180-270) -> -90 -> +360
+    });
+
+    it('measures the angle to periapsis from 360°/0°', () => {
+      expect(service.degreesToEvent(0, 'peri')).toBe(0);
+      expect(service.degreesToEvent(90, 'peri')).toBe(270);
+    });
+  });
+
+  describe('nextOrbitalEvent', () => {
+    const sampleTime = '2026-01-01T00:00:00Z';
+    const sampleMs = new Date(sampleTime).getTime();
+
+    function body(extra: Partial<CanonnBiostatsBody>): CanonnBiostatsBody {
+      return { bodyId: 1, name: 'B', id64: 0, subType: '', type: 'Planet', ...extra } as CanonnBiostatsBody;
+    }
+
+    it('returns null when orbital elements are missing or the orbit is circular', () => {
+      expect(service.nextOrbitalEvent(body({}), 'peri')).toBeNull();
+      expect(service.nextOrbitalEvent(body({
+        meanAnomaly: 90, orbitalPeriod: 10, orbitalEccentricity: 0, timestamps: { meanAnomaly: sampleTime } as any,
+      }), 'peri')).toBeNull();
+    });
+
+    it('computes the days and date to the next periapsis', () => {
+      // At the sample instant, mean anomaly 270° is 90° (= quarter period) short of periapsis.
+      const event = service.nextOrbitalEvent(body({
+        meanAnomaly: 270, orbitalPeriod: 8, orbitalEccentricity: 0.3,
+        timestamps: { meanAnomaly: sampleTime } as any,
+      }), 'peri', sampleMs);
+      expect(event).not.toBeNull();
+      expect(event!.days).toBeCloseTo(2, 6); // 90/360 * 8 days
+      expect(event!.date.getTime()).toBeCloseTo(sampleMs + 2 * 24 * 60 * 60 * 1000, -2);
+    });
+
+    it('computes the next apoapsis half an orbit away from periapsis', () => {
+      // meanAnomaly 360 ≡ 0° at the sample instant (180° short of apoapsis). A literal 0
+      // is intentionally NOT used: the guard treats `meanAnomaly === 0` as "missing"
+      // (preserved `!bd.meanAnomaly` behaviour from the original component) and returns null.
+      const event = service.nextOrbitalEvent(body({
+        meanAnomaly: 360, orbitalPeriod: 12, orbitalEccentricity: 0.5,
+        timestamps: { meanAnomaly: sampleTime } as any,
+      }), 'apo', sampleMs);
+      expect(event!.days).toBeCloseTo(6, 6); // 180/360 * 12 days
+    });
+
+    it('treats a meanAnomaly of exactly 0 as missing (legacy guard quirk)', () => {
+      expect(service.nextOrbitalEvent(body({
+        meanAnomaly: 0, orbitalPeriod: 12, orbitalEccentricity: 0.5,
+        timestamps: { meanAnomaly: sampleTime } as any,
+      }), 'apo', sampleMs)).toBeNull();
+    });
+  });
 });

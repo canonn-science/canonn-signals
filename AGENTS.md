@@ -99,8 +99,11 @@ and `ng test --watch=false` (currently 84/84). There is no browser in CI — Vit
 
 ## Environment quirks (this sandbox)
 - `pnpm-workspace.yaml` carries `minimumReleaseAge: 0` (overrides a sandbox supply-chain policy that
-  otherwise blocks installing Angular's recent deps) plus `allowBuilds`/`onlyBuiltDependencies` for
-  native build scripts. **Keep these** or `pnpm install` fails. Use `pnpm` (not npm) for installs.
+  otherwise blocks installing Angular's recent deps) plus an `allowBuilds` allowlist of the native
+  packages permitted to run install scripts (`@parcel/watcher`, `esbuild`, `lmdb`, `msgpackr-extract`,
+  `nice-napi`). This sandbox's pnpm gates build scripts on `allowBuilds`, **not** the standard pnpm
+  `onlyBuiltDependencies` key (which is inert here) — list every native dep in `allowBuilds` or
+  `pnpm install` aborts. **Keep these** or `pnpm install` fails. Use `pnpm` (not npm) for installs.
 - `ng update` is flaky here (its internal install can abort; the Material schematic can hang). Prefer
   `--migrate-only` for schematics, and `pnpm install` separately.
 

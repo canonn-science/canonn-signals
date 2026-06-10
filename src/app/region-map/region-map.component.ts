@@ -5,7 +5,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, of, tap } from 'rxjs';
-import { IndependentOutpost } from '../app.service';
+import { AppService, IndependentOutpost } from '../app.service';
 import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
 
@@ -45,6 +45,7 @@ const FULL_VIEWBOX = `0 0 ${MAP_SIZE} ${MAP_SIZE}`;
 })
 export class RegionMapComponent implements OnChanges {
   private readonly httpClient = inject(HttpClient);
+  private readonly appService = inject(AppService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
@@ -493,7 +494,7 @@ export class RegionMapComponent implements OnChanges {
     }
 
     // Fetch fresh data
-    return this.httpClient.get<GnosisData>('https://us-central1-canonn-api-236217.cloudfunctions.net/query/gnosis')
+    return this.appService.getGnosis()
       .pipe(
         tap(data => {
           this.gnosisData = data;

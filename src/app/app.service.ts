@@ -1,13 +1,17 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of, timer } from 'rxjs';
 import { catchError, retry, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import type { CanonnBiostats, SimbadApiResponse } from './home/home.component';
+import type { GnosisData } from './region-map/region-map.component';
 
 /** Default per-request timeout for remote API calls (ms). */
 const HTTP_TIMEOUT_MS = 20000;
 /** Number of automatic retries for transient failures. */
 const HTTP_RETRY_COUNT = 2;
+/** Base URL for the Canonn cloud-function query API. */
+const CANONN_QUERY_BASE = 'https://us-central1-canonn-api-236217.cloudfunctions.net/query';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +29,16 @@ export class AppService {
       timeout(timeoutMs),
       retry({
         count: HTTP_RETRY_COUNT,
-        delay: (_error, retryIndex) => timer(Math.min(1000 * 2 ** (retryIndex - 1), 8000)),
+        delay: (error, retryIndex) => {
+          // Don't retry client errors (e.g. 404 "system not found") — they won't
+          // succeed on a retry and would only delay surfacing the result. Timeouts
+          // and network/5xx errors (no status) are still retried with backoff.
+          const status = (error as HttpErrorResponse)?.status;
+          if (status >= 400 && status < 500) {
+            throw error;
+          }
+          return timer(Math.min(1000 * 2 ** (retryIndex - 1), 8000));
+        },
       }),
     );
   }
@@ -43,7 +56,7 @@ export class AppService {
   public independentOutposts: Observable<IndependentOutpost[]> = this._independentOutposts.asObservable();
 
   constructor() {
-    this.resilientGet<CanonnCodex>("https://us-central1-canonn-api-236217.cloudfunctions.net/query/codex/ref")
+    this.resilientGet<CanonnCodex>(`${CANONN_QUERY_BASE}/codex/ref`)
       .pipe(catchError(() => of({} as CanonnCodex)))
       .subscribe(c => {
         this._codexEntries.next(Object.values(c));
@@ -85,8 +98,32 @@ export class AppService {
     this._backgroundImage.next(imageUrl);
   }
 
-  public galMapSearch(systemName: string): Observable<{ min_max: { name: string, id64: number }[] }> {
-    return this.resilientGet<{ min_max: { name: string, id64: number }[] }>(`https://us-central1-canonn-api-236217.cloudfunctions.net/query/typeahead?q=${encodeURIComponent(systemName)}`);
+  public galMapSearch(systemName: string): Observable<TypeaheadResponse> {
+    return this.typeahead(systemName);
+  }
+
+  /** Typeahead lookup. Returns `min_max` (name + id64 matches) and/or `values` (name suggestions). */
+  public typeahead(query: string): Observable<TypeaheadResponse> {
+    return this.resilientGet<TypeaheadResponse>(`${CANONN_QUERY_BASE}/typeahead?q=${encodeURIComponent(query)}`);
+  }
+
+  /** Loads the per-system biostats payload (bodies, signals, coordinates). */
+  public getBiostats(systemAddress: number): Observable<CanonnBiostats> {
+    return this.resilientGet<CanonnBiostats>(`${CANONN_QUERY_BASE}/codex/biostats?id=${systemAddress}&caller=Signals`);
+  }
+
+  /** Looks up Simbad cross-identification / coordinates for a hand-authored system. */
+  public getSimbad(systemAddress: number, name: string, coords?: { x: number, y: number, z: number }): Observable<SimbadApiResponse> {
+    let url = `${CANONN_QUERY_BASE}/simbad?system_address=${systemAddress}&name=${encodeURIComponent(name)}`;
+    if (coords) {
+      url += `&x=${coords.x}&y=${coords.y}&z=${coords.z}`;
+    }
+    return this.resilientGet<SimbadApiResponse>(url);
+  }
+
+  /** Fetches the current location of The Gnosis mobile starport. */
+  public getGnosis(): Observable<GnosisData> {
+    return this.resilientGet<GnosisData>(`${CANONN_QUERY_BASE}/gnosis`);
   }
 
   private bodyNameOverrides: BodyNameOverride[] = [
@@ -100,6 +137,11 @@ export class AppService {
     const override = this.bodyNameOverrides.find(o => o.bodyName === bodyName);
     return override ? `${bodyName} (${override.suffix})` : bodyName;
   }
+}
+
+export interface TypeaheadResponse {
+  min_max?: { name: string, id64: number }[];
+  values?: string[];
 }
 
 export interface CanonnCodex {

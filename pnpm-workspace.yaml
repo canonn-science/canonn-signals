@@ -1,13 +1,30 @@
+# Single-package "workspace" — this repo is the only package.
 packages:
   - .
+
+# Supply-chain delay: refuse to install package versions published more
+# recently than this many MINUTES ago (this sandbox's pnpm enforces it even
+# under --frozen-lockfile). 8640 = 6 days — a protective window that still
+# admits Angular 22 (published ~7 days before this was set). The lockfile was
+# re-resolved under this value, so too-fresh transitive deps were pinned to
+# older versions. Raising this further requires re-resolving again; lowering it
+# is always safe. Use `minimumReleaseAgeExclude` to exempt specific packages.
+minimumReleaseAge: 8640
+
+# Packages exempt from the age gate. @fortawesome/angular-fontawesome is a
+# direct dep pinned `^5.0.0`, and 5.0.0 (the Angular 22-compatible release) is
+# the only 5.x published — there is no older version to fall back to, so the
+# gate can't apply. Deliberately vetted; revisit once it has aged past the gate.
+minimumReleaseAgeExclude:
+  - '@fortawesome/angular-fontawesome'
+
+# Allowlist of packages permitted to run install/build scripts. This sandbox's
+# pnpm gates build scripts on `allowBuilds` (see DEPS_BUILD_CONFIG_KEYS); any
+# native package not listed here aborts install with an "allowBuilds allowlist"
+# error. Keep every native/postinstall dependency listed.
 allowBuilds:
   '@parcel/watcher': true
   esbuild: true
   lmdb: true
   msgpackr-extract: true
   nice-napi: true
-minimumReleaseAge: 0
-onlyBuiltDependencies:
-  - esbuild
-  - nice-napi
-  - '@parcel/watcher'

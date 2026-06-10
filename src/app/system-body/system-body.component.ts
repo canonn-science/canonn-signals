@@ -592,39 +592,31 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return this.cachedSignalsCount;
   }
 
-  private computeSignalsCount(): number {
-    // First check if the ring body itself has signals
+  /**
+   * The hotspot/signal map for this body: its own `signals.signals`, or — for a ring
+   * body — the matching entry in the parent's `rings` array. Single source of truth for
+   * the signal-count, hotspot-list and signal-tooltip lookups, which previously each
+   * reimplemented this resolution.
+   */
+  private resolveSignalsMap(): { [key: string]: number } | undefined {
     const body = this.body();
     if (body.bodyData.signals?.signals) {
-      return Object.keys(body.bodyData.signals.signals).length;
+      return body.bodyData.signals.signals;
     }
-
-    // For ring bodies, check the parent's rings array
     if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
-      const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
-      if (ringData?.signals?.signals) {
-        return Object.keys(ringData.signals.signals).length;
-      }
+      const ringData = body.parent.bodyData.rings.find(r => r.name === body.bodyData.name);
+      return ringData?.signals?.signals;
     }
+    return undefined;
+  }
 
-    return 0;
+  private computeSignalsCount(): number {
+    const signals = this.resolveSignalsMap();
+    return signals ? Object.keys(signals).length : 0;
   }
 
   private computeHotspotsList(): void {
-    let signals: { [key: string]: number } | undefined;
-
-    // First check if the ring body itself has signals
-    const body = this.body();
-    if (body.bodyData.signals?.signals) {
-      signals = body.bodyData.signals.signals;
-    }
-    // For ring bodies, check the parent's rings array
-    else if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
-      const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
-      if (ringData?.signals?.signals) {
-        signals = ringData.signals.signals;
-      }
-    }
+    const signals = this.resolveSignalsMap();
 
     if (!signals) {
       this.cachedHotspotsList = [];
@@ -697,21 +689,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   }
 
   public getSignalsTooltip(): string {
-    let signals: { [key: string]: number } | undefined;
-
-    // First check if the ring body itself has signals
-    const body = this.body();
-    if (body.bodyData.signals?.signals) {
-      signals = body.bodyData.signals.signals;
-    }
-    // For ring bodies, check the parent's rings array
-    else if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
-      const ringData = body.parent.bodyData.rings.find(r => r.name === this.body().bodyData.name);
-      if (ringData?.signals?.signals) {
-        signals = ringData.signals.signals;
-      }
-    }
-
+    const signals = this.resolveSignalsMap();
     if (!signals) return '';
 
     return Object.entries(signals)
@@ -1036,17 +1014,8 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       meanAnomaly = body.bodyData.meanAnomaly;
       orbitalPeriod = body.bodyData.orbitalPeriod;
       timestamp = new Date(body.bodyData.timestamps.meanAnomaly);
-      const timestampMs = timestamp.getTime();
-      const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
-      const orbitalCycles = elapsedDays / orbitalPeriod;
-      currentMeanAnomaly = (meanAnomaly + (orbitalCycles * 360)) % 360;
-
-      if (type === 'apo') {
-        degreesToEvent = (180 - currentMeanAnomaly) % 360;
-        if (degreesToEvent < 0) degreesToEvent += 360;
-      } else {
-        degreesToEvent = (360 - currentMeanAnomaly) % 360;
-      }
+      currentMeanAnomaly = this.orbitalRelations.meanAnomalyNow(meanAnomaly, orbitalPeriod, body.bodyData.timestamps.meanAnomaly);
+      degreesToEvent = this.orbitalRelations.degreesToEvent(currentMeanAnomaly, type);
     }
 
     this.apoPeriDialogData = {
@@ -1382,44 +1351,11 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   }
 
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
-    const body = this.body();
-    if (!body.bodyData.meanAnomaly || !body.bodyData.orbitalPeriod ||
-      !body.bodyData.timestamps?.meanAnomaly ||
-      !body.bodyData.orbitalEccentricity || body.bodyData.orbitalEccentricity === 0) {
-      return null;
-    }
-
-    const timestampMs = new Date(body.bodyData.timestamps.meanAnomaly).getTime();
-    const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
-    const orbitalCycles = elapsedDays / body.bodyData.orbitalPeriod;
-    const currentMeanAnomaly = (body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
-
-    const degreesToPeriapsis = (360 - currentMeanAnomaly) % 360;
-    const daysToEvent = (degreesToPeriapsis / 360) * body.bodyData.orbitalPeriod;
-    const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
-
-    return { date: eventDate, days: daysToEvent };
+    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'peri');
   }
 
   private calculateNextApoapsis(): { date: Date, days: number } | null {
-    const body = this.body();
-    if (!body.bodyData.meanAnomaly || !body.bodyData.orbitalPeriod ||
-      !body.bodyData.timestamps?.meanAnomaly ||
-      !body.bodyData.orbitalEccentricity || body.bodyData.orbitalEccentricity === 0) {
-      return null;
-    }
-
-    const timestampMs = new Date(body.bodyData.timestamps.meanAnomaly).getTime();
-    const elapsedDays = (Date.now() - timestampMs) / (1000 * 60 * 60 * 24);
-    const orbitalCycles = elapsedDays / body.bodyData.orbitalPeriod;
-    const currentMeanAnomaly = (body.bodyData.meanAnomaly + (orbitalCycles * 360)) % 360;
-
-    let degreesToApoapsis = (180 - currentMeanAnomaly) % 360;
-    if (degreesToApoapsis < 0) degreesToApoapsis += 360;
-    const daysToEvent = (degreesToApoapsis / 360) * body.bodyData.orbitalPeriod;
-    const eventDate = new Date(Date.now() + (daysToEvent * 24 * 60 * 60 * 1000));
-
-    return { date: eventDate, days: daysToEvent };
+    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo');
   }
 
   public getNextPeriapsis(): { date: Date, days: number } | null {

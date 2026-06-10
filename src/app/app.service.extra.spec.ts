@@ -65,6 +65,63 @@ describe('AppService (HTTP-driven coverage)', () => {
     expect(await firstValue(service.backgroundImage$)).toBe('assets/bg2.jpg');
   });
 
+  it('loads per-system biostats', () => {
+    flushConstructorRequests();
+    let result: any;
+    service.getBiostats(999).subscribe(r => (result = r));
+    httpMock.expectOne(r => r.url.includes('/codex/biostats?id=999')).flush({ system: { name: 'Sys', id64: 999 } });
+    expect(result.system.name).toBe('Sys');
+  });
+
+  it('builds the Simbad URL with and without coordinates', () => {
+    flushConstructorRequests();
+    service.getSimbad(42, 'Sol').subscribe();
+    httpMock.expectOne(r => r.url.includes('/simbad?') && r.url.includes('system_address=42') && !r.url.includes('&x=')).flush({});
+
+    service.getSimbad(42, 'Sol', { x: 1, y: 2, z: 3 }).subscribe();
+    httpMock.expectOne(r => r.url.includes('&x=1&y=2&z=3')).flush({});
+  });
+
+  it('fetches the Gnosis location', () => {
+    flushConstructorRequests();
+    let result: any;
+    service.getGnosis().subscribe(r => (result = r));
+    httpMock.expectOne(r => r.url.includes('/gnosis')).flush({ system: 'Varati' });
+    expect(result.system).toBe('Varati');
+  });
+
+  it('exposes typeahead suggestion values', () => {
+    flushConstructorRequests();
+    let result: any;
+    service.typeahead('Syn').subscribe(r => (result = r));
+    httpMock.expectOne(r => r.url.includes('/typeahead') && r.url.includes('Syn')).flush({ values: ['Synuefe'] });
+    expect(result.values).toEqual(['Synuefe']);
+  });
+
+  it('does NOT retry a 4xx client error (surfaces it immediately)', () => {
+    flushConstructorRequests();
+    let error: any;
+    service.getBiostats(404).subscribe({ error: e => (error = e) });
+    // A single request is made; the 404 is surfaced without a retry.
+    httpMock.expectOne(r => r.url.includes('id=404')).flush('nope', { status: 404, statusText: 'Not Found' });
+    expect(error?.status).toBe(404);
+  });
+
+  it('retries a 5xx error with backoff, then succeeds', () => {
+    vi.useFakeTimers();
+    try {
+      flushConstructorRequests();
+      let result: any;
+      service.getGnosis().subscribe(r => (result = r));
+      httpMock.expectOne(r => r.url.includes('/gnosis')).flush('boom', { status: 500, statusText: 'Server Error' });
+      vi.advanceTimersByTime(1100); // first backoff is ~1000ms
+      httpMock.expectOne(r => r.url.includes('/gnosis')).flush({ system: 'Sol' });
+      expect(result.system).toBe('Sol');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   afterEach(() => httpMock.verify());
 });
 

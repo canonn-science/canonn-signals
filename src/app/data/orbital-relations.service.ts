@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { SystemBody } from '../home/home.component';
+import { CanonnBiostatsBody, SystemBody } from '../home/home.component';
 
 /** Result of Trojan/Lagrange analysis for a body relative to its co-orbital siblings. */
 export interface TrojanStatus {
@@ -8,6 +8,15 @@ export interface TrojanStatus {
   /** True when this body hosts Trojans at both L4 and L5 (it is the reference body, not a Trojan). */
   isHost: boolean;
 }
+
+/** A future periapsis/apoapsis passage: when it occurs and how many days away it is. */
+export interface OrbitalEvent {
+  date: Date;
+  days: number;
+}
+
+/** Milliseconds per day, used to convert orbital periods (days) to wall-clock time. */
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 /** Angular tolerance (degrees) for matching a Lagrange geometry. */
 const ANGLE_TOLERANCE_DEG = 1;
@@ -138,5 +147,45 @@ export class OrbitalRelationsService {
     }
 
     return `Rosette (${rosetteGroup.length})`;
+  }
+
+  /**
+   * Mean anomaly (degrees, wrapped to [0, 360)) propagated from the recorded sample
+   * to `now`. Inputs are assumed present; callers guard for missing orbital elements.
+   */
+  meanAnomalyNow(
+    meanAnomalyDeg: number,
+    orbitalPeriodDays: number,
+    meanAnomalyTimestamp: string,
+    now: number = Date.now(),
+  ): number {
+    const timestampMs = new Date(meanAnomalyTimestamp).getTime();
+    const elapsedDays = (now - timestampMs) / MS_PER_DAY;
+    const orbitalCycles = elapsedDays / orbitalPeriodDays;
+    return (meanAnomalyDeg + orbitalCycles * 360) % 360;
+  }
+
+  /** Degrees the body must still travel to reach its next apoapsis (180°) or periapsis (360°/0°). */
+  degreesToEvent(currentMeanAnomaly: number, type: 'apo' | 'peri'): number {
+    if (type === 'apo') {
+      let degrees = (180 - currentMeanAnomaly) % 360;
+      if (degrees < 0) { degrees += 360; }
+      return degrees;
+    }
+    return (360 - currentMeanAnomaly) % 360;
+  }
+
+  /**
+   * Next apoapsis/periapsis passage for a body, or null when the orbital elements are
+   * missing or the orbit is circular (no distinguishable apsis). Pure and time-injectable.
+   */
+  nextOrbitalEvent(bd: CanonnBiostatsBody, type: 'apo' | 'peri', now: number = Date.now()): OrbitalEvent | null {
+    if (!bd.meanAnomaly || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly ||
+      !bd.orbitalEccentricity || bd.orbitalEccentricity === 0) {
+      return null;
+    }
+    const currentMeanAnomaly = this.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);
+    const days = (this.degreesToEvent(currentMeanAnomaly, type) / 360) * bd.orbitalPeriod;
+    return { date: new Date(now + days * MS_PER_DAY), days };
   }
 }
