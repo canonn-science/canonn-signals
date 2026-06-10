@@ -21,9 +21,9 @@
           <mat-icon aria-hidden="true">search</mat-icon>
         </button>
       </div>
-      @if (searchError) {
+      @if (searchError()) {
         <div class="error-message" style="min-width: 400px; max-width: 400px;">
-          <p style="white-space: pre-line; margin: 0; text-align: left;">{{ searchErrorMessage }}</p>
+          <p style="white-space: pre-line; margin: 0; text-align: left;">{{ searchErrorMessage() }}</p>
         </div>
       }
     </div>
@@ -32,17 +32,19 @@
         style="width: 200px; height: 200px;" />
       </div>
     </div>
-    @if (data) {
-      <div class="system-container" @visibilityTrigger>
+    @if (data(); as data) {
+      @let edastro = edastroData();
+      @let edGalaxy = edGalaxyData();
+      <div class="system-container" animate.enter="system-container--enter" animate.leave="system-container--leave">
         <div class="system-container-data">
           <div class="system-info-box">
             <div class="system-title">
               <span style="display: flex; align-items: center; gap: 4px;">
-                <span>{{ data.system.name }}@if (edastroData?.name) {
-                  <span> ({{ edastroData.name }})</span>
+                <span>{{ data.system.name }}@if (edastro?.name) {
+                  <span> ({{ edastro.name }})</span>
                 }</span>
-                @if (edastroData?.name) {
-                  <a [href]="edastroData.poiUrl" target="_blank" rel="noopener noreferrer" title="View on the Galactic Exploration Catalog"
+                @if (edastro?.name) {
+                  <a [href]="edastro.poiUrl" target="_blank" rel="noopener noreferrer" title="View on the Galactic Exploration Catalog"
                     class="title-link">
                     <img src="assets/icons/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline"
                       style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;" />
@@ -109,21 +111,21 @@
                     class="population">Population: {{ data.system.population | number }}</span>
 }
             </div>
-            @if (edastroData?.summary) {
+            @if (edastro?.summary) {
 <div class="edastro-summary">
-                <span class="summary-text">{{ edastroData.summary }}</span>
+                <span class="summary-text">{{ edastro.summary }}</span>
             </div>
 }
             <div class="system-data">
-                <app-region-map [system]="data.system" [outposts]="independentOutposts"
+                <app-region-map [system]="data.system" [outposts]="independentOutposts()"
                     (systemSelected)="onMarkerSelected($event)"></app-region-map>
                 <div class="system-data-columns">
                     <div class="system-data-section">
                         <div class="system-data-section-header">Location</div>
-                        @if (edGalaxyData?.PGName) {
+                        @if (edGalaxy?.PGName) {
 <div class="system-data-entry">
                             <div>PG Name</div>
-                            <div>{{ edGalaxyData.PGName }}</div>
+                            <div>{{ edGalaxy.PGName }}</div>
                         </div>
 }
                         <div class="system-data-entry">
@@ -150,39 +152,39 @@
                                         </div>
                                       </div>
                                     </div>
-                                    @if (edGalaxyData?.Simbad?.Name || edGalaxyData?.Simbad?.RAJ2000 || edGalaxyData?.Simbad?.DEJ2000) {
+                                    @if (edGalaxy?.Simbad?.Name || edGalaxy?.Simbad?.RAJ2000 || edGalaxy?.Simbad?.DEJ2000) {
                                       <div class="system-data-section"
                                         >
                                         <div class="system-data-section-header">Simbad</div>
-                                        @if (edGalaxyData.Simbad.Name) {
+                                        @if (edGalaxy.Simbad.Name) {
                                           <div class="system-data-entry">
                                             <div>Name</div>
                                             <div>
-                                              @if (edGalaxyData.Simbad.Ident) {
+                                              @if (edGalaxy.Simbad.Ident) {
                                                 <span class="pgname-link" role="button" tabindex="0"
-                                                  (click)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)"
-                                                  (keydown.enter)="openSimbadPageRaw(edGalaxyData.Simbad.Ident)"
-                                                  (keydown.space)="$event.preventDefault(); openSimbadPageRaw(edGalaxyData.Simbad.Ident)"
+                                                  (click)="openSimbadPageRaw(edGalaxy.Simbad.Ident)"
+                                                  (keydown.enter)="openSimbadPageRaw(edGalaxy.Simbad.Ident)"
+                                                  (keydown.space)="$event.preventDefault(); openSimbadPageRaw(edGalaxy.Simbad.Ident)"
                                                   title="Open in SIMBAD"
                                                   style="cursor:pointer;text-decoration:underline dotted;">
-                                                  {{ edGalaxyData.Simbad.Name }}
+                                                  {{ edGalaxy.Simbad.Name }}
                                                 </span>
                                               } @else {
-                                                {{ edGalaxyData.Simbad.Name }}
+                                                {{ edGalaxy.Simbad.Name }}
                                               }
                                             </div>
                                           </div>
                                         }
-                                        @if (edGalaxyData.Simbad.RAJ2000) {
+                                        @if (edGalaxy.Simbad.RAJ2000) {
                                           <div class="system-data-entry">
                                             <div>Right Ascension</div>
-                                            <div>{{ formatRAJ2000(edGalaxyData.Simbad.RAJ2000) }}</div>
+                                            <div>{{ formatRAJ2000(edGalaxy.Simbad.RAJ2000) }}</div>
                                           </div>
                                         }
-                                        @if (edGalaxyData.Simbad.DEJ2000) {
+                                        @if (edGalaxy.Simbad.DEJ2000) {
                                           <div class="system-data-entry">
                                             <div>Declination</div>
-                                            <div>{{ formatDEJ2000(edGalaxyData.Simbad.DEJ2000) }}</div>
+                                            <div>{{ formatDEJ2000(edGalaxy.Simbad.DEJ2000) }}</div>
                                           </div>
                                         }
                                       </div>
@@ -249,15 +251,15 @@
                                         }
                                       </div>
                                     }
-                                    @if (edastroData?.mainImage) {
+                                    @if (edastro?.mainImage) {
                                       <div class="system-data-section">
                                         <div class="system-data-section-header">Galactic Exploration Catalog</div>
                                         <div class="gec-image-panel">
-                                          <img [src]="edastroData.mainImage" alt="GEC Image" class="gec-main-image"
+                                          <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image"
                                             (error)="onGecImageError($event)" #gecImage />
-                                            @if (edastroData.description) {
+                                            @if (edastro.description) {
                                               <div class="gec-description">{{
-                                                edastroData.description }}
+                                                edastro.description }}
                                               </div>
                                             }
                                           </div>
@@ -267,10 +269,10 @@
                                   </div>
                                 </div>
                                 <div class="bodies">
-                                  @for (body of bodies; track trackByBody($index, body); let isLast = $last) {
+                                  @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
                                     <app-system-body [body]="body"
                                       [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
-                                    [anchorBodyId]="anchorBodyId" [edGalaxyData]="edGalaxyData"></app-system-body>
+                                    [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"></app-system-body>
                                   }
                                 </div>
                                 <div class="credits-panel">

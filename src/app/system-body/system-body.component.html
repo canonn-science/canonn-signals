@@ -2,7 +2,7 @@
   <div class="body-title">
     <div class="title-left">
       <b>{{ getBodyDisplayName(body().bodyData.name) }}</b>
-      <fa-icon [icon]="faLink" class="clickable body-anchor-link" [class.body-anchor-link--copied]="bodyLinkCopied" [attr.aria-label]="bodyLinkCopied ? 'Copied!' : 'Copy link to body'" (click)="copyBodyLink()" [matTooltip]="bodyLinkCopied ? 'Copied!' : 'Copy link to body'"></fa-icon>
+      <fa-icon [icon]="faLink" class="clickable body-anchor-link" [class.body-anchor-link--copied]="bodyLinkCopied()" [attr.aria-label]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'" (click)="copyBodyLink()" [matTooltip]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"></fa-icon>
       @if (body().bodyData.subType) {
         <span>-</span>
       }
@@ -124,12 +124,12 @@
           <span style="font-size: 16px;">⚡</span>
         </div>
       }
-      @if (expandable && !expanded) {
+      @if (expandable && !expanded()) {
         <div (click)="toggleExpand()" class="clickable" matTooltip="Expand" aria-label="Expand body details">
           <fa-icon [icon]="faSquareCaretDown"></fa-icon>
         </div>
       }
-      @if (expandable && expanded) {
+      @if (expandable && expanded()) {
         <div (click)="toggleExpand()" class="clickable" matTooltip="Collapse" aria-label="Collapse body details">
           <fa-icon [icon]="faSquareCaretUp"></fa-icon>
         </div>
@@ -161,8 +161,9 @@
       </button>
     </div>
   </div>
-  @if (expanded) {
-    <div class="system-body" [@grow]>
+  @if (expanded()) {
+    <div class="system-body-grow" animate.enter="grow--enter" animate.leave="grow--leave">
+    <div class="system-body">
       <div class="body-image">
         @if (bodyCoronaImage) {
           <img alt="" src="assets/{{ bodyCoronaImage }}" class="body-image-corona"
@@ -881,6 +882,7 @@
                 </div>
               </div>
             </div>
+            </div>
           }
           <div class="system-body-end"></div>
           <div class="child-bodies">
@@ -905,7 +907,7 @@
                   extends close to or overlaps with the ring system, the moon could influence ring particle orbits.
                 </p>
                 <div class="chart-container">
-                  @if (isChartLoading) {
+                  @if (isChartLoading()) {
                     <div class="chart-loading">
                       <p>Generating visualization...</p>
                     </div>
@@ -1201,7 +1203,7 @@ distribution, and long-term dynamical evolution.</p>
         </mat-dialog-content>
         <mat-dialog-actions align="end">
             <button mat-button mat-dialog-close>Close</button>
-            <button mat-button (click)="copyBodyJson()">{{ bodyJsonCopied ? 'Copied!' : 'Copy to Clipboard' }}</button>
+            <button mat-button (click)="copyBodyJson()">{{ bodyJsonCopied() ? 'Copied!' : 'Copy to Clipboard' }}</button>
         </mat-dialog-actions>
     </div>
 </ng-template>
@@ -1228,7 +1230,7 @@ distribution, and long-term dynamical evolution.</p>
             </div>
 
             <div class="chart-container">
-                @if (isChartLoading) {
+                @if (isChartLoading()) {
 <div class="chart-loading">
                     <div class="spinner"></div>
                     <p>Generating chart...</p>

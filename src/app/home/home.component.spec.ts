@@ -68,7 +68,7 @@ describe('HomeComponent', () => {
 
   it('defers a marker/query request while a search is already in flight', () => {
     // Simulate an in-flight search without driving the HTTP path.
-    (component as any)._searching = true;
+    (component as any)._searching.set(true);
     component.onMarkerSelected('Colonia');
     // The request is queued, not applied to the search box yet.
     expect((component as any).pendingSystemRequest).toBe('Colonia');
@@ -98,9 +98,9 @@ describe('HomeComponent', () => {
       (component as any).processBodies(data);
 
       // Only the root star is top-level; the planet hangs off it.
-      expect(component.bodies.length).toBe(1);
-      expect(component.bodies[0].bodyData.bodyId).toBe(0);
-      expect(component.bodies[0].subBodies.map(b => b.bodyData.bodyId)).toContain(1);
+      expect(component.bodies().length).toBe(1);
+      expect(component.bodies()[0].bodyData.bodyId).toBe(0);
+      expect(component.bodies()[0].subBodies.map(b => b.bodyData.bodyId)).toContain(1);
       expect(component.getTotalBodyCount()).toBe(2);
     });
 
@@ -115,7 +115,7 @@ describe('HomeComponent', () => {
 
       (component as any).processBodies(data);
 
-      const planet = component.bodies[0].subBodies.find(b => b.bodyData.bodyId === 1)!;
+      const planet = component.bodies()[0].subBodies.find(b => b.bodyData.bodyId === 1)!;
       expect(planet).toBeTruthy();
       const ring = planet.subBodies.find(b => b.bodyData.type === 'Ring');
       expect(ring).toBeTruthy();
@@ -131,7 +131,7 @@ describe('HomeComponent', () => {
       (component as any).processBodies(data);
 
       // The missing parent (bodyId 2) is synthesised and becomes the root.
-      const root = component.bodies.find(b => b.bodyData.bodyId === 2);
+      const root = component.bodies().find(b => b.bodyData.bodyId === 2);
       expect(root).toBeTruthy();
       expect(root!.subBodies.some(b => b.bodyData.bodyId === 5)).toBe(true);
     });

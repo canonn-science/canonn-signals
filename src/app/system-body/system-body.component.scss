@@ -80,6 +80,34 @@
     border-bottom: 1px solid var(--color-surface)
 }
 
+// Expand/collapse animation for the expanded body panel (replaces the legacy
+// `trigger('grow')` height 0 <-> auto animation, removed in favour of
+// animate.enter/leave). Pure CSS can't keyframe to height:auto, so the grid-row
+// `0fr <-> 1fr` technique is used: the wrapper is a single-row grid and the
+// child clips its overflow while the row collapses.
+.system-body-grow {
+    display: grid;
+    grid-template-rows: 1fr;
+
+    > .system-body {
+        overflow: hidden;
+        min-height: 0;
+    }
+}
+
+.system-body-grow.grow--enter {
+    animation: system-body-grow 250ms ease;
+}
+
+.system-body-grow.grow--leave {
+    animation: system-body-grow 250ms ease reverse forwards;
+}
+
+@keyframes system-body-grow {
+    from { grid-template-rows: 0fr; }
+    to { grid-template-rows: 1fr; }
+}
+
 .system-body .body-image {
     display: flex;
     width: 96px;

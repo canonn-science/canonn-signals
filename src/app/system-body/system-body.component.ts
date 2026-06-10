@@ -3,14 +3,13 @@ import {
   DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
   DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
 } from '../data/temperature-estimation';
-import { Component, OnChanges, OnInit, ElementRef, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject, afterNextRender, signal} from '@angular/core';
+import { Component, OnChanges, OnInit, ElementRef, TemplateRef, ChangeDetectionStrategy, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject, afterNextRender, signal} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
 import { MINING_RESOURCES } from '../data/mining-resources';
-import { animate, style, transition, trigger } from '@angular/animations';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
@@ -33,28 +32,11 @@ import { JET_SAMPLE_CSV } from '../data/jet-sample';
     templateUrl: './system-body.component.html',
     styleUrls: ['./system-body.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    animations: [
-        trigger("grow", [
-            // overflow is set statically (not interpolated) so the animator only tweens
-            // height — animating overflow is unsupported and logs a console warning.
-            transition(":enter", [
-                // :enter is alias to 'void => *'
-                style({ height: "0", overflow: "hidden" }),
-                animate(250, style({ height: "*" }))
-            ]),
-            transition(":leave", [
-                // :leave is alias to '* => void'
-                style({ overflow: "hidden" }),
-                animate(250, style({ height: 0 }))
-            ])
-        ])
-    ],
     imports: [FaIconComponent, MatTooltip, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe, DatePipe, ClickableDirective]
 })
 export class SystemBodyComponent implements OnInit, OnChanges {
   private readonly appService = inject(AppService);
   private readonly dialog = inject(MatDialog);
-  private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly physics = inject(BodyPhysicsService);
   private readonly stellarPhysics = inject(StellarPhysicsService);
@@ -112,14 +94,14 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   public bodyCoronaImage: string = "";
 
   public expandable = false;
-  public expanded = false;
+  public readonly expanded = signal(false);
 
   public hoveredIndex: number = -1;
 
   public hillLimitDialogData: HillChartData | null = null;
   public invisibleRingDialogData: InvisibleRingDialogData | null = null;
   public rocheLimitDialogData: RocheChartData | null = null;
-  public isChartLoading: boolean = false;
+  public readonly isChartLoading = signal(false);
   public jetAngleChartDataUrl: string | null = null;
 
   public apoPeriDialogData: {
@@ -176,8 +158,8 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     }
   }
 
-  public bodyLinkCopied = false;
-  public bodyJsonCopied = false;
+  public readonly bodyLinkCopied = signal(false);
+  public readonly bodyJsonCopied = signal(false);
 
   private containsAnchorBody(body: SystemBody): boolean {
     const anchorBodyId = this.anchorBodyId();
@@ -200,14 +182,10 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       .catch(() => { /* clipboard unavailable */ });
   }
 
-  /** Flash a "Copied!" state for 1.5s, notifying the scheduler since this runs in async (promise/timeout) callbacks under zoneless. */
+  /** Flash a "Copied!" state for 1.5s. The signal writes schedule change detection under zoneless. */
   private flashCopied(key: 'bodyLinkCopied' | 'bodyJsonCopied'): void {
-    this[key] = true;
-    this.cdr.markForCheck();
-    setTimeout(() => {
-      this[key] = false;
-      this.cdr.markForCheck();
-    }, 1500);
+    this[key].set(true);
+    setTimeout(() => this[key].set(false), 1500);
   }
 
   public getEdGalaxyBodyId(b: SystemBody): number {
@@ -228,10 +206,10 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(c => {
         this.codex = c;
+        // OnPush + zoneless: codex arrives asynchronously, but ngOnChanges writes
+        // computed signals (e.g. getNextPeriapsis, computeDerivedPhysics), which
+        // schedules a CD pass that also re-reads the recomputed biology signals.
         this.ngOnChanges();
-        // OnPush + zoneless: codex arrives asynchronously, so notify the
-        // scheduler that the recomputed biology signals changed.
-        this.cdr.markForCheck();
       });
   }
 
@@ -338,7 +316,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
       this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
     this.expandable = true;
-    if (this.expanded === false || this.expanded === undefined) {
+    if (this.expanded() === false) {
       const isInteresting = this.hasSignals ||
         body.bodyData.subType === 'Earth-like world' ||
         body.bodyData.subType === 'Water world' ||
@@ -349,14 +327,14 @@ export class SystemBodyComponent implements OnInit, OnChanges {
         body.bodyData.subType?.includes('Wolf-Rayet') ||
         body.bodyData.subType?.includes('Herbig') ||
         !!body.bodyData.isLandable;
-      this.expanded = this.forceExpanded() || isInteresting || this.containsAnchorBody(body);
+      this.expanded.set(this.forceExpanded() || isInteresting || this.containsAnchorBody(body));
     }
 
     if (this.isRoot()) {
       this.styleClass = "";
     }
     else if (!this.isLast()) {
-      if (!this.expanded) {
+      if (!this.expanded()) {
         this.styleClass = "child-container-title-only";
       }
       else {
@@ -364,7 +342,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       }
     }
     else {
-      if (!this.expanded) {
+      if (!this.expanded()) {
         this.styleClass = "child-container-title-only-last";
       }
       else {
@@ -436,25 +414,23 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   }
 
   public toggleExpand(): void {
-    this.expanded = !this.expanded;
+    this.expanded.set(!this.expanded());
     // Update cached state
     this.updateChildrenExpandedState();
-    this.cdr.markForCheck();
   }
 
   /**
-   * Sets this body's expanded state and schedules its own re-render. Exposed so an
-   * ancestor's "expand/collapse all" can drive descendants without reaching into
-   * their private change-detector.
+   * Sets this body's expanded state. Exposed so an ancestor's "expand/collapse all"
+   * can drive descendants; the signal write schedules each child's re-render even
+   * though the change originates from the ancestor's event handler.
    */
   public setExpandedState(expanded: boolean): void {
-    this.expanded = expanded;
-    this.cdr.markForCheck();
+    this.expanded.set(expanded);
   }
 
   public toggleChildren(): void {
     const childArray = this.childComponents();
-    const anyChildExpanded = childArray.some(child => child.expanded);
+    const anyChildExpanded = childArray.some(child => child.expanded());
     const targetState = !anyChildExpanded;
 
     // Collect all descendants using non-recursive approach
@@ -475,9 +451,8 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     // Batch update all descendants via their own public API.
     allDescendants.forEach(component => component.setExpandedState(targetState));
 
-    // Update cached state and trigger change detection
+    // Update cached state (the signal write schedules change detection).
     this.updateChildrenExpandedState();
-    this.cdr.markForCheck();
   }
 
   public hasChildren(): boolean {
@@ -707,10 +682,9 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
   private updateChildrenExpandedState(): void {
     const childArray = this.childComponents();
-    this.getChildrenExpandedState.set(childArray.some(child => child.expanded));
-    // Runs from an after-render hook as well as event handlers; notify the scheduler
-    // so the collapse/expand-all toggle reflects the new state under zoneless.
-    this.cdr.markForCheck();
+    // The signal write schedules CD, so the collapse/expand-all toggle reflects the
+    // new state under zoneless even when called from an after-render hook.
+    this.getChildrenExpandedState.set(childArray.some(child => child.expanded()));
   }
 
   public trackByMaterial(index: number, material: { name: string, class: string, tooltip: string }): string {
@@ -832,7 +806,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       isBody: false
     };
 
-    this.isChartLoading = true;
+    this.isChartLoading.set(true);
 
     const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
@@ -844,8 +818,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
     dialogRef.afterOpened().subscribe(() => {
       this.renderRocheChart();
-      this.isChartLoading = false;
-      this.cdr.markForCheck();
+      this.isChartLoading.set(false);
     });
   }
 
@@ -894,7 +867,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       isBody: true
     };
 
-    this.isChartLoading = true;
+    this.isChartLoading.set(true);
 
     const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
       width: '800px',
@@ -906,8 +879,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
     dialogRef.afterOpened().subscribe(() => {
       this.renderRocheChart();
-      this.isChartLoading = false;
-      this.cdr.markForCheck();
+      this.isChartLoading.set(false);
     });
   }
 
@@ -1023,7 +995,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       shepherdStatus
     };
 
-    this.isChartLoading = true;
+    this.isChartLoading.set(true);
 
     const dialogRef = this.dialog.open(this.hillLimitDialogTemplate(), {
       width: '800px',
@@ -1035,8 +1007,7 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
     dialogRef.afterOpened().subscribe(() => {
       this.renderShepherdingHillChart();
-      this.isChartLoading = false;
-      this.cdr.markForCheck();
+      this.isChartLoading.set(false);
     });
   }
 

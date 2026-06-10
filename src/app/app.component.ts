@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AppService } from './app.service';
 import { RouterOutlet } from '@angular/router';
@@ -9,12 +9,12 @@ import { AsyncPipe } from '@angular/common';
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [RouterOutlet, MatSidenavContainer, MatSidenavContent, AsyncPipe]
 })
 export class AppComponent {
   private readonly appService = inject(AppService);
 
-  public loading = false;
   // Bound via the async pipe so the background updates under zoneless change
   // detection without a manual subscription/markForCheck.
   public readonly backgroundImage$: Observable<string>;

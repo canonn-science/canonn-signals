@@ -1,9 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, DestroyRef, ChangeDetectorRef, inject, viewChild } from '@angular/core';
+import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppService, EdastroData, EdastroSystem, IndependentOutpost } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { animate, style, transition, trigger } from '@angular/animations';
 import { faFileCode } from '@fortawesome/free-solid-svg-icons';
 import { Observable, of, debounceTime, distinctUntilChanged, switchMap, map, combineLatest, take, firstValueFrom } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -25,17 +24,7 @@ import { CREDITS_HTML } from '../data/credits.generated';
     selector: 'app-home',
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.scss'],
-    animations: [
-        trigger('visibilityTrigger', [
-            transition(':enter', [
-                style({ opacity: 0 }),
-                animate('400ms', style({ opacity: "1" })),
-            ]),
-            transition(':leave', [
-                animate('200ms', style({ opacity: 0 }))
-            ])
-        ]),
-    ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, MatIcon, SystemBodyComponent, RegionMapComponent, AsyncPipe, DecimalPipe]
 })
 export class HomeComponent implements OnInit {
@@ -43,7 +32,6 @@ export class HomeComponent implements OnInit {
   readonly appService = inject(AppService);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
   private lastSimbadSystemName: string | null = null;
@@ -93,7 +81,7 @@ export class HomeComponent implements OnInit {
   formatSimbadId(ident: string): string {
     return ident ? ident.replace(/^@/, '') : '';
   }
-  public edGalaxyData: EdGalaxyData | null = null;
+  public readonly edGalaxyData = signal<EdGalaxyData | null>(null);
   // Simbad cache and file loading logic removed (now using API)
 
   // Convert id64 to PGName using PGSystem, formatted for Elite Dangerous
@@ -132,8 +120,7 @@ export class HomeComponent implements OnInit {
 
     // Fallback used whenever we don't (or can't) resolve Simbad data.
     const setFallback = () => {
-      this.edGalaxyData = { PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined };
-      this.cdr.markForCheck();
+      this.edGalaxyData.set({ PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined });
     };
 
     // Skip the Simbad lookup for procedurally-generated systems: when the
@@ -152,7 +139,7 @@ export class HomeComponent implements OnInit {
         // Remap API response to expected structure for edGalaxyData
         const hasSimbad = result.simbad_name || result.simbad_ident
           || result.ra_j2000 !== undefined || result.dec_j2000 !== undefined;
-        this.edGalaxyData = {
+        this.edGalaxyData.set({
           PGName: pgName,
           SystemAddress: result.system_address,
           Name: result.name,
@@ -162,8 +149,7 @@ export class HomeComponent implements OnInit {
             RAJ2000: result.ra_j2000,
             DEJ2000: result.dec_j2000
           } : undefined
-        };
-        this.cdr.markForCheck();
+        });
       },
       // Even if the Simbad API fails, still populate edGalaxyData with PGName.
       error: () => setFallback(),
@@ -171,20 +157,20 @@ export class HomeComponent implements OnInit {
   }
 
   updateEdGalaxyData() {
-    if (!this.data?.system?.name || !this.data?.system?.id64) {
+    const data = this.data();
+    if (!data?.system?.name || !data?.system?.id64) {
       return;
     }
-    const currentName = this.data.system.name;
-    const currentId64 = this.data.system.id64;
+    const currentName = data.system.name;
+    const currentId64 = data.system.id64;
     if (this.lastSimbadSystemName === currentName && this.lastSimbadId64 === currentId64) {
       return;
     }
     // Clear previous data immediately when switching systems
-    this.edGalaxyData = null;
-    this.cdr.markForCheck();
+    this.edGalaxyData.set(null);
     this.lastSimbadSystemName = currentName;
     this.lastSimbadId64 = currentId64;
-    this.fetchEdGalaxyData(currentName, currentId64, this.data.system.coords);
+    this.fetchEdGalaxyData(currentName, currentId64, data.system.coords);
   }
   openSignalsPage(systemName: string) {
     const url = `?system=${encodeURIComponent(systemName)}`;
@@ -219,72 +205,60 @@ export class HomeComponent implements OnInit {
 
 
   isVoyagerGoldenRecordSystem(): boolean {
-    if (!this.data?.system?.name) return false;
-    const systemName = this.data.system.name;
+    const data = this.data();
+    if (!data?.system?.name) return false;
+    const systemName = data.system.name;
     return this.voyagerGoldenRecordSystems.some(name =>
       name.toLowerCase() === systemName.toLowerCase()
     );
   }
 
-  // These are bound directly in the template, so they must be cheap and return a
-  // stable reference (the @for blocks track by object identity). They are computed
-  // once via recomputeDerivedSystemData() whenever their inputs change rather than
-  // on every change-detection pass.
-  private _systemDistances: { name: string, distance: number }[] = [];
-  private _nearestOutposts: { name: string, systemName: string, distance: number }[] = [];
-  private _totalBodyCount = 0;
-
-  getSystemDistances(): { name: string, distance: number }[] {
-    return this._systemDistances;
-  }
-
-  getNearestOutposts(): { name: string, systemName: string, distance: number }[] {
-    return this._nearestOutposts;
-  }
-
-  /**
-   * Recomputes the cached system distances, nearest outposts and total body count.
-   * Call this when the loaded system, the independent-outpost list, or the body
-   * tree changes — not from the template.
-   */
-  private recomputeDerivedSystemData(): void {
-    const coords = this.data?.system?.coords;
+  // Derived as computed signals from the loaded system, outpost feed and body tree:
+  // they recompute lazily only when those inputs change (never on an unrelated CD
+  // pass) and return stable references the @for blocks track by object identity.
+  readonly getSystemDistances = computed<{ name: string, distance: number }[]>(() => {
+    const data = this.data();
+    const coords = data?.system?.coords;
     if (!coords) {
-      this._systemDistances = [];
-      this._nearestOutposts = [];
-      this._totalBodyCount = 0;
-      return;
+      return [];
     }
-    const { x, y, z } = coords;
-    const distanceTo = (ox: number, oy: number, oz: number) =>
-      Math.sqrt((x - ox) ** 2 + (y - oy) ** 2 + (z - oz) ** 2);
-
-    const currentName = (this.data!.system.name || '').toLowerCase();
-    this._systemDistances = this.referenceSystems
+    const currentName = (data.system.name || '').toLowerCase();
+    return this.referenceSystems
       .filter(ref => ref.name.toLowerCase() !== currentName)
-      .map(ref => ({ name: ref.name, distance: distanceTo(ref.coords.x, ref.coords.y, ref.coords.z) }))
+      .map(ref => ({ name: ref.name, distance: this.distance3d(coords, ref.coords) }))
       .sort((a, b) => a.distance - b.distance);
+  });
 
-    this._nearestOutposts = (this.independentOutposts ?? [])
+  readonly getNearestOutposts = computed<{ name: string, systemName: string, distance: number }[]>(() => {
+    const coords = this.data()?.system?.coords;
+    if (!coords) {
+      return [];
+    }
+    return (this.independentOutposts() ?? [])
       .map(outpost => {
         const [ox, oy, oz] = outpost.coordinates;
         return {
           name: this.decodeHtmlEntities(outpost.name),
           systemName: outpost.galMapSearch,
-          distance: distanceTo(ox, oy, oz),
+          distance: this.distance3d(coords, { x: ox, y: oy, z: oz }),
         };
       })
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 3);
+  });
 
-    this._totalBodyCount = this.countBodies(this.bodies);
+  readonly getTotalBodyCount = computed<number>(() => this.countBodies(this.bodies()));
+
+  private distance3d(a: { x: number, y: number, z: number }, b: { x: number, y: number, z: number }): number {
+    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
   }
   copyCoordinatesToClipboard(separator?: 'comma' | 'tab' | 'pipe', event?: MouseEvent) {
     if (event) {
       event.preventDefault();
     }
-    if (!this.data?.system?.coords) return;
-    const coords = this.data.system.coords;
+    const data = this.data();
+    if (!data?.system?.coords) return;
+    const coords = data.system.coords;
     let sep = ',';
     if (separator === 'tab') sep = '\t';
     if (separator === 'pipe') sep = '|';
@@ -305,30 +279,32 @@ export class HomeComponent implements OnInit {
     }
   }
   copyId64ToClipboard() {
-    if (!this.data?.system?.id64) return;
-    this.copyToClipboard(`${this.data.system.id64}`);
+    const data = this.data();
+    if (!data?.system?.id64) return;
+    this.copyToClipboard(`${data.system.id64}`);
   }
   public encodeURIComponent(value: string): string {
     return encodeURIComponent(value);
   }
   public readonly faFileCode = faFileCode;
-  private _searching = false;
+  private readonly _searching = signal(false);
   /** A system requested (e.g. via query param) while a search was already in flight. */
   private pendingSystemRequest: string | null = null;
 
   public get searching(): boolean {
-    return this._searching;
+    return this._searching();
   }
 
   public set searching(value: boolean) {
-    const wasSearching = this._searching;
-    this._searching = value;
+    const wasSearching = this._searching();
+    this._searching.set(value);
     // When a search settles, apply any request that arrived while it was running so
     // rapid system changes (e.g. clicking map markers) are not silently dropped.
     if (wasSearching && !value && this.pendingSystemRequest) {
       const next = this.pendingSystemRequest;
       this.pendingSystemRequest = null;
-      if (!this.data || this.data.system.name !== next) {
+      const data = this.data();
+      if (!data || data.system.name !== next) {
         this.loadSystem(next);
       }
     }
@@ -351,17 +327,17 @@ export class HomeComponent implements OnInit {
   }
 
   public searchInput: string = "";
-  public searchError = false;
-  public searchErrorMessage: string = "";
-  public data: CanonnBiostats | null = null;
-  public bodies: SystemBody[] = [];
-  public anchorBodyId: number | null = null;
+  public readonly searchError = signal(false);
+  public readonly searchErrorMessage = signal('');
+  public readonly data = signal<CanonnBiostats | null>(null);
+  public readonly bodies = signal<SystemBody[]>([]);
+  public readonly anchorBodyId = signal<number | null>(null);
   public searchControl = new FormControl('');
   public filteredSystems: Observable<string[]> = of([]);
   private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
-  public edastroData: EdastroData | null = null;
+  public readonly edastroData = signal<EdastroData | null>(null);
   private systemMapping: Map<string, { systemName?: string, id64?: number }> = new Map();
-  public independentOutposts: IndependentOutpost[] = [];
+  public readonly independentOutposts = signal<IndependentOutpost[]>([]);
 
   public ngOnInit(): void {
     this.activatedRoute.queryParams
@@ -369,7 +345,7 @@ export class HomeComponent implements OnInit {
       .subscribe(q => {
         const requested = q["system"];
         // Ignore when there's nothing to load or it's already the loaded system.
-        if (!requested || (this.data && this.data.system.name === requested)) {
+        if (!requested || (this.data()?.system.name === requested)) {
           return;
         }
         // loadSystem defers automatically if a search is already in flight.
@@ -393,11 +369,9 @@ export class HomeComponent implements OnInit {
     this.appService.independentOutposts
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(outposts => {
-        this.independentOutposts = outposts;
-        // Outposts can arrive after a system is already loaded; refresh the cached
-        // nearest-outpost list so the panel reflects them.
-        this.recomputeDerivedSystemData();
-        this.cdr.markForCheck();
+        // Outposts can arrive after a system is already loaded; the getNearestOutposts
+        // computed depends on this signal, so the panel refreshes automatically.
+        this.independentOutposts.set(outposts);
       });
 
     // Maintain the display-name -> systemName/id64 lookup used by onSystemSelected,
@@ -422,11 +396,11 @@ export class HomeComponent implements OnInit {
     if (this.searchInput.length <= 1) {
       return;
     }
-    this.data = null;
-    this.bodies = [];
+    this.data.set(null);
+    this.bodies.set([]);
     this.searching = true;
-    this.searchError = false;
-    this.searchErrorMessage = '';
+    this.searchError.set(false);
+    this.searchErrorMessage.set('');
     // Close any open suggestion panel as the search takes over.
     this.autocompleteTrigger()?.closePanel();
     this.searchControl.disable();
@@ -482,10 +456,9 @@ export class HomeComponent implements OnInit {
   }
 
   private searchFailed(message: string = 'System not found'): void {
-    this.searchError = true;
-    this.searchErrorMessage = message;
+    this.searchError.set(true);
+    this.searchErrorMessage.set(message);
     this.searchControl.enable();
-    this.cdr.markForCheck();
     // Set last so the `searching` setter can drain a deferred request.
     this.searching = false;
   }
@@ -503,7 +476,6 @@ export class HomeComponent implements OnInit {
           // Ensure Simbad data is updated after setting this.data
           this.updateEdGalaxyData();
           this.searchControl.enable();
-          this.cdr.markForCheck();
           // Set last so the `searching` setter can drain a deferred request.
           this.searching = false;
         },
@@ -528,7 +500,8 @@ export class HomeComponent implements OnInit {
     const queryParams: Params = { system: data.system.name };
 
     // Only update query params if not already set
-    if (!this.data || this.data.system.name !== data.system.name) {
+    const previousData = this.data();
+    if (!previousData || previousData.system.name !== data.system.name) {
       this.router.navigate(
         [],
         {
@@ -541,36 +514,35 @@ export class HomeComponent implements OnInit {
     this.searchInput = data.system.name;
 
     // Check if we're loading a different system
-    const isDifferentSystem = !this.data || this.data.system.id64 !== data.system.id64;
+    const isDifferentSystem = !previousData || previousData.system.id64 !== data.system.id64;
 
-    this.data = data;
-    this.bodies = [];
+    this.data.set(data);
+    this.bodies.set([]);
     // Ensure edGalaxyData is updated/fetched when system changes
     this.updateEdGalaxyData();
 
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {
-      this.edastroData = null;
+      this.edastroData.set(null);
     }
 
     // Only set default background if we don't have edastro data with an image
-    if (!this.edastroData?.mainImage) {
+    if (!this.edastroData()?.mainImage) {
       this.appService.setBackgroundImage('assets/bg1.jpg');
     }
 
     // The <app-region-map> child re-renders from its [system]/[outposts] inputs.
 
     // Fetch edastro data only if we don't have it or it's a different system
-    if (isDifferentSystem || !this.edastroData) {
+    if (isDifferentSystem || !this.edastroData()) {
       this.appService.getEdastroData(data.system.id64)
         .subscribe({
           next: edastroData => {
             if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
-              this.edastroData = edastroData;
+              this.edastroData.set(edastroData);
               if (edastroData.mainImage) {
                 this.appService.setBackgroundImage(edastroData.mainImage);
               }
-              this.cdr.markForCheck();
             }
           },
           // edastro data is optional - silently ignore failures.
@@ -741,14 +713,13 @@ export class HomeComponent implements OnInit {
     }
     bodiesFlat.sort((a, b) => (a.bodyData.bodyId > b.bodyData.bodyId) ? 1 : -1);
 
-    this.bodies = bodiesFlat.filter(b => b.parent === null);
-    this.recomputeDerivedSystemData();
+    this.bodies.set(bodiesFlat.filter(b => b.parent === null));
 
     const hash = window.location.hash;
     if (hash) {
       const match = hash.match(/^#body-(\d+)$/);
       if (match) {
-        this.anchorBodyId = parseInt(match[1], 10);
+        this.anchorBodyId.set(parseInt(match[1], 10));
       }
       // Wait for Angular to render the body elements, then scroll
       setTimeout(() => {
@@ -758,12 +729,10 @@ export class HomeComponent implements OnInit {
         }
       }, 300);
     } else {
-      this.anchorBodyId = null;
+      this.anchorBodyId.set(null);
     }
-
-    // Zoneless: this method runs inside async HTTP callbacks, so explicitly
-    // notify the change-detection scheduler that bound state (data/bodies) changed.
-    this.cdr.markForCheck();
+    // Zoneless: the data/bodies/anchorBodyId signal writes above schedule the CD
+    // pass that re-reads this method's bound state, even from async HTTP callbacks.
   }
 
   private isNumeric(value: string) {
@@ -875,10 +844,6 @@ export class HomeComponent implements OnInit {
 
   private decodeHtmlEntities(text: string): string {
     return decodeHtmlEntities(text);
-  }
-
-  public getTotalBodyCount(): number {
-    return this._totalBodyCount;
   }
 
   private countBodies(bodies: SystemBody[]): number {

@@ -145,6 +145,26 @@
     justify-content: center
 }
 
+// Enter/leave animations for the results panel (replaces the legacy
+// `trigger('visibilityTrigger')` animation, removed in favour of animate.enter/leave).
+.system-container--enter {
+    animation: system-container-enter 400ms ease;
+}
+
+.system-container--leave {
+    animation: system-container-leave 200ms ease;
+}
+
+@keyframes system-container-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes system-container-leave {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
 .system-container .system-container-data {
     width: 80%;
     margin-bottom: 24px;

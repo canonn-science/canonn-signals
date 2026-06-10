@@ -109,9 +109,9 @@ describe('HomeComponent (extended coverage)', () => {
     });
 
     it('counts the Voyager Golden Record pulsars', () => {
-      component.data = { system: { name: 'Vela Pulsar' } } as any;
+      component.data.set({ system: { name: 'Vela Pulsar' } } as any);
       expect(component.isVoyagerGoldenRecordSystem()).toBe(true);
-      component.data = { system: { name: 'Sol' } } as any;
+      component.data.set({ system: { name: 'Sol' } } as any);
       expect(component.isVoyagerGoldenRecordSystem()).toBe(false);
     });
   });
@@ -120,9 +120,9 @@ describe('HomeComponent (extended coverage)', () => {
     it('reacts to the outpost feed', () => {
       component.ngOnInit();
 
-      component.data = { system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any;
+      component.data.set({ system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any);
       independentOutposts$.next([{ name: 'Near', galMapSearch: 'Near', coordinates: [1, 1, 1], type: 'independentOutpost' }]);
-      expect(component.independentOutposts.length).toBe(1);
+      expect(component.independentOutposts().length).toBe(1);
       expect(component.getNearestOutposts().length).toBe(1);
     });
 
@@ -143,8 +143,8 @@ describe('HomeComponent (extended coverage)', () => {
       httpResponses.set('/simbad?', { system_address: 42, name: 'Test System' });
       component.searchControl.setValue('test');
       component.search();
-      expect(component.data?.system.name).toBe('Test System');
-      expect(component.bodies.length).toBe(1);
+      expect(component.data()?.system.name).toBe('Test System');
+      expect(component.bodies().length).toBe(1);
       expect(component.searching).toBe(false);
     });
 
@@ -154,7 +154,7 @@ describe('HomeComponent (extended coverage)', () => {
       });
       component.searchControl.setValue('999');
       component.search();
-      expect(component.data?.system.id64).toBe(999);
+      expect(component.data()?.system.id64).toBe(999);
     });
 
     it('passes a 64-bit system address through as a string (no parseInt precision loss)', () => {
@@ -172,8 +172,8 @@ describe('HomeComponent (extended coverage)', () => {
       httpResponses.set('/biostats?id=111', { system: null });
       component.searchControl.setValue('111');
       component.search();
-      expect(component.searchError).toBe(true);
-      expect(component.searchErrorMessage).toContain('not found');
+      expect(component.searchError()).toBe(true);
+      expect(component.searchErrorMessage()).toContain('not found');
     });
 
     it('resolves a name via the EdAstro cache', () => {
@@ -185,7 +185,7 @@ describe('HomeComponent (extended coverage)', () => {
       queueMicrotask(() => edastroSystems$.next([{ name: 'Cached Sys', id64: 555 }]));
       component.search();
       edastroSystems$.next([{ name: 'Cached Sys', id64: 555 }]);
-      expect(component.data?.system.id64).toBe(555);
+      expect(component.data()?.system.id64).toBe(555);
     });
 
     it('resolves a name via the Spansh typeahead when not in the EdAstro cache', () => {
@@ -196,7 +196,7 @@ describe('HomeComponent (extended coverage)', () => {
       component.searchControl.setValue('Found Sys');
       component.search();
       edastroSystems$.next([]); // not in cache -> falls through to Spansh
-      expect(component.data?.system.id64).toBe(777);
+      expect(component.data()?.system.id64).toBe(777);
     });
 
     it('reports a system that Spansh cannot find', () => {
@@ -204,15 +204,15 @@ describe('HomeComponent (extended coverage)', () => {
       component.searchControl.setValue('Ghost Sys');
       component.search();
       edastroSystems$.next([]);
-      expect(component.searchError).toBe(true);
+      expect(component.searchError()).toBe(true);
     });
 
     it('surfaces a 404 from the biostats API as a not-found error', () => {
       httpResponses.set('/biostats?id=404', Object.assign(new Error('nope'), { status: 404 }));
       component.searchControl.setValue('404');
       component.search();
-      expect(component.searchError).toBe(true);
-      expect(component.searchErrorMessage).toContain('not found');
+      expect(component.searchError()).toBe(true);
+      expect(component.searchErrorMessage()).toContain('not found');
     });
 
     it('attaches belts as child bodies when processing a system', () => {
@@ -226,15 +226,15 @@ describe('HomeComponent (extended coverage)', () => {
         },
       };
       (component as any).processBodies(data);
-      const belt = component.bodies[0].subBodies.find(b => b.bodyData.type === 'Belt');
+      const belt = component.bodies()[0].subBodies.find(b => b.bodyData.type === 'Belt');
       expect(belt).toBeTruthy();
       expect(belt!.bodyData.innerRadius).toBe(2); // metres -> km
     });
 
     it('defers a request issued while a search is in flight, then drains it', () => {
-      (component as any)._searching = true;
+      (component as any)._searching.set(true);
       (component as any).pendingSystemRequest = 'Deferred';
-      component.data = { system: { name: 'Other' } } as any;
+      component.data.set({ system: { name: 'Other' } } as any);
       const loadSpy = vi.spyOn(component as any, 'loadSystem');
       component.searching = false; // setter should drain the pending request
       expect(loadSpy).toHaveBeenCalledWith('Deferred');
@@ -277,7 +277,7 @@ describe('HomeComponent (extended coverage)', () => {
       httpResponses.set('/biostats?id=7', { system: { name: 'Mapped', id64: 7, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
       (component as any).systemMapping.set('Mapped Display', { id64: 7 });
       component.onSystemSelected('Mapped Display');
-      expect(component.data?.system.id64).toBe(7);
+      expect(component.data()?.system.id64).toBe(7);
     });
 
     it('falls back to a name search for an unmapped selection', () => {
@@ -317,7 +317,7 @@ describe('HomeComponent (extended coverage)', () => {
     it('copies coordinates with the requested separator', () => {
       const writeText = vi.fn(() => Promise.resolve());
       vi.stubGlobal('navigator', { clipboard: { writeText } });
-      component.data = { system: { id64: 5, coords: { x: 1, y: 2, z: 3 } } } as any;
+      component.data.set({ system: { id64: 5, coords: { x: 1, y: 2, z: 3 } } } as any);
       component.copyCoordinatesToClipboard('pipe');
       expect(writeText).toHaveBeenCalledWith('1|2|3');
       component.copyId64ToClipboard();
@@ -327,7 +327,7 @@ describe('HomeComponent (extended coverage)', () => {
     it('copies via middle-click mouse-down', () => {
       const writeText = vi.fn(() => Promise.resolve());
       vi.stubGlobal('navigator', { clipboard: { writeText } });
-      component.data = { system: { id64: 5, coords: { x: 1, y: 2, z: 3 } } } as any;
+      component.data.set({ system: { id64: 5, coords: { x: 1, y: 2, z: 3 } } } as any);
       component.onCoordinatesMouseDown({ button: 1, preventDefault: () => {} } as MouseEvent);
       expect(writeText).toHaveBeenCalled();
     });
@@ -349,8 +349,8 @@ describe('HomeComponent (extended coverage)', () => {
   describe('fetchEdGalaxyData', () => {
     it('uses the PG fallback for procedurally-generated systems without calling SIMBAD', () => {
       component.fetchEdGalaxyData('Pru Aescs NC-M d7-192', 10577693187);
-      expect(component.edGalaxyData?.Simbad).toBeUndefined();
-      expect(component.edGalaxyData?.PGName.length).toBeGreaterThan(0);
+      expect(component.edGalaxyData()?.Simbad).toBeUndefined();
+      expect(component.edGalaxyData()?.PGName.length).toBeGreaterThan(0);
     });
 
     it('maps a SIMBAD API response for a hand-named system', () => {
@@ -359,7 +359,7 @@ describe('HomeComponent (extended coverage)', () => {
         ra_j2000: 0, dec_j2000: 0,
       });
       component.fetchEdGalaxyData('Sol', 10477373803);
-      expect(component.edGalaxyData?.Simbad?.Name).toBe('Sol');
+      expect(component.edGalaxyData()?.Simbad?.Name).toBe('Sol');
     });
   });
 });

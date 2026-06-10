@@ -119,11 +119,11 @@ describe('SystemBodyComponent (extended coverage)', () => {
   describe('expansion state', () => {
     it('toggles its own expansion', () => {
       render(makeBody({}));
-      const before = component.expanded;
+      const before = component.expanded();
       component.toggleExpand();
-      expect(component.expanded).toBe(!before);
+      expect(component.expanded()).toBe(!before);
       component.setExpandedState(true);
-      expect(component.expanded).toBe(true);
+      expect(component.expanded()).toBe(true);
     });
 
     it('reports children presence', () => {
