@@ -23,6 +23,7 @@ body tree. No backend in this repo.
 - `npm run build` → `prebuild` (copies `readme.md` → `src/assets/readme.md` for the Credits panel) then `ng build`. **Output goes to `dist/browser/`** (not `dist/`).
 - `npm test` → `ng test` (Vitest). For CI/one-shot: `ng test --watch=false`. No browser/Chrome needed.
 - `npm run watch` → dev build in watch mode.
+- `npm run e2e` → `playwright test` (Playwright). End-to-end/functional + responsive + cross-browser checks in `e2e/` (desktop/tablet/mobile × Chromium/Firefox). It boots the dev server itself; deterministic specs stub the APIs with saved payloads in `e2e/fixtures/` (helpers in `e2e/support/`). **Playwright is for functional/UI correctness only — we do NOT use it for stress/load/performance testing.** This sandbox's single dev server can deadlock under heavy parallelism; cap workers (`npx playwright test --workers=6`) if needed.
 
 ## Architecture
 - `src/app/app.component.*` — shell (router outlet, background image via async pipe).
@@ -34,6 +35,8 @@ body tree. No backend in this repo.
   - `stellar-physics.service.ts` — spin resonance, tangential velocity, jet-cone angle, neutron-star classification.
   - `orbital-relations.service.ts` — Trojan/Lagrange (L1–L5) and rosette detection from co-orbital siblings.
   - `chart-rendering.service.ts` — Roche/Hill/jet canvas charts (takes a canvas + typed data; no DOM lookups of its own).
+
+  - `data/pgnames/*.ts` — procedural-name (boxel) codec: `PGSystem`/`PGRegion`/`PGSectors` convert between id64 system addresses and PG names (`PGSystem.fromSystemAddress`, `isPGSystemName`). Pure logic with its own `pgnames.spec.ts`. (Moved here from `assets/`, which had been shipping the raw `.ts` as static files.)
 
   Put big literal maps and pure logic here, not in components. Each of these has a `*.spec.ts` — add cases there when you extract more logic.
 - `*.spec.ts` — Vitest specs (globals via `tsconfig.spec.json` `types: ["vitest/globals"]`).
@@ -94,8 +97,9 @@ idioms; don't reintroduce the older patterns.
 
 ## Verifying changes
 Build + test must stay green: `npm run build` (rc=0; only pre-existing budget warnings are acceptable)
-and `ng test --watch=false` (currently 275/275 across 20 spec files). There is no browser in CI — Vitest/jsdom covers tests
-(note: jsdom has no real `<canvas>`, so chart-rendering tests assert "doesn't throw" rather than pixels).
+and `ng test --watch=false` (currently 275/275 across 20 spec files). The **Vitest** suite needs no browser — jsdom
+covers it (note: jsdom has no real `<canvas>`, so chart-rendering tests assert "doesn't throw" rather than pixels).
+The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox) and run separately from the unit-test lane.
 
 ## Environment quirks (this sandbox)
 - `pnpm-workspace.yaml` carries `minimumReleaseAge: 8640` (6 days) — a supply-chain delay that refuses

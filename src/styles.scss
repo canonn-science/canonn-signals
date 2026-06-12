@@ -91,8 +91,12 @@ $dark-theme: mat.m2-define-dark-theme((color: (primary: mat.m2-define-palette(ma
      Deriving every offset from these keeps the elbows aligned if they change. */
   --tree-color: var(--color-surface);
   --tree-thickness: 4px;
-  --tree-indent: 56px;   /* horizontal distance from a child back to the trunk */
-  --tree-elbow-y: 20px;  /* vertical offset of the branch into each child */
+  --tree-indent: 36px;   /* horizontal distance from a child back to the trunk */
+  /* Vertical offset of the branch into each child. The 4px-thick branch is drawn
+     *below* this offset, so its visual centre is `--tree-elbow-y + 2px` = 19px.
+     Headers are a uniform 38px box (`.body-title`: 22px min-height + 8px padding
+     top/bottom), whose middle is 19px — so the branch lands centred on every body. */
+  --tree-elbow-y: 17px;
 }
 
 /* You can add global styles to this file, and also import other style files */
@@ -131,12 +135,17 @@ a:hover {
 }
 
 .child-bodies {
-  padding-left: 104px;
+  /* Indent each nesting level by the connector width plus a small gap. Kept
+     modest so deep trees don't accumulate enough indentation to overflow. */
+  padding-left: 56px;
 }
 
 .body-container {
   position: relative;
-  min-width: 500px;
+  /* No min-width floor: the body box is fluid and shrinks to whatever width the
+     tree leaves it, so a deeply-nested body never forces horizontal overflow.
+     Inner content (labels/values, the header) wraps when space is tight. */
+  min-width: 0;
 }
 
 /* Vertical trunk running the full height of a non-last child. */
@@ -204,4 +213,20 @@ hr {
 
 .safety-red {
   color: var(--color-safety-red);
+}
+
+/* ---------------------------------------------------------------------------
+ * Responsive — small screens (phones).
+ * The body box is already fluid (no min-width), so the tree never overflows at
+ * any width. On a phone we additionally tighten the connectors so the limited
+ * horizontal space goes to the body content rather than to indentation.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  :root {
+    --tree-indent: 18px;   /* was 36px */
+  }
+
+  .child-bodies {
+    padding-left: 26px;    /* was 56px */
+  }
 }

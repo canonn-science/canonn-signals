@@ -5,7 +5,16 @@
 .body-title {
     display: flex;
     justify-content: space-between;
+    /* Wrap when the name + type run and the material badges can't share one line
+       (narrow viewport / deeply-nested body). Fits on one line when there's room,
+       so wide layouts are unchanged. */
+    flex-wrap: wrap;
+    gap: 4px 8px;
     padding: 8px;
+    /* Uniform single-line height regardless of whether a header carries badges or
+       icons, so the tree connector lands on the same vertical centre everywhere
+       (see --tree-elbow-y). Taller content (wrapped headers) still grows. */
+    min-height: 22px;
     align-items: center;
     background-color: var(--color-surface);
     border-top-left-radius: 4px;
@@ -14,13 +23,20 @@
 
 .body-title .title-left {
     display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
     gap: 8px;
     align-items: center
 }
 
-/* signal icons: block removes inline baseline gap so they center vertically in the row */
+/* Signal icons: block removes the inline baseline gap so they centre vertically
+   in the row. A fixed height keeps every header the same height regardless of
+   whether a body carries signal icons, so the tree connector lines up with the
+   header's vertical centre (see --tree-elbow-y). */
 .body-title .title-left > div > img {
     display: block;
+    height: 20px;
+    width: auto;
 }
 
 .body-anchor-link {
@@ -43,6 +59,9 @@
 
 .body-title .materials-badges {
     display: flex;
+    /* A material-rich body can list 10+ element badges; wrap them so the row
+       doesn't overrun a narrow card. Fits one line when there's room. */
+    flex-wrap: wrap;
     gap: 4px;
     align-items: center
 }
@@ -181,8 +200,33 @@
     margin-bottom: 2px
 }
 
-.system-body .body-data-entry div {
-    white-space: nowrap
+/* A label/value row stays on one line when it fits. A long label (e.g. "Min
+   Surface Temperature Estimate") or an extreme value (e.g. a huge volume figure)
+   would otherwise force the row wider than the card and overflow, so allow both
+   sides to wrap/break only when needed. With room (wide layouts) nothing wraps. */
+.system-body .body-data-entry > div {
+    white-space: normal;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
+ * Responsive — small screens (phones).
+ * ------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    .system-body .body-data-entry {
+        gap: 8px;
+    }
+
+    /* The signal name column is fixed at 150px; let it shrink so the signal
+       rows don't push past the card edge. */
+    .system-body .body-signals .body-signal .body-signal-name {
+        min-width: 0;
+    }
+
+    .system-body .body-signals .body-signal {
+        gap: 8px;
+    }
 }
 
 /* Pressure unit selector styling to match other body-data entries */

@@ -108,52 +108,52 @@ the test-coverage work on the `upgrade` branch. None have been fixed.
 ## pgnames (vendored procedural-generation code)
 
 - **`tryParse` rejects all `…AB-C d<n1>-<n2>` names** —
-  [src/assets/pgnames/PGSystem.ts:251](src/assets/pgnames/PGSystem.ts#L251).
+  [src/app/data/pgnames/PGSystem.ts:251](src/app/data/pgnames/PGSystem.ts#L251).
   The mid3 digit slice uses `substring(i + 1, vend - i + 1)` — a *length* passed where an
   *end index* is expected — so it slices garbage, `parseInt` → `NaN`, and the parse fails.
   Only names without the `-<n2>` suffix currently parse.  
   **Review (2026-06-10): Confirmed.** At
-  [PGSystem.ts:251](src/assets/pgnames/PGSystem.ts#L251) the digits live at indices
+  [PGSystem.ts:251](src/app/data/pgnames/PGSystem.ts#L251) the digits live at indices
   `[i+1 .. vend]`, so the correct call is `substring(i+1, vend+1)`. The code passes
   `vend - i + 1` as the *end* index; since `i > 8` always, that value is far smaller than
   `i+1`, so `String.prototype.substring` swaps the bounds and returns a slice from the
   region-name text. `parseInt` of that (a letter/space run) is `NaN`, and the branch returns
   `[false, sys]`. The existing spec at
-  [pgnames.spec.ts:49-55](src/assets/pgnames/pgnames.spec.ts#L49-L55) pins this behaviour
+  [pgnames.spec.ts:49-55](src/app/data/pgnames/pgnames.spec.ts#L49-L55) pins this behaviour
   (`'Blae Eock kc-c d0-0'` → rejected). Names with the `-<n2>` suffix are all rejected.
 
 - **`toModSystemAddress` is lossy (32-bit bitwise overflow)** —
-  [src/assets/pgnames/PGSystem.ts:309](src/assets/pgnames/PGSystem.ts#L309).
+  [src/app/data/pgnames/PGSystem.ts:309](src/app/data/pgnames/PGSystem.ts#L309).
   The result is assembled with JS bitwise (`|`, `<<`) operators, which are 32-bit, but
   fields are packed above bit 31 (size class, x2/y2/z2). Those bits are truncated, so the
   modulated-address round-trip does not preserve the original values.  
   **Review (2026-06-10): Confirmed.** At
-  [PGSystem.ts:328-338](src/assets/pgnames/PGSystem.ts#L328-L338) the `result` is built with
+  [PGSystem.ts:328-338](src/app/data/pgnames/PGSystem.ts#L328-L338) the `result` is built with
   JS `|`/`<<`, which coerce to 32-bit signed integers and take the shift count mod 32. Shifts
   such as `szclass << 37`, `x2 << 40`, `y2 << 47`, `z2 << 53` therefore wrap (e.g. `<< 53`
   becomes `<< 21`) before the value is ever widened by `BigInt(...)` — the high fields are
   corrupted/truncated, so the round-trip is lossy. Note the *same* 32-bit bug also affects
-  `toSystemAddress` ([:299-304](src/assets/pgnames/PGSystem.ts#L299-L304), shifts up to 44);
+  `toSystemAddress` ([:299-304](src/app/data/pgnames/PGSystem.ts#L299-L304), shifts up to 44);
   it is just not separately flagged here. Behaviour is pinned by
-  [pgnames.spec.ts:25-33](src/assets/pgnames/pgnames.spec.ts#L25-L33).
+  [pgnames.spec.ts:25-33](src/app/data/pgnames/pgnames.spec.ts#L25-L33).
 
 - **`fromSystemAddress` → `toSystemAddress` is not bit-identical** —
-  [src/assets/pgnames/PGSystem.ts:287](src/assets/pgnames/PGSystem.ts#L287).
+  [src/app/data/pgnames/PGSystem.ts:287](src/app/data/pgnames/PGSystem.ts#L287).
   Region origins are synthesized via `getSectorPos` for non-catalogued sectors, so
   re-encoding a decoded address does not reproduce the original `id64`.  
-  Pre-existing on `main` (file byte-identical): `src/assets/pgnames/PGSystem.ts:287`.  
+  Pre-existing on `main` (file byte-identical): `src/app/data/pgnames/PGSystem.ts:287`.  
   **Review (2026-06-10): Confirmed, but the stated cause is only secondary.** The synthesis
   claim is true: for an uncatalogued sector, `getRegion` builds an origin from
   `getSectorPos` quantised to the 40960-unit boxel grid
-  ([PGRegion.ts:513-523](src/assets/pgnames/PGRegion.ts#L513-L523)), which discards the
+  ([PGRegion.ts:513-523](src/app/data/pgnames/PGRegion.ts#L513-L523)), which discards the
   original sub-sector offset, so `toSystemAddress` cannot reproduce the exact `id64`.
   However, the *dominant* reason the round-trip fails is that `toSystemAddress` itself uses
   the same 32-bit bitwise packing as `toModSystemAddress`
-  ([PGSystem.ts:299-304](src/assets/pgnames/PGSystem.ts#L299-L304), shifts up to 44 wrap mod
+  ([PGSystem.ts:299-304](src/app/data/pgnames/PGSystem.ts#L299-L304), shifts up to 44 wrap mod
   32) — so the encode is broken for *every* sector, catalogued or not, regardless of region
   synthesis. The conclusion (not bit-identical) is correct; the explanation should lead with
   the bitwise-overflow bug. Pinned (loosely) by
-  [pgnames.spec.ts:18-23](src/assets/pgnames/pgnames.spec.ts#L18-L23), which only asserts the
+  [pgnames.spec.ts:18-23](src/app/data/pgnames/pgnames.spec.ts#L18-L23), which only asserts the
   result is a positive bigint.
 
 ## Minor

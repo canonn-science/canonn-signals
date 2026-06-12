@@ -6,7 +6,7 @@ import { ActivatedRoute, Params, Router } from '@angular/router';
 import { faFileCode } from '@fortawesome/free-solid-svg-icons';
 import { Observable, of, debounceTime, distinctUntilChanged, switchMap, map, combineLatest, take, firstValueFrom } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { PGSystem } from 'src/assets/pgnames/PGSystem';
+import { PGSystem } from 'src/app/data/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatAutocompleteTrigger, MatAutocomplete, MatOption } from '@angular/material/autocomplete';
