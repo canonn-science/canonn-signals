@@ -35,7 +35,7 @@ export class HomeComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   private lastSimbadSystemName: string | null = null;
-  private lastSimbadId64: number | null = null;
+  private lastSimbadId64: bigint | null = null;
   // Credits are extracted from readme.md at build time by scripts/generate-credits.js.
   // Bound via [innerHTML], which Angular sanitizes; the source is a trusted local file.
   public creditsHtml: string = CREDITS_HTML;
@@ -85,10 +85,11 @@ export class HomeComponent implements OnInit {
   // Simbad cache and file loading logic removed (now using API)
 
   // Convert id64 to PGName using PGSystem, formatted for Elite Dangerous
-  getPGName(id64: string | number): string {
+  getPGName(id64: string | number | bigint): string {
     try {
-      // Accept id64 as string or number, always convert via string to preserve precision
-      const id64BigInt = BigInt(typeof id64 === 'string' ? id64 : id64.toString());
+      // Accept id64 as string, number or bigint; BigInt() handles all three. id64
+      // should already be a bigint (see parseJsonWithBigIntIds) to retain precision.
+      const id64BigInt = BigInt(id64);
 
       const pgSystem = PGSystem.fromSystemAddress(id64BigInt);
 
@@ -115,7 +116,7 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  fetchEdGalaxyData(systemName: string, id64: number, coords?: { x: number, y: number, z: number }) {
+  fetchEdGalaxyData(systemName: string, id64: bigint, coords?: { x: number, y: number, z: number }) {
     const pgName = this.getPGName(id64);
 
     // Fallback used whenever we don't (or can't) resolve Simbad data.
@@ -336,7 +337,7 @@ export class HomeComponent implements OnInit {
   public filteredSystems: Observable<string[]> = of([]);
   private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
   public readonly edastroData = signal<EdastroData | null>(null);
-  private systemMapping: Map<string, { systemName?: string, id64?: number }> = new Map();
+  private systemMapping: Map<string, { systemName?: string, id64?: bigint }> = new Map();
   public readonly independentOutposts = signal<IndependentOutpost[]>([]);
 
   public ngOnInit(): void {
@@ -463,7 +464,7 @@ export class HomeComponent implements OnInit {
     this.searching = false;
   }
 
-  private searchBySystemAddress(systemAddress: number | string): void {
+  private searchBySystemAddress(systemAddress: number | string | bigint): void {
     this.appService.getBiostats(systemAddress)
       .subscribe({
         next: data => {
@@ -567,7 +568,7 @@ export class HomeComponent implements OnInit {
             bodyData: {
               bodyId: -1, // Temporary ID for belts
               name: this.stripParentName(belt.name, systemBody.name),
-              id64: 0,
+              id64: 0n,
               subType: belt.type,
               type: BODY_TYPE.Belt,
               innerRadius: belt.innerRadius / 1000, // Convert m to km
@@ -588,7 +589,7 @@ export class HomeComponent implements OnInit {
             bodyData: {
               bodyId: -1, // Temporary ID for rings
               name: this.stripParentName(ring.name, systemBody.name),
-              id64: ring.id64 || 0,
+              id64: ring.id64 || 0n,
               subType: ring.type,
               type: BODY_TYPE.Ring,
               innerRadius: ring.innerRadius / 1000, // Convert m to km
@@ -619,7 +620,7 @@ export class HomeComponent implements OnInit {
               bodyData: {
                 bodyId: parent.Planet,
                 name: `Unknown planet (${parent.Planet})`,
-                id64: 0,
+                id64: 0n,
                 subType: "",
                 type: BODY_TYPE.Planet,
               },
@@ -636,7 +637,7 @@ export class HomeComponent implements OnInit {
               bodyData: {
                 bodyId: parent.Star,
                 name: `Unknown star (${parent.Star})`,
-                id64: 0,
+                id64: 0n,
                 subType: "",
                 type: BODY_TYPE.Star,
               },
@@ -653,7 +654,7 @@ export class HomeComponent implements OnInit {
               bodyData: {
                 bodyId: parent.Null,
                 name: `Unknown barycentre (${parent.Null})`,
-                id64: 0,
+                id64: 0n,
                 subType: "",
                 type: BODY_TYPE.Barycentre,
               },
@@ -884,7 +885,7 @@ export interface CanonnBiostats {
     };
     date: string;
     government: string | null;
-    id64: number;
+    id64: bigint;
     name: string;
     population: number;
     // powerState
@@ -919,7 +920,7 @@ export interface CanonnBiostatsBody {
     type: string;
   }[];
   rings?: {
-    id64?: number;
+    id64?: bigint;
     innerRadius: number;
     mass: number;
     name: string;
@@ -936,7 +937,7 @@ export interface CanonnBiostatsBody {
   distanceToArrival?: number;
   earthMasses?: number;
   gravity?: number;
-  id64: number;
+  id64: bigint;
   innerRadius?: number;
   isLandable?: boolean;
   luminosity?: string;
@@ -1015,7 +1016,7 @@ export interface SystemBody {
 
 export interface EdGalaxyData {
   PGName: string;
-  SystemAddress: number;
+  SystemAddress: bigint;
   Name: string;
   Simbad?: {
     Name?: string;
@@ -1027,7 +1028,7 @@ export interface EdGalaxyData {
 
 export interface SimbadApiResponse {
   name: string;
-  system_address: number;
+  system_address: bigint;
   ra_j2000?: number;
   dec_j2000?: number;
   simbad_name?: string;

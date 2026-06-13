@@ -1,8 +1,9 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of, timer } from 'rxjs';
-import { catchError, retry, timeout } from 'rxjs/operators';
+import { catchError, map, retry, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { parseJsonWithBigIntIds } from './data/json-bigint';
 import type { CanonnBiostats, SimbadApiResponse } from './home/home.component';
 import type { GnosisData } from './region-map/region-map.component';
 
@@ -25,7 +26,10 @@ export class AppService {
    * the feature. Callers still receive the error if all retries fail.
    */
   private resilientGet<T>(url: string, timeoutMs: number = HTTP_TIMEOUT_MS): Observable<T> {
-    return this.httpClient.get<T>(url).pipe(
+    // Fetch as text and parse with a BigInt-aware parser so 64-bit id64 / system
+    // address fields keep full precision (the browser's JSON.parse would round
+    // them to float64). See parseJsonWithBigIntIds.
+    return this.httpClient.get(url, { responseType: 'text' }).pipe(
       timeout(timeoutMs),
       retry({
         count: HTTP_RETRY_COUNT,
@@ -40,6 +44,7 @@ export class AppService {
           return timer(Math.min(1000 * 2 ** (retryIndex - 1), 8000));
         },
       }),
+      map(text => parseJsonWithBigIntIds<T>(text)),
     );
   }
 
@@ -87,7 +92,7 @@ export class AppService {
       });
   }
 
-  public getEdastroData(id64: number): Observable<EdastroData> {
+  public getEdastroData(id64: number | bigint): Observable<EdastroData> {
     const url = environment.production
       ? `https://edastro.com/gec/json/id64/${id64}`
       : `/api/edastro/gec/json/id64/${id64}`;
@@ -109,12 +114,12 @@ export class AppService {
 
   /** Loads the per-system biostats payload (bodies, signals, coordinates). Accepts the
    *  address as a string to preserve 64-bit precision for very large system addresses. */
-  public getBiostats(systemAddress: number | string): Observable<CanonnBiostats> {
+  public getBiostats(systemAddress: number | string | bigint): Observable<CanonnBiostats> {
     return this.resilientGet<CanonnBiostats>(`${CANONN_QUERY_BASE}/codex/biostats?id=${systemAddress}&caller=Signals`);
   }
 
   /** Looks up Simbad cross-identification / coordinates for a hand-authored system. */
-  public getSimbad(systemAddress: number, name: string, coords?: { x: number, y: number, z: number }): Observable<SimbadApiResponse> {
+  public getSimbad(systemAddress: number | bigint, name: string, coords?: { x: number, y: number, z: number }): Observable<SimbadApiResponse> {
     let url = `${CANONN_QUERY_BASE}/simbad?system_address=${systemAddress}&name=${encodeURIComponent(name)}`;
     if (coords) {
       url += `&x=${coords.x}&y=${coords.y}&z=${coords.z}`;
@@ -141,7 +146,7 @@ export class AppService {
 }
 
 export interface TypeaheadResponse {
-  min_max?: { name: string, id64: number }[];
+  min_max?: { name: string, id64: bigint }[];
   values?: string[];
 }
 
@@ -171,7 +176,7 @@ export interface EdastroData {
 
 export interface EdastroSystem {
   name: string;
-  id64: number;
+  id64: bigint;
   galMapSearch?: string;
   type?: string;
   coordinates?: number[];

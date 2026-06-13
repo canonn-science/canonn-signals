@@ -12,7 +12,7 @@ const KM_PER_AU = 149597870.7;
 
 function makeBody(data: Partial<CanonnBiostatsBody>, parent: SystemBody | null = null): SystemBody {
   return {
-    bodyData: { bodyId: 1, id64: 1, name: 'Test Body', subType: '', type: 'Planet', ...data } as CanonnBiostatsBody,
+    bodyData: { bodyId: 1, id64: 1n, name: 'Test Body', subType: '', type: 'Planet', ...data } as CanonnBiostatsBody,
     subBodies: [],
     parent,
   };

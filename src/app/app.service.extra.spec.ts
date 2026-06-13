@@ -20,10 +20,18 @@ describe('AppService (HTTP-driven coverage)', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
+  /**
+   * resilientGet now fetches with `responseType: 'text'` and parses with a
+   * BigInt-aware parser, so responses must be flushed as JSON *text*, not objects.
+   */
+  function flushJson(req: { flush: (body: string) => void }, body: unknown): void {
+    req.flush(JSON.stringify(body));
+  }
+
   /** Flushes the two requests fired from the constructor (codex ref + edastro combined). */
   function flushConstructorRequests(edastroSystems: any[] = []): void {
-    httpMock.expectOne(req => req.url.includes('/codex/ref')).flush({});
-    httpMock.expectOne(req => req.url.includes('edastro') && req.url.includes('combined')).flush(edastroSystems);
+    flushJson(httpMock.expectOne(req => req.url.includes('/codex/ref')), {});
+    flushJson(httpMock.expectOne(req => req.url.includes('edastro') && req.url.includes('combined')), edastroSystems);
   }
 
   it('publishes codex entries and derived independent outposts from the constructor feeds', async () => {
@@ -46,7 +54,7 @@ describe('AppService (HTTP-driven coverage)', () => {
     flushConstructorRequests();
     let result: any;
     service.getEdastroData(12345).subscribe(d => (result = d));
-    httpMock.expectOne(req => req.url.includes('/id64/12345')).flush({ name: 'Sys', summary: 'hi' });
+    flushJson(httpMock.expectOne(req => req.url.includes('/id64/12345')), { name: 'Sys', summary: 'hi' });
     expect(result.name).toBe('Sys');
   });
 
@@ -55,7 +63,7 @@ describe('AppService (HTTP-driven coverage)', () => {
     let result: any;
     service.galMapSearch('Sol').subscribe(r => (result = r));
     const req = httpMock.expectOne(r => r.url.includes('/typeahead') && r.url.includes('Sol'));
-    req.flush({ min_max: [{ name: 'Sol', id64: 10477373803 }] });
+    flushJson(req, { min_max: [{ name: 'Sol', id64: 10477373803 }] });
     expect(result.min_max[0].name).toBe('Sol');
   });
 
@@ -69,24 +77,42 @@ describe('AppService (HTTP-driven coverage)', () => {
     flushConstructorRequests();
     let result: any;
     service.getBiostats(999).subscribe(r => (result = r));
-    httpMock.expectOne(r => r.url.includes('/codex/biostats?id=999')).flush({ system: { name: 'Sys', id64: 999 } });
+    flushJson(httpMock.expectOne(r => r.url.includes('/codex/biostats?id=999')), { system: { name: 'Sys', id64: 999 } });
     expect(result.system.name).toBe('Sys');
+  });
+
+  it('preserves a 64-bit body id64 as an exact BigInt (no float64 rounding)', () => {
+    flushConstructorRequests();
+    let result: any;
+    service.getBiostats('355844362082').subscribe(r => (result = r));
+    // 1080864266413281122 rounds to 1080864266413281200 when parsed as a JS number.
+    const rawText = '{"system":{"name":"Phraa Eaec ER-I c11-1","id64":355844362082,'
+      + '"bodies":[{"bodyId":30,"id64":1080864266413281122,"name":"Phraa Eaec ER-I c11-1 11"}]}}';
+    httpMock.expectOne(r => r.url.includes('id=355844362082')).flush(rawText);
+
+    const id64 = result.system.bodies[0].id64;
+    expect(typeof id64).toBe('bigint');
+    expect(id64).toBe(1080864266413281122n);
+    // Guard against the exact rounding the bug produced.
+    expect(id64).not.toBe(1080864266413281200n);
+    // Smaller ids are lifted to bigint too, for a uniform type.
+    expect(result.system.id64).toBe(355844362082n);
   });
 
   it('builds the Simbad URL with and without coordinates', () => {
     flushConstructorRequests();
     service.getSimbad(42, 'Sol').subscribe();
-    httpMock.expectOne(r => r.url.includes('/simbad?') && r.url.includes('system_address=42') && !r.url.includes('&x=')).flush({});
+    flushJson(httpMock.expectOne(r => r.url.includes('/simbad?') && r.url.includes('system_address=42') && !r.url.includes('&x=')), {});
 
     service.getSimbad(42, 'Sol', { x: 1, y: 2, z: 3 }).subscribe();
-    httpMock.expectOne(r => r.url.includes('&x=1&y=2&z=3')).flush({});
+    flushJson(httpMock.expectOne(r => r.url.includes('&x=1&y=2&z=3')), {});
   });
 
   it('fetches the Gnosis location', () => {
     flushConstructorRequests();
     let result: any;
     service.getGnosis().subscribe(r => (result = r));
-    httpMock.expectOne(r => r.url.includes('/gnosis')).flush({ system: 'Varati' });
+    flushJson(httpMock.expectOne(r => r.url.includes('/gnosis')), { system: 'Varati' });
     expect(result.system).toBe('Varati');
   });
 
@@ -94,7 +120,7 @@ describe('AppService (HTTP-driven coverage)', () => {
     flushConstructorRequests();
     let result: any;
     service.typeahead('Syn').subscribe(r => (result = r));
-    httpMock.expectOne(r => r.url.includes('/typeahead') && r.url.includes('Syn')).flush({ values: ['Synuefe'] });
+    flushJson(httpMock.expectOne(r => r.url.includes('/typeahead') && r.url.includes('Syn')), { values: ['Synuefe'] });
     expect(result.values).toEqual(['Synuefe']);
   });
 
@@ -115,7 +141,7 @@ describe('AppService (HTTP-driven coverage)', () => {
       service.getGnosis().subscribe(r => (result = r));
       httpMock.expectOne(r => r.url.includes('/gnosis')).flush('boom', { status: 500, statusText: 'Server Error' });
       vi.advanceTimersByTime(1100); // first backoff is ~1000ms
-      httpMock.expectOne(r => r.url.includes('/gnosis')).flush({ system: 'Sol' });
+      flushJson(httpMock.expectOne(r => r.url.includes('/gnosis')), { system: 'Sol' });
       expect(result.system).toBe('Sol');
     } finally {
       vi.useRealTimers();

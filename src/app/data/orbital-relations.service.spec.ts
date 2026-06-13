@@ -11,12 +11,12 @@ describe('OrbitalRelationsService', () => {
   /** Builds a parent body whose children share the given partial body-data. */
   function makeFamily(children: Partial<CanonnBiostatsBody>[]): SystemBody[] {
     const parent: SystemBody = {
-      bodyData: { bodyId: 0, name: 'Parent', id64: 0, subType: '', type: 'Star' } as CanonnBiostatsBody,
+      bodyData: { bodyId: 0, name: 'Parent', id64: 0n, subType: '', type: 'Star' } as CanonnBiostatsBody,
       subBodies: [],
       parent: null,
     };
     parent.subBodies = children.map((c, i) => ({
-      bodyData: { bodyId: i + 1, name: `Child ${i + 1}`, id64: 0, subType: '', type: 'Planet', ...c } as CanonnBiostatsBody,
+      bodyData: { bodyId: i + 1, name: `Child ${i + 1}`, id64: 0n, subType: '', type: 'Planet', ...c } as CanonnBiostatsBody,
       subBodies: [],
       parent,
     }));
@@ -137,7 +137,7 @@ describe('OrbitalRelationsService', () => {
     const sampleMs = new Date(sampleTime).getTime();
 
     function body(extra: Partial<CanonnBiostatsBody>): CanonnBiostatsBody {
-      return { bodyId: 1, name: 'B', id64: 0, subType: '', type: 'Planet', ...extra } as CanonnBiostatsBody;
+      return { bodyId: 1, name: 'B', id64: 0n, subType: '', type: 'Planet', ...extra } as CanonnBiostatsBody;
     }
 
     it('returns null when orbital elements are missing or the orbit is circular', () => {

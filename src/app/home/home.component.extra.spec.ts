@@ -348,7 +348,7 @@ describe('HomeComponent (extended coverage)', () => {
 
   describe('fetchEdGalaxyData', () => {
     it('uses the PG fallback for procedurally-generated systems without calling SIMBAD', () => {
-      component.fetchEdGalaxyData('Pru Aescs NC-M d7-192', 10577693187);
+      component.fetchEdGalaxyData('Pru Aescs NC-M d7-192', 10577693187n);
       expect(component.edGalaxyData()?.Simbad).toBeUndefined();
       expect(component.edGalaxyData()?.PGName.length).toBeGreaterThan(0);
     });
@@ -358,7 +358,7 @@ describe('HomeComponent (extended coverage)', () => {
         system_address: 10477373803, name: 'Sol', simbad_name: 'Sol', simbad_ident: '@Sol',
         ra_j2000: 0, dec_j2000: 0,
       });
-      component.fetchEdGalaxyData('Sol', 10477373803);
+      component.fetchEdGalaxyData('Sol', 10477373803n);
       expect(component.edGalaxyData()?.Simbad?.Name).toBe('Sol');
     });
   });

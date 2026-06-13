@@ -3,7 +3,7 @@ import { CanonnBiostatsBody } from '../home/home.component';
 
 /** Builds a CanonnBiostatsBody with sensible defaults for image-path resolution. */
 function body(data: Partial<CanonnBiostatsBody>): CanonnBiostatsBody {
-  return { bodyId: 0, id64: 0, name: 'Test', subType: '', type: 'Planet', ...data } as CanonnBiostatsBody;
+  return { bodyId: 0, id64: 0n, name: 'Test', subType: '', type: 'Planet', ...data } as CanonnBiostatsBody;
 }
 
 describe('BodyImage.getBodyImagePath', () => {

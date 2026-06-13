@@ -13,7 +13,15 @@
   "postCreateCommand": "pnpm install",
   "containerEnv": {
     "IS_SANDBOX": "1",
-    "NG_CLI_ANALYTICS": "false"
+    "NG_CLI_ANALYTICS": "false",
+    // Bind-mounted workspaces (Docker/WSL2) don't reliably deliver native file-change
+    // events, so dev-server hot reload misses edits. Fall back to polling-based file
+    // watching. CHOKIDAR_USEPOLLING covers the Vite/chokidar serve layer and
+    // WATCHPACK_POLLING the webpack layer; the angular.json `serve.poll` option drives
+    // the esbuild build watcher itself.
+    "CHOKIDAR_USEPOLLING": "true",
+    "CHOKIDAR_INTERVAL": "1000",
+    "WATCHPACK_POLLING": "true"
   },
   "customizations": {
     "vscode": {

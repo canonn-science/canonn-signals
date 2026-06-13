@@ -720,7 +720,11 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
 
   public showBodyJsonDialog(): void {
-    this.getFormattedBodyJson.set(JSON.stringify(this.body().bodyData, null, 2));
+    // id64 is a bigint to preserve 64-bit precision; JSON.stringify can't serialize
+    // BigInt natively, so render it as its exact decimal string.
+    this.getFormattedBodyJson.set(
+      JSON.stringify(this.body().bodyData, (_key, value) =>
+        typeof value === 'bigint' ? value.toString() : value, 2));
     this.dialog.open(this.jsonDialogTemplate(), {
       width: '800px',
       autoFocus: false,
