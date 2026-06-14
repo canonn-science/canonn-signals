@@ -169,9 +169,7 @@ describe('OrbitalRelationsService', () => {
     });
 
     it('computes the next apoapsis half an orbit away from periapsis', () => {
-      // meanAnomaly 360 ≡ 0° at the sample instant (180° short of apoapsis). A literal 0
-      // is intentionally NOT used: the guard treats `meanAnomaly === 0` as "missing"
-      // (preserved `!bd.meanAnomaly` behaviour from the original component) and returns null.
+      // meanAnomaly 360 ≡ 0° at the sample instant (180° short of apoapsis).
       const event = service.nextOrbitalEvent(body({
         meanAnomaly: 360, orbitalPeriod: 12, orbitalEccentricity: 0.5,
         timestamps: { meanAnomaly: sampleTime } as any,
@@ -179,11 +177,15 @@ describe('OrbitalRelationsService', () => {
       expect(event!.days).toBeCloseTo(6, 6); // 180/360 * 12 days
     });
 
-    it('treats a meanAnomaly of exactly 0 as missing (legacy guard quirk)', () => {
-      expect(service.nextOrbitalEvent(body({
+    it('treats a meanAnomaly of exactly 0 as a valid value (body at periapsis), not missing', () => {
+      // A body recorded exactly at periapsis has meanAnomaly === 0; it must not be
+      // mistaken for missing data (the old `!bd.meanAnomaly` falsy guard did this).
+      const event = service.nextOrbitalEvent(body({
         meanAnomaly: 0, orbitalPeriod: 12, orbitalEccentricity: 0.5,
         timestamps: { meanAnomaly: sampleTime } as any,
-      }), 'apo', sampleMs)).toBeNull();
+      }), 'apo', sampleMs);
+      expect(event).not.toBeNull();
+      expect(event!.days).toBeCloseTo(6, 6); // 180° to apoapsis → 180/360 * 12 days
     });
 
     it('locks the Alpha Centauri apsis dates (now-independent; matches the rendered tooltip)', () => {

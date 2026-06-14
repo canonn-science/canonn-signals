@@ -1378,7 +1378,7 @@ export class BodyImage {
                         continue;
                     }
                     if (typeof terrestrialBodyImage.terraformable != 'undefined') {
-                        // ED/Spansh expose terraforming as a string `terraformingState`; a body
+                        // ED/Canonn expose terraforming as a string `terraformingState`; a body
                         // that can be terraformed reads exactly "Terraformable" (vs. "Not
                         // terraformable" / empty / "Terraforming" / "Terraformed").
                         const bodyTerraformable = body.terraformingState?.toLowerCase() === 'terraformable';

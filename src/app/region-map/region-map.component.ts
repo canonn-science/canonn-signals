@@ -111,7 +111,13 @@ export class RegionMapComponent implements OnChanges {
 
     this.svgLoading = false;
     const regionMapContainerValue = this.regionMapContainer();
-    if (regionMapContainerValue && regionMapContainerValue.nativeElement) {
+    if (!regionMapContainerValue || !regionMapContainerValue.nativeElement) {
+      return;
+    }
+
+    // Inject and decorate the SVG. Wrapped so a DOM/parse failure is logged rather than
+    // escaping this async (afterNextRender) callback as an unhandled promise rejection.
+    try {
       // Trusted content: a static SVG bundled in the app's own assets. This
       // assignment is NOT Angular-sanitized, so it must never be sourced from a
       // remote/user-controlled location without sanitizing first.
@@ -139,6 +145,8 @@ export class RegionMapComponent implements OnChanges {
       }
 
       this.highlightRegion();
+    } catch (error) {
+      logger.error('Error rendering region map:', error);
     }
   }
 
@@ -356,15 +364,16 @@ export class RegionMapComponent implements OnChanges {
 
       // Add hover events
       circle.addEventListener('mouseenter', () => {
+        // Show the text first: getBBox() returns a zero rect (Chromium) or throws
+        // (Firefox) for a display:none element, so it must be measured while visible.
+        text.style.display = 'block';
+        rect.style.display = 'block';
         // Update rect size based on text
         const bbox = text.getBBox();
         rect.setAttribute('x', (bbox.x - 4).toString());
         rect.setAttribute('y', (bbox.y - 2).toString());
         rect.setAttribute('width', (bbox.width + 8).toString());
         rect.setAttribute('height', (bbox.height + 4).toString());
-
-        rect.style.display = 'block';
-        text.style.display = 'block';
       });
 
       circle.addEventListener('mouseleave', () => {
@@ -451,15 +460,15 @@ export class RegionMapComponent implements OnChanges {
 
       // Add hover events
       circle.addEventListener('mouseenter', () => {
-        // Pre-calculate bbox to avoid delay
+        // Show the text first: getBBox() returns a zero rect (Chromium) or throws
+        // (Firefox) for a display:none element, so it must be measured while visible.
+        text.style.display = 'block';
+        rect.style.display = 'block';
         const bbox = text.getBBox();
         rect.setAttribute('x', (bbox.x - 3).toString());
         rect.setAttribute('y', (bbox.y - 1).toString());
         rect.setAttribute('width', (bbox.width + 6).toString());
         rect.setAttribute('height', (bbox.height + 2).toString());
-
-        rect.style.display = 'block';
-        text.style.display = 'block';
       });
 
       circle.addEventListener('mouseleave', () => {
@@ -577,14 +586,15 @@ export class RegionMapComponent implements OnChanges {
 
     // Add hover events
     circle.addEventListener('mouseenter', () => {
+      // Show the text first: getBBox() returns a zero rect (Chromium) or throws
+      // (Firefox) for a display:none element, so it must be measured while visible.
+      text.style.display = 'block';
+      rect.style.display = 'block';
       const bbox = text.getBBox();
       rect.setAttribute('x', (bbox.x - 4).toString());
       rect.setAttribute('y', (bbox.y - 2).toString());
       rect.setAttribute('width', (bbox.width + 8).toString());
       rect.setAttribute('height', (bbox.height + 4).toString());
-
-      rect.style.display = 'block';
-      text.style.display = 'block';
     });
 
     circle.addEventListener('mouseleave', () => {
@@ -622,6 +632,14 @@ export class RegionMapComponent implements OnChanges {
     const tx = this.mapX(coords.x);
     const finalY = this.mapY(coords.z);
 
+    // Match the inverse-zoom scaling every other marker uses, so the green marker
+    // keeps a constant on-screen size when this runs while the map is already zoomed
+    // (e.g. searching a new system without first resetting the viewBox).
+    const viewBox = svgElement.getAttribute('viewBox');
+    const viewBoxValues = viewBox ? viewBox.split(' ').map(parseFloat) : [0, 0, MAP_SIZE, MAP_SIZE];
+    const viewBoxSize = Math.max(viewBoxValues[2], viewBoxValues[3]);
+    const currentScaleFactor = MAP_SIZE / viewBoxSize;
+
     // Create a group for the marker
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('id', 'system-marker');
@@ -638,6 +656,11 @@ export class RegionMapComponent implements OnChanges {
     circle.setAttribute('filter', 'drop-shadow(0 0 16px rgba(0, 255, 0, 0.8))');
 
     group.appendChild(circle);
+
+    // Apply current scale immediately if zoomed (mirrors addKnownSystemMarkers).
+    if (currentScaleFactor !== 1) {
+      group.setAttribute('transform', `translate(${tx}, ${finalY}) scale(${1 / currentScaleFactor}) translate(${-tx}, ${-finalY})`);
+    }
 
     // Add the marker group to the SVG, but before any known-system-marker elements
     // This ensures blue dots (known systems) are always on top

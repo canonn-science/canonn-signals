@@ -105,6 +105,18 @@ describe('HomeComponent (extended coverage)', () => {
       expect(component.formatDEJ2000(NaN)).toBe('');
     });
 
+    it('carries rounded seconds into the next unit instead of rendering a 60.0 field', () => {
+      // RA: 119.98s ≡ 1m 59.98s, which rounds up to a full extra minute → 0h 02m 00.0s.
+      const ra = component.formatRAJ2000(119.98 / 240);
+      expect(ra).not.toContain('60.0');
+      expect(ra).toBe('0h 02m 00.0s');
+
+      // Dec: 1′ 59.98″ rounds up the same way → +0° 02′ 00.0″.
+      const de = component.formatDEJ2000(119.98 / 3600);
+      expect(de).not.toContain('60.0');
+      expect(de).toBe('+0° 02′ 00.0″');
+    });
+
     it('resolves a procedural-generation name from a known system address', () => {
       const name = component.getPGName(10577693187);
       expect(name.length).toBeGreaterThan(0);
@@ -213,19 +225,19 @@ describe('HomeComponent (extended coverage)', () => {
       expect(component.data()?.system.id64).toBe(555);
     });
 
-    it('resolves a name via the Spansh typeahead when not in the EdAstro cache', async () => {
+    it('resolves a name via the Canonn typeahead when not in the EdAstro cache', async () => {
       httpResponses.set('/typeahead', { min_max: [{ name: 'Found Sys', id64: 777 }] });
       httpResponses.set('/biostats?id=777', {
         system: { name: 'Found Sys', id64: 777, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
-      edastroSystems$.set([]); // not in cache -> falls through to Spansh
+      edastroSystems$.set([]); // not in cache -> falls through to the Canonn typeahead
       component.searchControl.setValue('Found Sys');
       component.search();
       await flushPromises();
       expect(component.data()?.system.id64).toBe(777);
     });
 
-    it('reports a system that Spansh cannot find', async () => {
+    it('reports a system that the Canonn API cannot find', async () => {
       httpResponses.set('/typeahead', { min_max: [] });
       edastroSystems$.set([]);
       component.searchControl.setValue('Ghost Sys');
@@ -270,7 +282,7 @@ describe('HomeComponent (extended coverage)', () => {
   });
 
   describe('getSystemSuggestions', () => {
-    it('merges Spansh and EdAstro suggestions and de-duplicates them', async () => {
+    it('merges Canonn and EdAstro suggestions and de-duplicates them', async () => {
       httpResponses.set('/typeahead', { values: ['Synuefe Two', 'Synuefe One'] });
       edastroSystems$.set([{ name: 'Synuefe One', id64: 1 }]);
       const suggestions = await ((component as any).getSystemSuggestions('Synuefe') as Promise<string[]>);
@@ -279,14 +291,29 @@ describe('HomeComponent (extended coverage)', () => {
       expect(new Set(suggestions).size).toBe(suggestions.length); // de-duplicated
     });
 
-    it('looks up missing id64s via gal-map search and caches the query', async () => {
+    it('suggests EdAstro matches without firing a per-system gal-map lookup, and caches the query', async () => {
+      // Regression guard: typing a query must NOT trigger one typeahead/galMapSearch HTTP
+      // call per matching system (the old fan-out). The id64 is resolved lazily on
+      // selection (onSystemSelected → search()), not while building suggestions.
       httpResponses.set('/typeahead', { values: [] });
-      (TestBed.inject(AppService) as any).galMapSearch = vi.fn(() => Promise.resolve({ min_max: [{ name: 'No Id Sys', id64: 5 }] }));
+      const galMap = vi.fn(() => Promise.resolve({ min_max: [{ name: 'No Id Sys', id64: 5 }] }));
+      (TestBed.inject(AppService) as any).galMapSearch = galMap;
       edastroSystems$.set([{ name: 'No Id Sys', galMapSearch: 'No Id Sys' }]);
       const result = (component as any).getSystemSuggestions('No Id') as Promise<string[]>;
-      await result;
-      // Second call for the same query returns the cached promise instance.
+      expect(await result).toContain('No Id Sys');
+      expect(galMap).not.toHaveBeenCalled(); // no per-system id64 resolution at suggestion time
+      // Second call for the same (non-empty) query returns the cached promise instance.
       expect((component as any).getSystemSuggestions('No Id')).toBe(result);
+    });
+
+    it('does not cache an empty result (often a transient failure) so it can be retried', async () => {
+      httpResponses.set('/typeahead', { values: [] });
+      edastroSystems$.set([]); // no matches this keystroke → empty suggestions
+      const first = (component as any).getSystemSuggestions('Nothing') as Promise<string[]>;
+      expect(await first).toEqual([]);
+      // The empty entry was evicted, so a later call recomputes (new promise instance)
+      // rather than returning the cached empty list forever.
+      expect((component as any).getSystemSuggestions('Nothing')).not.toBe(first);
     });
   });
 
@@ -420,14 +447,45 @@ describe('HomeComponent (extended coverage)', () => {
       expect(typeahead.mock.calls.length).toBe(callsAfterFirst);
     });
 
-    it('ignores a stale lookup when a newer query has superseded it', async () => {
-      // Resolve the first lookup after the second so the generation guard must drop it.
+    it('drops a stale lookup that resolves after a newer query (switchMap cancellation)', async () => {
+      // The first lookup stays in flight; the second resolves immediately. Only when the
+      // first resolves LAST can this test distinguish a working generation guard from none.
+      let resolveFirst!: (v: string[]) => void;
+      const first = new Promise<string[]>(r => { resolveFirst = r; });
       const getSuggestions = vi.spyOn(component as any, 'getSystemSuggestions')
-        .mockImplementationOnce(() => Promise.resolve(['STALE']))
-        .mockImplementationOnce(() => Promise.resolve(['FRESH']));
-      await (component as any).runSuggestions('Query One');
-      await (component as any).runSuggestions('Query Two');
+        .mockReturnValueOnce(first)
+        .mockReturnValueOnce(Promise.resolve(['FRESH']));
+
+      const p1 = (component as any).runSuggestions('Query One'); // in flight
+      const p2 = (component as any).runSuggestions('Query Two'); // supersedes it
+      await p2;
       expect(component.filteredSystems()).toEqual(['FRESH']);
+
+      // The stale first lookup now resolves — its write must be dropped by the guard.
+      resolveFirst(['STALE']);
+      await p1;
+      expect(component.filteredSystems()).toEqual(['FRESH']);
+      getSuggestions.mockRestore();
+    });
+
+    it('drops an in-flight lookup superseded by a suppressed/short query', async () => {
+      // Regression guard: a short/suppressed query must still cancel an earlier in-flight
+      // lookup, or a slow result repopulates the panel after the user backspaced away.
+      let resolveFirst!: (v: string[]) => void;
+      const first = new Promise<string[]>(r => { resolveFirst = r; });
+      const getSuggestions = vi.spyOn(component as any, 'getSystemSuggestions')
+        .mockReturnValueOnce(first);
+
+      const p1 = (component as any).runSuggestions('Sol'); // real lookup, in flight
+      const p2 = (component as any).runSuggestions('So');   // backspaced: suppressed (len < 3)
+      await p2;
+      expect(component.filteredSystems()).toEqual([]);
+
+      resolveFirst(['Sol System']);
+      await p1;
+      // The superseded 'Sol' result must NOT reopen the panel.
+      expect(component.filteredSystems()).toEqual([]);
+      expect(getSuggestions).toHaveBeenCalledTimes(1); // 'So' was suppressed before any lookup
       getSuggestions.mockRestore();
     });
   });

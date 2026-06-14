@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
-import { AppService, EdastroData, EdastroSystem } from '../app.service';
+import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -18,11 +18,11 @@ import { decodeHtmlEntities } from '../data/html-entities';
 import { CREDITS_HTML } from '../data/credits.generated';
 
 @Component({
-    selector: 'app-home',
-    templateUrl: './home.component.html',
-    styleUrls: ['./home.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, DecimalPipe]
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, DecimalPipe]
 })
 export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);
@@ -51,9 +51,14 @@ export class HomeComponent implements OnInit, OnDestroy {
   formatRAJ2000(ra: number): string {
     if (typeof ra !== 'number' || isNaN(ra)) return '';
     const totalSeconds = ra * 240; // 360deg = 24h, so 1deg = 240s
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = (totalSeconds % 60);
+    let hours = Math.floor(totalSeconds / 3600);
+    let minutes = Math.floor((totalSeconds % 3600) / 60);
+    // Round the seconds to the displayed precision (0.1s) first, then carry any
+    // rollover into minutes/hours so we never render a "60.0s" (or "60m") field.
+    let seconds = Math.round((totalSeconds % 60) * 10) / 10;
+    if (seconds >= 60) { seconds -= 60; minutes += 1; }
+    if (minutes >= 60) { minutes -= 60; hours += 1; }
+    if (hours >= 24) { hours -= 24; } // RA wraps at 24h
     // Pad minutes and seconds to 2 digits, seconds to 1 decimal
     const pad = (n: number, d = 2) => n.toString().padStart(d, '0');
     return `${hours}h ${pad(minutes)}m ${seconds.toFixed(1).padStart(4, '0')}s`;
@@ -64,9 +69,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (typeof de !== 'number' || isNaN(de)) return '';
     const sign = de >= 0 ? '+' : '-';
     const abs = Math.abs(de);
-    const degrees = Math.floor(abs);
-    const arcminutes = Math.floor((abs - degrees) * 60);
-    const arcseconds = ((abs - degrees - arcminutes / 60) * 3600);
+    let degrees = Math.floor(abs);
+    let arcminutes = Math.floor((abs - degrees) * 60);
+    // Round to the displayed precision (0.1″) first, then carry any rollover into
+    // arcminutes/degrees so we never render a "60.0″" (or "60′") field.
+    let arcseconds = Math.round((abs - degrees - arcminutes / 60) * 3600 * 10) / 10;
+    if (arcseconds >= 60) { arcseconds -= 60; arcminutes += 1; }
+    if (arcminutes >= 60) { arcminutes -= 60; degrees += 1; }
     // Pad arcminutes and arcseconds
     const pad = (n: number, d = 2) => n.toString().padStart(d, '0');
     return `${sign}${degrees}° ${pad(arcminutes)}′ ${arcseconds.toFixed(1).padStart(4, '0')}″`;
@@ -414,21 +423,25 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private async runSuggestions(value: string): Promise<void> {
-    // distinctUntilChanged: skip if the (debounced) query is unchanged.
+    // distinctUntilChanged: skip if the (debounced) query is unchanged (don't cancel its
+    // own in-flight lookup).
     if (value === this.lastSuggestionQuery) {
       return;
     }
     this.lastSuggestionQuery = value;
 
-    // Suppress suggestions while a search is running so a late-resolving lookup
-    // can't reopen the panel over the loading/results view.
+    // switchMap semantics: a new query supersedes any older in-flight lookup. Bump the
+    // generation BEFORE the suppression gate too, so a suppressed/short query still
+    // invalidates a slower, earlier lookup (otherwise it could resolve and reopen the
+    // panel over the loading/results view).
+    const generation = ++this.suggestionGeneration;
+
+    // Suppress suggestions while a search is running, or for queries too short to be useful.
     if (this.searching || !value || value.length < 3) {
       this.filteredSystems.set([]);
       return;
     }
 
-    // switchMap semantics: only the latest in-flight lookup may update the list.
-    const generation = ++this.suggestionGeneration;
     try {
       const suggestions = await this.getSystemSuggestions(value);
       if (generation === this.suggestionGeneration) {
@@ -487,7 +500,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Try Spansh if not found in EdAstro
+    // Try the Canonn typeahead API if not found in EdAstro
     this.appService.galMapSearch(this.searchInput)
       .then(data => {
         const systems = data.min_max || [];
@@ -796,50 +809,50 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (cached) {
       return cached;
     }
-    const result = this.computeSystemSuggestions(query);
+    // Cache the in-flight promise so concurrent keystrokes share one request, but
+    // evict the entry if it resolves empty (or rejects). Both suggestion sources
+    // swallow API errors into an empty list, so an empty result is indistinguishable
+    // from a transient failure — caching it permanently would suppress suggestions
+    // for this query forever, even after the API recovers.
+    const result = this.computeSystemSuggestions(query)
+      .then(suggestions => {
+        if (suggestions.length === 0) {
+          this.systemSuggestionsCache.delete(cacheKey);
+        }
+        return suggestions;
+      })
+      .catch(error => {
+        this.systemSuggestionsCache.delete(cacheKey);
+        throw error;
+      });
     this.systemSuggestionsCache.set(cacheKey, result);
     return result;
   }
 
   private async computeSystemSuggestions(query: string): Promise<string[]> {
-    // Name suggestions from the Spansh typeahead. A failure here shouldn't wipe out the
+    // Name suggestions from the Canonn typeahead. A failure here shouldn't wipe out the
     // EdAstro suggestions, so fall back to an empty list.
-    const spansQuery = this.appService.typeahead(query)
+    const canonnSuggestions = await this.appService.typeahead(query)
       .then(response => (response.values || []).map(name => this.decodeHtmlEntities(name)))
       .catch(() => [] as string[]);
 
-    // Read the current EdAstro snapshot synchronously for this keystroke.
-    const matchingSystems = this.appService.edastroSystems()
-      .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 10);
-
-    const systemsWithId64 = matchingSystems.filter(s => s.id64);
-    const systemsWithoutId64 = matchingSystems.filter(s => !s.id64);
-
-    const edastroQuery: Promise<string[]> = systemsWithoutId64.length === 0
-      ? Promise.resolve(systemsWithId64.map(s => this.decodeHtmlEntities(s.name)))
-      // Look up id64 for systems missing it, then map to display names.
-      : Promise.all(systemsWithoutId64.map(system => {
-          const systemName = system.galMapSearch || system.name;
-          const decodedSystemName = this.decodeHtmlEntities(systemName);
-          return this.appService.galMapSearch(decodedSystemName)
-            .then(result => {
-              const found = result?.min_max?.find(s => s.name === decodedSystemName);
-              return found ? { ...system, id64: found.id64 } : null;
-            })
-            .catch(() => null);
-        })).then(results => {
-          const systemsFoundInGalMap = results.filter(s => s !== null && s.id64) as EdastroSystem[];
-          const allValidSystems = [...systemsWithId64, ...systemsFoundInGalMap];
-          return allValidSystems.map(s => this.decodeHtmlEntities(s.name));
-        });
-
-    const [spansSuggestions, edastroSuggestions] = await Promise.all([spansQuery, edastroQuery]);
-
-    // (display name -> systemName/id64 mapping is maintained from the edastroSystems
-    // feed in ngOnInit, not rebuilt here on every keystroke.)
-    const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
+    // EdAstro name matches from the in-memory snapshot. Match on the decoded name so a
+    // query typed with the decoded character (e.g. "&") matches a name stored with an HTML
+    // entity ("&amp;"), consistent with how names are displayed.
+    //
+    // We deliberately do NOT resolve a missing id64 here. Doing so previously fired one
+    // extra typeahead HTTP request *per matching system* — up to 10 additional calls for a
+    // single keystroke (e.g. typing "Alph" triggered a galMapSearch for every matched
+    // system name). The id64 isn't needed to display a suggestion, the resolved value was
+    // thrown away (never written back into systemMapping), and onSystemSelected already
+    // resolves a missing id64 on demand via search(). So this is now a single HTTP call.
     const queryLower = query.toLowerCase();
+    const edastroSuggestions = this.appService.edastroSystems()
+      .filter(s => this.decodeHtmlEntities(s.name).toLowerCase().includes(queryLower))
+      .slice(0, 10)
+      .map(s => this.decodeHtmlEntities(s.name));
+
+    const combined = [...new Set([...canonnSuggestions, ...edastroSuggestions])];
 
     // Sort by relevance: exact match > starts with > contains
     const sorted = combined.sort((a, b) => {

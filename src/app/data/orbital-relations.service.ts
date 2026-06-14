@@ -183,7 +183,10 @@ export class OrbitalRelationsService {
    * missing or the orbit is circular (no distinguishable apsis). Pure and time-injectable.
    */
   nextOrbitalEvent(bd: CanonnBiostatsBody, type: 'apo' | 'peri', now: number = Date.now()): OrbitalEvent | null {
-    if (!bd.meanAnomaly || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly ||
+    // Use a null/undefined check for meanAnomaly (not a falsy check): a body that was
+    // exactly at periapsis at sample time has a legitimate meanAnomaly of 0, which a
+    // falsy check would wrongly treat as missing data and suppress the event row.
+    if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly ||
       !bd.orbitalEccentricity || bd.orbitalEccentricity === 0) {
       return null;
     }

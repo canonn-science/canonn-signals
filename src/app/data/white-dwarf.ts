@@ -1,6 +1,6 @@
 /**
- * White-dwarf spectral-class reference data. Spansh encodes the spectral type in
- * the body subType as `White Dwarf (XX)`; these maps turn that code into a short
+ * White-dwarf spectral-class reference data. The Canonn API encodes the spectral type
+ * in the body subType as `White Dwarf (XX)`; these maps turn that code into a short
  * atmosphere label and a longer explanatory tooltip. Kept out of the component so
  * the lookup tables can be referenced and tested independently of any view.
  */
