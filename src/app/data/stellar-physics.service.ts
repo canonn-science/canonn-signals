@@ -103,12 +103,10 @@ export class StellarPhysicsService {
    */
   classifyNeutronStar(
     solarMasses: number | null | undefined,
-    solarRadius: number | null | undefined,
     rotationalPeriodDays: number | null | undefined,
     absoluteMagnitude: number | null | undefined,
   ): string | null {
     if (solarMasses === undefined || solarMasses === null ||
-      solarRadius === undefined || solarRadius === null ||
       rotationalPeriodDays === undefined || rotationalPeriodDays === null ||
       absoluteMagnitude === undefined || absoluteMagnitude === null) {
       return null;

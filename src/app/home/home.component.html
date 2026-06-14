@@ -6,9 +6,9 @@
       <mat-form-field class="input-full-width">
         <mat-label>Search by system name, id64 or POI name</mat-label>
         <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128"
-          (keyup.enter)="search()">
+          (input)="onSearchInput()" (keyup.enter)="search()">
           <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">
-            @for (system of filteredSystems | async; track system) {
+            @for (system of filteredSystems(); track system) {
               <mat-option [value]="system">
                 {{ system }}
               </mat-option>

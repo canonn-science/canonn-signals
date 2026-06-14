@@ -1,10 +1,7 @@
-import { HttpClient } from '@angular/common/http';
 import {
-  Component, ChangeDetectionStrategy, ElementRef, DestroyRef, Injector,
+  Component, ChangeDetectionStrategy, ElementRef, Injector,
   OnChanges, afterNextRender, inject, input, output, viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, of, tap } from 'rxjs';
 import { AppService, IndependentOutpost } from '../app.service';
 import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
@@ -44,9 +41,7 @@ const FULL_VIEWBOX = `0 0 ${MAP_SIZE} ${MAP_SIZE}`;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegionMapComponent implements OnChanges {
-  private readonly httpClient = inject(HttpClient);
   private readonly appService = inject(AppService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
   readonly system = input<RegionMapSystem | null>(null);
@@ -78,7 +73,7 @@ export class RegionMapComponent implements OnChanges {
     this.systemSelected.emit(systemName);
   }
 
-  private loadRegionMap(): void {
+  private async loadRegionMap(): Promise<void> {
     const regionMapContainer = this.regionMapContainer();
     if (!regionMapContainer || !this.system()) {
       return;
@@ -101,46 +96,50 @@ export class RegionMapComponent implements OnChanges {
     this.svgLoading = true;
 
     // Load the SVG from the assets folder
-    this.httpClient.get('assets/region-map/RegionMap.svg', { responseType: 'text' })
-      .subscribe({
-        next: svgContent => {
-          this.svgLoading = false;
-          const regionMapContainerValue = this.regionMapContainer();
-          if (regionMapContainerValue && regionMapContainerValue.nativeElement) {
-            // Trusted content: a static SVG bundled in the app's own assets. This
-            // assignment is NOT Angular-sanitized, so it must never be sourced from a
-            // remote/user-controlled location without sanitizing first.
-            regionMapContainerValue.nativeElement.innerHTML = svgContent;
+    let svgContent: string;
+    try {
+      const response = await fetch('assets/region-map/RegionMap.svg');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      svgContent = await response.text();
+    } catch (error) {
+      this.svgLoading = false;
+      logger.error('Error loading region map:', error);
+      return;
+    }
 
-            // Remove explicit width and height attributes from SVG
-            const svgElement = regionMapContainerValue.nativeElement.querySelector('svg');
-            if (svgElement) {
-              svgElement.removeAttribute('width');
-              svgElement.removeAttribute('height');
-              svgElement.style.width = '100%';
-              svgElement.style.height = 'auto';
-              svgElement.style.borderRadius = '8px';
+    this.svgLoading = false;
+    const regionMapContainerValue = this.regionMapContainer();
+    if (regionMapContainerValue && regionMapContainerValue.nativeElement) {
+      // Trusted content: a static SVG bundled in the app's own assets. This
+      // assignment is NOT Angular-sanitized, so it must never be sourced from a
+      // remote/user-controlled location without sanitizing first.
+      regionMapContainerValue.nativeElement.innerHTML = svgContent;
 
-              // Add click handler to reset zoom
-              svgElement.addEventListener('click', (event) => {
-                const currentViewBox = svgElement.getAttribute('viewBox');
-                // If we're zoomed in, any click resets to full view
-                if (currentViewBox !== FULL_VIEWBOX) {
-                  event.stopPropagation();
-                  svgElement.setAttribute('viewBox', FULL_VIEWBOX);
-                  this.updateMarkerScales(svgElement, 1);
-                }
-              });
-            }
+      // Remove explicit width and height attributes from SVG
+      const svgElement = regionMapContainerValue.nativeElement.querySelector('svg');
+      if (svgElement) {
+        svgElement.removeAttribute('width');
+        svgElement.removeAttribute('height');
+        svgElement.style.width = '100%';
+        svgElement.style.height = 'auto';
+        svgElement.style.borderRadius = '8px';
 
-            this.highlightRegion();
+        // Add click handler to reset zoom
+        svgElement.addEventListener('click', (event) => {
+          const currentViewBox = svgElement.getAttribute('viewBox');
+          // If we're zoomed in, any click resets to full view
+          if (currentViewBox !== FULL_VIEWBOX) {
+            event.stopPropagation();
+            svgElement.setAttribute('viewBox', FULL_VIEWBOX);
+            this.updateMarkerScales(svgElement, 1);
           }
-        },
-        error: error => {
-          this.svgLoading = false;
-          logger.error('Error loading region map:', error);
-        },
-      });
+        });
+      }
+
+      this.highlightRegion();
+    }
   }
 
   private highlightRegion(): void {
@@ -243,8 +242,8 @@ export class RegionMapComponent implements OnChanges {
 
     // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
     if (regionNumber === 18) {
-      this.fetchGnosisData().subscribe({
-        next: gnosisData => {
+      this.fetchGnosisData()
+        .then(gnosisData => {
           if (gnosisData) {
             this.addGnosisMarker(svgElement, bbox);
             // Scale the Gnosis marker after it's added
@@ -252,9 +251,8 @@ export class RegionMapComponent implements OnChanges {
               this.updateMarkerScales(svgElement, scaleFactor);
             }, 50);
           }
-        },
-        error: error => logger.error('Error fetching Gnosis data:', error),
-      });
+        })
+        .catch(error => logger.error('Error fetching Gnosis data:', error));
     }
 
     // Update marker scales immediately and again after a short delay
@@ -488,23 +486,19 @@ export class RegionMapComponent implements OnChanges {
     });
   }
 
-  private fetchGnosisData(): Observable<GnosisData | null> {
+  private async fetchGnosisData(): Promise<GnosisData | null> {
     // Check if we have cached data and if it's still fresh
     const now = Date.now();
 
     if (this.gnosisData && (now - this.gnosisLastFetched) < this.GNOSIS_CACHE_DURATION) {
-      return of(this.gnosisData);
+      return this.gnosisData;
     }
 
     // Fetch fresh data
-    return this.appService.getGnosis()
-      .pipe(
-        tap(data => {
-          this.gnosisData = data;
-          this.gnosisLastFetched = now;
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      );
+    const data = await this.appService.getGnosis();
+    this.gnosisData = data;
+    this.gnosisLastFetched = now;
+    return data;
   }
 
   private addGnosisMarker(svgElement: SVGSVGElement, regionBbox: DOMRect): void {

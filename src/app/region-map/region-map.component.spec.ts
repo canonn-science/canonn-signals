@@ -1,7 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { of } from 'rxjs';
 
 import { RegionMapComponent } from './region-map.component';
 import { AppService } from '../app.service';
@@ -11,23 +9,28 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 describe('RegionMapComponent', () => {
   let component: RegionMapComponent;
   let fixture: ComponentFixture<RegionMapComponent>;
-  let httpGet: ReturnType<typeof vi.fn>;
+  let fetchMock: ReturnType<typeof vi.fn>;
   let getGnosis: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    httpGet = vi.fn(() => of('<svg></svg>'));
-    getGnosis = vi.fn(() => of(null));
+    // The SVG is loaded via the global fetch; return an empty SVG so loadRegionMap has
+    // something to parse.
+    fetchMock = vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve('<svg></svg>') }));
+    vi.stubGlobal('fetch', fetchMock);
+    getGnosis = vi.fn(() => Promise.resolve(null));
     TestBed.configureTestingModule({
       imports: [RegionMapComponent],
       providers: [
         provideZonelessChangeDetection(),
-        // Return an empty SVG document so loadRegionMap has something to parse.
-        { provide: HttpClient, useValue: { get: httpGet } },
         { provide: AppService, useValue: { getGnosis } },
       ],
     });
     fixture = TestBed.createComponent(RegionMapComponent);
     component = fixture.componentInstance;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   /** Builds a standalone SVG with a couple of region paths, ready for the private DOM helpers. */
@@ -82,7 +85,7 @@ describe('RegionMapComponent', () => {
     });
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(httpGet).toHaveBeenCalledWith('assets/region-map/RegionMap.svg', { responseType: 'text' });
+    expect(fetchMock).toHaveBeenCalledWith('assets/region-map/RegionMap.svg');
   });
 
   describe('addSystemMarker', () => {
@@ -231,10 +234,10 @@ describe('RegionMapComponent', () => {
       expect(getGnosis).toHaveBeenCalledTimes(1);
     });
 
-    it('caches Gnosis data within the cache window', () => {
-      getGnosis.mockReturnValue(of({ system: 'Sol', coords: [0, 0, 0], arrival: '', departure: '', desc: '' }));
-      (component as any).fetchGnosisData().subscribe();
-      (component as any).fetchGnosisData().subscribe();
+    it('caches Gnosis data within the cache window', async () => {
+      getGnosis.mockReturnValue(Promise.resolve({ system: 'Sol', coords: [0, 0, 0], arrival: '', departure: '', desc: '' }));
+      await (component as any).fetchGnosisData();
+      await (component as any).fetchGnosisData();
       expect(getGnosis).toHaveBeenCalledTimes(1); // second call served from cache
     });
   });

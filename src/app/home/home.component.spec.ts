@@ -1,7 +1,5 @@
-import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { HomeComponent } from './home.component';
@@ -21,7 +19,6 @@ describe('HomeComponent', () => {
       imports: [HomeComponent],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: HttpClient, useValue: { get: () => of('') } },
         {
           provide: AppService,
           useValue: {
@@ -29,15 +26,15 @@ describe('HomeComponent', () => {
             independentOutposts: signal([]),
             codexEntries: signal([]),
             getBodyDisplayName: (n: string) => n,
-            getEdastroData: () => of(null),
+            getEdastroData: () => Promise.resolve(null),
             setBackgroundImage: () => {},
-            getSimbad: () => of({ name: '', system_address: 0 }),
-            getBiostats: () => of(null),
-            typeahead: () => of({}),
-            galMapSearch: () => of({ min_max: [] }),
+            getSimbad: () => Promise.resolve({ name: '', system_address: 0 }),
+            getBiostats: () => Promise.resolve(null),
+            typeahead: () => Promise.resolve({}),
+            galMapSearch: () => Promise.resolve({ min_max: [] }),
           },
         },
-        { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
         { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
       ],
       schemas: [NO_ERRORS_SCHEMA],

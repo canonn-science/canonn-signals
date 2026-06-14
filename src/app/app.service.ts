@@ -1,7 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, Signal, inject, signal } from '@angular/core';
-import { Observable, of, timer } from 'rxjs';
-import { catchError, map, retry, timeout } from 'rxjs/operators';
+import { Injectable, Signal, signal } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { parseJsonWithBigIntIds } from './data/json-bigint';
 import type { CanonnBiostats, SimbadApiResponse } from './home/home.component';
@@ -14,38 +11,85 @@ const HTTP_RETRY_COUNT = 2;
 /** Base URL for the Canonn cloud-function query API. */
 const CANONN_QUERY_BASE = 'https://us-central1-canonn-api-236217.cloudfunctions.net/query';
 
+/**
+ * Error thrown by {@link AppService} HTTP helpers for non-2xx responses. Mirrors the
+ * shape callers previously relied on from Angular's `HttpErrorResponse`: `status` for
+ * the code and `error` for the (best-effort parsed) response body.
+ */
+export class HttpError extends Error {
+  constructor(public readonly status: number, message: string, public readonly error?: unknown) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
+
+/** Resolves after `ms` milliseconds. Used for retry backoff. */
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AppService {
-  private readonly httpClient = inject(HttpClient);
-
   /**
-   * Wraps an HTTP GET with a timeout and exponential-backoff retry so that
+   * Performs an HTTP GET with a timeout and exponential-backoff retry so that
    * transient network errors and slow/hung requests don't permanently break
    * the feature. Callers still receive the error if all retries fail.
    */
-  private resilientGet<T>(url: string, timeoutMs: number = HTTP_TIMEOUT_MS): Observable<T> {
-    // Fetch as text and parse with a BigInt-aware parser so 64-bit id64 / system
-    // address fields keep full precision (the browser's JSON.parse would round
-    // them to float64). See parseJsonWithBigIntIds.
-    return this.httpClient.get(url, { responseType: 'text' }).pipe(
-      timeout(timeoutMs),
-      retry({
-        count: HTTP_RETRY_COUNT,
-        delay: (error, retryIndex) => {
-          // Don't retry client errors (e.g. 404 "system not found") — they won't
-          // succeed on a retry and would only delay surfacing the result. Timeouts
-          // and network/5xx errors (no status) are still retried with backoff.
-          const status = (error as HttpErrorResponse)?.status;
-          if (status >= 400 && status < 500) {
-            throw error;
-          }
-          return timer(Math.min(1000 * 2 ** (retryIndex - 1), 8000));
-        },
-      }),
-      map(text => parseJsonWithBigIntIds<T>(text)),
-    );
+  private async resilientGet<T>(url: string, timeoutMs: number = HTTP_TIMEOUT_MS): Promise<T> {
+    let lastError: unknown;
+    // One initial attempt plus HTTP_RETRY_COUNT retries.
+    for (let attempt = 0; attempt <= HTTP_RETRY_COUNT; attempt++) {
+      try {
+        const text = await this.fetchText(url, timeoutMs);
+        // Parse with a BigInt-aware parser so 64-bit id64 / system address fields keep
+        // full precision (the browser's JSON.parse would round them to float64).
+        return parseJsonWithBigIntIds<T>(text);
+      } catch (error) {
+        lastError = error;
+        // Don't retry client errors (e.g. 404 "system not found") — they won't
+        // succeed on a retry and would only delay surfacing the result. Timeouts
+        // (aborts) and network/5xx errors (no status) are still retried with backoff.
+        const status = error instanceof HttpError ? error.status : undefined;
+        if (status !== undefined && status >= 400 && status < 500) {
+          throw error;
+        }
+        if (attempt === HTTP_RETRY_COUNT) {
+          break;
+        }
+        // retryIndex is 1-based for the first retry, matching the previous backoff curve.
+        const retryIndex = attempt + 1;
+        await delay(Math.min(1000 * 2 ** (retryIndex - 1), 8000));
+      }
+    }
+    throw lastError;
+  }
+
+  /**
+   * Fetches a URL as text, aborting (and thus failing) after `timeoutMs`. Non-2xx
+   * responses are surfaced as an {@link HttpError} carrying the status and a best-effort
+   * parsed body so callers can branch on `status` / `error.message` as before.
+   */
+  private async fetchText(url: string, timeoutMs: number): Promise<string> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        let parsed: unknown = body;
+        try {
+          parsed = JSON.parse(body);
+        } catch {
+          // Body wasn't JSON; keep the raw text.
+        }
+        throw new HttpError(response.status, response.statusText || `HTTP ${response.status}`, parsed);
+      }
+      return await response.text();
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private readonly _codexEntries = signal<CanonnCodexEntry[]>([]);
@@ -61,38 +105,50 @@ export class AppService {
   public readonly independentOutposts: Signal<IndependentOutpost[]> = this._independentOutposts.asReadonly();
 
   constructor() {
-    this.resilientGet<CanonnCodex>(`${CANONN_QUERY_BASE}/codex/ref`)
-      .pipe(catchError(() => of({} as CanonnCodex)))
-      .subscribe(c => {
-        this._codexEntries.set(Object.values(c));
-      });
+    void this.loadCodexEntries();
+    void this.loadEdastroSystems();
+  }
 
+  /** Loads the codex reference once at startup; failures leave the list empty. */
+  private async loadCodexEntries(): Promise<void> {
+    try {
+      const codex = await this.resilientGet<CanonnCodex>(`${CANONN_QUERY_BASE}/codex/ref`);
+      this._codexEntries.set(Object.values(codex));
+    } catch {
+      this._codexEntries.set([]);
+    }
+  }
+
+  /** Loads the EdAstro combined feed once at startup; failures leave both lists empty. */
+  private async loadEdastroSystems(): Promise<void> {
     const edastroUrl = environment.production
       ? "https://edastro.com/gec/json/combined"
       : "/api/edastro/gec/json/combined";
 
     // The combined GEC dataset can be several MB; give it a more generous timeout.
-    this.resilientGet<EdastroSystem[]>(edastroUrl, 60000)
-      .pipe(catchError(() => of([] as EdastroSystem[])))
-      .subscribe(systems => {
-        this._edastroSystems.set(systems);
+    let systems: EdastroSystem[];
+    try {
+      systems = await this.resilientGet<EdastroSystem[]>(edastroUrl, 60000);
+    } catch {
+      systems = [];
+    }
+    this._edastroSystems.set(systems);
 
-        // Filter and extract independentOutpost data
-        const outposts = systems
-          .filter(system => system.type === 'independentOutpost' &&
-            !system.name.toLowerCase().includes('retired'))
-          .map(system => ({
-            name: system.name,
-            galMapSearch: system.galMapSearch || system.name,
-            coordinates: system.coordinates || [],
-            type: system.type
-          } as IndependentOutpost));
+    // Filter and extract independentOutpost data
+    const outposts = systems
+      .filter(system => system.type === 'independentOutpost' &&
+        !system.name.toLowerCase().includes('retired'))
+      .map(system => ({
+        name: system.name,
+        galMapSearch: system.galMapSearch || system.name,
+        coordinates: system.coordinates || [],
+        type: system.type
+      } as IndependentOutpost));
 
-        this._independentOutposts.set(outposts);
-      });
+    this._independentOutposts.set(outposts);
   }
 
-  public getEdastroData(id64: number | bigint): Observable<EdastroData> {
+  public getEdastroData(id64: number | bigint): Promise<EdastroData> {
     const url = environment.production
       ? `https://edastro.com/gec/json/id64/${id64}`
       : `/api/edastro/gec/json/id64/${id64}`;
@@ -103,23 +159,23 @@ export class AppService {
     this._backgroundImage.set(imageUrl);
   }
 
-  public galMapSearch(systemName: string): Observable<TypeaheadResponse> {
+  public galMapSearch(systemName: string): Promise<TypeaheadResponse> {
     return this.typeahead(systemName);
   }
 
   /** Typeahead lookup. Returns `min_max` (name + id64 matches) and/or `values` (name suggestions). */
-  public typeahead(query: string): Observable<TypeaheadResponse> {
+  public typeahead(query: string): Promise<TypeaheadResponse> {
     return this.resilientGet<TypeaheadResponse>(`${CANONN_QUERY_BASE}/typeahead?q=${encodeURIComponent(query)}`);
   }
 
   /** Loads the per-system biostats payload (bodies, signals, coordinates). Accepts the
    *  address as a string to preserve 64-bit precision for very large system addresses. */
-  public getBiostats(systemAddress: number | string | bigint): Observable<CanonnBiostats> {
+  public getBiostats(systemAddress: number | string | bigint): Promise<CanonnBiostats> {
     return this.resilientGet<CanonnBiostats>(`${CANONN_QUERY_BASE}/codex/biostats?id=${systemAddress}&caller=Signals`);
   }
 
   /** Looks up Simbad cross-identification / coordinates for a hand-authored system. */
-  public getSimbad(systemAddress: number | bigint, name: string, coords?: { x: number, y: number, z: number }): Observable<SimbadApiResponse> {
+  public getSimbad(systemAddress: number | bigint, name: string, coords?: { x: number, y: number, z: number }): Promise<SimbadApiResponse> {
     let url = `${CANONN_QUERY_BASE}/simbad?system_address=${systemAddress}&name=${encodeURIComponent(name)}`;
     if (coords) {
       url += `&x=${coords.x}&y=${coords.y}&z=${coords.z}`;
@@ -128,7 +184,7 @@ export class AppService {
   }
 
   /** Fetches the current location of The Gnosis mobile starport. */
-  public getGnosis(): Observable<GnosisData> {
+  public getGnosis(): Promise<GnosisData> {
     return this.resilientGet<GnosisData>(`${CANONN_QUERY_BASE}/gnosis`);
   }
 

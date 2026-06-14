@@ -1109,7 +1109,7 @@ export class SystemBodyComponent implements OnChanges {
       return null;
     }
     return this.stellarPhysics.classifyNeutronStar(
-      bd.solarMasses, bd.solarRadius, bd.rotationalPeriod, bd.absoluteMagnitude,
+      bd.solarMasses, bd.rotationalPeriod, bd.absoluteMagnitude,
     );
   }
 

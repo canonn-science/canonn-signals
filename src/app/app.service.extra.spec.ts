@@ -1,45 +1,77 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AppService } from './app.service';
 
+/**
+ * AppService fetches text and parses it with a BigInt-aware parser, so these tests stub
+ * the global `fetch` with a routable mock that returns Response-likes. The service is
+ * promise-based, so assertions await the calls rather than flushing an HttpTestingController.
+ */
 describe('AppService (HTTP-driven coverage)', () => {
   let service: AppService;
-  let httpMock: HttpTestingController;
+  let fetchMock: ReturnType<typeof vi.fn>;
+  /** Per-test router: maps a request URL to a Response-like (see ok()/fail()). */
+  let route: (url: string) => { ok: boolean; status: number; statusText: string; text: () => Promise<string> };
+
+  /** A 2xx Response-like; objects are JSON-stringified, strings passed through verbatim. */
+  function ok(body: unknown) {
+    const text = typeof body === 'string' ? body : JSON.stringify(body);
+    return { ok: true, status: 200, statusText: 'OK', text: () => Promise.resolve(text) };
+  }
+
+  /** A failing Response-like with the given status. */
+  function fail(status: number, body = 'error') {
+    return { ok: false, status, statusText: `HTTP ${status}`, text: () => Promise.resolve(body) };
+  }
+
+  /** Flushes pending promise microtasks so chained .then(...) callbacks settle. */
+  async function flush(): Promise<void> {
+    for (let i = 0; i < 12; i++) {
+      await Promise.resolve();
+    }
+  }
+
+  /** Creates the service (firing the constructor feeds) and lets them settle. */
+  async function init(): Promise<void> {
+    service = TestBed.inject(AppService);
+    await flush();
+  }
+
+  /** True if the global fetch was called with a URL containing `fragment`. */
+  function calledWith(fragment: string): boolean {
+    return fetchMock.mock.calls.some(([url]) => String(url).includes(fragment));
+  }
 
   beforeEach(() => {
+    // Default router: satisfies the two constructor feeds (codex ref + edastro combined).
+    route = (url: string) => {
+      if (url.includes('/codex/ref')) return ok({});
+      if (url.includes('combined')) return ok([]);
+      return ok({});
+    };
+    fetchMock = vi.fn((url: string) => Promise.resolve(route(url)));
+    vi.stubGlobal('fetch', fetchMock);
+
     TestBed.configureTestingModule({
-      providers: [
-        provideZonelessChangeDetection(),
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [provideZonelessChangeDetection()],
     });
-    service = TestBed.inject(AppService);
-    httpMock = TestBed.inject(HttpTestingController);
   });
 
-  /**
-   * resilientGet now fetches with `responseType: 'text'` and parses with a
-   * BigInt-aware parser, so responses must be flushed as JSON *text*, not objects.
-   */
-  function flushJson(req: { flush: (body: string) => void }, body: unknown): void {
-    req.flush(JSON.stringify(body));
-  }
-
-  /** Flushes the two requests fired from the constructor (codex ref + edastro combined). */
-  function flushConstructorRequests(edastroSystems: any[] = []): void {
-    flushJson(httpMock.expectOne(req => req.url.includes('/codex/ref')), {});
-    flushJson(httpMock.expectOne(req => req.url.includes('edastro') && req.url.includes('combined')), edastroSystems);
-  }
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it('publishes codex entries and derived independent outposts from the constructor feeds', async () => {
-    flushConstructorRequests([
-      { name: 'Outpost Alpha', id64: 1, type: 'independentOutpost', coordinates: [1, 2, 3], galMapSearch: 'Alpha' },
-      { name: 'Retired Base', id64: 2, type: 'independentOutpost', coordinates: [0, 0, 0] },
-      { name: 'Some Station', id64: 3, type: 'station', coordinates: [4, 5, 6] },
-    ]);
+    route = (url: string) => {
+      if (url.includes('/codex/ref')) return ok({});
+      if (url.includes('combined')) return ok([
+        { name: 'Outpost Alpha', id64: 1, type: 'independentOutpost', coordinates: [1, 2, 3], galMapSearch: 'Alpha' },
+        { name: 'Retired Base', id64: 2, type: 'independentOutpost', coordinates: [0, 0, 0] },
+        { name: 'Some Station', id64: 3, type: 'station', coordinates: [4, 5, 6] },
+      ]);
+      return ok({});
+    };
+    await init();
 
     const outposts = service.independentOutposts();
     expect(outposts.length).toBe(1); // 'Retired' filtered out, non-outpost type filtered out
@@ -50,45 +82,41 @@ describe('AppService (HTTP-driven coverage)', () => {
     expect(systems.length).toBe(3);
   });
 
-  it('fetches per-system EdAstro data on demand', () => {
-    flushConstructorRequests();
-    let result: any;
-    service.getEdastroData(12345).subscribe(d => (result = d));
-    flushJson(httpMock.expectOne(req => req.url.includes('/id64/12345')), { name: 'Sys', summary: 'hi' });
+  it('fetches per-system EdAstro data on demand', async () => {
+    await init();
+    route = (url: string) => url.includes('/id64/12345') ? ok({ name: 'Sys', summary: 'hi' }) : ok({});
+    const result = await service.getEdastroData(12345);
     expect(result.name).toBe('Sys');
   });
 
-  it('runs a gal-map typeahead search', () => {
-    flushConstructorRequests();
-    let result: any;
-    service.galMapSearch('Sol').subscribe(r => (result = r));
-    const req = httpMock.expectOne(r => r.url.includes('/typeahead') && r.url.includes('Sol'));
-    flushJson(req, { min_max: [{ name: 'Sol', id64: 10477373803 }] });
-    expect(result.min_max[0].name).toBe('Sol');
+  it('runs a gal-map typeahead search', async () => {
+    await init();
+    route = (url: string) => url.includes('/typeahead') && url.includes('Sol')
+      ? ok({ min_max: [{ name: 'Sol', id64: 10477373803 }] }) : ok({});
+    const result = await service.galMapSearch('Sol');
+    expect(result.min_max![0].name).toBe('Sol');
   });
 
-  it('updates the background image signal', () => {
-    flushConstructorRequests();
+  it('updates the background image signal', async () => {
+    await init();
     service.setBackgroundImage('assets/bg2.jpg');
     expect(service.backgroundImage()).toBe('assets/bg2.jpg');
   });
 
-  it('loads per-system biostats', () => {
-    flushConstructorRequests();
-    let result: any;
-    service.getBiostats(999).subscribe(r => (result = r));
-    flushJson(httpMock.expectOne(r => r.url.includes('/codex/biostats?id=999')), { system: { name: 'Sys', id64: 999 } });
+  it('loads per-system biostats', async () => {
+    await init();
+    route = (url: string) => url.includes('/codex/biostats?id=999') ? ok({ system: { name: 'Sys', id64: 999 } }) : ok({});
+    const result = await service.getBiostats(999);
     expect(result.system.name).toBe('Sys');
   });
 
-  it('preserves a 64-bit body id64 as an exact BigInt (no float64 rounding)', () => {
-    flushConstructorRequests();
-    let result: any;
-    service.getBiostats('355844362082').subscribe(r => (result = r));
+  it('preserves a 64-bit body id64 as an exact BigInt (no float64 rounding)', async () => {
+    await init();
     // 1080864266413281122 rounds to 1080864266413281200 when parsed as a JS number.
     const rawText = '{"system":{"name":"Phraa Eaec ER-I c11-1","id64":355844362082,'
       + '"bodies":[{"bodyId":30,"id64":1080864266413281122,"name":"Phraa Eaec ER-I c11-1 11"}]}}';
-    httpMock.expectOne(r => r.url.includes('id=355844362082')).flush(rawText);
+    route = (url: string) => url.includes('id=355844362082') ? ok(rawText) : ok({});
+    const result: any = await service.getBiostats('355844362082');
 
     const id64 = result.system.bodies[0].id64;
     expect(typeof id64).toBe('bigint');
@@ -99,54 +127,67 @@ describe('AppService (HTTP-driven coverage)', () => {
     expect(result.system.id64).toBe(355844362082n);
   });
 
-  it('builds the Simbad URL with and without coordinates', () => {
-    flushConstructorRequests();
-    service.getSimbad(42, 'Sol').subscribe();
-    flushJson(httpMock.expectOne(r => r.url.includes('/simbad?') && r.url.includes('system_address=42') && !r.url.includes('&x=')), {});
+  it('builds the Simbad URL with and without coordinates', async () => {
+    await init();
+    await service.getSimbad(42, 'Sol');
+    expect(calledWith('/simbad?')).toBe(true);
+    expect(calledWith('system_address=42')).toBe(true);
 
-    service.getSimbad(42, 'Sol', { x: 1, y: 2, z: 3 }).subscribe();
-    flushJson(httpMock.expectOne(r => r.url.includes('&x=1&y=2&z=3')), {});
+    await service.getSimbad(42, 'Sol', { x: 1, y: 2, z: 3 });
+    expect(calledWith('&x=1&y=2&z=3')).toBe(true);
   });
 
-  it('fetches the Gnosis location', () => {
-    flushConstructorRequests();
-    let result: any;
-    service.getGnosis().subscribe(r => (result = r));
-    flushJson(httpMock.expectOne(r => r.url.includes('/gnosis')), { system: 'Varati' });
+  it('fetches the Gnosis location', async () => {
+    await init();
+    route = (url: string) => url.includes('/gnosis') ? ok({ system: 'Varati' }) : ok({});
+    const result = await service.getGnosis();
     expect(result.system).toBe('Varati');
   });
 
-  it('exposes typeahead suggestion values', () => {
-    flushConstructorRequests();
-    let result: any;
-    service.typeahead('Syn').subscribe(r => (result = r));
-    flushJson(httpMock.expectOne(r => r.url.includes('/typeahead') && r.url.includes('Syn')), { values: ['Synuefe'] });
+  it('exposes typeahead suggestion values', async () => {
+    await init();
+    route = (url: string) => url.includes('/typeahead') && url.includes('Syn') ? ok({ values: ['Synuefe'] }) : ok({});
+    const result = await service.typeahead('Syn');
     expect(result.values).toEqual(['Synuefe']);
   });
 
-  it('does NOT retry a 4xx client error (surfaces it immediately)', () => {
-    flushConstructorRequests();
+  it('does NOT retry a 4xx client error (surfaces it immediately)', async () => {
+    await init();
+    let biostatsCalls = 0;
+    route = (url: string) => {
+      if (url.includes('id=404')) {
+        biostatsCalls++;
+        return fail(404, 'nope');
+      }
+      return ok({});
+    };
     let error: any;
-    service.getBiostats(404).subscribe({ error: e => (error = e) });
+    await service.getBiostats(404).catch(e => (error = e));
     // A single request is made; the 404 is surfaced without a retry.
-    httpMock.expectOne(r => r.url.includes('id=404')).flush('nope', { status: 404, statusText: 'Not Found' });
+    expect(biostatsCalls).toBe(1);
     expect(error?.status).toBe(404);
   });
 
-  it('retries a 5xx error with backoff, then succeeds', () => {
+  it('retries a 5xx error with backoff, then succeeds', async () => {
     vi.useFakeTimers();
     try {
-      flushConstructorRequests();
-      let result: any;
-      service.getGnosis().subscribe(r => (result = r));
-      httpMock.expectOne(r => r.url.includes('/gnosis')).flush('boom', { status: 500, statusText: 'Server Error' });
-      vi.advanceTimersByTime(1100); // first backoff is ~1000ms
-      flushJson(httpMock.expectOne(r => r.url.includes('/gnosis')), { system: 'Sol' });
+      await init();
+      let gnosisCalls = 0;
+      route = (url: string) => {
+        if (url.includes('/gnosis')) {
+          gnosisCalls++;
+          return gnosisCalls === 1 ? fail(500, 'boom') : ok({ system: 'Sol' });
+        }
+        return ok({});
+      };
+      const promise = service.getGnosis();
+      // First attempt fails (500); the first backoff is ~1000ms before the retry.
+      await vi.advanceTimersByTimeAsync(1100);
+      const result = await promise;
+      expect(gnosisCalls).toBe(2);
       expect(result.system).toBe('Sol');
     } finally {
       vi.useRealTimers();
     }
   });
-
-  afterEach(() => httpMock.verify());
 });

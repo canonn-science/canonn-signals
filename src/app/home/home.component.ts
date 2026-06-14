@@ -1,10 +1,7 @@
-import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
 import { AppService, EdastroData, EdastroSystem } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
-import { Observable, of, from, debounceTime, distinctUntilChanged, switchMap, map, combineLatest, firstValueFrom } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/app/data/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
@@ -14,7 +11,7 @@ import { MatButton } from '@angular/material/button';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { SystemBodyComponent } from '../system-body/system-body.component';
 import { RegionMapComponent } from '../region-map/region-map.component';
-import { AsyncPipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { BODY_TYPE } from '../data/body-types';
 import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
@@ -25,14 +22,12 @@ import { CREDITS_HTML } from '../data/credits.generated';
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, AsyncPipe, DecimalPipe]
+    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, DecimalPipe]
 })
-export class HomeComponent implements OnInit {
-  private readonly httpClient = inject(HttpClient);
+export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
   private lastSimbadSystemName: string | null = null;
   private lastSimbadId64: bigint | null = null;
@@ -40,7 +35,7 @@ export class HomeComponent implements OnInit {
   // Bound via [innerHTML], which Angular sanitizes; the source is a trusted local file.
   public creditsHtml: string = CREDITS_HTML;
   // In-memory cache for typeahead suggestions
-  private systemSuggestionsCache: Map<string, Observable<string[]>> = new Map();
+  private systemSuggestionsCache: Map<string, Promise<string[]>> = new Map();
 
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
@@ -135,8 +130,8 @@ export class HomeComponent implements OnInit {
     }
 
     // Call the API for Simbad data
-    this.appService.getSimbad(id64, systemName, coords).subscribe({
-      next: result => {
+    this.appService.getSimbad(id64, systemName, coords)
+      .then(result => {
         // Remap API response to expected structure for edGalaxyData
         const hasSimbad = result.simbad_name || result.simbad_ident
           || result.ra_j2000 !== undefined || result.dec_j2000 !== undefined;
@@ -151,10 +146,9 @@ export class HomeComponent implements OnInit {
             DEJ2000: result.dec_j2000
           } : undefined
         });
-      },
+      })
       // Even if the Simbad API fails, still populate edGalaxyData with PGName.
-      error: () => setFallback(),
-    });
+      .catch(() => setFallback());
   }
 
   updateEdGalaxyData() {
@@ -351,7 +345,7 @@ export class HomeComponent implements OnInit {
   public readonly bodies = signal<SystemBody[]>([]);
   public readonly anchorBodyId = signal<number | null>(null);
   public searchControl = new FormControl('');
-  public filteredSystems: Observable<string[]> = of([]);
+  public readonly filteredSystems = signal<string[]>([]);
   private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
   public readonly edastroData = signal<EdastroData | null>(null);
   // Read the outposts signal straight off the service — the getNearestOutposts
@@ -371,31 +365,80 @@ export class HomeComponent implements OnInit {
   });
 
   public ngOnInit(): void {
-    this.activatedRoute.queryParams
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(q => {
-        const requested = q["system"];
-        // Ignore when there's nothing to load or it's already the loaded system.
-        if (!requested || (this.data()?.system.name === requested)) {
-          return;
-        }
-        // loadSystem defers automatically if a search is already in flight.
-        this.loadSystem(requested);
-      });
+    // Handle the initial deep-link (?system=…) from the route snapshot…
+    this.handleSystemParam(this.activatedRoute.snapshot.queryParamMap.get('system') ?? undefined);
+    // …and browser back/forward. In-app navigations (from processBodies) are guarded by
+    // the data() check below, so they don't trigger a redundant reload.
+    window.addEventListener('popstate', this.onPopState);
+  }
 
-    this.filteredSystems = this.searchControl.valueChanges.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      switchMap(value => {
-        // Suppress suggestions while a search is running so a late-resolving lookup
-        // can't reopen the panel over the loading/results view.
-        if (this.searching || !value || value.length < 3) {
-          return of([]);
-        }
-        return this.getSystemSuggestions(value);
-      })
-    );
+  public ngOnDestroy(): void {
+    window.removeEventListener('popstate', this.onPopState);
+    if (this.suggestionDebounceTimer !== null) {
+      clearTimeout(this.suggestionDebounceTimer);
+    }
+  }
 
+  /** Reads the `system` query param after browser back/forward navigation. */
+  private readonly onPopState = (): void => {
+    const requested = new URLSearchParams(window.location.search).get('system');
+    this.handleSystemParam(requested ?? undefined);
+  };
+
+  /** Loads the requested system unless it's empty or already shown. */
+  private handleSystemParam(requested: string | undefined): void {
+    // Ignore when there's nothing to load or it's already the loaded system.
+    if (!requested || (this.data()?.system.name === requested)) {
+      return;
+    }
+    // loadSystem defers automatically if a search is already in flight.
+    this.loadSystem(requested);
+  }
+
+  /** Debounce timer + generation guard replacing the former valueChanges → debounceTime →
+   *  distinctUntilChanged → switchMap pipeline (see onSearchInput / runSuggestions). */
+  private suggestionDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastSuggestionQuery: string | null = null;
+  private suggestionGeneration = 0;
+
+  /** Bound to the search input's (input) event; debounces suggestion lookups by 300ms. */
+  public onSearchInput(): void {
+    const value = this.searchControl.value ?? '';
+    if (this.suggestionDebounceTimer !== null) {
+      clearTimeout(this.suggestionDebounceTimer);
+    }
+    this.suggestionDebounceTimer = setTimeout(() => {
+      this.suggestionDebounceTimer = null;
+      void this.runSuggestions(value);
+    }, 300);
+  }
+
+  private async runSuggestions(value: string): Promise<void> {
+    // distinctUntilChanged: skip if the (debounced) query is unchanged.
+    if (value === this.lastSuggestionQuery) {
+      return;
+    }
+    this.lastSuggestionQuery = value;
+
+    // Suppress suggestions while a search is running so a late-resolving lookup
+    // can't reopen the panel over the loading/results view.
+    if (this.searching || !value || value.length < 3) {
+      this.filteredSystems.set([]);
+      return;
+    }
+
+    // switchMap semantics: only the latest in-flight lookup may update the list.
+    const generation = ++this.suggestionGeneration;
+    try {
+      const suggestions = await this.getSystemSuggestions(value);
+      if (generation === this.suggestionGeneration) {
+        this.filteredSystems.set(suggestions);
+      }
+    } catch {
+      if (generation === this.suggestionGeneration) {
+        this.filteredSystems.set([]);
+      }
+    }
   }
 
   public search(): void {
@@ -411,16 +454,20 @@ export class HomeComponent implements OnInit {
 
     // Load test system
     if (this.searchInput.toLowerCase() === 'test') {
-      this.httpClient.get<CanonnBiostats>('assets/test-system.json')
-        .subscribe({
-          next: data => {
-            this.processBodies(data);
-            this.searchControl.enable();
-            // Set last so the `searching` setter can drain a deferred request.
-            this.searching = false;
-          },
-          error: () => this.searchFailed(),
-        });
+      fetch('assets/test-system.json')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.json() as Promise<CanonnBiostats>;
+        })
+        .then(data => {
+          this.processBodies(data);
+          this.searchControl.enable();
+          // Set last so the `searching` setter can drain a deferred request.
+          this.searching = false;
+        })
+        .catch(() => this.searchFailed());
       return;
     }
 
@@ -442,19 +489,17 @@ export class HomeComponent implements OnInit {
 
     // Try Spansh if not found in EdAstro
     this.appService.galMapSearch(this.searchInput)
-      .subscribe({
-        next: data => {
-          const systems = data.min_max || [];
-          // Use case-insensitive comparison to find the system
-          const system = systems.find(s => s.name.toLowerCase() === this.searchInput.toLowerCase());
-          if (system && system.id64) {
-            this.searchBySystemAddress(system.id64);
-          } else {
-            this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
-          }
-        },
-        error: () => this.searchFailed('Typeahead API error: Unable to search for systems. Please try again later.'),
-      });
+      .then(data => {
+        const systems = data.min_max || [];
+        // Use case-insensitive comparison to find the system
+        const system = systems.find(s => s.name.toLowerCase() === this.searchInput.toLowerCase());
+        if (system && system.id64) {
+          this.searchBySystemAddress(system.id64);
+        } else {
+          this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
+        }
+      })
+      .catch(() => this.searchFailed('Typeahead API error: Unable to search for systems. Please try again later.'));
   }
 
   private searchFailed(message: string = 'System not found'): void {
@@ -467,31 +512,29 @@ export class HomeComponent implements OnInit {
 
   private searchBySystemAddress(systemAddress: number | string | bigint): void {
     this.appService.getBiostats(systemAddress)
-      .subscribe({
-        next: data => {
-          // A missing payload or system info means Spansh has no data for it yet.
-          if (!data || !data.system || !data.system.name) {
-            this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
-            return;
-          }
-          this.processBodies(data);
-          // Ensure Simbad data is updated after setting this.data
-          this.updateEdGalaxyData();
-          this.searchControl.enable();
-          // Set last so the `searching` setter can drain a deferred request.
-          this.searching = false;
-        },
-        error: error => {
-          // Check for specific error messages
-          const errorMessage = error?.error?.message || error?.message || '';
-          if (errorMessage.toLowerCase().includes('no spansh data')) {
-            this.searchFailed('System not found in Spansh database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
-          } else if (error.status === 404) {
-            this.searchFailed('System not found.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
-          } else {
-            this.searchFailed(`Biostats API error: ${errorMessage || 'Unable to load system data'}. Please try again later.`);
-          }
-        },
+      .then(data => {
+        // A missing payload or system info means Spansh has no data for it yet.
+        if (!data || !data.system || !data.system.name) {
+          this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
+          return;
+        }
+        this.processBodies(data);
+        // Ensure Simbad data is updated after setting this.data
+        this.updateEdGalaxyData();
+        this.searchControl.enable();
+        // Set last so the `searching` setter can drain a deferred request.
+        this.searching = false;
+      })
+      .catch(error => {
+        // Check for specific error messages
+        const errorMessage = error?.error?.message || error?.message || '';
+        if (errorMessage.toLowerCase().includes('no spansh data')) {
+          this.searchFailed('System not found in Spansh database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
+        } else if (error?.status === 404) {
+          this.searchFailed('System not found.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
+        } else {
+          this.searchFailed(`Biostats API error: ${errorMessage || 'Unable to load system data'}. Please try again later.`);
+        }
       });
   }
 
@@ -538,26 +581,24 @@ export class HomeComponent implements OnInit {
     // Fetch edastro data only if we don't have it or it's a different system
     if (isDifferentSystem || !this.edastroData()) {
       this.appService.getEdastroData(data.system.id64)
-        .subscribe({
-          next: edastroData => {
-            if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
-              // Sanitize the untrusted EDAstro URLs: the image flows into both an
-              // <img src> and the page-background `url(...)` (which bypasses Angular's
-              // URL sanitizer), and poiUrl into an external href. Accept http(s) only.
-              const safe = {
-                ...edastroData,
-                mainImage: this.safeHttpUrl(edastroData.mainImage),
-                poiUrl: this.safeHttpUrl(edastroData.poiUrl),
-              };
-              this.edastroData.set(safe);
-              if (safe.mainImage) {
-                this.appService.setBackgroundImage(safe.mainImage);
-              }
+        .then(edastroData => {
+          if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
+            // Sanitize the untrusted EDAstro URLs: the image flows into both an
+            // <img src> and the page-background `url(...)` (which bypasses Angular's
+            // URL sanitizer), and poiUrl into an external href. Accept http(s) only.
+            const safe = {
+              ...edastroData,
+              mainImage: this.safeHttpUrl(edastroData.mainImage),
+              poiUrl: this.safeHttpUrl(edastroData.poiUrl),
+            };
+            this.edastroData.set(safe);
+            if (safe.mainImage) {
+              this.appService.setBackgroundImage(safe.mainImage);
             }
-          },
-          // edastro data is optional - silently ignore failures.
-          error: error => logger.error('EdAstro data error:', error),
-        });
+          }
+        })
+        // edastro data is optional - silently ignore failures.
+        .catch(error => logger.error('EdAstro data error:', error));
     }
 
     const bodiesFlat: SystemBody[] = [];
@@ -749,14 +790,23 @@ export class HomeComponent implements OnInit {
     return /^\d+$/.test(value);
   }
 
-  private getSystemSuggestions(query: string): Observable<string[]> {
+  private getSystemSuggestions(query: string): Promise<string[]> {
     const cacheKey = query.trim().toLowerCase();
-    if (this.systemSuggestionsCache.has(cacheKey)) {
-      return this.systemSuggestionsCache.get(cacheKey)!;
+    const cached = this.systemSuggestionsCache.get(cacheKey);
+    if (cached) {
+      return cached;
     }
+    const result = this.computeSystemSuggestions(query);
+    this.systemSuggestionsCache.set(cacheKey, result);
+    return result;
+  }
 
+  private async computeSystemSuggestions(query: string): Promise<string[]> {
+    // Name suggestions from the Spansh typeahead. A failure here shouldn't wipe out the
+    // EdAstro suggestions, so fall back to an empty list.
     const spansQuery = this.appService.typeahead(query)
-      .pipe(map(response => (response.values || []).map(name => this.decodeHtmlEntities(name))));
+      .then(response => (response.values || []).map(name => this.decodeHtmlEntities(name)))
+      .catch(() => [] as string[]);
 
     // Read the current EdAstro snapshot synchronously for this keystroke.
     const matchingSystems = this.appService.edastroSystems()
@@ -766,59 +816,51 @@ export class HomeComponent implements OnInit {
     const systemsWithId64 = matchingSystems.filter(s => s.id64);
     const systemsWithoutId64 = matchingSystems.filter(s => !s.id64);
 
-    const edastroQuery: Observable<string[]> = systemsWithoutId64.length === 0
-      ? of(systemsWithId64.map(s => this.decodeHtmlEntities(s.name)))
-      : from(
-          // Look up id64 for systems missing it, then map to display names.
-          Promise.all(systemsWithoutId64.map(system => {
-            const systemName = system.galMapSearch || system.name;
-            const decodedSystemName = this.decodeHtmlEntities(systemName);
-            return firstValueFrom(this.appService.galMapSearch(decodedSystemName))
-              .then(result => {
-                const found = result?.min_max?.find(s => s.name === decodedSystemName);
-                return found ? { ...system, id64: found.id64 } : null;
-              })
-              .catch(() => null);
-          })).then(results => {
-            const systemsFoundInGalMap = results.filter(s => s !== null && s.id64) as EdastroSystem[];
-            const allValidSystems = [...systemsWithId64, ...systemsFoundInGalMap];
-            return allValidSystems.map(s => this.decodeHtmlEntities(s.name));
-          })
-        );
-
-    const result$ = combineLatest([spansQuery, edastroQuery]).pipe(
-      map(([spansSuggestions, edastroSuggestions]) => {
-        // (display name -> systemName/id64 mapping is maintained from the edastroSystems
-        // feed in ngOnInit, not rebuilt here on every keystroke.)
-        const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
-        const queryLower = query.toLowerCase();
-
-        // Sort by relevance: exact match > starts with > contains
-        const sorted = combined.sort((a, b) => {
-          const aLower = a.toLowerCase();
-          const bLower = b.toLowerCase();
-
-          // Exact match gets highest priority
-          if (aLower === queryLower && bLower !== queryLower) return -1;
-          if (bLower === queryLower && aLower !== queryLower) return 1;
-
-          // Starts with query gets second priority
-          const aStartsWith = aLower.startsWith(queryLower);
-          const bStartsWith = bLower.startsWith(queryLower);
-          if (aStartsWith && !bStartsWith) return -1;
-          if (bStartsWith && !aStartsWith) return 1;
-
-          // If both start with query or both don't, sort alphabetically
-          return a.localeCompare(b);
+    const edastroQuery: Promise<string[]> = systemsWithoutId64.length === 0
+      ? Promise.resolve(systemsWithId64.map(s => this.decodeHtmlEntities(s.name)))
+      // Look up id64 for systems missing it, then map to display names.
+      : Promise.all(systemsWithoutId64.map(system => {
+          const systemName = system.galMapSearch || system.name;
+          const decodedSystemName = this.decodeHtmlEntities(systemName);
+          return this.appService.galMapSearch(decodedSystemName)
+            .then(result => {
+              const found = result?.min_max?.find(s => s.name === decodedSystemName);
+              return found ? { ...system, id64: found.id64 } : null;
+            })
+            .catch(() => null);
+        })).then(results => {
+          const systemsFoundInGalMap = results.filter(s => s !== null && s.id64) as EdastroSystem[];
+          const allValidSystems = [...systemsWithId64, ...systemsFoundInGalMap];
+          return allValidSystems.map(s => this.decodeHtmlEntities(s.name));
         });
 
-        return sorted.slice(0, 20);
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    );
+    const [spansSuggestions, edastroSuggestions] = await Promise.all([spansQuery, edastroQuery]);
 
-    this.systemSuggestionsCache.set(cacheKey, result$);
-    return result$;
+    // (display name -> systemName/id64 mapping is maintained from the edastroSystems
+    // feed in ngOnInit, not rebuilt here on every keystroke.)
+    const combined = [...new Set([...spansSuggestions, ...edastroSuggestions])];
+    const queryLower = query.toLowerCase();
+
+    // Sort by relevance: exact match > starts with > contains
+    const sorted = combined.sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+
+      // Exact match gets highest priority
+      if (aLower === queryLower && bLower !== queryLower) return -1;
+      if (bLower === queryLower && aLower !== queryLower) return 1;
+
+      // Starts with query gets second priority
+      const aStartsWith = aLower.startsWith(queryLower);
+      const bStartsWith = bLower.startsWith(queryLower);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (bStartsWith && !aStartsWith) return 1;
+
+      // If both start with query or both don't, sort alphabetically
+      return a.localeCompare(b);
+    });
+
+    return sorted.slice(0, 20);
   }
 
   /** A marker on the region map was clicked; load that system. */

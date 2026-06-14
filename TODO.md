@@ -85,6 +85,29 @@ the test-coverage work on the `upgrade` branch. None have been fixed.
   `periapsis`/`apoapsis` ([:228-229](src/app/data/body-physics.service.ts#L228-L229)).
   Switching `rocheExcess` to periapsis is the conservative (and self-consistent) choice.
 
+- **`classifyNeutronStar` mislabels retrograde neutron stars as "Millisecond Pulsar"** —
+  [src/app/data/stellar-physics.service.ts:117](src/app/data/stellar-physics.service.ts#L117).
+  Same root cause as the two spin items above: Elite stores retrograde rotation as a
+  *negative* `rotationalPeriod`, and `period = rotationalPeriodDays * SECONDS_PER_DAY` is
+  computed with no `Math.abs`. A negative `period` then satisfies the very first branch
+  `period < 0.01` ([:120](src/app/data/stellar-physics.service.ts#L120)), so *any* retrograde
+  neutron star — however slowly it spins — is labelled "Millisecond Pulsar" (or
+  "Hyper-Massive Millisecond Pulsar"). This is a *separate* function from `spinResonance`
+  and was not previously flagged. Fix: take `Math.abs` of the period.  
+  Pre-existing on `main` (logic extracted from `SystemBodyComponent`, not a regression):
+  [src/app/system-body/system-body.component.ts:2563](src/app/system-body/system-body.component.ts#L2563)
+  (`const period = periodDays * 86400;` — no `Math.abs`, fed into `if (period < 0.01)` at
+  [:2567](src/app/system-body/system-body.component.ts#L2567)).  
+  **Review (2026-06-14): Confirmed.** At
+  [stellar-physics.service.ts:117](src/app/data/stellar-physics.service.ts#L117),
+  `period = rotationalPeriodDays * SECONDS_PER_DAY` has no `Math.abs`; the caller at
+  [system-body.component.ts:1112](src/app/system-body/system-body.component.ts#L1112) passes
+  `bd.rotationalPeriod` raw. A negative period makes `period < 0.01` true, returning a
+  millisecond-pulsar label for an arbitrarily slow retrograde rotator. The codebase already
+  treats negative periods as retrograde (`formatPeriodDays` has explicit `sign = days < 0`
+  handling), so the premise is sound. One `Math.abs(rotationalPeriodDays)` fixes this
+  alongside `spinResonance` and `tangentialVelocityKms`.
+
 ## Approximations (document, not necessarily fix)
 
 - **Trojan/Lagrange detection keys off `argOfPeriapsis` alone** —

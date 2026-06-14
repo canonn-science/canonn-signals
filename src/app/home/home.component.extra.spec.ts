@@ -1,11 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal, WritableSignal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
 
 import { HomeComponent } from './home.component';
 import { AppService } from '../app.service';
+
+/**
+ * Flushes pending promise microtasks so chained `.then(...)` callbacks (e.g.
+ * galMapSearch → getBiostats → processBodies) settle before assertions. The HTTP
+ * layer is promise-based, so a synchronous assert right after `search()` would race it.
+ */
+async function flushPromises(): Promise<void> {
+  for (let i = 0; i < 12; i++) {
+    await Promise.resolve();
+  }
+}
 
 describe('HomeComponent (extended coverage)', () => {
   let component: HomeComponent;
@@ -25,24 +34,36 @@ describe('HomeComponent (extended coverage)', () => {
     httpGet = vi.fn((url: string) => {
       for (const [key, value] of httpResponses) {
         if (url.includes(key)) {
-          // An Error value is replayed as a failing request (covers error branches).
-          return value instanceof Error ? throwError(() => value) : of(value);
+          // An Error value is replayed as a rejected request (covers error branches).
+          return value instanceof Error ? Promise.reject(value) : Promise.resolve(value);
         }
       }
       // Unmatched text requests default to an empty string; other requests to an empty object.
-      return of(url.includes('readme.md') ? '' : {});
+      return Promise.resolve(url.includes('readme.md') ? '' : {});
     });
+    // The "test" system path loads a bundled asset via the global fetch; serve it from the
+    // same URL-keyed fixtures (as a Response-like with json()).
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      for (const [key, value] of httpResponses) {
+        if (url.includes(key)) {
+          if (value instanceof Error) {
+            return Promise.resolve({ ok: false, status: (value as any).status ?? 500 });
+          }
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(value), text: () => Promise.resolve(String(value)) });
+        }
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}), text: () => Promise.resolve('') });
+    }));
     navigate = vi.fn(() => Promise.resolve(true));
     edastroSystems$ = signal<any[]>([]);
     independentOutposts$ = signal<any[]>([]);
     setBackgroundImage = vi.fn();
-    getEdastroData = vi.fn(() => of(null));
+    getEdastroData = vi.fn(() => Promise.resolve(null));
 
     TestBed.configureTestingModule({
       imports: [HomeComponent],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: HttpClient, useValue: { get: httpGet } },
         {
           provide: AppService,
           // The remote API methods delegate to the same URL-keyed httpGet mock so the
@@ -60,7 +81,7 @@ describe('HomeComponent (extended coverage)', () => {
             getSimbad: vi.fn((id: number, name: string) => httpGet(`/simbad?system_address=${id}&name=${name}`)),
           },
         },
-        { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
         { provide: Router, useValue: { navigate } },
       ],
       schemas: [NO_ERRORS_SCHEMA],
@@ -72,6 +93,7 @@ describe('HomeComponent (extended coverage)', () => {
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   describe('formatting helpers', () => {
@@ -133,7 +155,7 @@ describe('HomeComponent (extended coverage)', () => {
   });
 
   describe('search flow', () => {
-    it('loads the bundled test system for the "test" query', () => {
+    it('loads the bundled test system for the "test" query', async () => {
       httpResponses.set('assets/test-system.json', {
         system: { name: 'Test System', id64: 42, coords: { x: 1, y: 2, z: 3 }, bodies: [
           { bodyId: 0, name: 'A', type: 'Star', subType: '', id64: 1 },
@@ -142,21 +164,23 @@ describe('HomeComponent (extended coverage)', () => {
       httpResponses.set('/simbad?', { system_address: 42, name: 'Test System' });
       component.searchControl.setValue('test');
       component.search();
+      await flushPromises();
       expect(component.data()?.system.name).toBe('Test System');
       expect(component.bodies().length).toBe(1);
       expect(component.searching).toBe(false);
     });
 
-    it('searches by numeric system address', () => {
+    it('searches by numeric system address', async () => {
       httpResponses.set('/biostats?id=999', {
         system: { name: 'Numeric Sys', id64: 999, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
       component.searchControl.setValue('999');
       component.search();
+      await flushPromises();
       expect(component.data()?.system.id64).toBe(999);
     });
 
-    it('passes a 64-bit system address through as a string (no parseInt precision loss)', () => {
+    it('passes a 64-bit system address through as a string (no parseInt precision loss)', async () => {
       // 18 digits — beyond Number.MAX_SAFE_INTEGER, where parseInt would round.
       const big = '123456789012345678';
       httpResponses.set(`/biostats?id=${big}`, {
@@ -164,18 +188,20 @@ describe('HomeComponent (extended coverage)', () => {
       });
       component.searchControl.setValue(big);
       component.search();
+      await flushPromises();
       expect((TestBed.inject(AppService) as any).getBiostats).toHaveBeenCalledWith(big);
     });
 
-    it('reports a not-found system address gracefully', () => {
+    it('reports a not-found system address gracefully', async () => {
       httpResponses.set('/biostats?id=111', { system: null });
       component.searchControl.setValue('111');
       component.search();
+      await flushPromises();
       expect(component.searchError()).toBe(true);
       expect(component.searchErrorMessage()).toContain('not found');
     });
 
-    it('resolves a name via the EdAstro cache', () => {
+    it('resolves a name via the EdAstro cache', async () => {
       httpResponses.set('/biostats?id=555', {
         system: { name: 'Cached Sys', id64: 555, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
@@ -183,10 +209,11 @@ describe('HomeComponent (extended coverage)', () => {
       edastroSystems$.set([{ name: 'Cached Sys', id64: 555 }]);
       component.searchControl.setValue('Cached Sys');
       component.search();
+      await flushPromises();
       expect(component.data()?.system.id64).toBe(555);
     });
 
-    it('resolves a name via the Spansh typeahead when not in the EdAstro cache', () => {
+    it('resolves a name via the Spansh typeahead when not in the EdAstro cache', async () => {
       httpResponses.set('/typeahead', { min_max: [{ name: 'Found Sys', id64: 777 }] });
       httpResponses.set('/biostats?id=777', {
         system: { name: 'Found Sys', id64: 777, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
@@ -194,21 +221,24 @@ describe('HomeComponent (extended coverage)', () => {
       edastroSystems$.set([]); // not in cache -> falls through to Spansh
       component.searchControl.setValue('Found Sys');
       component.search();
+      await flushPromises();
       expect(component.data()?.system.id64).toBe(777);
     });
 
-    it('reports a system that Spansh cannot find', () => {
+    it('reports a system that Spansh cannot find', async () => {
       httpResponses.set('/typeahead', { min_max: [] });
       edastroSystems$.set([]);
       component.searchControl.setValue('Ghost Sys');
       component.search();
+      await flushPromises();
       expect(component.searchError()).toBe(true);
     });
 
-    it('surfaces a 404 from the biostats API as a not-found error', () => {
+    it('surfaces a 404 from the biostats API as a not-found error', async () => {
       httpResponses.set('/biostats?id=404', Object.assign(new Error('nope'), { status: 404 }));
       component.searchControl.setValue('404');
       component.search();
+      await flushPromises();
       expect(component.searchError()).toBe(true);
       expect(component.searchErrorMessage()).toContain('not found');
     });
@@ -240,18 +270,10 @@ describe('HomeComponent (extended coverage)', () => {
   });
 
   describe('getSystemSuggestions', () => {
-    /** Subscribes to a suggestions observable and resolves with its first emission. */
-    function firstSuggestion(obs: Observable<string[]>): Promise<string[]> {
-      return new Promise(resolve => {
-        const sub = obs.subscribe(v => { resolve(v); queueMicrotask(() => sub.unsubscribe()); });
-      });
-    }
-
     it('merges Spansh and EdAstro suggestions and de-duplicates them', async () => {
       httpResponses.set('/typeahead', { values: ['Synuefe Two', 'Synuefe One'] });
       edastroSystems$.set([{ name: 'Synuefe One', id64: 1 }]);
-      const result$ = (component as any).getSystemSuggestions('Synuefe') as Observable<string[]>;
-      const suggestions = await firstSuggestion(result$);
+      const suggestions = await ((component as any).getSystemSuggestions('Synuefe') as Promise<string[]>);
       expect(suggestions).toContain('Synuefe One');
       expect(suggestions).toContain('Synuefe Two');
       expect(new Set(suggestions).size).toBe(suggestions.length); // de-duplicated
@@ -259,20 +281,21 @@ describe('HomeComponent (extended coverage)', () => {
 
     it('looks up missing id64s via gal-map search and caches the query', async () => {
       httpResponses.set('/typeahead', { values: [] });
-      (TestBed.inject(AppService) as any).galMapSearch = vi.fn(() => of({ min_max: [{ name: 'No Id Sys', id64: 5 }] }));
+      (TestBed.inject(AppService) as any).galMapSearch = vi.fn(() => Promise.resolve({ min_max: [{ name: 'No Id Sys', id64: 5 }] }));
       edastroSystems$.set([{ name: 'No Id Sys', galMapSearch: 'No Id Sys' }]);
-      const result$ = (component as any).getSystemSuggestions('No Id') as Observable<string[]>;
-      await firstSuggestion(result$);
-      // Second call for the same query returns the cached observable instance.
-      expect((component as any).getSystemSuggestions('No Id')).toBe(result$);
+      const result = (component as any).getSystemSuggestions('No Id') as Promise<string[]>;
+      await result;
+      // Second call for the same query returns the cached promise instance.
+      expect((component as any).getSystemSuggestions('No Id')).toBe(result);
     });
   });
 
   describe('selection & navigation helpers', () => {
-    it('routes a known system selection straight to its address', () => {
+    it('routes a known system selection straight to its address', async () => {
       httpResponses.set('/biostats?id=7', { system: { name: 'Mapped', id64: 7, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
       edastroSystems$.set([{ name: 'Mapped Display', id64: 7 }]);
       component.onSystemSelected('Mapped Display');
+      await flushPromises();
       expect(component.data()?.system.id64).toBe(7);
     });
 
@@ -343,19 +366,100 @@ describe('HomeComponent (extended coverage)', () => {
   });
 
   describe('fetchEdGalaxyData', () => {
-    it('uses the PG fallback for procedurally-generated systems without calling SIMBAD', () => {
+    it('uses the PG fallback for procedurally-generated systems without calling SIMBAD', async () => {
       component.fetchEdGalaxyData('Pru Aescs NC-M d7-192', 10577693187n);
+      await flushPromises();
       expect(component.edGalaxyData()?.Simbad).toBeUndefined();
       expect(component.edGalaxyData()?.PGName.length).toBeGreaterThan(0);
     });
 
-    it('maps a SIMBAD API response for a hand-named system', () => {
+    it('maps a SIMBAD API response for a hand-named system', async () => {
       httpResponses.set('/simbad?', {
         system_address: 10477373803, name: 'Sol', simbad_name: 'Sol', simbad_ident: '@Sol',
         ra_j2000: 0, dec_j2000: 0,
       });
       component.fetchEdGalaxyData('Sol', 10477373803n);
+      await flushPromises();
       expect(component.edGalaxyData()?.Simbad?.Name).toBe('Sol');
+    });
+  });
+
+  describe('autocomplete suggestions', () => {
+    it('debounces input and populates the suggestions signal', async () => {
+      httpResponses.set('/typeahead', { values: ['Synuefe AB', 'Synuefe CD'] });
+      component.searchControl.setValue('Synuefe');
+      component.onSearchInput();
+      // Nothing yet: the lookup is debounced by 300ms.
+      expect(component.filteredSystems()).toEqual([]);
+      vi.advanceTimersByTime(300);
+      await flushPromises();
+      expect(component.filteredSystems()).toContain('Synuefe AB');
+      expect(component.filteredSystems()).toContain('Synuefe CD');
+    });
+
+    it('suppresses suggestions for queries shorter than three characters', async () => {
+      component.searchControl.setValue('ab');
+      component.onSearchInput();
+      vi.advanceTimersByTime(300);
+      await flushPromises();
+      expect(component.filteredSystems()).toEqual([]);
+    });
+
+    it('skips a repeated debounced query (distinctUntilChanged)', async () => {
+      const typeahead = (TestBed.inject(AppService) as any).typeahead as ReturnType<typeof vi.fn>;
+      httpResponses.set('/typeahead', { values: ['Sol System'] });
+      component.searchControl.setValue('Sol System');
+      component.onSearchInput();
+      vi.advanceTimersByTime(300);
+      await flushPromises();
+      const callsAfterFirst = typeahead.mock.calls.length;
+      // Same value again — the debounced query is unchanged, so no new lookup runs.
+      component.onSearchInput();
+      vi.advanceTimersByTime(300);
+      await flushPromises();
+      expect(typeahead.mock.calls.length).toBe(callsAfterFirst);
+    });
+
+    it('ignores a stale lookup when a newer query has superseded it', async () => {
+      // Resolve the first lookup after the second so the generation guard must drop it.
+      const getSuggestions = vi.spyOn(component as any, 'getSystemSuggestions')
+        .mockImplementationOnce(() => Promise.resolve(['STALE']))
+        .mockImplementationOnce(() => Promise.resolve(['FRESH']));
+      await (component as any).runSuggestions('Query One');
+      await (component as any).runSuggestions('Query Two');
+      expect(component.filteredSystems()).toEqual(['FRESH']);
+      getSuggestions.mockRestore();
+    });
+  });
+
+  describe('query-param navigation', () => {
+    it('loads the system named in the initial route snapshot', () => {
+      const route = TestBed.inject(ActivatedRoute);
+      (route.snapshot.queryParamMap as any).get = () => 'Deep Link Sys';
+      const loadSpy = vi.spyOn(component as any, 'loadSystem').mockImplementation(() => {});
+      component.ngOnInit();
+      expect(loadSpy).toHaveBeenCalledWith('Deep Link Sys');
+    });
+
+    it('reacts to browser back/forward via popstate', () => {
+      component.ngOnInit();
+      const loadSpy = vi.spyOn(component as any, 'loadSystem').mockImplementation(() => {});
+      const original = window.location.search;
+      window.history.pushState({}, '', '?system=Popped Sys');
+      try {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        expect(loadSpy).toHaveBeenCalledWith('Popped Sys');
+      } finally {
+        window.history.pushState({}, '', original || '/');
+      }
+    });
+
+    it('removes the popstate listener and clears the debounce timer on destroy', () => {
+      const removeSpy = vi.spyOn(window, 'removeEventListener');
+      component.ngOnInit();
+      component.onSearchInput(); // schedule a debounce timer to be cleared
+      component.ngOnDestroy();
+      expect(removeSpy).toHaveBeenCalledWith('popstate', expect.any(Function));
     });
   });
 });
