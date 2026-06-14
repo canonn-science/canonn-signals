@@ -3,8 +3,6 @@
 @use '@angular/material' as mat;
 // Plus imports for other components in your app.
 
-@import 'material-icons/iconfont/material-icons.css';
-
 // Self-hosted Roboto (the font Angular Material's typography requests by name).
 // Bundling it avoids a third-party request and the "font blocked" warning that
 // occurs when the browser falls back to resolving a locally-installed copy.
@@ -109,9 +107,20 @@ body {
   height: 100%;
 }
 
+html {
+  /* Always reserve the vertical scrollbar's space so the page doesn't jump
+     horizontally when content crosses the viewport-height threshold and the
+     scrollbar is added/removed. On overlay-scrollbar platforms (which don't
+     take layout space) this is a no-op. */
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   font-family: "Roboto", sans-serif;
+  /* Dark fallback behind the background image (e.g. overscroll / uncovered area).
+     The removed Material sidenav container used to paint this. */
+  background-color: var(--color-surface-3);
 }
 
 .badge {

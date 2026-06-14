@@ -48,7 +48,7 @@ test.describe('Alpha Centauri (live data)', () => {
       await page.setViewportSize({ width, height: 1000 });
       await page.waitForTimeout(150);
       const overflow = await page.evaluate(() => {
-        const sc = document.querySelector('mat-sidenav-content') ?? document.documentElement;
+        const sc = document.scrollingElement ?? document.documentElement;
         return sc.scrollWidth - sc.clientWidth;
       });
       expect(overflow, `no horizontal overflow at ${width}px`).toBeLessThanOrEqual(1);

@@ -155,21 +155,3 @@ the test-coverage work on the `upgrade` branch. None have been fixed.
   the bitwise-overflow bug. Pinned (loosely) by
   [pgnames.spec.ts:18-23](src/app/data/pgnames/pgnames.spec.ts#L18-L23), which only asserts the
   result is a positive bigint.
-
-## Minor
-
-- **`getBodyImagePath` ignores the `terraformable` flag** —
-  [src/app/data/body-images.ts:1260](src/app/data/body-images.ts#L1260).
-  The `terraformable` field on terrestrial entries is never used as a filter, so the first
-  matching entry wins regardless of it (e.g. `AMWv2` catches all ammonia worlds).  
-  Pre-existing on `main` (file byte-identical): `src/app/data/body-images.ts:1260`.  
-  **Review (2026-06-10): Confirmed.** The terrestrial loop
-  ([body-images.ts:1348-1386](src/app/data/body-images.ts#L1348-L1386)) filters on `subType`,
-  `maxSurfaceTemperature`, `maxEarthMasses`, `atmosphere`, `landable`, `tidallyLocked` and
-  `isApplicable` — but never reads `terraformable`, even though the field is declared on the
-  interface ([:1413](src/app/data/body-images.ts#L1413)) and set on entries such as `AMWv2`
-  ([:690-692](src/app/data/body-images.ts#L690-L692)). Since `AMWv2` is the first
-  `"Ammonia world"` entry and carries no other constraints, it matches every ammonia world
-  and shadows later variants (e.g. `AMWv3`) regardless of terraformable state. Note this only
-  bites if the body data actually carries a terraformable flag to filter on; the field's
-  intent is clearly unrealised either way.

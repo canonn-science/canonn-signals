@@ -118,6 +118,16 @@ describe('OrbitalRelationsService', () => {
       const fullPeriod = sampleMs + 10 * 24 * 60 * 60 * 1000;
       expect(service.meanAnomalyNow(0, 10, sampleTime, fullPeriod)).toBeCloseTo(0, 6);
     });
+
+    it('normalises a negative mean anomaly into [0, 360)', () => {
+      // A negative recorded mean anomaly must not leak a negative result (JS `%` keeps sign).
+      expect(service.meanAnomalyNow(-90, 10, sampleTime, sampleMs)).toBeCloseTo(270, 6);
+    });
+
+    it('normalises into [0, 360) when `now` precedes the sample instant', () => {
+      const beforeSample = sampleMs - 5 * 24 * 60 * 60 * 1000; // -half a period
+      expect(service.meanAnomalyNow(0, 10, sampleTime, beforeSample)).toBeCloseTo(180, 6);
+    });
   });
 
   describe('degreesToEvent', () => {

@@ -244,12 +244,15 @@ export class SystemBodyComponent implements OnChanges {
     }
 
     if (body.bodyData.signals) {
-      this.humanSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Human;'] : 0;
-      this.otherSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Other;'] : 0;
-      this.geologySignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Geological;'] : 0;
-      this.biologySignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Biological;'] : 0;
-      this.thargoidSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Thargoid;'] : 0;
-      this.guardianSignalCount = body.bodyData.signals.signals ? body.bodyData.signals.signals['$SAA_SignalType_Guardian;'] : 0;
+      // `?? 0`: a present `signals` map that simply lacks a given key returns `undefined`,
+      // which would land in these `number`-typed fields. Coalesce so they stay numeric.
+      const signalCounts = body.bodyData.signals.signals;
+      this.humanSignalCount = signalCounts?.['$SAA_SignalType_Human;'] ?? 0;
+      this.otherSignalCount = signalCounts?.['$SAA_SignalType_Other;'] ?? 0;
+      this.geologySignalCount = signalCounts?.['$SAA_SignalType_Geological;'] ?? 0;
+      this.biologySignalCount = signalCounts?.['$SAA_SignalType_Biological;'] ?? 0;
+      this.thargoidSignalCount = signalCounts?.['$SAA_SignalType_Thargoid;'] ?? 0;
+      this.guardianSignalCount = signalCounts?.['$SAA_SignalType_Guardian;'] ?? 0;
       this.geologySignals = body.bodyData.signals.geology ?? [];
       this.thargoidSignals = body.bodyData.signals.thargoid ?? [];
       this.guardianSignals = body.bodyData.signals.guardian ?? [];

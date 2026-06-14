@@ -1,0 +1,14 @@
+.app-background {
+  // Full-page fixed background image behind the routed content. `min-height: 100vh`
+  // keeps it covering the viewport on short pages; on taller pages it grows and the
+  // document (html) scrolls — see `scrollbar-gutter: stable` on `html` in styles.scss.
+  min-height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+
+  // Default dark-theme text colour for the routed content. The removed Material
+  // sidenav container supplied this (via --mat-sys-on-background); without it the
+  // app's light-on-dark text would fall back to the browser default (black).
+  color: var(--color-text);
+}

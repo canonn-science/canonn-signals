@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 
 import { SystemBodyComponent } from './system-body.component';
@@ -35,7 +34,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       imports: [SystemBodyComponent],
       providers: [
         provideZonelessChangeDetection(),
-        provideNoopAnimations(),
         { provide: AppService, useValue: { codexEntries: signal([]), getBodyDisplayName: (n: string) => `${n}!` } },
         { provide: MatDialog, useValue: dialogStub },
       ],

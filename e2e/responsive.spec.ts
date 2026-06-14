@@ -22,14 +22,13 @@ function formFactor(projectName: string): string {
  * signal that something is too wide for the viewport. A 1px slack absorbs
  * sub-pixel rounding.
  *
- * The app's scrolling container is the Material `mat-sidenav-content`, not the
- * document element, so a too-wide body would overflow *inside* it while the
- * document itself stays at the viewport width. We measure that container (and
- * fall back to the document element on the landing page before it mounts).
+ * The app scrolls on the document root (`document.scrollingElement`), so a too-wide
+ * body widens the document itself. We measure the scrolling element's scrollWidth
+ * against its clientWidth.
  */
 async function expectNoHorizontalOverflow(page: import('@playwright/test').Page, label = '') {
   const overflow = await page.evaluate(() => {
-    const scroller = document.querySelector('mat-sidenav-content') ?? document.documentElement;
+    const scroller = document.scrollingElement ?? document.documentElement;
     return { scrollWidth: scroller.scrollWidth, clientWidth: scroller.clientWidth };
   });
   expect(

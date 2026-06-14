@@ -543,8 +543,13 @@ export class ChartRenderingService {
     const angleMin = Math.min(...angleVals);
     const angleMax = Math.max(...angleVals);
 
-    const xToPx = (x: number) => padding + ((Math.log10(x) - Math.log10(xminB)) / (Math.log10(xmaxB) - Math.log10(xminB))) * (width - padding * 2);
-    const yToPx = (y: number) => (height - padding) - ((y - yminB) / (ymaxB - yminB)) * (height - padding * 2);
+    // Guard the axis ranges with `|| 1` (as the size/colour scales below already do): a
+    // single bubble — or several sharing the same rotation period (x) or solar radius (y) —
+    // gives a zero range, which would divide to NaN and make the bubbles vanish/misplace.
+    const xRange = (Math.log10(xmaxB) - Math.log10(xminB)) || 1;
+    const yRange = (ymaxB - yminB) || 1;
+    const xToPx = (x: number) => padding + ((Math.log10(x) - Math.log10(xminB)) / xRange) * (width - padding * 2);
+    const yToPx = (y: number) => (height - padding) - ((y - yminB) / yRange) * (height - padding * 2);
 
     // axes
     ctx.strokeStyle = '#333';

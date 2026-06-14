@@ -15,7 +15,6 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^22.0.0",
     "@angular/cdk": "^22.0.0",
     "@angular/common": "^22.0.0",
     "@angular/compiler": "^22.0.0",
@@ -29,7 +28,6 @@
     "@fortawesome/angular-fontawesome": "^5.0.0",
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
-    "material-icons": "^1.13.10",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

@@ -1,14 +1,13 @@
 import { Component, ChangeDetectionStrategy, Signal, inject } from '@angular/core';
 import { AppService } from './app.service';
 import { RouterOutlet } from '@angular/router';
-import { MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterOutlet, MatSidenavContainer, MatSidenavContent]
+    imports: [RouterOutlet]
 })
 export class AppComponent {
   private readonly appService = inject(AppService);

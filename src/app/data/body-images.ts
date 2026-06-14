@@ -1377,6 +1377,15 @@ export class BodyImage {
                     if (typeof terrestrialBodyImage.tidallyLocked != 'undefined' && terrestrialBodyImage.tidallyLocked !== !!body.rotationalPeriodTidallyLocked) {
                         continue;
                     }
+                    if (typeof terrestrialBodyImage.terraformable != 'undefined') {
+                        // ED/Spansh expose terraforming as a string `terraformingState`; a body
+                        // that can be terraformed reads exactly "Terraformable" (vs. "Not
+                        // terraformable" / empty / "Terraforming" / "Terraformed").
+                        const bodyTerraformable = body.terraformingState?.toLowerCase() === 'terraformable';
+                        if (terrestrialBodyImage.terraformable !== bodyTerraformable) {
+                            continue;
+                        }
+                    }
                     if (terrestrialBodyImage.isApplicable && !terrestrialBodyImage.isApplicable(body)) {
                         continue;
                     }

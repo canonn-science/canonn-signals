@@ -18,7 +18,7 @@
         </mat-form-field>
         <button mat-flat-button color="primary" (click)="search()" [disabled]="searching"
           aria-label="Search">
-          <mat-icon aria-hidden="true">search</mat-icon>
+          <fa-icon [icon]="faMagnifyingGlass" aria-hidden="true"></fa-icon>
         </button>
       </div>
       @if (searchError()) {

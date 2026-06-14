@@ -1,7 +1,3 @@
-<router-outlet></router-outlet>
-
-<mat-sidenav-container style="min-height: 100vh" [style.background-image]="'url(' + backgroundImage() + ')'" [style.background-size]="'cover'" [style.background-position]="'center'" [style.background-attachment]="'fixed'">
-  <mat-sidenav-content>
-    <router-outlet></router-outlet>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+<div class="app-background" [style.background-image]="'url(' + backgroundImage() + ')'">
+  <router-outlet></router-outlet>
+</div>

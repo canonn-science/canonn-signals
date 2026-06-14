@@ -162,7 +162,10 @@ export class OrbitalRelationsService {
     const timestampMs = new Date(meanAnomalyTimestamp).getTime();
     const elapsedDays = (now - timestampMs) / MS_PER_DAY;
     const orbitalCycles = elapsedDays / orbitalPeriodDays;
-    return (meanAnomalyDeg + orbitalCycles * 360) % 360;
+    // JS `%` keeps the sign of the dividend, so a negative mean anomaly (or a `now`
+    // before the sample timestamp) would otherwise return a value in (-360, 0). Add a
+    // full turn and re-wrap so the result is genuinely in [0, 360) as documented.
+    return (((meanAnomalyDeg + orbitalCycles * 360) % 360) + 360) % 360;
   }
 
   /** Degrees the body must still travel to reach its next apoapsis (180°) or periapsis (360°/0°). */

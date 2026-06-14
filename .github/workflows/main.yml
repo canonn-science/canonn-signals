@@ -37,6 +37,7 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install
+      - run: pnpm test -- --watch=false
       - run: pnpm run build #-- --base-href "/canonn-signals/"
       - run: echo 'signals.canonn.tech' > dist/CNAME
       - name: Setup Pages

@@ -150,9 +150,32 @@ describe('BodyImage.getBodyImagePath', () => {
       expect(locked.path).toBe('planets/terrestrial/ELWv7');
     });
 
-    it('matches the first entry for an ammonia world (terraformable is not used as a filter)', () => {
-      const ammonia = BodyImage.getBodyImagePath(body({ subType: 'Ammonia world', surfaceTemperature: 1000 }))!;
-      expect(ammonia.path).toBe('planets/terrestrial/AMWv2');
+    it('applies the terraformable filter: a terraformable body matches the terraformable-only entry', () => {
+      const terraformable = BodyImage.getBodyImagePath(body({
+        subType: 'Ammonia world', surfaceTemperature: 1000, terraformingState: 'Terraformable',
+      }))!;
+      expect(terraformable.path).toBe('planets/terrestrial/AMWv2');
+    });
+
+    it('applies the terraformable filter: a non-terraformable body skips the terraformable-only entry', () => {
+      // No terraformingState → not "Terraformable" → AMWv2 (terraformable:true) is skipped,
+      // falling through to the first unconstrained ammonia-world entry.
+      const plain = BodyImage.getBodyImagePath(body({ subType: 'Ammonia world', surfaceTemperature: 1000 }))!;
+      expect(plain.path).toBe('planets/terrestrial/AMWv4');
+    });
+
+    it('treats "Not terraformable" as not terraformable', () => {
+      const notTf = BodyImage.getBodyImagePath(body({
+        subType: 'Ammonia world', surfaceTemperature: 1000, terraformingState: 'Not terraformable',
+      }))!;
+      expect(notTf.path).toBe('planets/terrestrial/AMWv4');
+    });
+
+    it('treats "Terraformed" (already terraformed) as not a terraformable candidate', () => {
+      const done = BodyImage.getBodyImagePath(body({
+        subType: 'Ammonia world', surfaceTemperature: 1000, terraformingState: 'Terraformed',
+      }))!;
+      expect(done.path).toBe('planets/terrestrial/AMWv4');
     });
 
     it('returns null for an unknown terrestrial subType', () => {

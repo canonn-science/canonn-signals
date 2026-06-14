@@ -68,7 +68,7 @@
         <span class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{
         rosetteStatus }}</span>
       }
-      @if (getRocheExcess()) {
+      @if (getRocheExcess() !== null) {
         <span class="badge badge-red"
           [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
           <img alt="" src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />

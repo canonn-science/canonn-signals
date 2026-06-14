@@ -3,7 +3,7 @@ import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, inject, viewChi
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppService, EdastroData, EdastroSystem } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { faFileCode } from '@fortawesome/free-solid-svg-icons';
+import { faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { Observable, of, from, debounceTime, distinctUntilChanged, switchMap, map, combineLatest, firstValueFrom } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/app/data/pgnames/PGSystem';
@@ -11,7 +11,7 @@ import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatAutocompleteTrigger, MatAutocomplete, MatOption } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { SystemBodyComponent } from '../system-body/system-body.component';
 import { RegionMapComponent } from '../region-map/region-map.component';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
@@ -25,7 +25,7 @@ import { CREDITS_HTML } from '../data/credits.generated';
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, MatIcon, SystemBodyComponent, RegionMapComponent, AsyncPipe, DecimalPipe]
+    imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, AsyncPipe, DecimalPipe]
 })
 export class HomeComponent implements OnInit {
   private readonly httpClient = inject(HttpClient);
@@ -288,6 +288,7 @@ export class HomeComponent implements OnInit {
     return encodeURIComponent(value);
   }
   public readonly faFileCode = faFileCode;
+  public readonly faMagnifyingGlass = faMagnifyingGlass;
   private readonly _searching = signal(false);
   /** A system requested (e.g. via query param) while a search was already in flight. */
   private pendingSystemRequest: string | null = null;
@@ -325,6 +326,22 @@ export class HomeComponent implements OnInit {
     this.searchInput = systemName;
     this.searchControl.setValue(systemName);
     this.search();
+  }
+
+  /**
+   * Resets result/error state and raises the in-flight guard (`searching`). Shared by
+   * `search()` and the id64 fast-path (`onSystemSelected`) so both set up identical state
+   * and a search can't be started while another is running.
+   */
+  private startSearch(): void {
+    this.data.set(null);
+    this.bodies.set([]);
+    this.searching = true;
+    this.searchError.set(false);
+    this.searchErrorMessage.set('');
+    // Close any open suggestion panel as the search takes over.
+    this.autocompleteTrigger()?.closePanel();
+    this.searchControl.disable();
   }
 
   public searchInput: string = "";
@@ -390,14 +407,7 @@ export class HomeComponent implements OnInit {
     if (this.searchInput.length <= 1) {
       return;
     }
-    this.data.set(null);
-    this.bodies.set([]);
-    this.searching = true;
-    this.searchError.set(false);
-    this.searchErrorMessage.set('');
-    // Close any open suggestion panel as the search takes over.
-    this.autocompleteTrigger()?.closePanel();
-    this.searchControl.disable();
+    this.startSearch();
 
     // Load test system
     if (this.searchInput.toLowerCase() === 'test') {
@@ -819,7 +829,16 @@ export class HomeComponent implements OnInit {
   public onSystemSelected(displayName: string): void {
     const mapping = this.systemMapping().get(displayName);
     if (mapping && mapping.id64) {
+      // Fast path: we already have the id64, so skip the name→id64 lookup. Route through
+      // the same in-flight guard as search()/loadSystem — a selection made while a previous
+      // search is still running is deferred (by name), not started concurrently, which
+      // would race two getBiostats responses and double-fire the searching cleanup.
+      if (this.searching) {
+        this.pendingSystemRequest = mapping.systemName ?? displayName;
+        return;
+      }
       this.searchInput = displayName;
+      this.startSearch();
       this.searchBySystemAddress(mapping.id64);
     } else if (mapping && mapping.systemName) {
       this.searchInput = mapping.systemName;
