@@ -522,6 +522,19 @@
     min-width: 100px
 }
 
+/* Inline status indicators — tokenized (replaces former inline hex). */
+.status-danger { color: var(--color-danger) }
+.status-success { color: var(--color-success) }
+.status-info { color: var(--color-info) }
+.status-muted { color: var(--color-status-muted) }
+
+/* Goldenrod caveat note (jet-angle dialog disclaimer). */
+.jet-angle-dialog mat-dialog-content .disclaimer.caveat {
+    margin-top: 0.5em;
+    font-style: italic;
+    color: var(--color-disclaimer)
+}
+
 .roche-dialog h2 {
     margin: 0;
     padding: 16px 24px;

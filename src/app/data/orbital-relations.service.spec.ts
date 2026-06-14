@@ -175,5 +175,28 @@ describe('OrbitalRelationsService', () => {
         timestamps: { meanAnomaly: sampleTime } as any,
       }), 'apo', sampleMs)).toBeNull();
     });
+
+    it('locks the Alpha Centauri apsis dates (now-independent; matches the rendered tooltip)', () => {
+      // Real orbital elements for the Alpha Centauri G star (e2e fixture body 2).
+      const alphaCentauri = body({
+        meanAnomaly: 36.634872, orbitalPeriod: 9348.90664562031, orbitalEccentricity: 0.5179,
+        timestamps: { meanAnomaly: '2026-06-12T19:06:36Z' } as any,
+      });
+      // Format a Date exactly like the template tooltip's `date:'yyyy-MM-dd HH:mm'`, in UTC.
+      const tip = (d: Date) => d.toISOString().slice(0, 16).replace('T', ' ');
+
+      // An apsis is a fixed physical event: its *date* is independent of `now` — only the
+      // day-count shrinks as `now` advances. Evaluate at two very different instants.
+      const apoNow = service.nextOrbitalEvent(alphaCentauri, 'apo', Date.parse('2026-06-14T00:00:00Z'))!;
+      const apoLater = service.nextOrbitalEvent(alphaCentauri, 'apo', Date.parse('2030-01-01T00:00:00Z'))!;
+      // 2036-08-21 20:55 UTC == 2036-08-21 22:55 CEST — the known-good value.
+      expect(tip(apoNow.date)).toBe('2036-08-21 20:55');
+      expect(tip(apoLater.date)).toBe('2036-08-21 20:55');
+      expect(apoLater.days).not.toBeCloseTo(apoNow.days, 0); // day-count differs…
+      expect(apoLater.date.getTime()).toBe(apoNow.date.getTime()); // …but the date is identical
+
+      const peri = service.nextOrbitalEvent(alphaCentauri, 'peri', Date.parse('2026-06-14T00:00:00Z'))!;
+      expect(tip(peri.date)).toBe('2049-06-09 07:48');
+    });
   });
 });

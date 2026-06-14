@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, of, timer } from 'rxjs';
+import { Injectable, Signal, inject, signal } from '@angular/core';
+import { Observable, of, timer } from 'rxjs';
 import { catchError, map, retry, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { parseJsonWithBigIntIds } from './data/json-bigint';
@@ -48,23 +48,23 @@ export class AppService {
     );
   }
 
-  private _codexEntries: BehaviorSubject<CanonnCodexEntry[]> = new BehaviorSubject<CanonnCodexEntry[]>([]);
-  public codexEntries: Observable<CanonnCodexEntry[]> = this._codexEntries.asObservable();
+  private readonly _codexEntries = signal<CanonnCodexEntry[]>([]);
+  public readonly codexEntries: Signal<CanonnCodexEntry[]> = this._codexEntries.asReadonly();
 
-  private _backgroundImage: BehaviorSubject<string> = new BehaviorSubject<string>('assets/bg1.jpg');
-  public backgroundImage$: Observable<string> = this._backgroundImage.asObservable();
+  private readonly _backgroundImage = signal('assets/bg1.jpg');
+  public readonly backgroundImage: Signal<string> = this._backgroundImage.asReadonly();
 
-  private _edastroSystems: BehaviorSubject<EdastroSystem[]> = new BehaviorSubject<EdastroSystem[]>([]);
-  public edastroSystems: Observable<EdastroSystem[]> = this._edastroSystems.asObservable();
+  private readonly _edastroSystems = signal<EdastroSystem[]>([]);
+  public readonly edastroSystems: Signal<EdastroSystem[]> = this._edastroSystems.asReadonly();
 
-  private _independentOutposts: BehaviorSubject<IndependentOutpost[]> = new BehaviorSubject<IndependentOutpost[]>([]);
-  public independentOutposts: Observable<IndependentOutpost[]> = this._independentOutposts.asObservable();
+  private readonly _independentOutposts = signal<IndependentOutpost[]>([]);
+  public readonly independentOutposts: Signal<IndependentOutpost[]> = this._independentOutposts.asReadonly();
 
   constructor() {
     this.resilientGet<CanonnCodex>(`${CANONN_QUERY_BASE}/codex/ref`)
       .pipe(catchError(() => of({} as CanonnCodex)))
       .subscribe(c => {
-        this._codexEntries.next(Object.values(c));
+        this._codexEntries.set(Object.values(c));
       });
 
     const edastroUrl = environment.production
@@ -75,7 +75,7 @@ export class AppService {
     this.resilientGet<EdastroSystem[]>(edastroUrl, 60000)
       .pipe(catchError(() => of([] as EdastroSystem[])))
       .subscribe(systems => {
-        this._edastroSystems.next(systems);
+        this._edastroSystems.set(systems);
 
         // Filter and extract independentOutpost data
         const outposts = systems
@@ -88,7 +88,7 @@ export class AppService {
             type: system.type
           } as IndependentOutpost));
 
-        this._independentOutposts.next(outposts);
+        this._independentOutposts.set(outposts);
       });
   }
 
@@ -100,7 +100,7 @@ export class AppService {
   }
 
   public setBackgroundImage(imageUrl: string): void {
-    this._backgroundImage.next(imageUrl);
+    this._backgroundImage.set(imageUrl);
   }
 
   public galMapSearch(systemName: string): Observable<TypeaheadResponse> {

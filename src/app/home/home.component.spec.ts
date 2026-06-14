@@ -1,6 +1,6 @@
 import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection } from '@angular/core';
+import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -25,9 +25,9 @@ describe('HomeComponent', () => {
         {
           provide: AppService,
           useValue: {
-            edastroSystems: of([]),
-            independentOutposts: of([]),
-            codexEntries: of([]),
+            edastroSystems: signal([]),
+            independentOutposts: signal([]),
+            codexEntries: signal([]),
             getBodyDisplayName: (n: string) => n,
             getEdastroData: () => of(null),
             setBackgroundImage: () => {},

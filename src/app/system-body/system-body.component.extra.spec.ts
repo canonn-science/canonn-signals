@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection } from '@angular/core';
+import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
@@ -36,7 +36,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       providers: [
         provideZonelessChangeDetection(),
         provideNoopAnimations(),
-        { provide: AppService, useValue: { codexEntries: of([]), getBodyDisplayName: (n: string) => `${n}!` } },
+        { provide: AppService, useValue: { codexEntries: signal([]), getBodyDisplayName: (n: string) => `${n}!` } },
         { provide: MatDialog, useValue: dialogStub },
       ],
       schemas: [NO_ERRORS_SCHEMA],
@@ -108,7 +108,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(makeBody({}));
       expect(component.trackByString(0, 'x')).toBe('x');
       expect(component.trackByHotspot(0, { displayName: 'Painite' })).toBe('Painite');
-      expect(component.trackByBody(0, makeBody({ bodyId: 9 }))).toBe(9);
       expect(component.trackByMaterial(0, { name: 'Fe', class: '', tooltip: '' })).toBe('Fe');
       expect(component.trackByBiologySignal(0, { entryId: 42 } as any)).toBe(42);
       component.onMouseEnter(5);
@@ -156,6 +155,11 @@ describe('SystemBodyComponent (extended coverage)', () => {
     it('prefers an explicit atmosphereType for the display', () => {
       render(makeBody({ subType: 'Rocky body', atmosphereType: 'Thin Carbon dioxide' }));
       expect(component.getAtmosphereDisplay()).toBe('Thin Carbon dioxide');
+    });
+
+    it('does not throw on an empty atmosphereComposition object', () => {
+      render(makeBody({ subType: 'Rocky body', atmosphereComposition: {} }));
+      expect(component.getAtmosphereDisplay()).toBe('');
     });
   });
 
@@ -207,7 +211,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       }, parent);
       render(ring);
       expect(component.getSignalsCount()).toBe(2);
-      expect(component.getSignalsTooltip()).toContain('Painite: 3');
       expect(component.getHotspotsList().length).toBe(2);
       expect(component.getRingResourceTypes().size).toBeGreaterThanOrEqual(0);
       expect(component.isRingNotVisible()).toBe(false);

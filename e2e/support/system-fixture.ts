@@ -23,6 +23,12 @@ export interface SectionSpec {
    * shown as "Mass") would make the match ambiguous.
    */
   rows?: Record<string, string>;
+  /**
+   * Label → exact tooltip text on that row's value cell. Use for values whose visible
+   * text is wall-clock-dependent (e.g. "Next apoapsis" shows a drifting day-count, but
+   * its tooltip is the fixed event date). Asserted by hovering the value cell.
+   */
+  tooltips?: Record<string, string>;
   /** Free text expected somewhere in the section (e.g. listed signal names). */
   contains?: string[];
 }
@@ -81,6 +87,13 @@ export async function loadFixtureSystem(page: Page, opts: FixtureOptions): Promi
   await page.route('**/query/simbad*', (route) => route.fulfill({ json: {} }));
   await page.route('**/query/gnosis*', (route) => route.fulfill({ json: {} }));
   await page.route('**/api/edastro/**', (route) => route.fulfill({ json: [] }));
+
+  // Pin "now" so wall-clock-dependent values are deterministic: the "Next apoapsis/
+  // periapsis" day-counts (asserted directly) and the event-date tooltips (now-independent,
+  // but pinning also guards the far-future rollover once real time passes an apsis).
+  // setFixedTime pins Date.now()/new Date() but keeps timers running, so the app's
+  // setTimeout-driven logic (marker scaling, etc.) still works.
+  await page.clock.setFixedTime(new Date('2026-06-14T00:00:00Z'));
 
   await page.goto('/');
   await page.getByRole('combobox').fill(opts.systemName);
@@ -182,6 +195,24 @@ export async function assertBody(page: Page, spec: BodySpec): Promise<void> {
     for (const [label, value] of Object.entries(section.rows ?? {})) {
       const row = panel.locator('.body-data-entry').filter({ has: page.getByText(label, { exact: true }) });
       await expect(row.locator('> div').last(), `${spec.name} › ${section.header} › ${label}`).toHaveText(value);
+    }
+    for (const [label, tooltip] of Object.entries(section.tooltips ?? {})) {
+      const valueCell = panel
+        .locator('.body-data-entry')
+        .filter({ has: page.getByText(label, { exact: true }) })
+        .locator('> div')
+        .last();
+      await valueCell.scrollIntoViewIfNeeded();
+      await valueCell.hover();
+      // Scope to the *shown* tooltip — Material keeps hidden tooltips in the DOM
+      // (toggling -show/-hide classes), so `.mat-mdc-tooltip` alone is ambiguous.
+      await expect(
+        page.locator('.mat-mdc-tooltip-show'),
+        `${spec.name} › ${section.header} › ${label} tooltip`,
+      ).toHaveText(tooltip);
+      // Move away and wait for it to hide so the next hover's tooltip is unambiguous.
+      await page.mouse.move(0, 0);
+      await expect(page.locator('.mat-mdc-tooltip-show')).toHaveCount(0);
     }
     for (const text of section.contains ?? []) {
       await expect(panel, `${spec.name} › ${section.header} should mention "${text}"`).toContainText(text);

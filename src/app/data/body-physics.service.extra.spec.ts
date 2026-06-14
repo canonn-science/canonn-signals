@@ -131,6 +131,21 @@ describe('BodyPhysicsService (extended coverage)', () => {
       expect(hill.bodyApoapsis).toBeGreaterThan(hill.bodyPeriapsis);
       expect(service.isActualShepherd(shepherd)).toBe(true);
     });
+
+    it('classifies shepherd status tri-state from Hill data', () => {
+      const base = {
+        hillRadius: 0, bodyOrbitalRadius: 0, bodyPeriapsis: 0, bodyApoapsis: 0,
+        parentRadius: 1000, outermostRingRadius: 2000,
+      };
+      // Orbits within the ring band.
+      expect(service.shepherdStatus({ ...base, withinRings: true, isFirstOutside: false })).toBe('inner');
+      // Outside the rings but not the first sibling out.
+      expect(service.shepherdStatus({ ...base, withinRings: false, isFirstOutside: false })).toBe('none');
+      // First outside and the Hill sphere reaches the ring edge (tolerance 5% of 1000 = 50 km).
+      expect(service.shepherdStatus({ ...base, bodyOrbitalRadius: 2500, hillRadius: 600, withinRings: false, isFirstOutside: true })).toBe('shepherd');
+      // First outside but the Hill sphere falls short.
+      expect(service.shepherdStatus({ ...base, bodyOrbitalRadius: 5000, hillRadius: 100, withinRings: false, isFirstOutside: true })).toBe('none');
+    });
   });
 
   describe('getParentRadiusAndDensity', () => {

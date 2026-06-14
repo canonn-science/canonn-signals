@@ -116,8 +116,7 @@ The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox)
   `--migrate-only` for schematics, and `pnpm install` separately.
 
 ## Backlog
-Remaining opportunities,
-to tackle opportunistically:
+Remaining opportunities:
 - **`home.component.ts` (~1035 lines)** mixes search, body-tree building and SIMBAD/PG-name
   formatting — extract the body-tree builder and name formatting into `data/` helpers/services.
 - **`system-body.component.ts` (~1410 lines)** — its derived values are computed in `ngOnChanges`

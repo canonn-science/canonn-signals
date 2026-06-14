@@ -243,14 +243,17 @@ export class RegionMapComponent implements OnChanges {
 
     // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
     if (regionNumber === 18) {
-      this.fetchGnosisData().subscribe(gnosisData => {
-        if (gnosisData) {
-          this.addGnosisMarker(svgElement, bbox);
-          // Scale the Gnosis marker after it's added
-          setTimeout(() => {
-            this.updateMarkerScales(svgElement, scaleFactor);
-          }, 50);
-        }
+      this.fetchGnosisData().subscribe({
+        next: gnosisData => {
+          if (gnosisData) {
+            this.addGnosisMarker(svgElement, bbox);
+            // Scale the Gnosis marker after it's added
+            setTimeout(() => {
+              this.updateMarkerScales(svgElement, scaleFactor);
+            }, 50);
+          }
+        },
+        error: error => logger.error('Error fetching Gnosis data:', error),
       });
     }
 

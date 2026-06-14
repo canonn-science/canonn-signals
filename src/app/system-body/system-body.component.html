@@ -311,11 +311,10 @@
                     [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">
                     {{ rocheLimits.rigid | number:'0.2-2' }} km
                     @if (rocheLimits.periapsis < rocheLimits.rigid) {
-                      <span style="color: #ff6b6b;">⚠</span>
+                      <span class="status-danger">⚠</span>
                     }
                     @if (rocheLimits.periapsis >= rocheLimits.rigid) {
-                      <span
-                      style="color: #51cf66;">✓</span>
+                      <span class="status-success">✓</span>
                     }
                   </div>
                 </div>
@@ -327,10 +326,10 @@
                     [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">
                     {{ rocheLimits.fluid | number:'0.2-2' }} km
                     @if (rocheLimits.apoapsis < rocheLimits.fluid) {
-                      <span style="color: #ff6b6b;">⚠</span>
+                      <span class="status-danger">⚠</span>
                     }
                     @if (rocheLimits.apoapsis >= rocheLimits.fluid) {
-                      <span style="color: #51cf66;">✓</span>
+                      <span class="status-success">✓</span>
                     }
                   </div>
                 </div>
@@ -886,7 +885,7 @@
           }
           <div class="system-body-end"></div>
           <div class="child-bodies">
-            @for (body of body().subBodies; track trackByBody($index, body); let isLast = $last) {
+            @for (body of body().subBodies; track $index; let isLast = $last) {
               <app-system-body [body]="body"
               [isLast]="isLast" [forceExpanded]="forceExpanded() || isAnchorBody" [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxyData()"></app-system-body>
             }
@@ -946,7 +945,7 @@
           @switch (hillLimitDialogData.shepherdStatus) {
             @case ('shepherd') {
               <div>
-                <strong>Status:</strong> <span style="color: #4dabf7;">Shepherd Moon</span><br>
+                <strong>Status:</strong> <span class="status-info">Shepherd Moon</span><br>
                 The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US',
               {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) extends
               close enough to the ring system to potentially confine or shape the outer edge of the rings.
@@ -956,7 +955,7 @@
           }
           @case ('inner') {
             <div>
-              <strong>Status:</strong> <span style="color: #51cf66;">Inner Moon (not a
+              <strong>Status:</strong> <span class="status-success">Inner Moon (not a
             shepherd)</span><br>
             This moon orbits within the ring system but is too far from the ring edge for its Hill
             sphere to influence the rings. It is not considered a shepherd moon.
@@ -964,7 +963,7 @@
         }
         @case ('none') {
           <div>
-            <strong>Status:</strong> <span style="color: #aaa;">Not a Shepherd</span><br>
+            <strong>Status:</strong> <span class="status-muted">Not a Shepherd</span><br>
             The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US',
           {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) is too far
           from the ring system to have any shepherding effect.
@@ -1015,7 +1014,7 @@ distribution, and long-term dynamical evolution.</p>
       <p>corrections = gamma_sr * ln(solarRadius)^2 + gamma_rot * ln(rotationalPeriod)^2 + gamma_age * ln(age)^2
       </p>
       <p>4) Final prediction: Angle_pred = Angle_sigmoid + corrections</p>
-      <p class="disclaimer" style="margin-top:0.5em; font-style:italic; color:#b8860b">
+      <p class="disclaimer caveat">
         Note: the displayed model is a simplified regression of a small sample. The uncertainty is large
         — the tooltip shows a conservative ±5° estimate.
       </p>

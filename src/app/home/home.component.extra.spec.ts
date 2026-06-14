@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection } from '@angular/core';
+import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal, WritableSignal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, of, Subject, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 
 import { HomeComponent } from './home.component';
 import { AppService } from '../app.service';
@@ -13,8 +13,8 @@ describe('HomeComponent (extended coverage)', () => {
   let httpResponses: Map<string, unknown>;
   let httpGet: ReturnType<typeof vi.fn<(url: string) => any>>;
   let navigate: ReturnType<typeof vi.fn>;
-  let edastroSystems$: Subject<any[]>;
-  let independentOutposts$: Subject<any[]>;
+  let edastroSystems$: WritableSignal<any[]>;
+  let independentOutposts$: WritableSignal<any[]>;
   let setBackgroundImage: ReturnType<typeof vi.fn>;
   let getEdastroData: ReturnType<typeof vi.fn>;
 
@@ -33,8 +33,8 @@ describe('HomeComponent (extended coverage)', () => {
       return of(url.includes('readme.md') ? '' : {});
     });
     navigate = vi.fn(() => Promise.resolve(true));
-    edastroSystems$ = new Subject<any[]>();
-    independentOutposts$ = new Subject<any[]>();
+    edastroSystems$ = signal<any[]>([]);
+    independentOutposts$ = signal<any[]>([]);
     setBackgroundImage = vi.fn();
     getEdastroData = vi.fn(() => of(null));
 
@@ -50,7 +50,7 @@ describe('HomeComponent (extended coverage)', () => {
           useValue: {
             edastroSystems: edastroSystems$,
             independentOutposts: independentOutposts$,
-            codexEntries: of([]),
+            codexEntries: signal([]),
             getBodyDisplayName: (n: string) => `${n}*`,
             getEdastroData,
             setBackgroundImage,
@@ -121,15 +121,14 @@ describe('HomeComponent (extended coverage)', () => {
       component.ngOnInit();
 
       component.data.set({ system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any);
-      independentOutposts$.next([{ name: 'Near', galMapSearch: 'Near', coordinates: [1, 1, 1], type: 'independentOutpost' }]);
+      independentOutposts$.set([{ name: 'Near', galMapSearch: 'Near', coordinates: [1, 1, 1], type: 'independentOutpost' }]);
       expect(component.independentOutposts().length).toBe(1);
       expect(component.getNearestOutposts().length).toBe(1);
     });
 
-    it('maintains the display-name -> systemName/id64 map from the EdAstro feed', () => {
-      component.ngOnInit();
-      edastroSystems$.next([{ name: 'Display Name', galMapSearch: 'Real Sys', id64: 42 }]);
-      expect((component as any).systemMapping.get('Display Name')).toEqual({ systemName: 'Real Sys', id64: 42 });
+    it('derives the display-name -> systemName/id64 map from the EdAstro feed', () => {
+      edastroSystems$.set([{ name: 'Display Name', galMapSearch: 'Real Sys', id64: 42 }]);
+      expect((component as any).systemMapping().get('Display Name')).toEqual({ systemName: 'Real Sys', id64: 42 });
     });
   });
 
@@ -180,11 +179,10 @@ describe('HomeComponent (extended coverage)', () => {
       httpResponses.set('/biostats?id=555', {
         system: { name: 'Cached Sys', id64: 555, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
+      // Seed the EdAstro cache before searching; search() reads the current snapshot.
+      edastroSystems$.set([{ name: 'Cached Sys', id64: 555 }]);
       component.searchControl.setValue('Cached Sys');
-      // Provide the cached system synchronously when search subscribes.
-      queueMicrotask(() => edastroSystems$.next([{ name: 'Cached Sys', id64: 555 }]));
       component.search();
-      edastroSystems$.next([{ name: 'Cached Sys', id64: 555 }]);
       expect(component.data()?.system.id64).toBe(555);
     });
 
@@ -193,17 +191,17 @@ describe('HomeComponent (extended coverage)', () => {
       httpResponses.set('/biostats?id=777', {
         system: { name: 'Found Sys', id64: 777, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
+      edastroSystems$.set([]); // not in cache -> falls through to Spansh
       component.searchControl.setValue('Found Sys');
       component.search();
-      edastroSystems$.next([]); // not in cache -> falls through to Spansh
       expect(component.data()?.system.id64).toBe(777);
     });
 
     it('reports a system that Spansh cannot find', () => {
       httpResponses.set('/typeahead', { min_max: [] });
+      edastroSystems$.set([]);
       component.searchControl.setValue('Ghost Sys');
       component.search();
-      edastroSystems$.next([]);
       expect(component.searchError()).toBe(true);
     });
 
@@ -251,10 +249,9 @@ describe('HomeComponent (extended coverage)', () => {
 
     it('merges Spansh and EdAstro suggestions and de-duplicates them', async () => {
       httpResponses.set('/typeahead', { values: ['Synuefe Two', 'Synuefe One'] });
+      edastroSystems$.set([{ name: 'Synuefe One', id64: 1 }]);
       const result$ = (component as any).getSystemSuggestions('Synuefe') as Observable<string[]>;
-      const promise = firstSuggestion(result$);
-      edastroSystems$.next([{ name: 'Synuefe One', id64: 1 }]);
-      const suggestions = await promise;
+      const suggestions = await firstSuggestion(result$);
       expect(suggestions).toContain('Synuefe One');
       expect(suggestions).toContain('Synuefe Two');
       expect(new Set(suggestions).size).toBe(suggestions.length); // de-duplicated
@@ -263,10 +260,9 @@ describe('HomeComponent (extended coverage)', () => {
     it('looks up missing id64s via gal-map search and caches the query', async () => {
       httpResponses.set('/typeahead', { values: [] });
       (TestBed.inject(AppService) as any).galMapSearch = vi.fn(() => of({ min_max: [{ name: 'No Id Sys', id64: 5 }] }));
+      edastroSystems$.set([{ name: 'No Id Sys', galMapSearch: 'No Id Sys' }]);
       const result$ = (component as any).getSystemSuggestions('No Id') as Observable<string[]>;
-      const promise = firstSuggestion(result$);
-      edastroSystems$.next([{ name: 'No Id Sys', galMapSearch: 'No Id Sys' }]);
-      await promise;
+      await firstSuggestion(result$);
       // Second call for the same query returns the cached observable instance.
       expect((component as any).getSystemSuggestions('No Id')).toBe(result$);
     });
@@ -275,7 +271,7 @@ describe('HomeComponent (extended coverage)', () => {
   describe('selection & navigation helpers', () => {
     it('routes a known system selection straight to its address', () => {
       httpResponses.set('/biostats?id=7', { system: { name: 'Mapped', id64: 7, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
-      (component as any).systemMapping.set('Mapped Display', { id64: 7 });
+      edastroSystems$.set([{ name: 'Mapped Display', id64: 7 }]);
       component.onSystemSelected('Mapped Display');
       expect(component.data()?.system.id64).toBe(7);
     });

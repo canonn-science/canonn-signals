@@ -36,6 +36,9 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // Pin the timezone so date renders (e.g. the "Next apoapsis" tooltip, which uses
+    // Angular's `date` pipe in local time) are deterministic across machines.
+    timezoneId: 'UTC',
   },
 
   projects: [

@@ -323,17 +323,28 @@ export class BodyPhysicsService {
     };
   }
 
+  /**
+   * Tri-state shepherd classification from pre-computed Hill data — the single
+   * source of truth shared by `isActualShepherd()` (the badge) and the shepherding
+   * dialog: `'inner'` (orbits within the rings), `'shepherd'` (Hill sphere reaches
+   * the outer ring edge within tolerance), or `'none'`.
+   */
+  shepherdStatus(hillData: ShepherdingHillLimit): 'shepherd' | 'inner' | 'none' {
+    if (hillData.withinRings) { return 'inner'; }
+    if (!hillData.isFirstOutside) { return 'none'; }
+
+    const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
+    // Require the Hill sphere to reach (or slightly overlap) the outermost ring
+    // edge — tolerance is 5% of ring width or a minimum of 1 km.
+    const ringWidth = Math.max(0, hillData.outermostRingRadius - hillData.parentRadius);
+    const tolerance = Math.max(1, ringWidth * 0.05);
+    return hillInnerEdge <= (hillData.outermostRingRadius + tolerance) ? 'shepherd' : 'none';
+  }
+
   /** True when the body is a genuine shepherd moon (Hill sphere reaches the outer ring edge). */
   isActualShepherd(body: SystemBody): boolean {
     const hillData = this.calculateShepherdingHillLimit(body);
-    if (!hillData) { return false; }
-    if (hillData.withinRings) { return false; }
-    if (!hillData.isFirstOutside) { return false; }
-
-    const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
-    const ringWidth = Math.max(0, hillData.outermostRingRadius - hillData.parentRadius);
-    const tolerance = Math.max(1, ringWidth * 0.05);
-    return hillInnerEdge <= (hillData.outermostRingRadius + tolerance);
+    return hillData ? this.shepherdStatus(hillData) === 'shepherd' : false;
   }
 
   /**

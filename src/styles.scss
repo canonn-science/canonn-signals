@@ -51,6 +51,9 @@ $dark-theme: mat.m2-define-dark-theme((color: (primary: mat.m2-define-palette(ma
   --color-warning: #fc3;
   --color-success: #51cf66;
   --color-danger: #ff6b6b;
+  --color-info: #4dabf7;       /* informational status text (e.g. shepherd moon) */
+  --color-disclaimer: #b8860b; /* goldenrod caveat/disclaimer text */
+  --color-status-muted: #aaa;  /* neutral/inactive status text (e.g. "not a shepherd") */
   --color-link: #fbd7b4;
   --color-link-hover: #feeddc;
 

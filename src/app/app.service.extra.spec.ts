@@ -41,12 +41,12 @@ describe('AppService (HTTP-driven coverage)', () => {
       { name: 'Some Station', id64: 3, type: 'station', coordinates: [4, 5, 6] },
     ]);
 
-    const outposts = await firstValue(service.independentOutposts);
+    const outposts = service.independentOutposts();
     expect(outposts.length).toBe(1); // 'Retired' filtered out, non-outpost type filtered out
     expect(outposts[0].name).toBe('Outpost Alpha');
     expect(outposts[0].galMapSearch).toBe('Alpha');
 
-    const systems = await firstValue(service.edastroSystems);
+    const systems = service.edastroSystems();
     expect(systems.length).toBe(3);
   });
 
@@ -67,10 +67,10 @@ describe('AppService (HTTP-driven coverage)', () => {
     expect(result.min_max[0].name).toBe('Sol');
   });
 
-  it('updates the background image stream', async () => {
+  it('updates the background image signal', () => {
     flushConstructorRequests();
     service.setBackgroundImage('assets/bg2.jpg');
-    expect(await firstValue(service.backgroundImage$)).toBe('assets/bg2.jpg');
+    expect(service.backgroundImage()).toBe('assets/bg2.jpg');
   });
 
   it('loads per-system biostats', () => {
@@ -150,13 +150,3 @@ describe('AppService (HTTP-driven coverage)', () => {
 
   afterEach(() => httpMock.verify());
 });
-
-/** Reads the current value of a BehaviorSubject-backed observable. */
-function firstValue<T>(obs: { subscribe: (fn: (v: T) => void) => { unsubscribe(): void } }): Promise<T> {
-  return new Promise<T>(resolve => {
-    const sub = obs.subscribe(v => {
-      resolve(v);
-      queueMicrotask(() => sub.unsubscribe());
-    });
-  });
-}

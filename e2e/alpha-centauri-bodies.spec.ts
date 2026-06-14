@@ -32,12 +32,21 @@ const BODY_SPECS: BodySpec[] = [
           'Semi-major axis': '693,042,242.53 km',
           'Orbital eccentricity': '0.5179 Eccentric',
           Apoapsis: '1,051,968,819.93 km',
-          'Next apoapsis': '3,723.0 days',
+          // Day-count to the next apsis. Wall-clock-dependent, but deterministic because
+          // the fixture loader pins `now` to 2026-06-14T00:00:00Z (see loadFixtureSystem).
+          'Next apoapsis': '3,721.9 days',
           Periapsis: '334,115,665.12 km',
-          'Next periapsis': '8,397.5 days',
+          'Next periapsis': '8,396.3 days',
           'Orbital inclination': '79.21°',
           'Argument of periapsis': '116.66°',
           'Ascending node': '-155.15°',
+        },
+        // The day-count above changes with `now`; the tooltip is the fixed event *date*
+        // (now-independent). Timezone is pinned to UTC in playwright.config.ts, so
+        // 2036-08-21 20:55 UTC (= 22:55 CEST) renders verbatim.
+        tooltips: {
+          'Next apoapsis': '2036-08-21 20:55',
+          'Next periapsis': '2049-06-09 07:48',
         },
       },
       {

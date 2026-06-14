@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppService, EdastroData, EdastroSystem, IndependentOutpost } from '../app.service';
+import { AppService, EdastroData, EdastroSystem } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { faFileCode } from '@fortawesome/free-solid-svg-icons';
-import { Observable, of, debounceTime, distinctUntilChanged, switchMap, map, combineLatest, take, firstValueFrom } from 'rxjs';
+import { Observable, of, from, debounceTime, distinctUntilChanged, switchMap, map, combineLatest, firstValueFrom } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/app/data/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
@@ -337,8 +337,21 @@ export class HomeComponent implements OnInit {
   public filteredSystems: Observable<string[]> = of([]);
   private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
   public readonly edastroData = signal<EdastroData | null>(null);
-  private systemMapping: Map<string, { systemName?: string, id64?: bigint }> = new Map();
-  public readonly independentOutposts = signal<IndependentOutpost[]>([]);
+  // Read the outposts signal straight off the service — the getNearestOutposts
+  // computed below depends on it, so the panel refreshes when the feed arrives.
+  public readonly independentOutposts = this.appService.independentOutposts;
+
+  // Display-name -> systemName/id64 lookup used by onSystemSelected, derived from
+  // the EdAstro feed (recomputes when it changes; reads are synchronous).
+  private readonly systemMapping = computed(() => {
+    const map = new Map<string, { systemName?: string, id64?: bigint }>();
+    for (const system of this.appService.edastroSystems()) {
+      const displayName = this.decodeHtmlEntities(system.name);
+      const systemName = system.galMapSearch ? this.decodeHtmlEntities(system.galMapSearch) : displayName;
+      map.set(displayName, { systemName, id64: system.id64 });
+    }
+    return map;
+  });
 
   public ngOnInit(): void {
     this.activatedRoute.queryParams
@@ -366,26 +379,6 @@ export class HomeComponent implements OnInit {
       })
     );
 
-    // Subscribe to independentOutposts data
-    this.appService.independentOutposts
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(outposts => {
-        // Outposts can arrive after a system is already loaded; the getNearestOutposts
-        // computed depends on this signal, so the panel refreshes automatically.
-        this.independentOutposts.set(outposts);
-      });
-
-    // Maintain the display-name -> systemName/id64 lookup used by onSystemSelected,
-    // driven by the EdAstro feed rather than rebuilt inside the typeahead stream.
-    this.appService.edastroSystems
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(systems => {
-        for (const system of systems) {
-          const displayName = this.decodeHtmlEntities(system.name);
-          const systemName = system.galMapSearch ? this.decodeHtmlEntities(system.galMapSearch) : displayName;
-          this.systemMapping.set(displayName, { systemName, id64: system.id64 });
-        }
-      });
   }
 
   public search(): void {
@@ -428,32 +421,30 @@ export class HomeComponent implements OnInit {
       return;
     }
 
-    // Check EdAstro cache first (case-insensitive)
-    this.appService.edastroSystems.pipe(take(1)).subscribe(edastroSystems => {
-      const edastroSystem = edastroSystems.find(s =>
-        this.decodeHtmlEntities(s.name).toLowerCase() === this.searchInput.toLowerCase()
-      );
-      if (edastroSystem && edastroSystem.id64) {
-        this.searchBySystemAddress(edastroSystem.id64);
-        return;
-      }
+    // Check EdAstro cache first (case-insensitive) — read the current snapshot.
+    const edastroSystem = this.appService.edastroSystems().find(s =>
+      this.decodeHtmlEntities(s.name).toLowerCase() === this.searchInput.toLowerCase()
+    );
+    if (edastroSystem && edastroSystem.id64) {
+      this.searchBySystemAddress(edastroSystem.id64);
+      return;
+    }
 
-      // Try Spansh if not found in EdAstro
-      this.appService.galMapSearch(this.searchInput)
-        .subscribe({
-          next: data => {
-            const systems = data.min_max || [];
-            // Use case-insensitive comparison to find the system
-            const system = systems.find(s => s.name.toLowerCase() === this.searchInput.toLowerCase());
-            if (system && system.id64) {
-              this.searchBySystemAddress(system.id64);
-            } else {
-              this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
-            }
-          },
-          error: () => this.searchFailed('Typeahead API error: Unable to search for systems. Please try again later.'),
-        });
-    });
+    // Try Spansh if not found in EdAstro
+    this.appService.galMapSearch(this.searchInput)
+      .subscribe({
+        next: data => {
+          const systems = data.min_max || [];
+          // Use case-insensitive comparison to find the system
+          const system = systems.find(s => s.name.toLowerCase() === this.searchInput.toLowerCase());
+          if (system && system.id64) {
+            this.searchBySystemAddress(system.id64);
+          } else {
+            this.searchFailed('System not found in database.\nSystem data is gathered from EDDN and processed by Spansh. If this is a recently discovered system, please try again later as there may be delays in processing.');
+          }
+        },
+        error: () => this.searchFailed('Typeahead API error: Unable to search for systems. Please try again later.'),
+      });
   }
 
   private searchFailed(message: string = 'System not found'): void {
@@ -540,9 +531,17 @@ export class HomeComponent implements OnInit {
         .subscribe({
           next: edastroData => {
             if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
-              this.edastroData.set(edastroData);
-              if (edastroData.mainImage) {
-                this.appService.setBackgroundImage(edastroData.mainImage);
+              // Sanitize the untrusted EDAstro URLs: the image flows into both an
+              // <img src> and the page-background `url(...)` (which bypasses Angular's
+              // URL sanitizer), and poiUrl into an external href. Accept http(s) only.
+              const safe = {
+                ...edastroData,
+                mainImage: this.safeHttpUrl(edastroData.mainImage),
+                poiUrl: this.safeHttpUrl(edastroData.poiUrl),
+              };
+              this.edastroData.set(safe);
+              if (safe.mainImage) {
+                this.appService.setBackgroundImage(safe.mainImage);
               }
             }
           },
@@ -749,38 +748,33 @@ export class HomeComponent implements OnInit {
     const spansQuery = this.appService.typeahead(query)
       .pipe(map(response => (response.values || []).map(name => this.decodeHtmlEntities(name))));
 
-    const edastroQuery = this.appService.edastroSystems.pipe(
-      switchMap(systems => {
-        const matchingSystems = systems
-          .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
-          .slice(0, 10);
+    // Read the current EdAstro snapshot synchronously for this keystroke.
+    const matchingSystems = this.appService.edastroSystems()
+      .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 10);
 
-        const systemsWithId64 = matchingSystems.filter(s => s.id64);
-        const systemsWithoutId64 = matchingSystems.filter(s => !s.id64);
+    const systemsWithId64 = matchingSystems.filter(s => s.id64);
+    const systemsWithoutId64 = matchingSystems.filter(s => !s.id64);
 
-        if (systemsWithoutId64.length === 0) {
-          return of(systemsWithId64.map(s => this.decodeHtmlEntities(s.name)));
-        }
-
-        // Lookup id64 for systems without it
-        const lookupPromises = systemsWithoutId64.map(system => {
-          const systemName = system.galMapSearch || system.name;
-          const decodedSystemName = this.decodeHtmlEntities(systemName);
-          return firstValueFrom(this.appService.galMapSearch(decodedSystemName))
-            .then(result => {
-              const found = result?.min_max?.find(s => s.name === decodedSystemName);
-              return found ? { ...system, id64: found.id64 } : null;
-            })
-            .catch(() => null);
-        });
-
-        return Promise.all(lookupPromises).then(results => {
-          const systemsFoundInGalMap = results.filter(s => s !== null && s.id64) as EdastroSystem[];
-          const allValidSystems = [...systemsWithId64, ...systemsFoundInGalMap];
-          return allValidSystems.map(s => this.decodeHtmlEntities(s.name));
-        });
-      })
-    );
+    const edastroQuery: Observable<string[]> = systemsWithoutId64.length === 0
+      ? of(systemsWithId64.map(s => this.decodeHtmlEntities(s.name)))
+      : from(
+          // Look up id64 for systems missing it, then map to display names.
+          Promise.all(systemsWithoutId64.map(system => {
+            const systemName = system.galMapSearch || system.name;
+            const decodedSystemName = this.decodeHtmlEntities(systemName);
+            return firstValueFrom(this.appService.galMapSearch(decodedSystemName))
+              .then(result => {
+                const found = result?.min_max?.find(s => s.name === decodedSystemName);
+                return found ? { ...system, id64: found.id64 } : null;
+              })
+              .catch(() => null);
+          })).then(results => {
+            const systemsFoundInGalMap = results.filter(s => s !== null && s.id64) as EdastroSystem[];
+            const allValidSystems = [...systemsWithId64, ...systemsFoundInGalMap];
+            return allValidSystems.map(s => this.decodeHtmlEntities(s.name));
+          })
+        );
 
     const result$ = combineLatest([spansQuery, edastroQuery]).pipe(
       map(([spansSuggestions, edastroSuggestions]) => {
@@ -823,7 +817,7 @@ export class HomeComponent implements OnInit {
   }
 
   public onSystemSelected(displayName: string): void {
-    const mapping = this.systemMapping.get(displayName);
+    const mapping = this.systemMapping().get(displayName);
     if (mapping && mapping.id64) {
       this.searchInput = displayName;
       this.searchBySystemAddress(mapping.id64);
@@ -837,9 +831,18 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  /**
+   * Accept only absolute http(s) URLs from the external EDAstro feed. The disallowed
+   * characters (whitespace, quotes, `)`) also prevent breaking out of the CSS
+   * `url(...)` the image is concatenated into for the page background.
+   */
+  private safeHttpUrl(url: string | undefined): string | undefined {
+    return url && /^https?:\/\/[^\s)'"]+$/i.test(url) ? url : undefined;
+  }
+
   private stripParentName(ringName: string, parentName: string): string {
     // Remove parent name from ring name, keeping only the ring identifier
-    const pattern = new RegExp(`^${parentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*`, 'i');
+    const pattern = new RegExp(`^${parentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'i');
     return ringName.replace(pattern, '').trim();
   }
 

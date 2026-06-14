@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection } from '@angular/core';
+import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 
@@ -15,7 +15,7 @@ describe('SystemBodyComponent', () => {
     imports: [SystemBodyComponent],
     providers: [
         provideZonelessChangeDetection(),
-        { provide: AppService, useValue: { codexEntries: of([]), getBodyDisplayName: (n: string) => n } },
+        { provide: AppService, useValue: { codexEntries: signal([]), getBodyDisplayName: (n: string) => n } },
         { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(undefined) }) } },
     ],
     schemas: [NO_ERRORS_SCHEMA],

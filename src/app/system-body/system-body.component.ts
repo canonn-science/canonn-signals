@@ -3,8 +3,7 @@ import {
   DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
   DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
 } from '../data/temperature-estimation';
-import { Component, OnChanges, OnInit, ElementRef, TemplateRef, ChangeDetectionStrategy, SimpleChanges, input, DestroyRef, viewChildren, viewChild, inject, afterNextRender, signal} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnChanges, ElementRef, TemplateRef, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, viewChild, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
 import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -28,16 +27,15 @@ import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';
 
 @Component({
-    selector: 'app-system-body',
-    templateUrl: './system-body.component.html',
-    styleUrls: ['./system-body.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FaIconComponent, MatTooltip, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe, DatePipe, ClickableDirective]
+  selector: 'app-system-body',
+  templateUrl: './system-body.component.html',
+  styleUrls: ['./system-body.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FaIconComponent, MatTooltip, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe, DatePipe, ClickableDirective]
 })
-export class SystemBodyComponent implements OnInit, OnChanges {
+export class SystemBodyComponent implements OnChanges {
   private readonly appService = inject(AppService);
   private readonly dialog = inject(MatDialog);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly physics = inject(BodyPhysicsService);
   private readonly stellarPhysics = inject(StellarPhysicsService);
   private readonly orbitalRelations = inject(OrbitalRelationsService);
@@ -62,15 +60,15 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   readonly forceExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
   readonly childComponents = viewChildren(SystemBodyComponent);
-  readonly hillLimitDialogTemplate = viewChild.required<TemplateRef<any>>('hillLimitDialogTemplate');
-  readonly invisibleRingDialogTemplate = viewChild.required<TemplateRef<any>>('invisibleRingDialogTemplate');
-  readonly jsonDialogTemplate = viewChild.required<TemplateRef<any>>('jsonDialogTemplate');
+  readonly hillLimitDialogTemplate = viewChild.required<TemplateRef<unknown>>('hillLimitDialogTemplate');
+  readonly invisibleRingDialogTemplate = viewChild.required<TemplateRef<unknown>>('invisibleRingDialogTemplate');
+  readonly jsonDialogTemplate = viewChild.required<TemplateRef<unknown>>('jsonDialogTemplate');
   readonly jsonDialogTitle = viewChild.required<ElementRef<HTMLElement>>('jsonDialogTitle');
-  readonly rocheLimitDialogTemplate = viewChild.required<TemplateRef<any>>('rocheLimitDialogTemplate');
-  readonly tidalLockDialogTemplate = viewChild.required<TemplateRef<any>>('tidalLockDialogTemplate');
-  readonly onFootSafetyDialogTemplate = viewChild.required<TemplateRef<any>>('onFootSafetyDialogTemplate');
-  readonly jetAngleDialogTemplate = viewChild.required<TemplateRef<any>>('jetAngleDialogTemplate');
-  readonly apoPeriDialogTemplate = viewChild.required<TemplateRef<any>>('apoPeriDialogTemplate');
+  readonly rocheLimitDialogTemplate = viewChild.required<TemplateRef<unknown>>('rocheLimitDialogTemplate');
+  readonly tidalLockDialogTemplate = viewChild.required<TemplateRef<unknown>>('tidalLockDialogTemplate');
+  readonly onFootSafetyDialogTemplate = viewChild.required<TemplateRef<unknown>>('onFootSafetyDialogTemplate');
+  readonly jetAngleDialogTemplate = viewChild.required<TemplateRef<unknown>>('jetAngleDialogTemplate');
+  readonly apoPeriDialogTemplate = viewChild.required<TemplateRef<unknown>>('apoPeriDialogTemplate');
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -199,18 +197,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       return b.parent.bodyData.bodyId;
     }
     return bid;
-  }
-
-  public ngOnInit(): void {
-    this.appService.codexEntries
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(c => {
-        this.codex = c;
-        // OnPush + zoneless: codex arrives asynchronously, but ngOnChanges writes
-        // computed signals (e.g. getNextPeriapsis, computeDerivedPhysics), which
-        // schedules a CD pass that also re-reads the recomputed biology signals.
-        this.ngOnChanges();
-      });
   }
 
   public ngOnChanges(changes?: SimpleChanges): void {
@@ -496,9 +482,12 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       return body.bodyData.atmosphereType;
     }
     if (body.bodyData.atmosphereComposition) {
-      const largest = Object.entries(body.bodyData.atmosphereComposition)
-        .reduce((max, [gas, percentage]) => percentage > max[1] ? [gas, percentage] : max);
-      return `${largest[0]} ${largest[1].toFixed(2)}%`;
+      const entries = Object.entries(body.bodyData.atmosphereComposition);
+      if (entries.length > 0) {
+        const largest = entries
+          .reduce((max, [gas, percentage]) => percentage > max[1] ? [gas, percentage] : max);
+        return `${largest[0]} ${largest[1].toFixed(2)}%`;
+      }
     }
     return this.getWhiteDwarfAtmosphere() ?? '';
   }
@@ -620,16 +609,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return hotspot.displayName;
   }
 
-  public getSignalsTooltip(): string {
-    const signals = this.resolveSignalsMap();
-    if (!signals) return '';
-
-    return Object.entries(signals)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('\n');
-  }
-
-
 
 
 
@@ -678,6 +657,15 @@ export class SystemBodyComponent implements OnInit, OnChanges {
   constructor() {
     // Sync the cached collapse/expand-all state once the child components first render.
     afterNextRender(() => this.updateChildrenExpandedState());
+
+    // Codex reference data loads asynchronously. When it changes, refresh the
+    // codex-dependent biology signals (recomputed in ngOnChanges). untracked()
+    // stops the effect from also re-running on body() input changes — Angular's
+    // own ngOnChanges already covers those.
+    effect(() => {
+      this.codex = this.appService.codexEntries();
+      untracked(() => this.ngOnChanges());
+    });
   }
 
   private updateChildrenExpandedState(): void {
@@ -689,10 +677,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
   public trackByMaterial(index: number, material: { name: string, class: string, tooltip: string }): string {
     return material.name;
-  }
-
-  public trackByBody(index: number, body: SystemBody): number {
-    return body.bodyData.bodyId;
   }
 
   public trackByBiologySignal(index: number, signal: BiologySignal): number {
@@ -964,24 +948,9 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       type: ring.type || 'Ring'
     }));
 
-    // Prepare dialog data
-    // Shepherd status logic
-    let shepherdStatus: 'shepherd' | 'inner' | 'none' = 'none';
-    if (hillData.withinRings) {
-      shepherdStatus = 'inner';
-    } else if (hillData.isFirstOutside) {
-      // Calculate Hill sphere proximity
-      const hillInnerEdge = hillData.bodyOrbitalRadius - hillData.hillRadius;
-
-      // Require the Hill sphere to actually reach (or slightly overlap) the outermost ring edge.
-      // Use the same tolerance as `isActualShepherd()` (5% of ring width or minimum 1 km).
-      const ringWidth = Math.max(0, hillData.outermostRingRadius - hillData.parentRadius);
-      const tolerance = Math.max(1, ringWidth * 0.05);
-
-      if (hillInnerEdge <= (hillData.outermostRingRadius + tolerance)) {
-        shepherdStatus = 'shepherd';
-      }
-    }
+    // Prepare dialog data — tri-state shepherd status from the single source of
+    // truth in BodyPhysicsService (shared with the isActualShepherd badge).
+    const shepherdStatus = this.physics.shepherdStatus(hillData);
 
     this.hillLimitDialogData = {
       parentName: parent.name,
@@ -1031,12 +1000,10 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     }
   }
 
-
   private computeSpinResonance(): string {
     const bodyData = this.body().bodyData;
     return this.stellarPhysics.spinResonance(bodyData.rotationalPeriod, bodyData.orbitalPeriod);
   }
-
 
   private computeSpinResonanceTooltip(): string {
     const resonance = this.getSpinResonance();
@@ -1058,7 +1025,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return resonance + ' spin resonance';
   }
 
-
   private computeTangentialVelocity(): number | null {
     const bodyData = this.body().bodyData;
     if (!this.isBlackHoleOrNeutronStar() || !bodyData.rotationalPeriod) {
@@ -1070,7 +1036,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     }
     return this.stellarPhysics.tangentialVelocityKms(bodyData.rotationalPeriod, radiusKm);
   }
-
 
   private computeTangentialVelocityDisplay(): string {
     const velocityKms = this.getTangentialVelocity();
@@ -1086,7 +1051,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
 
     return `${velocityKms.toFixed(0)} km/s`;
   }
-
 
   private computeTangentialVelocityTooltip(): string {
     const velocityKms = this.getTangentialVelocity();
@@ -1136,7 +1100,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return this.formatPeriodDays(days);
   }
 
-
   private computeClassifyNeutronStar(): string | null {
     const bd = this.body().bodyData;
     if (bd.type !== BODY_TYPE.Star || bd.subType !== 'Neutron Star') {
@@ -1146,11 +1109,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
       bd.solarMasses, bd.solarRadius, bd.rotationalPeriod, bd.absoluteMagnitude,
     );
   }
-
-
-
-
-
 
   /**
    * Estimates the on-foot temperature range once and derives the landable badge colour
@@ -1223,8 +1181,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
     return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo');
   }
 
-
-
   private computeMaterialBadges(): void {
     const body = this.body();
     if (!body.bodyData.materials) {
@@ -1241,8 +1197,6 @@ export class SystemBodyComponent implements OnInit, OnChanges {
         tooltip: `${material}: ${percentage.toFixed(2)}%`
       })));
   }
-
-
 
   private calculateRocheExcess(): number | null {
     return this.physics.rocheExcess(this.body());
