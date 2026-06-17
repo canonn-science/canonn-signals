@@ -1,0 +1,105 @@
+{
+  "system": {
+    "name": "Compact Object Limits",
+    "id64": 9100000000001,
+    "bodyCount": 5,
+    "coords": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "date": "2026-06-14 00:00:00+00",
+    "government": null,
+    "population": 0,
+    "region": {
+      "name": "Test Region",
+      "region": 1
+    },
+    "bodies": [
+      {
+        "bodyId": 0,
+        "id64": 9100000000001,
+        "name": "Super-Chandrasekhar White Dwarf",
+        "type": "Star",
+        "subType": "White Dwarf (DQ) Star",
+        "mainStar": true,
+        "distanceToArrival": 0,
+        "surfaceTemperature": 4504,
+        "solarMasses": 1.45,
+        "solarRadius": 0.00149536134076204,
+        "age": 12722,
+        "rotationalPeriod": 0.142568166458333,
+        "axialTilt": 0.0,
+        "spectralClass": "DQ6",
+        "luminosity": "VII",
+        "updateTime": "2026-06-14 00:00:00+00"
+      },
+      {
+        "bodyId": 1,
+        "id64": 3824408332651,
+        "name": "LAWD 96",
+        "type": "Star",
+        "subType": "White Dwarf (DA) Star",
+        "distanceToArrival": 0,
+        "surfaceTemperature": 27735,
+        "solarMasses": 1.261719,
+        "solarRadius": 0.0038452145938174,
+        "age": 1298,
+        "rotationalPeriod": 1.13240388736111,
+        "axialTilt": 0.0,
+        "spectralClass": "DA5",
+        "luminosity": "VII",
+        "updateTime": "2026-06-14 00:00:00+00"
+      },
+      {
+        "bodyId": 2,
+        "id64": 43630707589,
+        "name": "Clooku BA-A f81",
+        "type": "Star",
+        "subType": "Black Hole",
+        "distanceToArrival": 0,
+        "surfaceTemperature": 0,
+        "solarMasses": 4.519531,
+        "solarRadius": 1.91696901955428e-05,
+        "age": 1506,
+        "rotationalPeriod": 9.33344907407407e-07,
+        "axialTilt": 0.0,
+        "luminosity": "VII",
+        "updateTime": "2026-06-14 00:00:00+00"
+      },
+      {
+        "bodyId": 3,
+        "id64": 5532807773,
+        "name": "Jackson's Lighthouse",
+        "type": "Star",
+        "subType": "Neutron Star",
+        "distanceToArrival": 0,
+        "surfaceTemperature": 311807040,
+        "solarMasses": 13.484375,
+        "solarRadius": 6.04046240402588e-06,
+        "age": 266,
+        "rotationalPeriod": 7.64958333333333e-06,
+        "axialTilt": -0.245299,
+        "luminosity": "VII",
+        "updateTime": "2026-06-14 00:00:00+00"
+      },
+      {
+        "bodyId": 4,
+        "id64": 72057637667211763,
+        "name": "Sifoae WV-C d13-1 A",
+        "type": "Star",
+        "subType": "Neutron Star",
+        "distanceToArrival": 0,
+        "surfaceTemperature": 4962653,
+        "solarMasses": 0.808594,
+        "solarRadius": 1.55295201294033e-05,
+        "age": 3218,
+        "rotationalPeriod": 3.04077662037037e-05,
+        "axialTilt": 0.0,
+        "spectralClass": "N0",
+        "luminosity": "VII",
+        "updateTime": "2026-06-14 00:00:00+00"
+      }
+    ]
+  }
+}

@@ -144,6 +144,8 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getTangentialVelocityDisplay = signal('');
   public readonly getTangentialVelocityTooltip = signal('');
   public readonly classifyNeutronStar = signal<string | null>(null);
+  public readonly getSchwarzschildRadius = signal<number | null>(null);
+  public readonly getMassStabilityAlert = signal<string | null>(null);
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
   }
@@ -397,6 +399,8 @@ export class SystemBodyComponent implements OnChanges {
 
     // Neutron-star / black-hole derived values.
     this.classifyNeutronStar.set(this.computeClassifyNeutronStar());
+    this.getSchwarzschildRadius.set(this.computeSchwarzschildRadius());
+    this.getMassStabilityAlert.set(this.physics.massStabilityAlert(bd.subType, bd.solarMasses));
     this.getTangentialVelocity.set(this.computeTangentialVelocity());
     this.getTangentialVelocityDisplay.set(this.computeTangentialVelocityDisplay());
     this.getTangentialVelocityTooltip.set(this.computeTangentialVelocityTooltip());
@@ -1111,6 +1115,15 @@ export class SystemBodyComponent implements OnChanges {
     return this.stellarPhysics.classifyNeutronStar(
       bd.solarMasses, bd.rotationalPeriod, bd.absoluteMagnitude,
     );
+  }
+
+  /** Schwarzschild radius (km) for black holes and neutron stars, or null for other bodies. */
+  private computeSchwarzschildRadius(): number | null {
+    const bd = this.body().bodyData;
+    const isBlackHole = bd.subType?.includes('Black Hole');
+    const isNeutronStar = bd.subType === 'Neutron Star';
+    if (!isBlackHole && !isNeutronStar) { return null; }
+    return this.physics.schwarzschildRadiusKm(bd.solarMasses);
   }
 
   /**

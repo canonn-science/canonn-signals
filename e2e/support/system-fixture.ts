@@ -121,6 +121,43 @@ function ownContent(page: Page, bodyId: number): Locator {
   return page.locator(`#body-${bodyId} > .system-body-grow`);
 }
 
+/**
+ * The value cell (`> div`, last) of a labelled data row within a body's own detail
+ * panel. The body must already be expanded ({@link ensureBodyExpanded}).
+ */
+export function bodyRowValue(page: Page, bodyId: number, label: string): Locator {
+  return ownContent(page, bodyId)
+    .locator('.body-data-entry')
+    .filter({ has: page.getByText(label, { exact: true }) })
+    .locator('> div')
+    .last();
+}
+
+/**
+ * Asserts the degeneracy-limit warning (⚠) on a star's "Solar masses" row is present
+ * or absent, and — when present and an `tooltip` is given — that hovering it shows that
+ * text. Tooltip comparison is whitespace-normalised, so the message's embedded newline
+ * is matched as a single space.
+ */
+export async function expectMassStabilityWarning(
+  page: Page,
+  bodyId: number,
+  opts: { present: boolean; tooltip?: string },
+): Promise<void> {
+  const warning = bodyRowValue(page, bodyId, 'Solar masses').locator('.status-danger');
+  await expect(warning, `#body-${bodyId} mass-stability warning presence`).toHaveCount(opts.present ? 1 : 0);
+
+  if (opts.present && opts.tooltip) {
+    await warning.scrollIntoViewIfNeeded();
+    await warning.hover();
+    await expect(page.locator('.mat-mdc-tooltip-show'), `#body-${bodyId} mass-warning tooltip`)
+      .toHaveText(opts.tooltip);
+    // Move away so the next hover's tooltip is unambiguous.
+    await page.mouse.move(0, 0);
+    await expect(page.locator('.mat-mdc-tooltip-show')).toHaveCount(0);
+  }
+}
+
 /** Expands a body's detail panel if it isn't already open. */
 export async function ensureBodyExpanded(page: Page, bodyId: number): Promise<void> {
   const expand = ownHeader(page, bodyId).getByLabel('Expand body details');

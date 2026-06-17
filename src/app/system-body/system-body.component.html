@@ -398,6 +398,17 @@
                   </div>
                 </div>
               }
+              @if (getSchwarzschildRadius(); as schwarzschildRadius) {
+                <div class="body-data-entry">
+                  <div>
+                    Schwarzschild radius
+                  </div>
+                  <div [matTooltip]="'Event-horizon radius r_s = 2GM/c² = ' + (schwarzschildRadius | number:'0.2-4') + ' km'"
+                    matTooltipClass="multiline-tooltip">
+                    {{ schwarzschildRadius | number:'0.2-2' }} km
+                  </div>
+                </div>
+              }
               @if (body().bodyData.earthMasses && body().bodyData.type === 'Planet') {
                 <div
                   class="body-data-entry">
@@ -414,8 +425,13 @@
                   <div>
                     Solar masses
                   </div>
-                  <div [matTooltip]="formattedSolarMass?.tooltip || ''">
-                    {{ formattedSolarMass?.display }}
+                  <div>
+                    <span [matTooltip]="formattedSolarMass?.tooltip || ''">
+                      {{ formattedSolarMass?.display }}
+                    </span>
+                    @if (getMassStabilityAlert(); as massAlert) {
+                      <span class="status-danger" [matTooltip]="massAlert" matTooltipClass="multiline-tooltip">⚠</span>
+                    }
                   </div>
                 </div>
               }
