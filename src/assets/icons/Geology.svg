@@ -1,41 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="26" height="26">
-<defs>
-<linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#c8ccd0"/><stop offset="1" stop-color="#6b7176"/></linearGradient>
-<linearGradient id="lavaR" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#f04800"/><stop offset="1" stop-color="#f00000"/></linearGradient>
-<linearGradient id="lavaO" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#f0c000"/><stop offset="1" stop-color="#f06000"/></linearGradient>
-<linearGradient id="lavaY" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#fff05a"/><stop offset="1" stop-color="#f0d800"/></linearGradient>
-<linearGradient id="flow" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#f06000"/><stop offset="0.6" stop-color="#f02800"/><stop offset="1" stop-color="#c00000"/></linearGradient></defs>
-<path d="M 6 57 L 23 27 L 28 30 L 32 25 L 36 30 L 41 27 L 58 57 Z" fill="url(#rock)"/>
-<path d="M 6 57 L 23 27 L 26 34 L 20 44 L 24 57 Z" fill="#5a6066" opacity=".55"/>
-<path d="M 58 57 L 41 27 L 38 35 L 44 46 L 40 57 Z" fill="#3f4348" opacity=".55"/>
-<path d="M 28 33 Q 25 40 23 46 Q 22 52 20.5 57 L 24.5 57 Q 25 50 26 45 Q 27 39 30 34 Z" fill="url(#flow)"/>
-<path d="M 36 33 Q 39 39 40 45 Q 41 51 41.5 57 L 45.5 57 Q 45 50 43.5 44 Q 42 38 38.5 33 Z" fill="url(#flow)"/>
-<path d="M 31 35 Q 30 44 30.5 51 Q 30.5 54 31 57 L 34 57 Q 34 53 34 49 Q 34 42 33.5 35 Z" fill="url(#flow)"/>
-<path d="M 28.5 34 Q 26.5 42 25 49 Q 24.3 53 23.6 56.5" fill="none" stroke="#f0d800" stroke-width="1.3" stroke-linecap="round" opacity="0.9"/>
-<path d="M 36.5 34 Q 38.5 42 40 49 Q 40.6 53 41.2 56.5" fill="none" stroke="#f0d800" stroke-width="1.3" stroke-linecap="round" opacity="0.9"/>
-<path d="M 32 36 Q 31.7 46 32 56.5" fill="none" stroke="#f0c000" stroke-width="1.1" stroke-linecap="round" opacity="0.85"/>
-<circle cx="22.5" cy="59.6" r="1.5" fill="#f03000"/>
-<ellipse cx="22.5" cy="58" rx="1" ry="1.8" fill="#f04800"/>
-<circle cx="32.5" cy="60" r="1.4" fill="#f03000"/>
-<circle cx="42.5" cy="59.4" r="1.4" fill="#f03000"/>
-<ellipse cx="42.5" cy="58" rx="0.9" ry="1.6" fill="#f04800"/>
-<path d="M 24 30 Q 32 36 40 30 L 36 41 Q 32 44 28 41 Z" fill="#2b2f33"/>
-<path d="M 26 30 Q 24 12 31 5 Q 33 14 33 14 Q 35 11 33 5 Q 41 12 39 30 Q 32 26 26 30 Z" fill="url(#lavaR)"/>
-<path d="M 28 30 Q 27 16 31 7 Q 33 16 35 7 Q 38 16 37 30 Q 32 27 28 30 Z" fill="url(#lavaO)"/>
-<path d="M 30 30 Q 29 18 32 9 Q 35 18 34 30 Q 32 28 30 30 Z" fill="url(#lavaY)"/>
-<circle cx="20" cy="11" r="2.0" fill="#f04800"/>
-<circle cx="26" cy="6" r="1.6" fill="#f0a800"/>
-<circle cx="32" cy="3" r="2.2" fill="#f0d800"/>
-<circle cx="39" cy="6" r="1.5" fill="#f06000"/>
-<circle cx="45" cy="12" r="1.9" fill="#f01800"/>
-<circle cx="36" cy="14" r="1.2" fill="#f0f000"/>
-<circle cx="28" cy="13" r="1.1" fill="#f0c000"/>
-<circle cx="43" cy="18" r="1.4" fill="#f04800"/>
-<circle cx="22" cy="17" r="1.3" fill="#f07800"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="mountain" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b6b6f"/>
+      <stop offset="1" stop-color="#2e2e31"/>
+    </linearGradient>
+    <linearGradient id="lavaFlow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd84d"/>
+      <stop offset="0.5" stop-color="#ff7a18"/>
+      <stop offset="1" stop-color="#e02500"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff2a8"/>
+      <stop offset="0.5" stop-color="#ff8a1e"/>
+      <stop offset="1" stop-color="#ff8a1e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
 
+  <!-- eruption glow -->
+  <ellipse cx="32" cy="20" rx="16" ry="14" fill="url(#glow)" opacity="0.8"/>
+
+  <!-- smoke / ash plume -->
+  <g fill="#6b6258" opacity="0.55">
+    <circle cx="30" cy="10" r="6"/>
+    <circle cx="38" cy="8" r="5"/>
+    <circle cx="34" cy="5" r="4.5"/>
+    <circle cx="26" cy="6" r="4"/>
+    <circle cx="40" cy="13" r="4"/>
+  </g>
+
+  <!-- mountain body -->
+  <path d="M8 58 L24 22 Q26 18 30 18 L34 18 Q38 18 40 22 L56 58 Z" fill="url(#mountain)"/>
+  <!-- shaded right slope -->
+  <path d="M40 22 Q38 18 34 18 L32 18 L32 58 L56 58 Z" fill="#000" opacity="0.18"/>
+
+  <!-- crater lava pool -->
+  <ellipse cx="32" cy="19" rx="9" ry="3.5" fill="url(#lavaFlow)"/>
+
+  <!-- erupting lava blobs -->
+  <g fill="url(#lavaFlow)">
+    <circle cx="32" cy="9" r="3"/>
+    <circle cx="26" cy="13" r="2.2"/>
+    <circle cx="38" cy="12" r="2.5"/>
+    <circle cx="30" cy="6" r="2"/>
+    <circle cx="36" cy="7" r="1.8"/>
+    <circle cx="22" cy="16" r="1.6"/>
+    <circle cx="42" cy="16" r="1.6"/>
+  </g>
+
+  <!-- lava dripping down the slopes -->
+  <path d="M28 20 Q27 30 29 38 Q30 44 27 50 Q26 53 28 56 Q31 53 30 48 Q29 40 31 32 Q32 25 31 20 Z" fill="url(#lavaFlow)"/>
+  <path d="M37 21 Q39 28 37 34 Q35 40 38 47 Q39 51 37 55 Q34 50 36 44 Q38 37 36 30 Q35 25 36 21 Z" fill="url(#lavaFlow)"/>
+
+  <!-- lava droplets -->
+  <circle cx="28" cy="58" r="1.6" fill="#e02500"/>
+  <circle cx="37" cy="57" r="1.4" fill="#ff7a18"/>
+  <circle cx="33" cy="46" r="1.1" fill="#ffd84d"/>
 </svg>
