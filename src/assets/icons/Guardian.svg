@@ -9,11 +9,11 @@
 <linearGradient id="rRight" x1="0" y1="0" x2="0" y2="1">
 <stop offset="0" stop-color="#5ad2ea"/><stop offset="0.5" stop-color="#1c9cbe"/><stop offset="1" stop-color="#085a7e"/></linearGradient>
 <linearGradient id="bTop" x1="0" y1="0" x2="0.4" y2="1">
-<stop offset="0" stop-color="#a89a85"/><stop offset="1" stop-color="#82766400"/></linearGradient>
+<stop offset="0" stop-color="#c6b69d"/><stop offset="1" stop-color="#9c8e7600"/></linearGradient>
 <linearGradient id="bLeft" x1="0.2" y1="0" x2="0.4" y2="1">
-<stop offset="0" stop-color="#82765f"/><stop offset="1" stop-color="#473f33"/></linearGradient>
+<stop offset="0" stop-color="#a9997c"/><stop offset="1" stop-color="#635847"/></linearGradient>
 <linearGradient id="bRight" x1="0.8" y1="0" x2="0.6" y2="1">
-<stop offset="0" stop-color="#6b6051"/><stop offset="1" stop-color="#362f26"/></linearGradient></defs>
+<stop offset="0" stop-color="#8b7d69"/><stop offset="1" stop-color="#514639"/></linearGradient></defs>
 <ellipse cx="32" cy="16" rx="21" ry="15" fill="url(#gGlow)"/>
 
 <!-- STONE BASE PRISM -->
