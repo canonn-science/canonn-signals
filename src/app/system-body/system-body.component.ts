@@ -21,7 +21,8 @@ import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { ChartRenderingService, RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
-import { WHITE_DWARF_ATMOSPHERE, WHITE_DWARF_TOOLTIPS, whiteDwarfSpectralCode } from '../data/white-dwarf';
+import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
+import { WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData } from '../white-dwarf-types-dialog/white-dwarf-types-dialog.component';
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';
@@ -475,7 +476,7 @@ export class SystemBodyComponent implements OnChanges {
     }
     const spectralCode = whiteDwarfSpectralCode(body.bodyData.subType);
     if (spectralCode) {
-      return WHITE_DWARF_TOOLTIPS[spectralCode] ?? '';
+      return WHITE_DWARF_CLASSES[spectralCode]?.tooltip ?? '';
     }
     return '';
   }
@@ -483,7 +484,23 @@ export class SystemBodyComponent implements OnChanges {
   public getWhiteDwarfAtmosphere(): string | null {
     const spectralCode = whiteDwarfSpectralCode(this.body().bodyData.subType);
     if (!spectralCode) { return null; }
-    return WHITE_DWARF_ATMOSPHERE[spectralCode] ?? null;
+    return WHITE_DWARF_CLASSES[spectralCode]?.atmosphere ?? null;
+  }
+
+  /** Spectral code of this body if it is a white dwarf (e.g. `DA`), otherwise null. */
+  public getWhiteDwarfSpectralCode(): string | null {
+    return whiteDwarfSpectralCode(this.body().bodyData.subType);
+  }
+
+  /** Opens the white-dwarf spectral-type reference modal, highlighting this star's type. */
+  public showWhiteDwarfSpectralDialog(): void {
+    const code = this.getWhiteDwarfSpectralCode();
+    if (!code) { return; }
+    this.dialog.open<WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData>(WhiteDwarfTypesDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      data: { typeKey: whiteDwarfSpectralTypeKey(code) },
+    });
   }
 
 

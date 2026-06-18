@@ -27,6 +27,11 @@
         - {{ getAtmosphereDisplay() }}
       </span>
       }
+      @if (getWhiteDwarfSpectralCode(); as wdCode) {
+        <span class="badge badge-cyan clickable"
+          [matTooltip]="'White dwarf spectral type — click for the full classification'"
+          (click)="showWhiteDwarfSpectralDialog()">{{ wdCode }}</span>
+      }
       @if (isRingNotVisible()) {
       <span class="badge badge-red clickable"
             (click)="showInvisibleRingExplanation()">Invisible</span>
