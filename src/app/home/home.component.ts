@@ -253,6 +253,31 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   readonly getTotalBodyCount = computed<number>(() => this.countBodies(this.bodies()));
 
+  /**
+   * System scan completeness: how many bodies we know about versus the system's
+   * total body count from the system JSON. `known` counts the real bodies in the
+   * JSON's `bodies` array — stars, planets and moons — which is what `bodyCount`
+   * counts too. Belts, rings and barycentres are excluded: the game does not count
+   * them as bodies, so including them would inflate the percentage (e.g. Sol's
+   * `bodies` array carries a Barycentre entry on top of its 40 real bodies).
+   * (Deliberately not `getTotalBodyCount()`, which counts the rendered tree including
+   * those synthesized ring/belt/barycentre nodes.) If we know about more bodies than
+   * the reported count (stale/under-reported `bodyCount`), the percentage is capped at
+   * 100. When the system JSON has no `bodyCount`, `percent` is null (rendered as
+   * "?%"/Unknown).
+   */
+  readonly systemCompleteness = computed<{ known: number; total: number | null; percent: number | null }>(() => {
+    const system = this.data()?.system;
+    const known = (system?.bodies ?? []).filter(body =>
+      body.type !== BODY_TYPE.Belt &&
+      body.type !== BODY_TYPE.Ring &&
+      body.type !== BODY_TYPE.Barycentre,
+    ).length;
+    const total = system?.bodyCount ?? null;
+    const percent = total ? Math.min(100, Math.round((known / total) * 100)) : null;
+    return { known, total, percent };
+  });
+
   private distance3d(a: { x: number, y: number, z: number }, b: { x: number, y: number, z: number }): number {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
   }
@@ -953,7 +978,8 @@ export interface CanonnBiostats {
   system: {
     allegiance: string;
     bodies: CanonnBiostatsBody[];
-    bodyCount: number;
+    // Optional: some systems (e.g. unsurveyed ones) omit this in the API payload.
+    bodyCount?: number;
     // controllingFaction
     coords: {
       x: number;
