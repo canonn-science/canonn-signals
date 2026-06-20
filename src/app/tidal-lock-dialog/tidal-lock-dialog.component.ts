@@ -32,7 +32,7 @@ export interface TidalLockDialogData {
  * cap would give.
  *
  * The swing amplitude θ equals the obliquity to the orbital plane, which is not known
- * exactly: the game gives axial tilt against a reference plane and the orbit's
+ * exactly: the data gives axial tilt against a reference plane and the orbit's
  * inclination separately, with unknown node alignment. The obliquity therefore lies
  * between |tilt − inclination| and tilt + inclination (folded into [0,180]; a 180° tilt
  * nods no more than a 0° one), so the cycling area has a lower and an upper limit.
@@ -116,7 +116,7 @@ export class TidalLockDialogComponent {
   /**
    * Whether the rotation is synchronous with the orbit (rotation period ≈ orbital
    * period) — i.e. the body keeps the same face toward its immediate parent. This is
-   * the real 1:1 condition, independent of the tidal-lock flag (which can be set on a
+   * the real 1:1 condition, independent of the tidal-lock indicator (which can be set on a
    * body that still spins many times per orbit, e.g. Eden).
    */
   private isSynchronousWithParent(): boolean {
@@ -129,7 +129,7 @@ export class TidalLockDialogComponent {
   /**
    * Whether the body keeps a fixed face toward the system's light-source star, giving a
    * permanent day/night side. Requires BOTH:
-   *  1. A genuine 1:1 lock (rotation ≈ orbit) — not merely the tidal-lock flag.
+   *  1. A genuine 1:1 lock (rotation ≈ orbit) — not merely the tidal-lock indicator.
    *  2. The thing it is locked to is the star itself (direct) OR a star-barycentre it
    *     orbits from outside, such as a circumbinary pair (indirect). In both cases the
    *     light sits at the centre the body faces. A body locked to a planet/gas giant —

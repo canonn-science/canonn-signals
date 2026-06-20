@@ -5,14 +5,14 @@ import { loadFixtureSystem } from './support/system-fixture';
  * E2E coverage for the tidal-lock dialog (`app-tidal-lock-dialog`).
  *
  * The dialog opens from the purple spin/lock badge in a body's header. It explains the
- * tidal-lock flag and — only for a body that keeps a fixed face to its light-source star
+ * tidal-lock indicator and — only for a body that keeps a fixed face to its light-source star
  * — draws the day/night-cycling geometry as a tilted globe with the cycling band.
  *
  * Two bodies in the Alpha Centauri fixture exercise both branches:
  *  - Alpha Centauri B 1 (id 5): orbits a star directly and is ~1:1 synchronous, so it
  *    keeps a fixed face → the cycling globe is shown.
  *  - Eden (id 10): orbits a star but spins ~1.05 d while orbiting ~31 d (the tidal-lock
- *    flag is set but it is NOT 1:1), so it does not keep a fixed face → no cycling globe.
+ *    indicator is set but it is NOT 1:1), so it does not keep a fixed face → no cycling globe.
  */
 
 const FIXTURE = { fixture: 'alpha-centauri.json', systemName: 'Alpha Centauri', id64: 1178708478315 };
@@ -34,7 +34,7 @@ test.describe('Tidal-lock dialog', () => {
     const dialog = await openTidalLockDialog(page, 5);
 
     // The general tidal-lock explanation and the 1:1-vs-3:2 schematic are always present.
-    await expect(dialog).toContainText('What does the tidal-lock flag mean?');
+    await expect(dialog).toContainText('What does the tidal-lock indicator mean?');
     await expect(dialog.locator('.scenario-diagram')).not.toHaveCount(0);
 
     // The fixed-face cycling section: text + the pseudo-3D globe with its cycling band.
@@ -56,8 +56,8 @@ test.describe('Tidal-lock dialog', () => {
 
     const dialog = await openTidalLockDialog(page, 10);
 
-    // The dialog still explains the flag and shows the spin-resonance schematic…
-    await expect(dialog).toContainText('What does the tidal-lock flag mean?');
+    // The dialog still explains the indicator and shows the spin-resonance schematic…
+    await expect(dialog).toContainText('What does the tidal-lock indicator mean?');
     await expect(dialog.locator('.scenario-diagram')).not.toHaveCount(0);
 
     // …but Eden does not keep a fixed face to the star, so there is no cycling geometry.

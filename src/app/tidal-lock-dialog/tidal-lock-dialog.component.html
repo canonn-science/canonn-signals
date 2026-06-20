@@ -10,11 +10,11 @@
           without any detected spin resonance.
         }
       } @else {
-        This body is <strong>not flagged as tidally locked</strong> by the game journal,
+        This body <strong>does not carry the tidal-lock indicator</strong>,
         @if (resonance && resonance !== 'none') {
           but it is in a <strong>{{ resonance }}</strong> spin–orbit resonance.
           This means its rotation rate is synchronised with its orbit in a stable ratio,
-          which is itself a form of tidal evolution — even if the game does not set the tidal lock flag.
+          which is itself a form of tidal evolution — even when the tidal-lock indicator is not set.
         }
       }
     </p>
@@ -60,12 +60,12 @@
     }
 
     <p class="explanation">
-      <strong>What does the tidal-lock flag mean?</strong><br>
-      The flag is set by the game when a body's rotation has settled into equilibrium with its orbit — its
+      <strong>What does the tidal-lock indicator mean?</strong><br>
+      The indicator is set when a body's rotation has settled into equilibrium with its orbit — its
       rotational period matches its orbital period. It is often misread as "one face is permanently lit" or
       "the same side always points at the parent." That fully-frozen, one-hemisphere-always-facing picture
       (like the Moon toward Earth) is only the idealised case: zero axial tilt and a perfectly circular
-      orbit. The flag does <strong>not</strong> guarantee those conditions hold.<br><br>
+      orbit. The indicator does <strong>not</strong> guarantee those conditions hold.<br><br>
       More precisely, tidal locking is the process by which tidal forces alter the rotation of a body until
       it reaches a long-term rotational equilibrium with its orbit. A body is considered tidally locked when
       its average rotational evolution has stabilised and the net tidal torque over an orbit is effectively
@@ -132,28 +132,28 @@
         <strong>Illumination geometry: the day/night-cycling region</strong><br>
         This body keeps a fixed face toward
         @if (cyc.indirect) {
-          the barycentre it orbits (so toward the stars at its centre),
+          the barycentre it orbits (the stars sit at its centre),
         } @else {
           the star,
         }
-        so it has a <strong>permanent day hemisphere</strong> and a <strong>permanent night
+        giving it a <strong>permanent day hemisphere</strong> and a <strong>permanent night
         hemisphere</strong>. Its axial tilt (<strong>{{ cyc.axialTiltDeg | number:'0.1-1' }}°</strong>) makes
-        the sub-stellar point nod north–south by ±(its obliquity) over each orbit, so the terminator sweeps a
-        band of the surface. Because the body does not spin relative to the star, that swept band is
+        the sub-stellar point nod north–south by ±(its obliquity) over each orbit, sweeping the terminator
+        across a band of the surface. Because the body does not spin relative to the star, that swept band is
         <strong>two lunes down the dawn and dusk sides</strong> — pinched at the equator, widest at the
         poles — rather than a simple polar cap.<br><br>
 
         @if (cyc.hasCycling) {
           The width of that band is set by the obliquity to the orbital plane: the axial tilt combines with
           the orbital inclination (<strong>{{ cyc.inclinationDeg | number:'0.1-1' }}°</strong>) at a node
-          angle the data does not give, so the obliquity is bounded rather than exact. With a swing of
+          angle the data does not give, leaving the obliquity bounded rather than exact. With a swing of
           <strong>{{ fmtRange(cyc.swingMinDeg, cyc.swingMaxDeg, 1) }}°</strong>, about
           <strong>{{ fmtRange(cyc.cyclingFractionMin * 100, cyc.cyclingFractionMax * 100, 1) }}%</strong> of the
           whole surface@if (cyc.cyclingAreaMaxKm2 !== null) {
             (≈ <strong>{{ fmtRange(cyc.cyclingAreaMinKm2!, cyc.cyclingAreaMaxKm2, 0) }} km²</strong>)
           } goes through a day/night cycle once per orbit. The rest stays in permanent day or permanent night.
         } @else {
-          With negligible axial tilt and inclination the sub-stellar point barely moves, so almost none of the
+          With negligible axial tilt and inclination the sub-stellar point barely moves, and almost none of the
           surface cycles: the terminator stays effectively fixed, with one permanent day hemisphere and one
           permanent night hemisphere.
         }
