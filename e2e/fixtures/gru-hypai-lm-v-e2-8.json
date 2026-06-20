@@ -1,0 +1,18 @@
+{
+  "system": {
+    "bodies": [], 
+    "coords": {
+      "x": 3632.09375, 
+      "y": -630.9375, 
+      "z": 13537.125
+    }, 
+    "date": "2024-11-02 18:14:46+00", 
+    "id64": 35766896476, 
+    "name": "Gru Hypai LM-V e2-8", 
+    "region": {
+      "name": "Norma Expanse", 
+      "region": 10
+    }, 
+    "stations": []
+  }
+}

@@ -133,4 +133,51 @@ describe('HomeComponent', () => {
       expect(root!.subBodies.some(b => b.bodyData.bodyId === 5)).toBe(true);
     });
   });
+
+  describe('systemCompleteness', () => {
+    function loadSystem(bodyCount: number | undefined, bodies: any[]) {
+      const data = {
+        system: {
+          name: 'Test System', id64: 1, coords: { x: 0, y: 0, z: 0 },
+          region: { name: 'Inner Orion Spur', region: 18 }, population: 0,
+          bodyCount, bodies,
+        },
+      };
+      (component as any).processBodies(data);
+      component.data.set(data as any);
+    }
+
+    it('reports the known/total ratio as a percentage', () => {
+      loadSystem(5, [
+        { bodyId: 0, name: 'Star', type: 'Star', subType: '', id64: 1 },
+      ]);
+      // 1 known body out of 5 reported → 20%.
+      expect(component.systemCompleteness()).toEqual({ known: 1, total: 5, percent: 20 });
+    });
+
+    it('caps the percentage at 100 when more bodies are known than reported', () => {
+      loadSystem(1, [
+        { bodyId: 0, name: 'Star', type: 'Star', subType: '', id64: 1 },
+        { bodyId: 1, name: 'Planet', type: 'Planet', subType: '', id64: 2, semiMajorAxis: 1, parents: [{ Star: 0 }] },
+      ]);
+      // 2 known / 1 reported would be 200%, clamped to 100%.
+      expect(component.systemCompleteness()).toEqual({ known: 2, total: 1, percent: 100 });
+    });
+
+    it('returns a null percentage when the system JSON has no body count', () => {
+      loadSystem(undefined, []);
+      expect(component.systemCompleteness()).toEqual({ known: 0, total: null, percent: null });
+    });
+
+    it('excludes belts, rings and barycentres from the known count', () => {
+      loadSystem(4, [
+        { bodyId: 0, name: 'Star', type: 'Star', subType: '', id64: 1 },
+        { bodyId: 1, name: 'Planet', type: 'Planet', subType: '', id64: 2, semiMajorAxis: 1, parents: [{ Star: 0 }] },
+        { bodyId: 2, name: 'A Belt', type: 'Belt', subType: '', id64: 3 },
+        { bodyId: 3, name: 'Barycentre', type: 'Barycentre', subType: '', id64: 4 },
+      ]);
+      // Only the star and planet are real bodies → 2 of 4 → 50%.
+      expect(component.systemCompleteness()).toEqual({ known: 2, total: 4, percent: 50 });
+    });
+  });
 });

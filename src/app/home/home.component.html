@@ -268,13 +268,35 @@
                                     </div>
                                   </div>
                                 </div>
-                                <div class="bodies">
-                                  @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
-                                    <app-system-body [body]="body"
-                                      [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
-                                    [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"></app-system-body>
-                                  }
-                                </div>
+                                @if (systemCompleteness(); as completeness) {
+                                  <div class="system-completeness" role="img"
+                                    [attr.aria-label]="completeness.percent === null
+                                      ? 'System completeness unknown (' + completeness.known + ' bodies known, total unknown)'
+                                      : 'System completeness ' + completeness.percent + '% (' + completeness.known + ' of ' + completeness.total + ' bodies known)'">
+                                    <div class="system-completeness-header">
+                                      <span class="system-completeness-label">System Completeness</span>
+                                      <span class="system-completeness-value">{{ completeness.percent === null ? '?' : completeness.percent }}%</span>
+                                    </div>
+                                    <div class="system-completeness-track">
+                                      @if (completeness.percent === null) {
+                                        <span class="system-completeness-unknown">Unknown</span>
+                                      } @else {
+                                        <div class="system-completeness-fill"
+                                          [style.width.%]="completeness.percent"
+                                          [style.background-color]="'hsl(' + (completeness.percent * 1.2) + ', 55%, 42%)'"></div>
+                                      }
+                                    </div>
+                                  </div>
+                                }
+                                @if (bodies().length) {
+                                  <div class="bodies">
+                                    @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
+                                      <app-system-body [body]="body"
+                                        [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
+                                      [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"></app-system-body>
+                                    }
+                                  </div>
+                                }
                                 <div class="credits-panel">
                                   <div class="credits-title">
                                     <span class="credits-title-text">Credits</span>
