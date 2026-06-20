@@ -1261,7 +1261,10 @@ export class BodyImage {
         if (body.type === "Star") {
             const spectralClass = body.spectralClass?.substring(0, 1) ?? null;
             for (const starImage of this.starImages) {
-                if (starImage.spectralClass !== spectralClass) {
+                // Entries with a null spectralClass (black holes, neutron stars, white
+                // dwarfs) are matched by subType/mass instead — they must not be skipped
+                // just because the body reports a spectral class (e.g. "H0", "N0", "DA").
+                if (starImage.spectralClass !== null && starImage.spectralClass !== spectralClass) {
                     continue;
                 }
                 if (starImage.subType) {
