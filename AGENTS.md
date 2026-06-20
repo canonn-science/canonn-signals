@@ -19,16 +19,17 @@ body tree. No backend in this repo.
 - Angular Material (M2 theming), FontAwesome, RxJS. RxJS teardown via `takeUntilDestroyed(inject(DestroyRef))`.
 
 ## Commands
-- `npm start` → `ng serve` (binds `0.0.0.0`, port 4200; reachable from the dev-container host).
-- `npm run build` → `prebuild` (copies `readme.md` → `src/assets/readme.md` for the Credits panel) then `ng build`. **Output goes to `dist/browser/`** (not `dist/`).
+- `npm start` → `prestart` (runs `generate-credits`, see below) then `ng serve` (binds `0.0.0.0`, port 4200; reachable from the dev-container host).
+- `npm run build` → `prebuild` (runs `generate-credits`) then `ng build`. **Output goes to `dist/`** (the builder's `outputPath.browser` is `""`, so there's no `dist/browser/` subdir).
+- `npm run generate-credits` → `scripts/generate-credits.js` parses the `# Credits` section of `readme.md` and writes `src/app/data/credits.generated.ts` (an HTML snippet imported by the Credits panel). Runs automatically before `start`/`build`.
 - `npm test` → `ng test` (Vitest). For CI/one-shot: `ng test --watch=false`. No browser/Chrome needed.
 - `npm run watch` → dev build in watch mode.
 - `npm run e2e` → `playwright test` (Playwright). End-to-end/functional + responsive + cross-browser checks in `e2e/` (desktop/tablet/mobile × Chromium/Firefox). It boots the dev server itself; deterministic specs stub the APIs with saved payloads in `e2e/fixtures/` (helpers in `e2e/support/`). **Playwright is for functional/UI correctness only — we do NOT use it for stress/load/performance testing.** This sandbox's single dev server can deadlock under heavy parallelism; cap workers (`npx playwright test --workers=6`) if needed.
 
 ## Architecture
 - `src/app/app.component.*` — shell (router outlet, background image via async pipe).
-- `src/app/home/home.component.*` — search + system overview; **large** (~1035 lines), holds search/region-map/markers logic.
-- `src/app/system-body/system-body.component.*` — recursive body renderer; still **large (~1410 lines)** but the heavy pure logic (orbital relations, physics, neutron-star classification, canvas charts, temperature lookup) has been extracted into `data/` services. Still the most complex component — **treat with care; prefer extracting more pure logic into a `data/` service over adding to it.**
+- `src/app/home/home.component.*` — search + system overview; **large** (~1110 lines), holds search/region-map/markers logic.
+- `src/app/system-body/system-body.component.*` — recursive body renderer; still **large (~1390 lines)** but the heavy pure logic (orbital relations, physics, neutron-star classification, canvas charts, temperature lookup) has been extracted into `data/` services. Still the most complex component — **treat with care; prefer extracting more pure logic into a `data/` service over adding to it.**
 - `src/app/app.service.ts` — shared state (BehaviorSubjects) + HTTP; use its `resilientGet()` (timeout + retry) for new API calls.
 - `src/app/data/*.ts` — pure data/lookup tables + pure functions (e.g. `temperature-estimation.ts` with `estimateTempRange`/`lookupTempDelta`, `body-images.ts`, `mining-resources.ts`) **and** the pure injectable services that back the body renderer:
   - `body-physics.service.ts` — densities, Roche limits, Hill spheres, ring-shepherding.
@@ -57,6 +58,13 @@ body tree. No backend in this repo.
 7. **Accessibility**: images need `alt`; icon-only controls need `aria-label` + keyboard handlers
    (the `clickable.directive.ts` adds `role="button"`/`tabindex`/Enter-Space to `.clickable` elements);
    `<canvas>` charts need `role="img"` + a descriptive `aria-label` since their content is invisible to AT.
+8. **Physical accuracy**: physics and astronomical values must be *correct*. Use accepted constants
+   (G, c, AU, solar/earth masses & radii, etc.) at full precision in the maths, and derive results
+   honestly — don't fudge a formula to make a number look right. When **displaying** a value, round to a
+   reasonable, physically meaningful number of significant digits for its scale (e.g. a few sig-figs for
+   a radius or temperature; don't print 15 floating-point digits). Keep the *computation* precise and the
+   *presentation* readable — never the reverse. When you touch any physics/astro maths, double-check the
+   formula and units; if a test or source value looks wrong, flag it rather than tweaking the maths to match.
 
 ## Best practices for NEW code
 The big legacy migrations are **done** — the codebase is fully standalone, uses built-in control
@@ -97,17 +105,16 @@ idioms; don't reintroduce the older patterns.
 
 ## Verifying changes
 Build + test must stay green: `npm run build` (rc=0; only pre-existing budget warnings are acceptable)
-and `ng test --watch=false` (currently 275/275 across 20 spec files). The **Vitest** suite needs no browser — jsdom
+and `ng test --watch=false` (currently 314/314 across 21 spec files). The **Vitest** suite needs no browser — jsdom
 covers it (note: jsdom has no real `<canvas>`, so chart-rendering tests assert "doesn't throw" rather than pixels).
 The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox) and run separately from the unit-test lane.
 
 ## Environment quirks (this sandbox)
-- `pnpm-workspace.yaml` carries `minimumReleaseAge: 8640` (6 days) — a supply-chain delay that refuses
-  package versions published more recently than that, enforced by this sandbox's pnpm even under
+- `pnpm-workspace.yaml` carries `minimumReleaseAge: 10080` (7 days, in **minutes**) — a supply-chain delay
+  that refuses package versions published more recently than that, enforced by this sandbox's pnpm even under
   `--frozen-lockfile`. The lockfile was re-resolved under this value, so too-fresh transitive deps were
   pinned to older versions; raising it requires re-resolving again, lowering it is always safe.
-  `minimumReleaseAgeExclude` exempts `@fortawesome/angular-fontawesome` (its only Angular 22-compatible
-  release, `5.0.0`, has no older fallback so the gate can't apply). It also carries an `allowBuilds`
+  It also carries an `allowBuilds`
   allowlist of native packages permitted to run install scripts (`@parcel/watcher`, `esbuild`, `lmdb`,
   `msgpackr-extract`, `nice-napi`). This sandbox's pnpm gates build scripts on `allowBuilds`, **not** the
   standard pnpm `onlyBuiltDependencies` key (which is inert here) — list every native dep in `allowBuilds`
@@ -117,9 +124,9 @@ The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox)
 
 ## Backlog
 Remaining opportunities:
-- **`home.component.ts` (~1035 lines)** mixes search, body-tree building and SIMBAD/PG-name
+- **`home.component.ts` (~1110 lines)** mixes search, body-tree building and SIMBAD/PG-name
   formatting — extract the body-tree builder and name formatting into `data/` helpers/services.
-- **`system-body.component.ts` (~1410 lines)** — its derived values are computed in `ngOnChanges`
+- **`system-body.component.ts` (~1390 lines)** — its derived values are computed in `ngOnChanges`
   and pushed into writable signals (`getX.set(computeX())`); migrate these to true `computed()`
   signals where their inputs allow, and extract any further pure logic into `data/` services.
 - Convert remaining BehaviorSubject state in `app.service.ts` to signals where it simplifies consumers.

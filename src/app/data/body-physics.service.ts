@@ -10,6 +10,19 @@ const KG_PER_SOLAR_MASS = 1.989e30;
 const KG_PER_MEGATONNE = 1e12;
 const EARTH_MASSES_PER_SOLAR_MASS = 332950;
 
+/** Newtonian gravitational constant (m³ kg⁻¹ s⁻²) and speed of light (m/s). */
+const GRAVITATIONAL_CONSTANT = 6.6743e-11;
+const SPEED_OF_LIGHT = 299792458;
+
+/**
+ * Degenerate-matter stability limits (solar masses). The Chandrasekhar limit caps a
+ * white dwarf supported by electron degeneracy pressure; the Tolman–Oppenheimer–Volkoff
+ * (TOV) limit caps a neutron star supported by neutron degeneracy pressure.
+ */
+const CHANDRASEKHAR_LIMIT_SOLAR_MASSES = 1.44;
+// Modern maximum-mass estimate constrained by the GW170817 neutron-star merger.
+const TOV_LIMIT_SOLAR_MASSES = 2.17;
+
 export interface PlanetaryDensity {
   value: number;
   unit: string;
@@ -138,7 +151,10 @@ export class BodyPhysicsService {
     const value = densityKgM3 < 10000 ? densityKgM3 / 1000 : densityKgM3;
     const unit = densityKgM3 < 10000 ? 'g/cm³' : 'kg/m³';
 
-    return { value, unit, tooltip: `${densityKgM3} kg/m³` };
+    // Round to 6 significant figures so the tooltip stays readable across scales
+    // (ordinary rock ~3936 kg/m³ … neutron-star matter ~1e17 kg/m³) without
+    // dumping raw floating-point digits.
+    return { value, unit, tooltip: `${densityKgM3.toPrecision(6)} kg/m³` };
   }
 
   /**
@@ -388,5 +404,42 @@ export class BodyPhysicsService {
     const rocheLimitM = 1.26 * parentRadiusM * Math.pow(rhoParent / rhoSatellite, 1 / 3);
 
     return semiMajorAxisM < rocheLimitM ? (rocheLimitM - semiMajorAxisM) / 1000 : null;
+  }
+
+  /**
+   * Schwarzschild radius (km) for a mass in solar masses: r_s = 2GM/c². For a black hole
+   * this is the event-horizon radius; for a neutron star it is the radius it would need to
+   * collapse to in order to become one. Returns null when the mass is unknown/non-positive.
+   */
+  schwarzschildRadiusKm(solarMasses: number | null | undefined): number | null {
+    if (!solarMasses || solarMasses <= 0) { return null; }
+    const massKg = solarMasses * KG_PER_SOLAR_MASS;
+    const radiusM = 2 * GRAVITATIONAL_CONSTANT * massKg / (SPEED_OF_LIGHT ** 2);
+    return radiusM / 1000;
+  }
+
+  /**
+   * Degeneracy-pressure stability warning when a body's mass exceeds the relevant limit:
+   * Chandrasekhar (1.44 M☉) for white dwarfs, TOV (~2.17 M☉) for neutron stars. Returns the
+   * tooltip message, or null when the body is stable / not a degenerate object. Black holes
+   * have already collapsed, so the "will collapse into a black hole" warning does not apply
+   * to them.
+   */
+  massStabilityAlert(subType: string | null | undefined, solarMasses: number | null | undefined): string | null {
+    if (solarMasses === null || solarMasses === undefined) { return null; }
+
+    if (subType?.startsWith('White Dwarf') && solarMasses > CHANDRASEKHAR_LIMIT_SOLAR_MASSES) {
+      return 'Exceeds Chandrasekhar limit (1.44 M☉).\n'
+        + 'Electron degeneracy pressure can no longer support the star against gravity, '
+        + 'leading to gravitational collapse or a Type Ia supernova.';
+    }
+
+    if (subType === 'Neutron Star' && solarMasses > TOV_LIMIT_SOLAR_MASSES) {
+      return 'Exceeds Tolman–Oppenheimer–Volkoff limit.\n'
+        + 'Above the TOV limit (2.17 solar masses), neutron degeneracy pressure can no longer '
+        + 'support the star against gravity, and it collapses into a black hole.';
+    }
+
+    return null;
   }
 }

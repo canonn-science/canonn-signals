@@ -107,4 +107,56 @@ describe('BodyPhysicsService', () => {
       expect(excess!).toBeGreaterThan(0);
     });
   });
+
+  describe('schwarzschildRadiusKm', () => {
+    it('returns ~2.95 km for one solar mass', () => {
+      expect(service.schwarzschildRadiusKm(1)).toBeCloseTo(2.95, 1);
+    });
+
+    it('scales linearly with mass', () => {
+      const oneSolar = service.schwarzschildRadiusKm(1)!;
+      expect(service.schwarzschildRadiusKm(10)!).toBeCloseTo(oneSolar * 10, 5);
+    });
+
+    it('returns null for missing or non-positive mass', () => {
+      expect(service.schwarzschildRadiusKm(null)).toBeNull();
+      expect(service.schwarzschildRadiusKm(undefined)).toBeNull();
+      expect(service.schwarzschildRadiusKm(0)).toBeNull();
+      expect(service.schwarzschildRadiusKm(-1)).toBeNull();
+    });
+  });
+
+  describe('massStabilityAlert', () => {
+    it('warns when a white dwarf exceeds the Chandrasekhar limit (1.44 M☉)', () => {
+      expect(service.massStabilityAlert('White Dwarf (DA)', 1.45)).toContain('Chandrasekhar');
+    });
+
+    it('does not warn for a white dwarf just below the Chandrasekhar limit', () => {
+      // 1.42 M☉ — e.g. LP 458-64 — sits below the accurate 1.44 M☉ limit.
+      expect(service.massStabilityAlert('White Dwarf (DA)', 1.42)).toBeNull();
+    });
+
+    it('warns when a neutron star exceeds the TOV limit (2.17 M☉)', () => {
+      expect(service.massStabilityAlert('Neutron Star', 2.2)).toContain('Tolman');
+    });
+
+    it('does not warn for a neutron star below the TOV limit', () => {
+      expect(service.massStabilityAlert('Neutron Star', 2.1)).toBeNull();
+    });
+
+    it('does not warn for black holes (already collapsed)', () => {
+      expect(service.massStabilityAlert('Black Hole', 5)).toBeNull();
+      expect(service.massStabilityAlert('Supermassive Black Hole', 1e6)).toBeNull();
+    });
+
+    it('returns null for ordinary stars and missing mass', () => {
+      expect(service.massStabilityAlert('M (Red dwarf) Star', 0.4)).toBeNull();
+      expect(service.massStabilityAlert('Neutron Star', null)).toBeNull();
+    });
+
+    it('returns null for a missing subType even with a large mass', () => {
+      expect(service.massStabilityAlert(null, 5)).toBeNull();
+      expect(service.massStabilityAlert(undefined, 5)).toBeNull();
+    });
+  });
 });
