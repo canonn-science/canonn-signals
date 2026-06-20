@@ -21,12 +21,15 @@ describe('SystemBodyComponent (extended coverage)', () => {
   let fixture: ComponentFixture<SystemBodyComponent>;
   let component: SystemBodyComponent;
   let dialogOpenCalls: number;
+  let dialogOpenArgs: { component: unknown; config: { data?: { body: SystemBody; resonance: string } } }[];
 
   beforeEach(() => {
     dialogOpenCalls = 0;
+    dialogOpenArgs = [];
     const dialogStub = {
-      open: () => {
+      open: (component: unknown, config: { data?: { body: SystemBody; resonance: string } } = {}) => {
         dialogOpenCalls++;
+        dialogOpenArgs.push({ component, config });
         return { afterClosed: () => of(undefined), afterOpened: () => of(undefined) };
       },
     };
@@ -420,11 +423,14 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.onFootSafetyDialogData!.lookupSource).toContain('Argon');
     });
 
-    it('opens the tidal-lock dialog with a computed solar day', () => {
-      render(makeBody({ type: 'Planet', subType: 'Rocky body', rotationalPeriod: 2, orbitalPeriod: 5, rotationalPeriodTidallyLocked: false }));
+    it('opens the tidal-lock dialog with the body and computed resonance', () => {
+      const star = makeBody({ type: 'Star', subType: 'M (Red dwarf) Star' });
+      render(makeBody({ type: 'Planet', subType: 'Rocky body', rotationalPeriod: 5, orbitalPeriod: 5, rotationalPeriodTidallyLocked: true }, star));
       component.showTidalLockDialog();
-      expect(component.tidalLockDialogData!.solarDay).not.toBeNull();
-      expect(component.tidalLockDialogData!.difference).toBe(3);
+      expect(dialogOpenCalls).toBe(1);
+      const { config } = dialogOpenArgs[0];
+      expect(config.data!.resonance).toBe('1:1');
+      expect(config.data!.body.bodyData.rotationalPeriod).toBe(5);
     });
 
     it('opens the jet-angle dialog (chart generation is guarded)', () => {
