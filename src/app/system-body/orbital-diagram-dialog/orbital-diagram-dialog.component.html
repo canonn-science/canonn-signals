@@ -1,0 +1,118 @@
+<div class="orbital-diagram-dialog">
+  <h2 mat-dialog-title>{{ title }}</h2>
+  <mat-dialog-content>
+    <div class="diagram">
+      <svg [attr.viewBox]="viewBox" class="orbital-diagram" role="img" [attr.aria-label]="title + ' diagram'">
+
+        @switch (data.type) {
+
+          @case ('tilt') {
+            @if (tilt(); as t) {
+              <!-- Orbital-plane reference + spin-axis normal -->
+              <line class="reference" [attr.x1]="t.orbitalPlane.x1" [attr.y1]="t.orbitalPlane.y1"
+                [attr.x2]="t.orbitalPlane.x2" [attr.y2]="t.orbitalPlane.y2" />
+              <line class="reference-dashed" [attr.x1]="t.normal.x1" [attr.y1]="t.normal.y1"
+                [attr.x2]="t.normal.x2" [attr.y2]="t.normal.y2" />
+              <!-- Angle arc between normal and axis -->
+              <path class="arc" [attr.d]="t.arc" />
+              <!-- Planet (the body itself) + tilted equator + spin axis -->
+              <circle class="planet" [attr.cx]="t.center.x" [attr.cy]="t.center.y" [attr.r]="t.planetRadius" />
+              <ellipse class="equator" [attr.cx]="t.equator.cx" [attr.cy]="t.equator.cy"
+                [attr.rx]="t.equator.rx" [attr.ry]="t.equator.ry"
+                [attr.transform]="'rotate(' + t.equator.rotation + ' ' + t.equator.cx + ' ' + t.equator.cy + ')'" />
+              <line class="axis" [attr.x1]="t.axis.x1" [attr.y1]="t.axis.y1" [attr.x2]="t.axis.x2" [attr.y2]="t.axis.y2" />
+              @if (data.bodyName) {
+                <text class="label" [attr.x]="t.center.x" [attr.y]="t.axis.y1 + 8" text-anchor="middle">{{ data.bodyName }}</text>
+              }
+            }
+          }
+
+          @case ('inclination') {
+            @if (inclination(); as d) {
+              <!-- Reference plane (edge-on) -->
+              <ellipse class="reference-plane" [attr.cx]="d.referencePlane.cx" [attr.cy]="d.referencePlane.cy"
+                [attr.rx]="d.referencePlane.rx" [attr.ry]="d.referencePlane.ry" />
+              <line class="reference-dashed" [attr.x1]="d.referenceLine.x1" [attr.y1]="d.referenceLine.y1"
+                [attr.x2]="d.referenceLine.x2" [attr.y2]="d.referenceLine.y2" />
+              <!-- Angle arc -->
+              <path class="arc" [attr.d]="d.arc" />
+              <!-- Orbital plane (tilted) -->
+              <ellipse class="orbit-plane" [attr.cx]="d.orbitPlane.cx" [attr.cy]="d.orbitPlane.cy"
+                [attr.rx]="d.orbitPlane.rx" [attr.ry]="d.orbitPlane.ry"
+                [attr.transform]="'rotate(' + d.orbitPlane.rotation + ' ' + d.orbitPlane.cx + ' ' + d.orbitPlane.cy + ')'" />
+              <line class="axis" [attr.x1]="d.orbitLine.x1" [attr.y1]="d.orbitLine.y1"
+                [attr.x2]="d.orbitLine.x2" [attr.y2]="d.orbitLine.y2" />
+              <!-- Parent body (centre) + the orbiting body -->
+              <circle class="planet" [attr.cx]="d.center.x" [attr.cy]="d.center.y" [attr.r]="d.parentRadius" />
+              <circle class="marker" [attr.cx]="d.bodyPoint.x" [attr.cy]="d.bodyPoint.y" r="3.5" />
+              @if (data.parentName) {
+                <text class="label" [attr.x]="d.parentLabel.x" [attr.y]="d.parentLabel.y" text-anchor="middle">{{ data.parentName }}</text>
+              }
+              @if (data.bodyName) {
+                <text class="label" [attr.x]="d.bodyLabel.x" [attr.y]="d.bodyLabel.y" text-anchor="middle">{{ data.bodyName }}</text>
+              }
+            }
+          }
+
+          @case ('periapsis') {
+            @if (periapsis(); as d) {
+              <!-- Reference (ascending node) direction -->
+              <line class="reference-dashed" [attr.x1]="d.referenceLine.x1" [attr.y1]="d.referenceLine.y1"
+                [attr.x2]="d.referenceLine.x2" [attr.y2]="d.referenceLine.y2" />
+              <!-- The orbit: an ellipse with the parent at a focus -->
+              <ellipse class="orbit-plane" [attr.cx]="d.ellipse.cx" [attr.cy]="d.ellipse.cy"
+                [attr.rx]="d.ellipse.rx" [attr.ry]="d.ellipse.ry"
+                [attr.transform]="'rotate(' + d.ellipse.rotation + ' ' + d.ellipse.cx + ' ' + d.ellipse.cy + ')'" />
+              <!-- Angle arc -->
+              <path class="arc" [attr.d]="d.arc" />
+              <!-- Parent body (focus) + the orbiting body at periapsis -->
+              <circle class="planet" [attr.cx]="d.focus.x" [attr.cy]="d.focus.y" [attr.r]="d.focusRadius" />
+              <circle class="marker" [attr.cx]="d.periapsisPoint.x" [attr.cy]="d.periapsisPoint.y" r="3.5" />
+              @if (data.parentName) {
+                <text class="label" [attr.x]="d.parentLabel.x" [attr.y]="d.parentLabel.y" text-anchor="middle">{{ data.parentName }}</text>
+              }
+              @if (data.bodyName) {
+                <text class="label" [attr.x]="d.bodyLabel.x" [attr.y]="d.bodyLabel.y" text-anchor="middle">{{ data.bodyName }}</text>
+              }
+            }
+          }
+        }
+      </svg>
+      <div class="value">{{ data.degrees | number:'0.2-2' }}°</div>
+    </div>
+
+    <div class="explanation">
+      @switch (data.type) {
+        @case ('tilt') {
+          <p>
+            <strong>Axial tilt</strong> (obliquity) is the angle between a body's rotation axis and the line
+            perpendicular to its orbital plane. The diagram shows the spin axis (solid) leaning away from the
+            vertical reference (dashed) by this angle; the flattened ellipse is the equator seen edge-on.
+          </p>
+          <p>A 0° tilt spins perfectly upright; 90° spins on its side.</p>
+        }
+        @case ('inclination') {
+          <p>
+            <strong>Orbital inclination</strong> is the tilt of a body's orbital plane relative to a reference
+            plane. The flat, centred ellipse is the reference plane; the orbital plane (solid) is tilted away from
+            it by this angle@if (data.parentName) {, with <strong>{{ data.parentName }}</strong> at the centre}.
+          </p>
+          @if (data.orbit) {
+            <p>The marked dot shows {{ data.bodyName || 'the body' }} at its live position along its orbit.</p>
+          }
+        }
+        @case ('periapsis') {
+          <p>
+            <strong>Argument of periapsis</strong> is the angle, measured in the orbital plane, from the
+            ascending-node reference direction (dashed) to the periapsis — the orbit's closest point to
+            @if (data.parentName) { <strong>{{ data.parentName }}</strong> } @else { the parent body }. The orbit is
+            drawn as an ellipse with the parent at one focus; the marked dot is the body at periapsis.
+          </p>
+        }
+      }
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Close</button>
+  </mat-dialog-actions>
+</div>

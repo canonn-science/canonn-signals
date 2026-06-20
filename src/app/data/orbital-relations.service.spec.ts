@@ -130,6 +130,49 @@ describe('OrbitalRelationsService', () => {
     });
   });
 
+  describe('meanToTrueAnomaly', () => {
+    it('returns 0° at periapsis for any eccentricity', () => {
+      expect(service.meanToTrueAnomaly(0, 0)).toBeCloseTo(0, 6);
+      expect(service.meanToTrueAnomaly(0, 0.6)).toBeCloseTo(0, 6);
+    });
+
+    it('returns 180° at apoapsis for any eccentricity', () => {
+      expect(service.meanToTrueAnomaly(180, 0)).toBeCloseTo(180, 6);
+      expect(service.meanToTrueAnomaly(180, 0.6)).toBeCloseTo(180, 6);
+    });
+
+    it('is the identity for a circular orbit', () => {
+      expect(service.meanToTrueAnomaly(90, 0)).toBeCloseTo(90, 6);
+      expect(service.meanToTrueAnomaly(45, 0)).toBeCloseTo(45, 6);
+    });
+
+    it('leads the mean anomaly between periapsis and apoapsis for eccentric orbits', () => {
+      // True anomaly sweeps faster than mean anomaly near periapsis, so ν > M on (0, 180).
+      const trueAnomaly = service.meanToTrueAnomaly(90, 0.5);
+      expect(trueAnomaly).toBeGreaterThan(90);
+      expect(trueAnomaly).toBeLessThan(180);
+    });
+
+    it('wraps into [0, 360) past apoapsis', () => {
+      const trueAnomaly = service.meanToTrueAnomaly(270, 0.5);
+      expect(trueAnomaly).toBeGreaterThan(180);
+      expect(trueAnomaly).toBeLessThan(360);
+    });
+
+    it('solves high-eccentricity orbits without diverging', () => {
+      const trueAnomaly = service.meanToTrueAnomaly(30, 0.9);
+      expect(Number.isFinite(trueAnomaly)).toBe(true);
+      expect(trueAnomaly).toBeGreaterThan(30);
+    });
+
+    it('never returns NaN for non-finite inputs', () => {
+      // A NaN eccentricity or mean anomaly must not poison the solver (it would
+      // otherwise silently freeze the live marker).
+      expect(service.meanToTrueAnomaly(90, NaN)).toBeCloseTo(90, 6); // e falls back to 0 (circular)
+      expect(Number.isFinite(service.meanToTrueAnomaly(NaN, 0.5))).toBe(true);
+    });
+  });
+
   describe('degreesToEvent', () => {
     it('measures the angle to apoapsis from 180°', () => {
       expect(service.degreesToEvent(0, 'apo')).toBe(180);

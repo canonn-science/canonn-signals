@@ -25,6 +25,7 @@ import { WHITE_DWARF_ATMOSPHERE, WHITE_DWARF_TOOLTIPS, whiteDwarfSpectralCode } 
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';
+import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from './orbital-diagram-dialog/orbital-diagram-dialog.component';
 
 @Component({
   selector: 'app-system-body',
@@ -504,6 +505,54 @@ export class SystemBodyComponent implements OnChanges {
   public radToDeg(value: number | null | undefined): number | null {
     if (value === null || value === undefined) return null;
     return value * 180 / Math.PI;
+  }
+
+  /**
+   * Opens the orbital-diagram modal for one of the body's orientation angles.
+   * Axial tilt is stored in radians, so it is converted to degrees here; orbital
+   * inclination and argument of periapsis are already in degrees.
+   */
+  public showOrbitalDiagram(type: OrbitalDiagramType): void {
+    const bodyData = this.body().bodyData;
+    let degrees: number | null | undefined;
+    switch (type) {
+      case 'tilt':
+        degrees = this.radToDeg(bodyData.axialTilt);
+        break;
+      case 'inclination':
+        degrees = bodyData.orbitalInclination;
+        break;
+      case 'periapsis':
+        degrees = bodyData.argOfPeriapsis;
+        break;
+    }
+    if (degrees === null || degrees === undefined) return;
+
+    const body = this.body();
+    const bodyName = this.getBodyDisplayName(bodyData.name);
+    const parentName = body.parent ? this.getBodyDisplayName(body.parent.bodyData.name) : undefined;
+
+    // For the inclination diagram, hand the dialog the Keplerian elements so it can place
+    // the body at its live position along the orbit (it propagates the mean anomaly to the
+    // current time itself). Omitted when the telemetry needed for that is missing.
+    let orbit: OrbitElements | undefined;
+    if (type === 'inclination' && bodyData.meanAnomaly != null && bodyData.orbitalPeriod && bodyData.timestamps?.meanAnomaly) {
+      orbit = {
+        meanAnomalyDeg: bodyData.meanAnomaly,
+        orbitalPeriodDays: bodyData.orbitalPeriod,
+        meanAnomalyTimestamp: bodyData.timestamps.meanAnomaly,
+        eccentricity: bodyData.orbitalEccentricity ?? 0,
+        argOfPeriapsisDeg: bodyData.argOfPeriapsis ?? 0,
+      };
+    }
+
+    this.dialog.open(OrbitalDiagramDialogComponent, {
+      width: '720px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: { type, degrees, eccentricity: bodyData.orbitalEccentricity, bodyName, parentName, orbit },
+    });
   }
 
 
