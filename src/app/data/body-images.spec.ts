@@ -43,6 +43,20 @@ describe('BodyImage.getBodyImagePath', () => {
         .toBe('stars/SuperMassiveBlackHole');
     });
 
+    it('resolves subType-matched stars that also report a spectral class (real-data shape)', () => {
+      // Black holes and neutron stars from the Canonn API carry a spectralClass such as
+      // "H0" / "N0"; the image is selected by subType, not spectral class. Regression for
+      // missing black hole / neutron star images (e.g. "Eord Byio AA-A h120").
+      expect(BodyImage.getBodyImagePath(body({ type: 'Star', subType: 'Black Hole', spectralClass: 'H0', solarMasses: 52 }))!.path)
+        .toBe('stars/H');
+      expect(BodyImage.getBodyImagePath(body({ type: 'Star', subType: 'Neutron Star', spectralClass: 'N0', solarMasses: 1.35 }))!.path)
+        .toBe('stars/N_massive');
+      expect(BodyImage.getBodyImagePath(body({ type: 'Star', subType: 'Neutron Star', spectralClass: 'N0', solarMasses: 0.74 }))!.path)
+        .toBe('stars/N');
+      expect(BodyImage.getBodyImagePath(body({ type: 'Star', subType: 'White Dwarf (DA) Star', spectralClass: 'DA', solarMasses: 1.5 }))!.path)
+        .toBe('stars/D');
+    });
+
     it('returns null for an unrecognised spectral class', () => {
       expect(BodyImage.getBodyImagePath(body({ type: 'Star', spectralClass: 'ZZ' }))).toBeNull();
     });
