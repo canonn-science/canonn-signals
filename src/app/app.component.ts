@@ -1,18 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Signal, inject } from '@angular/core';
 import { AppService } from './app.service';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterOutlet]
 })
 export class AppComponent {
-  public loading = false;
-  public backgroundImage = 'assets/bg1.jpg';
+  private readonly appService = inject(AppService);
 
-  constructor(private appService: AppService) {
-    this.appService.backgroundImage$.subscribe(image => {
-      this.backgroundImage = image;
-    });
-  }
+  // Read directly as a signal; the template auto-tracks it under zoneless CD.
+  public readonly backgroundImage: Signal<string> = this.appService.backgroundImage;
 }

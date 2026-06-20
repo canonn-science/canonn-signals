@@ -1,0 +1,39 @@
+{
+  "system": {
+    "name": "Phraa Eaec ER-I c11-1",
+    "id64": 355844362082,
+    "bodyCount": 2,
+    "coords": { "x": -1739.125, "y": -499.4375, "z": -4411.46875 },
+    "date": "2026-06-05 09:02:39+00",
+    "government": null,
+    "population": 0,
+    "region": { "name": "Phraa Eaec", "region": 1 },
+    "bodies": [
+      {
+        "bodyId": 0,
+        "id64": 355844362082,
+        "name": "Phraa Eaec ER-I c11-1 A",
+        "type": "Star",
+        "subType": "M (Red dwarf) Star",
+        "mainStar": true,
+        "distanceToArrival": 0,
+        "surfaceTemperature": 4293,
+        "updateTime": "2026-06-05 09:02:39+00"
+      },
+      {
+        "bodyId": 30,
+        "id64": 1080864266413281122,
+        "name": "Phraa Eaec ER-I c11-1 11",
+        "type": "Planet",
+        "subType": "Class I gas giant",
+        "distanceToArrival": 4768,
+        "surfaceTemperature": 77.45,
+        "atmosphereComposition": { "Helium": 26.52, "Hydrogen": 73.48 },
+        "earthMasses": 43,
+        "gravity": 0.79,
+        "radius": 22366,
+        "updateTime": "2026-06-05 09:02:39+00"
+      }
+    ]
+  }
+}

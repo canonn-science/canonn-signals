@@ -1,0 +1,2126 @@
+{
+  "system": {
+    "allegiance": "Guardian", 
+    "bodies": [
+      {
+        "absoluteMagnitude": 3.468063, 
+        "age": 3600, 
+        "axialTilt": 0.0, 
+        "belts": [
+          {
+            "innerRadius": 3742100000.0, 
+            "mass": 1.0542e+17, 
+            "name": "Synuefe XR-H d11-102 A Belt", 
+            "outerRadius": 150870000000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "bodyId": 0, 
+        "distanceToArrival": 0.0, 
+        "id64": 3515254557027, 
+        "luminosity": "Vb", 
+        "mainStar": true, 
+        "name": "Synuefe XR-H d11-102", 
+        "rotationalPeriod": 2.81128450017361, 
+        "solarMasses": 1.394531, 
+        "solarRadius": 1.30743405319914, 
+        "spectralClass": "F3", 
+        "stations": [], 
+        "subType": "F (White) Star", 
+        "surfaceTemperature": 6914.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:03:19Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-12 18:03:19+00"
+      }, 
+      {
+        "absoluteMagnitude": 22.146362, 
+        "age": 3600, 
+        "argOfPeriapsis": 288.715002, 
+        "ascendingNode": 175.703136, 
+        "axialTilt": 0.369806, 
+        "bodyId": 10, 
+        "distanceToArrival": 798.747469, 
+        "id64": 360291485444196707, 
+        "luminosity": "V", 
+        "meanAnomaly": 297.903395, 
+        "name": "Synuefe XR-H d11-102 1", 
+        "orbitalEccentricity": 0.000343, 
+        "orbitalInclination": -0.105391, 
+        "orbitalPeriod": 617.67936028816, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "rings": [
+          {
+            "id64": 396320282463160675, 
+            "innerRadius": 91339000.0, 
+            "mass": 10507000000000.0, 
+            "name": "Synuefe XR-H d11-102 1 A Ring", 
+            "outerRadius": 606940000.0, 
+            "signals": {
+              "signals": {
+                "Benitoite": 1, 
+                "Monazite": 1, 
+                "Serendibite": 3
+              }, 
+              "updateTime": "2026-05-23 11:44:56+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.56251118461806, 
+        "semiMajorAxis": 1.60093756580058, 
+        "solarMasses": 0.015625, 
+        "solarRadius": 0.0735473587347232, 
+        "spectralClass": "Y3", 
+        "stations": [], 
+        "subType": "Y (Brown dwarf) Star", 
+        "surfaceTemperature": 466.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:07:36Z", 
+          "meanAnomaly": "2026-06-12T18:07:36Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-12 18:07:36+00"
+      }, 
+      {
+        "argOfPeriapsis": 110.103278, 
+        "ascendingNode": -93.97855, 
+        "atmosphereType": null, 
+        "axialTilt": -0.438858, 
+        "bodyId": 12, 
+        "distanceToArrival": 801.736584, 
+        "earthMasses": 0.001922, 
+        "gravity": 0.102504435607219, 
+        "id64": 432349079482124643, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 16.16362, 
+          "Iron": 19.904055, 
+          "Manganese": 8.220171, 
+          "Mercury": 0.869177, 
+          "Nickel": 15.054592, 
+          "Phosphorus": 10.348228, 
+          "Ruthenium": 1.229202, 
+          "Selenium": 3.008389, 
+          "Sulphur": 19.221893, 
+          "Tungsten": 1.092933, 
+          "Vanadium": 4.887743
+        }, 
+        "meanAnomaly": 264.206807, 
+        "name": "Synuefe XR-H d11-102 1 a", 
+        "orbitalEccentricity": 0.000302, 
+        "orbitalInclination": 0.350356, 
+        "orbitalPeriod": 2.94188044413194, 
+        "parents": [
+          {
+            "Star": 10
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 873.06725, 
+        "rotationalPeriod": 2.9419052803588, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0101070110253204, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Human;": 2
+          }, 
+          "updateTime": "2026-05-08 07:37:34+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1637, 
+          "Rock": 90.8363
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 309.32785, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:07:37Z", 
+          "meanAnomaly": "2026-06-12T18:07:37Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-12 18:07:37+00"
+      }, 
+      {
+        "argOfPeriapsis": 6.669092, 
+        "ascendingNode": -67.477334, 
+        "atmosphereType": null, 
+        "axialTilt": -1.656497, 
+        "bodyId": 13, 
+        "distanceToArrival": 795.700822, 
+        "earthMasses": 0.004118, 
+        "gravity": 0.133058937493627, 
+        "id64": 468377876501088611, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.500295, 
+          "Cadmium": 1.532772, 
+          "Carbon": 15.913092, 
+          "Germanium": 5.590829, 
+          "Iron": 19.73835, 
+          "Manganese": 8.151737, 
+          "Nickel": 14.929262, 
+          "Phosphorus": 10.187834, 
+          "Sulphur": 18.92396, 
+          "Tellurium": 1.448036, 
+          "Tungsten": 1.083834
+        }, 
+        "meanAnomaly": 350.27019, 
+        "name": "Synuefe XR-H d11-102 1 b", 
+        "orbitalEccentricity": 0.000494, 
+        "orbitalInclination": -0.434872, 
+        "orbitalPeriod": 6.91561400890046, 
+        "parents": [
+          {
+            "Star": 10
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1121.557875, 
+        "rotationalPeriod": -6.91567280456018, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0178687100490554, 
+        "signals": {
+          "genuses": [], 
+          "guardian": [
+            "Guardian Codex", 
+            "Guardian Relic Tower"
+          ], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Guardian;": 1, 
+            "$SAA_SignalType_Human;": 2
+          }, 
+          "updateTime": "2026-06-11 18:04:20+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.5355, 
+          "Rock": 90.4645
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 299.691406, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:07:36Z", 
+          "meanAnomaly": "2026-06-12T18:07:36Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-12 19:13:41+00"
+      }, 
+      {
+        "argOfPeriapsis": 131.036042, 
+        "ascendingNode": -68.081577, 
+        "atmosphereType": null, 
+        "axialTilt": 0.090907, 
+        "bodyId": 14, 
+        "distanceToArrival": 795.697233, 
+        "earthMasses": 0.000258, 
+        "gravity": 0.050549403487305, 
+        "id64": 504406673520052579, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.614488, 
+          "Carbon": 16.63987, 
+          "Chromium": 7.9712, 
+          "Iron": 17.724283, 
+          "Manganese": 7.319948, 
+          "Molybdenum": 1.157385, 
+          "Nickel": 13.405906, 
+          "Niobium": 1.21136, 
+          "Phosphorus": 10.653131, 
+          "Sulphur": 19.788254, 
+          "Tellurium": 1.51417
+        }, 
+        "meanAnomaly": 136.524307, 
+        "name": "Synuefe XR-H d11-102 1 b a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": -6.801957, 
+        "orbitalPeriod": 0.283238788449074, 
+        "parents": [
+          {
+            "Planet": 13
+          }, 
+          {
+            "Star": 10
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 455.22525, 
+        "rotationalPeriod": 0.291967805636574, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 1.99188744545346e-05, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Silicate Vapour Fumarole", 
+            "Silicate Magma Lava Spout", 
+            "Silicate Vapour Gas Vent"
+          ], 
+          "guardian": [
+            "Guardian Codex"
+          ], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 18:01:29+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 3.2237, 
+          "Rock": 96.7763
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 299.691406, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:07:36Z", 
+          "meanAnomaly": "2026-06-12T18:07:36Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-12 18:07:36+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 243.717535, 
+        "ascendingNode": -173.869436, 
+        "bodyId": 15, 
+        "id64": 540435470539016547, 
+        "meanAnomaly": 35.816996, 
+        "name": "Synuefe XR-H d11-102 barycentre 15", 
+        "orbitalEccentricity": 0.007358, 
+        "orbitalInclination": 0.317481, 
+        "orbitalPeriod": 15.3541109628125, 
+        "semiMajorAxis": 0.0304104233862378, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-12T18:07:40Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-12 18:07:40+00"
+      }, 
+      {
+        "argOfPeriapsis": 244.96245, 
+        "ascendingNode": -74.910783, 
+        "atmosphereType": null, 
+        "axialTilt": 2.127522, 
+        "bodyId": 16, 
+        "distanceToArrival": 811.548697, 
+        "earthMasses": 0.00374, 
+        "gravity": 0.128926379116957, 
+        "id64": 576464267557980515, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.50729, 
+          "Carbon": 15.957613, 
+          "Germanium": 5.606471, 
+          "Iron": 19.893436, 
+          "Manganese": 8.215786, 
+          "Molybdenum": 1.29903, 
+          "Nickel": 15.04656, 
+          "Phosphorus": 10.216338, 
+          "Sulphur": 18.976908, 
+          "Tungsten": 1.092349, 
+          "Yttrium": 1.188211
+        }, 
+        "meanAnomaly": 107.425452, 
+        "name": "Synuefe XR-H d11-102 1 c", 
+        "orbitalEccentricity": 0.144357, 
+        "orbitalInclination": -0.694709, 
+        "orbitalPeriod": 0.388718341238426, 
+        "parents": [
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 10
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1085.782125, 
+        "rotationalPeriod": -0.857167771736111, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 9.9328681583768e-06, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Silicate Vapour Fumarole", 
+            "Silicate Magma Lava Spout"
+          ], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 18:01:23+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.7977, 
+          "Rock": 90.2023
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 292.866699, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:07:40Z", 
+          "meanAnomaly": "2026-06-12T18:07:40Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-12 18:07:40+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 64.962455, 
+        "ascendingNode": -74.910783, 
+        "atmosphereType": null, 
+        "axialTilt": -0.021052, 
+        "bodyId": 17, 
+        "distanceToArrival": 811.541341, 
+        "earthMasses": 0.002155, 
+        "gravity": 0.105975731620271, 
+        "id64": 612493064576944483, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 16.403141, 
+          "Iron": 19.751007, 
+          "Manganese": 8.156964, 
+          "Molybdenum": 1.289729, 
+          "Nickel": 14.938834, 
+          "Phosphorus": 10.501572, 
+          "Sulphur": 19.506731, 
+          "Technetium": 0.706414, 
+          "Tungsten": 1.084529, 
+          "Zinc": 5.367584, 
+          "Zirconium": 2.293499
+        }, 
+        "meanAnomaly": 107.425452, 
+        "name": "Synuefe XR-H d11-102 1 d", 
+        "orbitalEccentricity": 0.144357, 
+        "orbitalInclination": -0.694709, 
+        "orbitalPeriod": 0.388718341238426, 
+        "parents": [
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 10
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 909.1585, 
+        "rotationalPeriod": 0.488040929108796, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 1.72352068507951e-05, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Silicate Vapour Fumarole", 
+            "Silicate Vapour Gas Vent"
+          ], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 18:01:15+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.0637, 
+          "Rock": 91.9363
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 292.866699, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:07:40Z", 
+          "meanAnomaly": "2026-06-12T18:07:40Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-12 18:07:40+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 36.284342, 
+        "ascendingNode": 166.538378, 
+        "atmosphereComposition": {
+          "Water": 100.0
+        }, 
+        "atmosphereType": "Hot thick Water", 
+        "axialTilt": 0.40166, 
+        "bodyId": 20, 
+        "distanceToArrival": 806.308345, 
+        "earthMasses": 0.064099, 
+        "gravity": 0.204764861833384, 
+        "id64": 720579455633836387, 
+        "isLandable": false, 
+        "meanAnomaly": 225.474074, 
+        "name": "Synuefe XR-H d11-102 1 e", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": -76.330677, 
+        "orbitalPeriod": 34.6586998138194, 
+        "parents": [
+          {
+            "Star": 10
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 3566.8565, 
+        "rotationalPeriod": 34.6589962740509, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0523296195431953, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Human;": 15
+          }, 
+          "updateTime": "2022-07-06 06:20:17+00"
+        }, 
+        "solidComposition": {
+          "Ice": 96.3025, 
+          "Metal": 0.5277, 
+          "Rock": 3.1698
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 43478.6205970886, 
+        "surfaceTemperature": 2066.11792, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T18:07:39Z", 
+          "meanAnomaly": "2026-06-12T18:07:39Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-12 18:07:39+00"
+      }, 
+      {
+        "argOfPeriapsis": 255.259059, 
+        "ascendingNode": -9.934158, 
+        "bodyId": 36, 
+        "id64": 1297040207937259875, 
+        "meanAnomaly": 205.094575, 
+        "name": "Synuefe XR-H d11-102 barycentre 36", 
+        "orbitalEccentricity": 0.010149, 
+        "orbitalInclination": 0.011265, 
+        "orbitalPeriod": 1370.41371177744, 
+        "semiMajorAxis": 2.72332908295296, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-12T12:59:08Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-12 12:59:08+00"
+      }, 
+      {
+        "absoluteMagnitude": 23.207169, 
+        "age": 3600, 
+        "argOfPeriapsis": 58.120474, 
+        "ascendingNode": -12.7013, 
+        "axialTilt": 0.345217, 
+        "bodyId": 37, 
+        "distanceToArrival": 1380.781499, 
+        "id64": 1333069004956223843, 
+        "luminosity": "V", 
+        "meanAnomaly": 298.901213, 
+        "name": "Synuefe XR-H d11-102 2", 
+        "orbitalEccentricity": 0.090662, 
+        "orbitalInclination": 7.436172, 
+        "orbitalPeriod": 82.247011639456, 
+        "parents": [
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "rotationalPeriod": 1.35089521545139, 
+        "semiMajorAxis": 0.0250319539841906, 
+        "solarMasses": 0.011719, 
+        "solarRadius": 0.063354490294752, 
+        "spectralClass": "Y4", 
+        "stations": [], 
+        "subType": "Y (Brown dwarf) Star", 
+        "surfaceTemperature": 391.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-12T12:59:08Z", 
+          "meanAnomaly": "2026-06-12T12:59:08Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-12 12:59:08+00"
+      }, 
+      {
+        "argOfPeriapsis": 339.878522, 
+        "ascendingNode": 149.291044, 
+        "atmosphereType": null, 
+        "axialTilt": 0.404851, 
+        "bodyId": 38, 
+        "distanceToArrival": 1381.881779, 
+        "earthMasses": 0.004798, 
+        "gravity": 0.139926685020903, 
+        "id64": 1369097801975187811, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.522549, 
+          "Carbon": 16.054729, 
+          "Chromium": 8.893604, 
+          "Iron": 19.775291, 
+          "Nickel": 14.9572, 
+          "Niobium": 1.351536, 
+          "Phosphorus": 10.278513, 
+          "Polonium": 0.51329, 
+          "Sulphur": 19.092398, 
+          "Tin": 1.186713, 
+          "Zinc": 5.374183
+        }, 
+        "meanAnomaly": 95.38031, 
+        "name": "Synuefe XR-H d11-102 2 a", 
+        "orbitalEccentricity": 0.000429, 
+        "orbitalInclination": 0.00065, 
+        "orbitalPeriod": 0.967520930706019, 
+        "parents": [
+          {
+            "Star": 37
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1180.455625, 
+        "rotationalPeriod": 0.967527820625, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0046605388476779, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Iron Magma Lava Spout"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Human;": 1
+          }, 
+          "updateTime": "2026-04-25 16:51:32+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1774, 
+          "Rock": 90.8226
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 221.329773, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:45:39Z", 
+          "meanAnomaly": "2026-06-11T13:45:39Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:45:39+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 239.107086, 
+        "ascendingNode": -6.255593, 
+        "atmosphereType": null, 
+        "axialTilt": -0.471477, 
+        "bodyId": 39, 
+        "distanceToArrival": 1381.074433, 
+        "earthMasses": 0.004117, 
+        "gravity": 0.132804119506475, 
+        "id64": 1405126598994151779, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.546687, 
+          "Chromium": 8.612171, 
+          "Germanium": 5.462098, 
+          "Iron": 19.149513, 
+          "Nickel": 14.483889, 
+          "Niobium": 1.308767, 
+          "Phosphorus": 9.953256, 
+          "Sulphur": 18.488232, 
+          "Tin": 1.14916, 
+          "Vanadium": 4.702454, 
+          "Yttrium": 1.143778
+        }, 
+        "meanAnomaly": 24.477272, 
+        "name": "Synuefe XR-H d11-102 2 b", 
+        "orbitalEccentricity": 0.001917, 
+        "orbitalInclination": 0.061002, 
+        "orbitalPeriod": 1.43257342278935, 
+        "parents": [
+          {
+            "Star": 37
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1122.42125, 
+        "rotationalPeriod": 1.43258348391204, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00605443756970372, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 13:46:01+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1774, 
+          "Rock": 90.8226
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 221.329773, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:46:02Z", 
+          "meanAnomaly": "2026-06-11T13:46:02Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:46:02+00", 
+        "volcanismType": "Minor Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 120.025244, 
+        "ascendingNode": 95.906204, 
+        "atmosphereType": null, 
+        "axialTilt": -0.626016, 
+        "bodyId": 40, 
+        "distanceToArrival": 1381.839844, 
+        "earthMasses": 0.007737, 
+        "gravity": 0.165043438360355, 
+        "id64": 1441155396013115747, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.579729, 
+          "Carbon": 16.421555, 
+          "Iron": 20.34304, 
+          "Nickel": 15.386623, 
+          "Niobium": 1.390338, 
+          "Phosphorus": 10.513361, 
+          "Ruthenium": 1.256312, 
+          "Selenium": 3.056396, 
+          "Sulphur": 19.528629, 
+          "Vanadium": 4.995543, 
+          "Zinc": 5.528477
+        }, 
+        "meanAnomaly": 188.059141, 
+        "name": "Synuefe XR-H d11-102 2 c", 
+        "orbitalEccentricity": 0.000598, 
+        "orbitalInclination": 0.006415, 
+        "orbitalPeriod": 2.15089645375, 
+        "parents": [
+          {
+            "Star": 37
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1380.31825, 
+        "rotationalPeriod": 2.1509116550463, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00793856916073401, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Human;": 2
+          }, 
+          "updateTime": "2026-04-25 16:53:06+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.4695, 
+          "Rock": 90.5305
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 221.329773, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:45:42Z", 
+          "meanAnomaly": "2026-06-11T13:45:42Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:45:42+00"
+      }, 
+      {
+        "argOfPeriapsis": 105.151739, 
+        "ascendingNode": -31.864099, 
+        "atmosphereType": null, 
+        "axialTilt": -2.71662, 
+        "bodyId": 41, 
+        "distanceToArrival": 1376.536893, 
+        "earthMasses": 0.008628, 
+        "gravity": 0.171579382074029, 
+        "id64": 1477184193032079715, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.081777, 
+          "Chromium": 8.447434, 
+          "Iron": 18.783211, 
+          "Manganese": 7.757275, 
+          "Molybdenum": 1.226533, 
+          "Nickel": 14.206836, 
+          "Phosphorus": 9.655613, 
+          "Ruthenium": 1.159983, 
+          "Sulphur": 17.935354, 
+          "Tin": 1.13347, 
+          "Vanadium": 4.612504
+        }, 
+        "meanAnomaly": 114.02179, 
+        "name": "Synuefe XR-H d11-102 2 d", 
+        "orbitalEccentricity": 4.8e-05, 
+        "orbitalInclination": -0.00726, 
+        "orbitalPeriod": 3.88416999744213, 
+        "parents": [
+          {
+            "Star": 37
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1429.622125, 
+        "rotationalPeriod": -3.88419746260417, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0117723020443037, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Human;": 1
+          }, 
+          "updateTime": "2026-04-25 16:54:59+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.7465, 
+          "Rock": 90.2535
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 221.329773, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:45:53Z", 
+          "meanAnomaly": "2026-06-11T13:45:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:45:53+00"
+      }, 
+      {
+        "argOfPeriapsis": 178.231003, 
+        "ascendingNode": 83.891214, 
+        "atmosphereType": null, 
+        "axialTilt": -0.152677, 
+        "bodyId": 42, 
+        "distanceToArrival": 1376.527597, 
+        "earthMasses": 0.000826, 
+        "gravity": 0.0747969817477312, 
+        "id64": 1513212990051043683, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 18.04343, 
+          "Germanium": 6.339292, 
+          "Iron": 19.222364, 
+          "Molybdenum": 1.255209, 
+          "Nickel": 14.538992, 
+          "Niobium": 1.313746, 
+          "Phosphorus": 11.551713, 
+          "Selenium": 3.358261, 
+          "Sulphur": 21.457376, 
+          "Technetium": 0.687506, 
+          "Zirconium": 2.232113
+        }, 
+        "meanAnomaly": 80.448011, 
+        "name": "Synuefe XR-H d11-102 2 d a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": -78.809253, 
+        "orbitalPeriod": 0.348809113101852, 
+        "parents": [
+          {
+            "Planet": 41
+          }, 
+          {
+            "Star": 37
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 669.7356875, 
+        "rotationalPeriod": 0.365113622986111, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 2.95846809180019e-05, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Silicate Vapour Fumarole", 
+            "Silicate Magma Lava Spout", 
+            "Silicate Vapour Gas Vent"
+          ], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 13:45:49+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 3.2289, 
+          "Rock": 96.7711
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 221.329773, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:45:49Z", 
+          "meanAnomaly": "2026-06-11T13:45:49Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:45:49+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 82.593619, 
+        "ascendingNode": 167.886849, 
+        "atmosphereType": null, 
+        "axialTilt": -0.493057, 
+        "bodyId": 43, 
+        "distanceToArrival": 1375.025645, 
+        "earthMasses": 0.003273, 
+        "gravity": 0.122815947792393, 
+        "id64": 1549241787070007651, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.578146, 
+          "Germanium": 5.473151, 
+          "Iron": 19.188265, 
+          "Manganese": 7.924557, 
+          "Nickel": 14.513198, 
+          "Niobium": 1.311415, 
+          "Phosphorus": 9.973396, 
+          "Sulphur": 18.525642, 
+          "Tin": 1.151485, 
+          "Yttrium": 1.146092, 
+          "Zinc": 5.214652
+        }, 
+        "meanAnomaly": 294.476849, 
+        "name": "Synuefe XR-H d11-102 2 e", 
+        "orbitalEccentricity": 0.001659, 
+        "orbitalInclination": -0.000561, 
+        "orbitalPeriod": 5.60210824564815, 
+        "parents": [
+          {
+            "Star": 37
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1040.651875, 
+        "rotationalPeriod": 5.602147610625, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0150278512850014, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Human;": 1
+          }, 
+          "updateTime": "2026-04-25 16:48:04+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1774, 
+          "Rock": 90.8226
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 221.329773, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:45:57Z", 
+          "meanAnomaly": "2026-06-11T13:45:57Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:45:57+00"
+      }, 
+      {
+        "argOfPeriapsis": 238.120468, 
+        "ascendingNode": -12.7013, 
+        "atmosphereComposition": {
+          "Helium": 25.960228, 
+          "Hydrogen": 74.039787
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.43981, 
+        "bodyId": 44, 
+        "distanceToArrival": 1342.294426, 
+        "earthMasses": 1619.777954, 
+        "gravity": 11.6054523299684, 
+        "id64": 1585270584088971619, 
+        "isLandable": false, 
+        "meanAnomaly": 294.664363, 
+        "name": "Synuefe XR-H d11-102 3", 
+        "orbitalEccentricity": 0.090662, 
+        "orbitalInclination": 7.436172, 
+        "orbitalPeriod": 82.247011639456, 
+        "parents": [
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 75315.32, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1621299381107935587, 
+            "innerRadius": 120270000.0, 
+            "mass": 279350000000.0, 
+            "name": "Synuefe XR-H d11-102 3 A Ring", 
+            "outerRadius": 164590000.0, 
+            "signals": {
+              "signals": {
+                "Painite": 1
+              }, 
+              "updateTime": "2026-05-23 11:49:52+00"
+            }, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "id64": 1657328178126899555, 
+            "innerRadius": 164690000.0, 
+            "mass": 3099700000000.0, 
+            "name": "Synuefe XR-H d11-102 3 B Ring", 
+            "outerRadius": 408850000.0, 
+            "signals": {
+              "signals": {
+                "Rhodplumsite": 1
+              }, 
+              "updateTime": "2026-05-23 11:49:35+00"
+            }, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 95.1081335436806, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0742356813747388, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Human;": 1
+          }, 
+          "updateTime": "2020-12-31 20:23:57+00"
+        }, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 512.082764, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:45:15Z", 
+          "meanAnomaly": "2026-06-11T13:45:15Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:45:15+00"
+      }, 
+      {
+        "argOfPeriapsis": 214.665653, 
+        "ascendingNode": 157.130267, 
+        "atmosphereType": null, 
+        "axialTilt": 0.129049, 
+        "bodyId": 47, 
+        "distanceToArrival": 1341.213922, 
+        "earthMasses": 0.001107, 
+        "gravity": 0.0850415009686958, 
+        "id64": 1693356975145863523, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.641375, 
+          "Germanium": 5.495366, 
+          "Iron": 19.25952, 
+          "Manganese": 7.953985, 
+          "Molybdenum": 1.257636, 
+          "Nickel": 14.567095, 
+          "Phosphorus": 10.013878, 
+          "Sulphur": 18.600836, 
+          "Tellurium": 1.423311, 
+          "Tungsten": 1.057541, 
+          "Vanadium": 4.729468
+        }, 
+        "meanAnomaly": 203.84844, 
+        "name": "Synuefe XR-H d11-102 3 a", 
+        "orbitalEccentricity": 0.000564, 
+        "orbitalInclination": -0.028132, 
+        "orbitalPeriod": 1.3644117862037, 
+        "parents": [
+          {
+            "Planet": 44
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 727.4460625, 
+        "rotationalPeriod": 1.36441846261574, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00407931189813582, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 13:46:15+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1599, 
+          "Rock": 90.8401
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 276.248901, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:46:16Z", 
+          "meanAnomaly": "2026-06-11T13:46:16Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:46:16+00", 
+        "volcanismType": "Minor Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 279.295933, 
+        "ascendingNode": -60.853376, 
+        "atmosphereComposition": {
+          "Silicates": 1.238247, 
+          "Sulphur dioxide": 22.288452, 
+          "Water": 75.235062
+        }, 
+        "atmosphereType": "Hot thick Sulphur dioxide", 
+        "axialTilt": 0.147561, 
+        "bodyId": 48, 
+        "distanceToArrival": 1340.419768, 
+        "earthMasses": 0.000898, 
+        "gravity": 0.0792465585806057, 
+        "id64": 1729385772164827491, 
+        "isLandable": false, 
+        "meanAnomaly": 64.796231, 
+        "name": "Synuefe XR-H d11-102 3 b", 
+        "orbitalEccentricity": 0.001084, 
+        "orbitalInclination": -0.489011, 
+        "orbitalPeriod": 2.05250456929398, 
+        "parents": [
+          {
+            "Planet": 44
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 678.817375, 
+        "rotationalPeriod": 2.05251458612269, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00535565587766002, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1599, 
+          "Rock": 90.8401
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 21.200636565507, 
+        "surfaceTemperature": 838.646606, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:46:12Z", 
+          "meanAnomaly": "2026-06-11T13:46:12Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:46:12+00", 
+        "volcanismType": "Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 205.541661, 
+        "ascendingNode": -19.779955, 
+        "atmosphereComposition": {
+          "Water": 100.0
+        }, 
+        "atmosphereType": "Hot Water", 
+        "axialTilt": 0.303975, 
+        "bodyId": 49, 
+        "distanceToArrival": 1338.973245, 
+        "earthMasses": 0.005157, 
+        "gravity": 0.143405934536556, 
+        "id64": 1765414569183791459, 
+        "isLandable": false, 
+        "meanAnomaly": 60.26531, 
+        "name": "Synuefe XR-H d11-102 3 c", 
+        "orbitalEccentricity": 0.001881, 
+        "orbitalInclination": -0.099174, 
+        "orbitalPeriod": 3.63114807340278, 
+        "parents": [
+          {
+            "Planet": 44
+          }, 
+          {
+            "Null": 36
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1208.87425, 
+        "rotationalPeriod": 3.63116595707176, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00783404240202795, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1599, 
+          "Rock": 90.8401
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.704084628670121, 
+        "surfaceTemperature": 532.630005, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T16:40:23Z", 
+          "meanAnomaly": "2026-06-11T16:40:23Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 16:40:23+00"
+      }, 
+      {
+        "argOfPeriapsis": 240.328208, 
+        "ascendingNode": -69.063219, 
+        "atmosphereComposition": {
+          "Helium": 25.960228, 
+          "Hydrogen": 74.039787
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.739325, 
+        "bodyId": 50, 
+        "distanceToArrival": 1966.619037, 
+        "earthMasses": 1453.878662, 
+        "gravity": 10.3459628836545, 
+        "id64": 1801443366202755427, 
+        "isLandable": false, 
+        "meanAnomaly": 277.009389, 
+        "name": "Synuefe XR-H d11-102 4", 
+        "orbitalEccentricity": 0.008588, 
+        "orbitalInclination": 0.306625, 
+        "orbitalPeriod": 2389.24287259579, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 75572.752, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1837472163221719395, 
+            "innerRadius": 134740000.0, 
+            "mass": 447670000000.0, 
+            "name": "Synuefe XR-H d11-102 4 A Ring", 
+            "outerRadius": 182150000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 3, 
+                "Benitoite": 4, 
+                "Monazite": 3, 
+                "Musgravite": 5, 
+                "Serendibite": 3
+              }, 
+              "updateTime": "2026-05-23 11:59:21+00"
+            }, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 1873500960240683363, 
+            "innerRadius": 182250000.0, 
+            "mass": 3646400000000.0, 
+            "name": "Synuefe XR-H d11-102 4 B Ring", 
+            "outerRadius": 394380000.0, 
+            "signals": {
+              "signals": {
+                "Painite": 1, 
+                "Platinum": 1, 
+                "Serendibite": 1
+              }, 
+              "updateTime": "2026-05-23 11:59:12+00"
+            }, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 0.636146996759259, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 3.94492968023903, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 438.541107, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:45:02Z", 
+          "meanAnomaly": "2026-06-11T13:45:02Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:45:02+00"
+      }, 
+      {
+        "argOfPeriapsis": 293.319486, 
+        "ascendingNode": -132.89593, 
+        "atmosphereType": null, 
+        "axialTilt": -0.106157, 
+        "bodyId": 53, 
+        "distanceToArrival": 1966.014234, 
+        "earthMasses": 0.007034, 
+        "gravity": 0.159495462424799, 
+        "id64": 1909529757259647331, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.435854, 
+          "Carbon": 15.01374, 
+          "Chromium": 8.315695, 
+          "Germanium": 5.274855, 
+          "Iron": 18.490284, 
+          "Manganese": 7.636298, 
+          "Nickel": 13.985276, 
+          "Phosphorus": 9.612054, 
+          "Sulphur": 17.854446, 
+          "Tellurium": 1.366198, 
+          "Tungsten": 1.015302
+        }, 
+        "meanAnomaly": 321.539945, 
+        "name": "Synuefe XR-H d11-102 4 a", 
+        "orbitalEccentricity": 0.000121, 
+        "orbitalInclination": 0.126025, 
+        "orbitalPeriod": 1.19601355658565, 
+        "parents": [
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1338.7845, 
+        "rotationalPeriod": 1.19607527173611, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00360427926659467, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Sulphur Dioxide Fumarole", 
+            "Iron Magma Lava Spout", 
+            "Sulphur Dioxide Gas Vent"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 13:48:18+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1698, 
+          "Rock": 90.8302
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 236.390915, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:18Z", 
+          "meanAnomaly": "2026-06-11T13:48:18Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:18+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 56.61272, 
+        "ascendingNode": -66.3519, 
+        "bodyId": 54, 
+        "id64": 1945558554278611299, 
+        "meanAnomaly": 297.637962, 
+        "name": "Synuefe XR-H d11-102 barycentre 54", 
+        "orbitalEccentricity": 5.1e-05, 
+        "orbitalInclination": -0.025387, 
+        "orbitalPeriod": 2.32459273603009, 
+        "semiMajorAxis": 0.00561339528938164, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-11T13:48:30Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-11 13:48:30+00"
+      }, 
+      {
+        "argOfPeriapsis": 236.678342, 
+        "ascendingNode": 113.195434, 
+        "atmosphereType": null, 
+        "axialTilt": -0.235121, 
+        "bodyId": 55, 
+        "distanceToArrival": 1968.430307, 
+        "earthMasses": 0.00722, 
+        "gravity": 0.160933516875701, 
+        "id64": 1981587351297575267, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.514354, 
+          "Cadmium": 1.530422, 
+          "Carbon": 16.002569, 
+          "Chromium": 8.863379, 
+          "Iron": 19.708084, 
+          "Nickel": 14.906369, 
+          "Phosphorus": 10.245118, 
+          "Sulphur": 19.030367, 
+          "Tin": 1.182587, 
+          "Vanadium": 4.83962, 
+          "Yttrium": 1.17714
+        }, 
+        "meanAnomaly": 34.329612, 
+        "name": "Synuefe XR-H d11-102 4 b", 
+        "orbitalEccentricity": 0.175313, 
+        "orbitalInclination": -5.49038, 
+        "orbitalPeriod": 0.525847118761574, 
+        "parents": [
+          {
+            "Null": 54
+          }, 
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1350.345875, 
+        "rotationalPeriod": 0.553183342858796, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.69446635399738e-05, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Silicate Vapour Gas Vent"
+          ], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 13:48:35+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1698, 
+          "Rock": 90.8302
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 223.654846, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:35Z", 
+          "meanAnomaly": "2026-06-11T13:48:35Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:35+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 56.678347, 
+        "ascendingNode": 113.195434, 
+        "atmosphereType": null, 
+        "axialTilt": 0.074367, 
+        "bodyId": 56, 
+        "distanceToArrival": 1968.442338, 
+        "earthMasses": 0.004846, 
+        "gravity": 0.140400530233507, 
+        "id64": 2017616148316539235, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 16.101854, 
+          "Chromium": 8.918371, 
+          "Iron": 19.830359, 
+          "Mercury": 0.865959, 
+          "Nickel": 14.998852, 
+          "Phosphorus": 10.308682, 
+          "Sulphur": 19.148438, 
+          "Tellurium": 1.465213, 
+          "Tin": 1.189924, 
+          "Vanadium": 4.869646, 
+          "Zirconium": 2.302713
+        }, 
+        "meanAnomaly": 34.294559, 
+        "name": "Synuefe XR-H d11-102 4 c", 
+        "orbitalEccentricity": 0.175313, 
+        "orbitalInclination": -5.49038, 
+        "orbitalPeriod": 0.525847118761574, 
+        "parents": [
+          {
+            "Null": 54
+          }, 
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1184.374, 
+        "rotationalPeriod": 0.679775198055556, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 2.52477792593675e-05, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-11 13:48:30+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1698, 
+          "Rock": 90.8302
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 223.654846, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:30Z", 
+          "meanAnomaly": "2026-06-11T13:48:30Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:30+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 309.772926, 
+        "ascendingNode": 106.22428, 
+        "atmosphereType": null, 
+        "axialTilt": -0.25427, 
+        "bodyId": 57, 
+        "distanceToArrival": 1969.145862, 
+        "earthMasses": 0.008325, 
+        "gravity": 0.168990720913633, 
+        "id64": 2053644945335503203, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.491813, 
+          "Carbon": 15.598856, 
+          "Germanium": 5.480427, 
+          "Iron": 19.210888, 
+          "Manganese": 7.933901, 
+          "Nickel": 14.530312, 
+          "Niobium": 1.312962, 
+          "Phosphorus": 9.986655, 
+          "Ruthenium": 1.186395, 
+          "Sulphur": 18.55027, 
+          "Vanadium": 4.717526
+        }, 
+        "meanAnomaly": 305.8748, 
+        "name": "Synuefe XR-H d11-102 4 d", 
+        "orbitalEccentricity": 0.000308, 
+        "orbitalInclination": 0.014076, 
+        "orbitalPeriod": 3.7652025068287, 
+        "parents": [
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1414.94775, 
+        "rotationalPeriod": 3.76539688935185, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00774200171915459, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ]
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1698, 
+          "Rock": 90.8302
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 216.027802, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:15Z", 
+          "meanAnomaly": "2026-06-11T13:48:15Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:15+00"
+      }, 
+      {
+        "argOfPeriapsis": 163.955846, 
+        "ascendingNode": 160.898975, 
+        "atmosphereType": null, 
+        "axialTilt": 0.02482, 
+        "bodyId": 58, 
+        "distanceToArrival": 1957.005529, 
+        "earthMasses": 0.020832, 
+        "gravity": 0.21840369124095, 
+        "id64": 2089673742354467171, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.227842, 
+          "Cadmium": 1.481997, 
+          "Carbon": 16.598814, 
+          "Chromium": 8.58293, 
+          "Iron": 19.084492, 
+          "Molybdenum": 1.246206, 
+          "Nickel": 14.434711, 
+          "Phosphorus": 10.626846, 
+          "Sulphur": 19.739429, 
+          "Tellurium": 1.290246, 
+          "Vanadium": 4.686487
+        }, 
+        "meanAnomaly": 64.559343, 
+        "name": "Synuefe XR-H d11-102 4 e", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 40.283517, 
+        "orbitalPeriod": 14.8030887875347, 
+        "parents": [
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1968.876125, 
+        "rotationalPeriod": 14.8038529770949, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.019285426638382, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 13.0854, 
+          "Metal": 12.4045, 
+          "Rock": 74.5101
+        }, 
+        "stations": [], 
+        "subType": "Rocky Ice world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 177.142883, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:24Z", 
+          "meanAnomaly": "2026-06-11T13:48:24Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:24+00"
+      }, 
+      {
+        "argOfPeriapsis": 138.967165, 
+        "ascendingNode": 153.262967, 
+        "atmosphereComposition": {
+          "Helium": 25.951267, 
+          "Hydrogen": 74.014229
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 1.696724, 
+        "bodyId": 64, 
+        "distanceToArrival": 2732.321237, 
+        "earthMasses": 104.473839, 
+        "gravity": 1.32900081574386, 
+        "id64": 2305846524468250979, 
+        "isLandable": false, 
+        "meanAnomaly": 113.453951, 
+        "name": "Synuefe XR-H d11-102 5", 
+        "orbitalEccentricity": 0.024816, 
+        "orbitalInclination": -2.063542, 
+        "orbitalPeriod": 3846.89315601632, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 56523.332, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 2341875321487214947, 
+            "innerRadius": 96498000.0, 
+            "mass": 4154400000.0, 
+            "name": "Synuefe XR-H d11-102 5 A Ring", 
+            "outerRadius": 163960000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 1.6528362784375, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.41924888268606, 
+        "stations": [], 
+        "subType": "Gas giant with water-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 153.989441, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:00Z", 
+          "meanAnomaly": "2026-06-11T13:48:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:00+00"
+      }, 
+      {
+        "argOfPeriapsis": 302.8334, 
+        "ascendingNode": 18.034438, 
+        "atmosphereComposition": {
+          "Ammonia": 2.404333, 
+          "Carbon dioxide": 97.595673
+        }, 
+        "atmosphereType": "Carbon dioxide", 
+        "axialTilt": -0.159672, 
+        "bodyId": 66, 
+        "distanceToArrival": 2731.640128, 
+        "earthMasses": 0.000241, 
+        "gravity": 0.0508836545324768, 
+        "id64": 2377904118506178915, 
+        "isLandable": false, 
+        "meanAnomaly": 336.056026, 
+        "name": "Synuefe XR-H d11-102 5 a", 
+        "orbitalEccentricity": 6.6e-05, 
+        "orbitalInclination": -0.006765, 
+        "orbitalPeriod": 3.41341644525463, 
+        "parents": [
+          {
+            "Planet": 64
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 438.72578125, 
+        "rotationalPeriod": 3.41346732293981, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00301487775834926, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1599, 
+          "Rock": 90.8401
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.40804600758944, 
+        "surfaceTemperature": 227.899536, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:58Z", 
+          "meanAnomaly": "2026-06-11T13:48:58Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:58+00"
+      }, 
+      {
+        "argOfPeriapsis": 322.14522, 
+        "ascendingNode": 70.080975, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 100.0
+        }, 
+        "atmosphereType": "Thin Carbon dioxide", 
+        "axialTilt": -0.352307, 
+        "bodyId": 67, 
+        "distanceToArrival": 2730.905637, 
+        "earthMasses": 0.000323, 
+        "gravity": 0.0561566228204344, 
+        "id64": 2413932915525142883, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.474702, 
+          "Carbon": 15.422935, 
+          "Chromium": 8.54068, 
+          "Germanium": 5.41862, 
+          "Iron": 18.990547, 
+          "Molybdenum": 1.240072, 
+          "Nickel": 14.363655, 
+          "Phosphorus": 9.874028, 
+          "Ruthenium": 1.172788, 
+          "Sulphur": 18.341063, 
+          "Zinc": 5.16092
+        }, 
+        "meanAnomaly": 91.444658, 
+        "name": "Synuefe XR-H d11-102 5 b", 
+        "orbitalEccentricity": 0.005596, 
+        "orbitalInclination": 1.475773, 
+        "orbitalPeriod": 16.083358614537, 
+        "parents": [
+          {
+            "Planet": 64
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 483.618125, 
+        "rotationalPeriod": 16.0835970894213, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00847347068911943, 
+        "signals": {
+          "biology": [
+            "Frutexa Acus - Green", 
+            "Tussock Ignis - Yellow", 
+            "Tubus Compagibus - Grey", 
+            "Bacterium Aurasus - Lime"
+          ], 
+          "genuses": [
+            "$Codex_Ent_Tussocks_Genus_Name;", 
+            "$Codex_Ent_Tubus_Genus_Name;", 
+            "$Codex_Ent_Bacterial_Genus_Name;", 
+            "$Codex_Ent_Shrubs_Genus_Name;"
+          ], 
+          "guesses": [
+            "Bacterium Tela - Gold", 
+            "Bacterium Tela - Yellow", 
+            "Bacterium Aurasus - Lime", 
+            "Tussock Ventusa - Yellow", 
+            "Tussock Cultro - Yellow", 
+            "Bacterium Cerbrus - Lime", 
+            "Bacterium Alcyoneum - Lime", 
+            "Tubus Compagibus - Grey", 
+            "Tussock Caputus - Yellow", 
+            "Frutexa Flabellum - Green", 
+            "Frutexa Acus - Green", 
+            "Tussock Ignis - Yellow", 
+            "Tussock Serrati - Yellow"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 4
+          }, 
+          "updateTime": "2026-06-11 13:49:00+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1599, 
+          "Rock": 90.8401
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.00580469966938071, 
+        "surfaceTemperature": 164.898392, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:49:00Z", 
+          "meanAnomaly": "2026-06-11T13:49:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:49:00+00"
+      }, 
+      {
+        "argOfPeriapsis": 179.810177, 
+        "ascendingNode": -126.419702, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 100.0
+        }, 
+        "atmosphereType": "Thin Carbon dioxide", 
+        "axialTilt": 0.398148, 
+        "bodyId": 68, 
+        "distanceToArrival": 2729.973779, 
+        "earthMasses": 0.000199, 
+        "gravity": 0.0476875701029877, 
+        "id64": 2449961712544106851, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.444982, 
+          "Carbon": 15.112111, 
+          "Chromium": 8.368558, 
+          "Iron": 18.607826, 
+          "Manganese": 7.684843, 
+          "Nickel": 14.07418, 
+          "Phosphorus": 9.675034, 
+          "Sulphur": 17.97143, 
+          "Tellurium": 1.37515, 
+          "Tin": 1.116453, 
+          "Vanadium": 4.569435
+        }, 
+        "meanAnomaly": 88.266342, 
+        "name": "Synuefe XR-H d11-102 5 c", 
+        "orbitalEccentricity": 0.002813, 
+        "orbitalInclination": 0.231626, 
+        "orbitalPeriod": 24.5162823961806, 
+        "parents": [
+          {
+            "Planet": 64
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 411.45934375, 
+        "rotationalPeriod": 24.5166478126157, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.011223111931723, 
+        "signals": {
+          "biology": [
+            "Frutexa Acus - Green", 
+            "Tussock Ignis - Yellow", 
+            "Tubus Compagibus - Grey", 
+            "Concha Labiata - Grey", 
+            "Bacterium Aurasus - Lime"
+          ], 
+          "genuses": [
+            "$Codex_Ent_Bacterial_Genus_Name;", 
+            "$Codex_Ent_Shrubs_Genus_Name;", 
+            "$Codex_Ent_Conchas_Genus_Name;", 
+            "$Codex_Ent_Tubus_Genus_Name;", 
+            "$Codex_Ent_Tussocks_Genus_Name;"
+          ], 
+          "guesses": [
+            "Bacterium Tela - Gold", 
+            "Bacterium Tela - Cobalt", 
+            "Bacterium Aurasus - Lime", 
+            "Tussock Ventusa - Yellow", 
+            "Tussock Cultro - Yellow", 
+            "Concha Labiata - Grey", 
+            "Bacterium Cerbrus - Lime", 
+            "Bacterium Alcyoneum - Lime", 
+            "Tubus Compagibus - Grey", 
+            "Tussock Caputus - Yellow", 
+            "Frutexa Flabellum - Green", 
+            "Frutexa Acus - Green", 
+            "Tussock Ignis - Yellow", 
+            "Tussock Serrati - Yellow"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 5
+          }, 
+          "updateTime": "2026-06-11 13:49:03+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1599, 
+          "Rock": 90.8401
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.00418589552430299, 
+        "surfaceTemperature": 162.517303, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:49:03Z", 
+          "meanAnomaly": "2026-06-11T13:49:03Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:49:03+00"
+      }, 
+      {
+        "argOfPeriapsis": 90.281751, 
+        "ascendingNode": 177.951655, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 100.0
+        }, 
+        "atmosphereType": "Thin Carbon dioxide", 
+        "axialTilt": 0.079668, 
+        "bodyId": 69, 
+        "distanceToArrival": 2727.187245, 
+        "earthMasses": 0.001089, 
+        "gravity": 0.0845759151626389, 
+        "id64": 2485990509563070819, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.679518, 
+          "Chromium": 8.682767, 
+          "Iron": 19.306482, 
+          "Mercury": 0.843082, 
+          "Nickel": 14.602615, 
+          "Phosphorus": 10.038297, 
+          "Sulphur": 18.646194, 
+          "Tungsten": 1.06012, 
+          "Vanadium": 4.741001, 
+          "Yttrium": 1.153153, 
+          "Zinc": 5.246779
+        }, 
+        "meanAnomaly": 268.635187, 
+        "name": "Synuefe XR-H d11-102 5 d", 
+        "orbitalEccentricity": 0.019919, 
+        "orbitalInclination": 0.050918, 
+        "orbitalPeriod": 75.3734247000116, 
+        "parents": [
+          {
+            "Planet": 64
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 723.54475, 
+        "rotationalPeriod": 75.3745395810417, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0237295217640476, 
+        "signals": {
+          "biology": [
+            "Frutexa Acus - Green", 
+            "Tussock Serrati - Yellow", 
+            "Stratum Excutitus - Emerald", 
+            "Tubus Compagibus - Grey", 
+            "Bacterium Aurasus - Lime"
+          ], 
+          "genuses": [
+            "$Codex_Ent_Tubus_Genus_Name;", 
+            "$Codex_Ent_Tussocks_Genus_Name;", 
+            "$Codex_Ent_Stratum_Genus_Name;", 
+            "$Codex_Ent_Shrubs_Genus_Name;", 
+            "$Codex_Ent_Bacterial_Genus_Name;"
+          ], 
+          "guesses": [
+            "Bacterium Tela - Green", 
+            "Bacterium Tela - Orange", 
+            "Bacterium Aurasus - Lime", 
+            "Tussock Ventusa - Yellow", 
+            "Tussock Cultro - Yellow", 
+            "Stratum Paleas - Emerald", 
+            "Bacterium Cerbrus - Lime", 
+            "Bacterium Alcyoneum - Lime", 
+            "Tubus Compagibus - Grey", 
+            "Tussock Caputus - Yellow", 
+            "Frutexa Flabellum - Green", 
+            "Frutexa Acus - Green", 
+            "Tussock Ignis - Yellow", 
+            "Stratum Excutitus - Emerald", 
+            "Tussock Serrati - Yellow"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 5
+          }, 
+          "updateTime": "2026-06-11 13:48:54+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1599, 
+          "Rock": 90.8401
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0131665370342956, 
+        "surfaceTemperature": 171.055374, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-11T13:48:54Z", 
+          "meanAnomaly": "2026-06-11T13:48:54Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-11 13:48:54+00"
+      }
+    ], 
+    "bodyCount": 30, 
+    "coords": {
+      "x": 357.34375, 
+      "y": -49.34375, 
+      "z": -74.75
+    }, 
+    "date": "2026-06-12 19:13:41+00", 
+    "government": "None", 
+    "id64": 3515254557027, 
+    "name": "Synuefe XR-H d11-102", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "region": {
+      "name": "Inner Orion Spur", 
+      "region": 18
+    }, 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy"
+  }
+}

@@ -1,0 +1,19 @@
+# Single-package "workspace" — this repo is the only package.
+packages:
+  - .
+
+# Supply-chain delay: refuse to install package versions published more
+# recently than this many MINUTES ago (this sandbox's pnpm enforces it even
+# under --frozen-lockfile). 10080 = 7 days
+minimumReleaseAge: 10080
+
+# Allowlist of packages permitted to run install/build scripts. This sandbox's
+# pnpm gates build scripts on `allowBuilds` (see DEPS_BUILD_CONFIG_KEYS); any
+# native package not listed here aborts install with an "allowBuilds allowlist"
+# error. Keep every native/postinstall dependency listed.
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  nice-napi: true

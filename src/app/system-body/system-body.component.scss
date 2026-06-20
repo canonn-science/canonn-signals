@@ -5,39 +5,63 @@
 .body-title {
     display: flex;
     justify-content: space-between;
+    /* Wrap when the name + type run and the material badges can't share one line
+       (narrow viewport / deeply-nested body). Fits on one line when there's room,
+       so wide layouts are unchanged. */
+    flex-wrap: wrap;
+    gap: 4px 8px;
     padding: 8px;
+    /* Uniform single-line height regardless of whether a header carries badges or
+       icons, so the tree connector lands on the same vertical centre everywhere
+       (see --tree-elbow-y). Taller content (wrapped headers) still grows. */
+    min-height: 22px;
     align-items: center;
-    background-color: #393939;
+    background-color: var(--color-surface);
     border-top-left-radius: 4px;
     border-top-right-radius: 4px
 }
 
 .body-title .title-left {
     display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
     gap: 8px;
     align-items: center
 }
 
+/* Signal icons: block removes the inline baseline gap so they centre vertically
+   in the row. A fixed height keeps every header the same height regardless of
+   whether a body carries signal icons, so the tree connector lines up with the
+   header's vertical centre (see --tree-elbow-y). */
+.body-title .title-left > div > img {
+    display: block;
+    height: 20px;
+    width: auto;
+}
+
 .body-anchor-link {
     font-size: 11px;
-    color: #888;
+    color: var(--color-text-muted);
     cursor: pointer;
     opacity: 0.4;
     transition: opacity 0.15s, color 0.15s;
 
     &:hover {
         opacity: 1;
-        color: #ccc;
+        color: var(--color-text-subtle);
     }
 
     &--copied {
         opacity: 1;
-        color: #4caf50;
+        color: var(--color-safety-green);
     }
 }
 
 .body-title .materials-badges {
     display: flex;
+    /* A material-rich body can list 10+ element badges; wrap them so the row
+       doesn't overrun a narrow card. Fits one line when there's room. */
+    flex-wrap: wrap;
     gap: 4px;
     align-items: center
 }
@@ -51,8 +75,8 @@
 
 .body-title .materials-badges .json-button {
     background: none;
-    border: 1px solid #666;
-    color: #ccc;
+    border: 1px solid var(--color-border-muted);
+    color: var(--color-text-subtle);
     padding: 2px 6px;
     font-size: 10px;
     border-radius: 2px;
@@ -61,18 +85,46 @@
 }
 
 .body-title .materials-badges .json-button:hover {
-    background-color: #555;
-    color: #fff
+    background-color: var(--color-surface-hover);
+    color: var(--color-white)
 }
 
 .system-body {
     display: flex;
     gap: 8px;
-    background-color: #797979;
+    background-color: var(--color-border);
     padding: 4px;
-    border-right: 1px solid #393939;
-    border-left: 1px solid #393939;
-    border-bottom: 1px solid #393939
+    border-right: 1px solid var(--color-surface);
+    border-left: 1px solid var(--color-surface);
+    border-bottom: 1px solid var(--color-surface)
+}
+
+// Expand/collapse animation for the expanded body panel (replaces the legacy
+// `trigger('grow')` height 0 <-> auto animation, removed in favour of
+// animate.enter/leave). Pure CSS can't keyframe to height:auto, so the grid-row
+// `0fr <-> 1fr` technique is used: the wrapper is a single-row grid and the
+// child clips its overflow while the row collapses.
+.system-body-grow {
+    display: grid;
+    grid-template-rows: 1fr;
+
+    > .system-body {
+        overflow: hidden;
+        min-height: 0;
+    }
+}
+
+.system-body-grow.grow--enter {
+    animation: system-body-grow 250ms ease;
+}
+
+.system-body-grow.grow--leave {
+    animation: system-body-grow 250ms ease reverse forwards;
+}
+
+@keyframes system-body-grow {
+    from { grid-template-rows: 0fr; }
+    to { grid-template-rows: 1fr; }
 }
 
 .system-body .body-image {
@@ -81,7 +133,7 @@
     height: 96px;
     justify-content: center;
     align-items: center;
-    background-color: #000;
+    background-color: var(--color-black);
     position: relative;
     border-radius: 4px;
     flex-shrink: 0
@@ -133,8 +185,8 @@
 .system-body .body-data-columns .body-data-section-header {
     font-weight: bold;
     font-size: 14px;
-    color: #000;
-    background-color: #d7d7d7;
+    color: var(--color-black);
+    background-color: var(--color-text-2);
     margin-top: 0;
     margin-bottom: 8px;
     padding: 4px 8px;
@@ -148,8 +200,33 @@
     margin-bottom: 2px
 }
 
-.system-body .body-data-entry div {
-    white-space: nowrap
+/* A label/value row stays on one line when it fits. A long label (e.g. "Min
+   Surface Temperature Estimate") or an extreme value (e.g. a huge volume figure)
+   would otherwise force the row wider than the card and overflow, so allow both
+   sides to wrap/break only when needed. With room (wide layouts) nothing wraps. */
+.system-body .body-data-entry > div {
+    white-space: normal;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
+ * Responsive — small screens (phones).
+ * ------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    .system-body .body-data-entry {
+        gap: 8px;
+    }
+
+    /* The signal name column is fixed at 150px; let it shrink so the signal
+       rows don't push past the card edge. */
+    .system-body .body-signals .body-signal .body-signal-name {
+        min-width: 0;
+    }
+
+    .system-body .body-signals .body-signal {
+        gap: 8px;
+    }
 }
 
 /* Pressure unit selector styling to match other body-data entries */
@@ -201,37 +278,37 @@
 
 .badge-mat1,
 .badge-red {
-    color: #1c1c1c;
-    background-color: #f99
+    color: var(--color-surface-3);
+    background-color: var(--color-badge-red)
 }
 
 .badge-mat2,
 .badge-orange {
-    color: #1c1c1c;
-    background-color: #fc3
+    color: var(--color-surface-3);
+    background-color: var(--color-warning)
 }
 
 .badge-mat3,
 .badge-green,
 .badge-purple {
-    color: #1c1c1c;
-    background-color: #9c9
+    color: var(--color-surface-3);
+    background-color: var(--color-badge-green)
 }
 
 .badge-mat4,
 .badge-blue {
-    color: #1c1c1c;
-    background-color: #9cf
+    color: var(--color-surface-3);
+    background-color: var(--color-badge-blue)
 }
 
 .badge-gray {
-    color: #1c1c1c;
-    background-color: #d7d7d7
+    color: var(--color-surface-3);
+    background-color: var(--color-text-2)
 }
 
 .badge-cyan {
-    color: #1c1c1c;
-    background-color: #0ff
+    color: var(--color-surface-3);
+    background-color: var(--color-badge-cyan)
 }
 
 .badge-purple {
@@ -256,8 +333,8 @@
 .json-dialog h2 {
     margin: 0;
     padding: 16px 24px;
-    background: #1e1e1e;
-    color: #fff;
+    background: var(--color-surface-4);
+    color: var(--color-white);
     font-size: 18px;
     font-weight: 500;
     display: flex;
@@ -291,7 +368,7 @@
 .hill-limit-dialog mat-dialog-content,
 .invisible-ring-dialog mat-dialog-content {
     padding: 24px;
-    color: #e0e0e0
+    color: var(--color-text)
 }
 
 .json-dialog-content {
@@ -331,23 +408,23 @@
 .hill-limit-dialog mat-dialog-content .warning,
 .invisible-ring-dialog mat-dialog-content .warning {
     padding: 12px;
-    background: #3a3a2a;
-    border-left: 4px solid #fc3;
+    background: var(--color-callout-warning-bg);
+    border-left: 4px solid var(--color-warning);
     border-radius: 4px
 }
 
 .hill-limit-dialog mat-dialog-content .disclaimer,
 .invisible-ring-dialog mat-dialog-content .disclaimer {
     padding: 12px;
-    background: #2a2a2a;
-    border-left: 4px solid #6b9fff;
+    background: var(--color-surface-2);
+    border-left: 4px solid var(--color-callout-info-border);
     border-radius: 4px;
     font-size: 0.9em
 }
 
 .hill-limit-dialog mat-dialog-content .formula,
 .invisible-ring-dialog mat-dialog-content .formula {
-    background: #2a2a2a;
+    background: var(--color-surface-2);
     padding: 12px;
     border-radius: 4px;
     font-family: 'Courier New', monospace
@@ -386,8 +463,8 @@
 .hill-limit-dialog mat-dialog-content .conclusion,
 .invisible-ring-dialog mat-dialog-content .conclusion {
     padding: 12px;
-    background: #3a2a2a;
-    border-left: 4px solid #f66;
+    background: var(--color-callout-danger-bg);
+    border-left: 4px solid var(--color-callout-danger-border);
     border-radius: 4px;
     font-style: italic
 }
@@ -395,8 +472,8 @@
 .hill-limit-dialog mat-dialog-content .conclusion-safe,
 .invisible-ring-dialog mat-dialog-content .conclusion-safe {
     padding: 12px;
-    background: #2a3a2a;
-    border-left: 4px solid #6f6;
+    background: var(--color-callout-success-bg);
+    border-left: 4px solid var(--color-callout-success-border);
     border-radius: 4px;
     font-style: italic
 }
@@ -405,7 +482,7 @@
     display: flex;
     justify-content: center;
     margin: 20px 0;
-    background: #fff;
+    background: var(--color-white);
     padding: 10px;
     border-radius: 4px;
     position: relative
@@ -429,14 +506,14 @@
 .hill-limit-dialog .chart-loading p {
     margin: 0;
     font-size: 14px;
-    color: #666
+    color: var(--color-text-on-light-muted)
 }
 
 .hill-limit-dialog mat-dialog-actions,
 .invisible-ring-dialog mat-dialog-actions,
 .json-dialog mat-dialog-actions {
     padding: 16px 24px;
-    border-top: 1px solid #333
+    border-top: 1px solid var(--color-surface-5)
 }
 
 .hill-limit-dialog mat-dialog-actions button,
@@ -445,19 +522,32 @@
     min-width: 100px
 }
 
+/* Inline status indicators — tokenized (replaces former inline hex). */
+.status-danger { color: var(--color-danger) }
+.status-success { color: var(--color-success) }
+.status-info { color: var(--color-info) }
+.status-muted { color: var(--color-status-muted) }
+
+/* Goldenrod caveat note (jet-angle dialog disclaimer). */
+.jet-angle-dialog mat-dialog-content .disclaimer.caveat {
+    margin-top: 0.5em;
+    font-style: italic;
+    color: var(--color-disclaimer)
+}
+
 .roche-dialog h2 {
     margin: 0;
     padding: 16px 24px;
-    background: #1e1e1e;
-    color: #fff;
+    background: var(--color-surface-4);
+    color: var(--color-white);
     font-size: 18px;
     font-weight: 500
 }
 
 .roche-dialog mat-dialog-content {
     padding: 24px;
-    color: #e0e0e0;
-    background: #1e1e1e
+    color: var(--color-text);
+    background: var(--color-surface-4)
 }
 
 .roche-dialog .chart-description {
@@ -482,7 +572,7 @@
     display: flex;
     justify-content: center;
     margin: 20px 0;
-    background: #fff;
+    background: var(--color-white);
     padding: 10px;
     border-radius: 4px;
     position: relative
@@ -505,7 +595,7 @@
 
 .roche-dialog .chart-loading p {
     margin: 12px 0 0 0;
-    color: #333;
+    color: var(--color-text-on-light);
     font-size: 14px;
     font-weight: 500
 }
@@ -513,8 +603,8 @@
 .roche-dialog .spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid #e0e0e0;
-    border-top-color: #51cf66;
+    border: 4px solid var(--color-text);
+    border-top-color: var(--color-success);
     border-radius: 50%;
     animation: spin 0.8s linear infinite
 }
@@ -528,7 +618,7 @@
 .roche-dialog .ring-summary {
     margin-top: 24px;
     padding: 16px;
-    background: #2a2a2a;
+    background: var(--color-surface-2);
     border-radius: 4px
 }
 
@@ -536,13 +626,13 @@
     margin: 0 0 16px 0;
     font-size: 16px;
     font-weight: 500;
-    color: #fff
+    color: var(--color-white)
 }
 
 .roche-dialog .ring-entry {
     margin-bottom: 12px;
     padding: 8px;
-    background: #333;
+    background: var(--color-surface-5);
     border-radius: 3px;
     font-size: 13px;
     line-height: 1.6
@@ -553,11 +643,11 @@
 }
 
 .roche-dialog .ring-entry strong {
-    color: #51cf66
+    color: var(--color-success)
 }
 
 .roche-dialog mat-dialog-actions {
-    background: #2a2a2a
+    background: var(--color-surface-2)
 }
 
 .roche-dialog mat-dialog-actions button {
@@ -565,21 +655,21 @@
 }
 
 .json-dialog h2 {
-    background: #2a2a2a;
-    color: #e0e0e0
+    background: var(--color-surface-2);
+    color: var(--color-text)
 }
 
 .json-dialog mat-dialog-content {
     padding: 0;
     max-height: 70vh;
     overflow: auto;
-    background: #1e1e1e
+    background: var(--color-surface-4)
 }
 
 .json-dialog mat-dialog-content pre {
     margin: 0;
     padding: 16px 24px;
-    color: #d4d4d4;
+    color: var(--color-text-code);
     font-family: Consolas, Monaco, 'Courier New', monospace;
     font-size: 12px;
     line-height: 1.5;
@@ -589,7 +679,12 @@
 }
 
 .json-dialog mat-dialog-actions {
-    background: #2a2a2a
+    background: var(--color-surface-2)
+}
+
+.jet-angle-chart-image {
+    max-width: 100%;
+    border: 1px solid var(--color-border-on-light)
 }
 
 .json-dialog mat-dialog-actions button {

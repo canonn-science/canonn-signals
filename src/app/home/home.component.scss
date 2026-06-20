@@ -3,6 +3,36 @@
     justify-content: center
 }
 
+/* External-resource icon links next to the system title. */
+.title-link {
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Sits flush against the preceding icon (e.g. a "JSON dump" beside its site link). */
+.title-link--tight {
+    margin-left: -0.4em;
+}
+
+.title-link-icon {
+    max-height: 1.1em;
+    width: auto;
+    display: block;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.title-link-icon--rounded {
+    border-radius: 4px;
+}
+
+/* Light backing so dark logos stay legible on the dark title bar. */
+.title-link-icon--light {
+    background: var(--color-white);
+    border-radius: 4px;
+}
+
 .bodies {
     background-color: rgba(150, 150, 150, 0.7);
     backdrop-filter: blur(6px);
@@ -11,18 +41,18 @@
 }
 
 .credits-panel {
-    background-color: #797979;
+    background-color: var(--color-border);
     padding: 4px;
-    border-right: 1px solid #393939;
-    border-left: 1px solid #393939;
-    border-bottom: 1px solid #393939;
+    border-right: 1px solid var(--color-surface);
+    border-left: 1px solid var(--color-surface);
+    border-bottom: 1px solid var(--color-surface);
     margin-top: 24px;
     border-radius: 4px;
 }
 
 .credits-title {
-    background-color: #393939;
-    color: #fff;
+    background-color: var(--color-surface);
+    color: var(--color-white);
     font-weight: bold;
     font-size: 18px;
     padding: 8px;
@@ -54,8 +84,8 @@
 }
 
 .credits-detail {
-    background-color: #797979;
-    color: #f2f2f2;
+    background-color: var(--color-border);
+    color: var(--color-text-bright);
     font-size: 13px;
     padding: 8px;
     border-bottom-left-radius: 4px;
@@ -68,7 +98,7 @@
     backdrop-filter: blur(6px)
 }
 
-.mat-mdc-unelevated-button>.mat-icon {
+.mat-mdc-unelevated-button>fa-icon {
     margin: 0
 }
 
@@ -97,10 +127,12 @@
 .error-message {
     margin-top: 20px;
     padding: 16px;
+    min-width: 400px;
+    max-width: 400px;
     background-color: rgba(211, 47, 47, 0.2);
     border: 1px solid rgba(211, 47, 47, 0.5);
     border-radius: 4px;
-    color: #ff6b6b;
+    color: var(--color-danger);
     text-align: center;
     backdrop-filter: blur(6px);
 }
@@ -115,6 +147,26 @@
     justify-content: center
 }
 
+// Enter/leave animations for the results panel (replaces the legacy
+// `trigger('visibilityTrigger')` animation, removed in favour of animate.enter/leave).
+.system-container--enter {
+    animation: system-container-enter 400ms ease;
+}
+
+.system-container--leave {
+    animation: system-container-leave 200ms ease;
+}
+
+@keyframes system-container-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes system-container-leave {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
 .system-container .system-container-data {
     width: 80%;
     margin-bottom: 24px;
@@ -126,8 +178,8 @@
     gap: 4px;
     padding: 8px;
     align-items: center;
-    background-color: #393939;
-    color: #ff9900;
+    background-color: var(--color-surface);
+    color: var(--color-accent);
     font-weight: bold;
     font-size: 150%;
     border-top-left-radius: 4px;
@@ -135,20 +187,20 @@
 }
 
 .system-container .system-container-data .system-title a {
-    color: #000
+    color: var(--color-black)
 }
 
 .system-container .system-container-data .system-title a:hover {
-    color: #797979
+    color: var(--color-border)
 }
 
 .system-container .system-container-data .system-title .edastro-name-link {
-    color: #ff9900;
+    color: var(--color-accent);
     text-decoration: none
 }
 
 .system-container .system-container-data .system-title .edastro-name-link:hover {
-    color: #797979
+    color: var(--color-border)
 }
 
 .system-container .system-container-data .system-title .edastro-icon-inline {
@@ -167,11 +219,11 @@
     align-items: center;
     gap: 8px;
     padding: 8px;
-    background-color: #797979;
-    color: #fff;
+    background-color: var(--color-border);
+    color: var(--color-white);
     font-size: 90%;
     font-weight: normal;
-    border: 1px solid #393939;
+    border: 1px solid var(--color-surface);
 }
 
 .system-container .system-container-data .edastro-summary .summary-text {
@@ -180,7 +232,7 @@
 
 .system-container .system-container-data .system-data {
     background-color: rgba(150, 150, 150, 0.7);
-    border: 1px solid #393939;
+    border: 1px solid var(--color-surface);
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
     display: flex;
@@ -189,24 +241,11 @@
     gap: 16px;
 }
 
-.system-container .system-container-data .system-data .region-map-container {
-    width: 20%;
-    min-width: 200px;
-    max-width: 300px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
+/* The region map sizing now lives in region-map.component.scss (:host). The host
+   element still participates in the .system-data flex row below. */
+.system-container .system-container-data .system-data app-region-map {
     flex-shrink: 0;
     align-self: flex-start;
-    overflow: visible;
-    height: fit-content;
-}
-
-.system-container .system-container-data .system-data .region-map-container svg {
-    width: 100% !important;
-    height: auto !important;
-    max-width: 100%;
-    overflow: visible
 }
 
 .system-container .system-container-data .system-data .system-data-columns {
@@ -237,8 +276,8 @@
 .system-container .system-container-data .system-data .system-data-section-header {
     font-weight: bold;
     font-size: 14px;
-    color: #000;
-    background-color: #d7d7d7;
+    color: var(--color-black);
+    background-color: var(--color-text-2);
     margin-top: 0;
     margin-bottom: 8px;
     padding: 4px 8px;
@@ -252,8 +291,12 @@
     margin-bottom: 2px
 }
 
-.system-container .system-container-data .system-data .system-data-entry div {
-    white-space: nowrap
+/* Stay on one line when it fits; wrap/break a long entry (e.g. a system name in
+   Distances) rather than overflow. Wide layouts keep everything on one line. */
+.system-container .system-container-data .system-data .system-data-entry > div {
+    white-space: normal;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 
@@ -271,4 +314,65 @@
     height: auto;
     border-radius: 8px;
     object-fit: contain;
+}
+
+/* ---------------------------------------------------------------------------
+ * Responsive — small screens (phones).
+ * Reclaim the horizontal space the desktop layout spends on side-by-side
+ * columns and a fixed-min search field, and stack the region map above the
+ * data columns instead of beside them.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    /* The search form and the animated logo sit side-by-side on desktop; on a
+       phone they don't fit a row, so stack them and let the form take the width. */
+    .home-container {
+        flex-direction: column;
+        align-items: center;
+        padding: 0 8px;
+    }
+
+    .search-container {
+        width: 100%;
+    }
+
+    /* The search input forces a 400px floor on desktop, which overflows a phone
+       viewport (clipping the heading); let it shrink to the available width. */
+    .input-full-width {
+        min-width: 0;
+    }
+
+    .error-message {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .system-container {
+        padding: 0 8px;
+    }
+
+    .system-container .system-container-data {
+        width: 100%;
+    }
+
+    /* Stack the region map above the data columns rather than beside them. */
+    .system-container .system-container-data .system-data {
+        flex-direction: column;
+        padding: 8px;
+        gap: 12px;
+    }
+
+    .system-container .system-container-data .system-data app-region-map {
+        align-self: center;
+    }
+
+    /* The icon row beside the system name can be long; let it wrap. */
+    .system-container .system-container-data .system-title {
+        flex-wrap: wrap;
+        font-size: 130%;
+    }
+
+    /* Credits read better as a single column on a narrow screen. */
+    .credits-detail {
+        column-count: 1;
+    }
 }

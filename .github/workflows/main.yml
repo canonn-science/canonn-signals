@@ -29,18 +29,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          submodules: true
-      - uses: actions/setup-node@v3
+          version: 11
+      - uses: actions/setup-node@v4
         with:
-          node-version: 16
-      - run: npm i
-      - run: npm run copy-readme
-      - run: npm run ng build canonn-signals #-- --base-href "/canonn-signals/"
+          node-version: 22
+      - run: pnpm install
+      - run: pnpm test -- --watch=false
+      - run: pnpm run build #-- --base-href "/canonn-signals/"
       - run: echo 'signals.canonn.tech' > dist/CNAME
       - name: Setup Pages
-        uses: actions/configure-pages@v2
+        uses: actions/configure-pages@v3
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:

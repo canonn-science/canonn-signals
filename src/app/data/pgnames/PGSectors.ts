@@ -1,3 +1,5 @@
+import { logger } from '../logger';
+
 interface FragmentInfo {
     value: string;
     isPrefix: boolean;
@@ -329,19 +331,19 @@ export class PGSectors {
         }
 
         const offset = (pos.z << 14) + (pos.y << 7) + pos.x;
-        console.log(`[getSectorName] Coords: (${pos.x}, ${pos.y}, ${pos.z}), Offset: ${offset}`);
+        logger.log(`[getSectorName] Coords: (${pos.x}, ${pos.y}, ${pos.z}), Offset: ${offset}`);
 
         let sectorname: string;
 
         if (PGSectors.isC1Sector(offset)) {
-            console.log(`[getSectorName] Using C1 naming for offset ${offset}`);
+            logger.log(`[getSectorName] Using C1 naming for offset ${offset}`);
             sectorname = PGSectors.getC1Name(offset) || '';
         } else {
-            console.log(`[getSectorName] Using C2 naming for offset ${offset}`);
+            logger.log(`[getSectorName] Using C2 naming for offset ${offset}`);
             sectorname = PGSectors.getC2Name(offset);
         }
 
-        console.log(`[getSectorName] Final sector name: "${sectorname}"`);
+        logger.log(`[getSectorName] Final sector name: "${sectorname}"`);
         PGSectors.cachedSectorsByCoords.set(key, sectorname);
         return sectorname;
     }
@@ -445,35 +447,35 @@ export class PGSectors {
 
     private static getC2Name(offset: number): string {
         const [idx0, idx1] = PGSectors.deinterleave2(offset);
-        console.log(`[getC2Name] Offset: ${offset}, Deinterleaved: idx0=${idx0}, idx1=${idx1}`);
+        logger.log(`[getC2Name] Offset: ${offset}, Deinterleaved: idx0=${idx0}, idx1=${idx1}`);
 
         let p1 = '';
         let p1Lower = '';
-        console.log(`[getC2Name] Finding prefix 1 for idx0=${idx0}:`);
+        logger.log(`[getC2Name] Finding prefix 1 for idx0=${idx0}:`);
         for (const p of PGSectors.Prefixes) {
             const pLower = p.toLowerCase();
             const offset = PGSectors.prefixOffsets.get(pLower) || 0;
             if (offset <= idx0) {
-                console.log(`  - "${p}" (offset=${offset}) matches`);
+                logger.log(`  - "${p}" (offset=${offset}) matches`);
                 p1 = p;
                 p1Lower = pLower;
             }
         }
-        console.log(`[getC2Name] Selected p1="${p1}" (lower="${p1Lower}")`);
+        logger.log(`[getC2Name] Selected p1="${p1}" (lower="${p1Lower}")`);
 
         let p2 = '';
         let p2Lower = '';
-        console.log(`[getC2Name] Finding prefix 2 for idx1=${idx1}:`);
+        logger.log(`[getC2Name] Finding prefix 2 for idx1=${idx1}:`);
         for (const p of PGSectors.Prefixes) {
             const pLower = p.toLowerCase();
             const offset = PGSectors.prefixOffsets.get(pLower) || 0;
             if (offset <= idx1) {
-                console.log(`  - "${p}" (offset=${offset}) matches`);
+                logger.log(`  - "${p}" (offset=${offset}) matches`);
                 p2 = p;
                 p2Lower = pLower;
             }
         }
-        console.log(`[getC2Name] Selected p2="${p2}" (lower="${p2Lower}")`);
+        logger.log(`[getC2Name] Selected p2="${p2}" (lower="${p2Lower}")`);
 
         const s1s = PGSectors.C2PrefixSuffix2.has(p1Lower) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
         const s2s = PGSectors.C2PrefixSuffix2.has(p2Lower) ? PGSectors.Suffixes2 : PGSectors.Suffixes1;
@@ -483,16 +485,16 @@ export class PGSectors {
         const s1Index = idx0 - p1Offset;
         const s2Index = idx1 - p2Offset;
 
-        console.log(`[getC2Name] Suffix arrays: s1s=${s1s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}, s2s=${s2s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}`);
-        console.log(`[getC2Name] Suffix indices: s1Index=${s1Index}, s2Index=${s2Index}`);
+        logger.log(`[getC2Name] Suffix arrays: s1s=${s1s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}, s2s=${s2s === PGSectors.Suffixes2 ? 'Suffixes2' : 'Suffixes1'}`);
+        logger.log(`[getC2Name] Suffix indices: s1Index=${s1Index}, s2Index=${s2Index}`);
 
         const s1 = s1s[s1Index];
         const s2 = s2s[s2Index];
 
-        console.log(`[getC2Name] Suffixes: s1="${s1}", s2="${s2}"`);
+        logger.log(`[getC2Name] Suffixes: s1="${s1}", s2="${s2}"`);
 
         const result = `${p1}${s1.toLowerCase()} ${p2}${s2.toLowerCase()}`;
-        console.log(`[getC2Name] Final result: "${result}"`);
+        logger.log(`[getC2Name] Final result: "${result}"`);
         return result;
     }
 
@@ -506,11 +508,15 @@ export class PGSectors {
             const spacestart = current.startsWith(' ');
             current = current.trim();
 
-            const frag = PGSectors.fragments.find(f => current.startsWith(f.value));
-            if (!frag) {
+            const match = PGSectors.fragments.find(f => current.startsWith(f.value));
+            if (!match) {
                 return null;
             }
 
+            // Copy first, then adjust — `match` is a live element of the shared
+            // static `PGSectors.fragments` table, so mutating it in place would
+            // permanently corrupt the fragment for every subsequent parse.
+            const frag = { ...match };
             if (spacestart) {
                 frag.isSuffix = false;
                 frag.isInfix = false;
@@ -518,7 +524,7 @@ export class PGSectors {
                 frag.isPrefix = false;
             }
 
-            fragments.push({ ...frag });
+            fragments.push(frag);
             current = current.substring(frag.value.length);
         }
 

@@ -1,0 +1,17 @@
+:host {
+    width: 20%;
+    min-width: 200px;
+    max-width: 300px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-shrink: 0;
+    align-self: flex-start;
+    overflow: visible;
+    height: fit-content;
+}
+
+.region-map {
+    width: 100%;
+    overflow: visible;
+}

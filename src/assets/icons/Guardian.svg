@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="26" height="26">
+<defs>
+<radialGradient id="gGlow" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#5fe6f7" stop-opacity="0.7"/><stop offset="1" stop-color="#5fe6f7" stop-opacity="0"/></radialGradient>
+<linearGradient id="rTop" x1="0" y1="0" x2="0.3" y2="1">
+<stop offset="0" stop-color="#f2ffff"/><stop offset="1" stop-color="#bdf4ff"/></linearGradient>
+<linearGradient id="rLeft" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#a6f0ff"/><stop offset="0.5" stop-color="#46cfe8"/><stop offset="1" stop-color="#127aa0"/></linearGradient>
+<linearGradient id="rRight" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#5ad2ea"/><stop offset="0.5" stop-color="#1c9cbe"/><stop offset="1" stop-color="#085a7e"/></linearGradient>
+<linearGradient id="bTop" x1="0" y1="0" x2="0.4" y2="1">
+<stop offset="0" stop-color="#c6b69d"/><stop offset="1" stop-color="#9c8e7600"/></linearGradient>
+<linearGradient id="bLeft" x1="0.2" y1="0" x2="0.4" y2="1">
+<stop offset="0" stop-color="#a9997c"/><stop offset="1" stop-color="#635847"/></linearGradient>
+<linearGradient id="bRight" x1="0.8" y1="0" x2="0.6" y2="1">
+<stop offset="0" stop-color="#8b7d69"/><stop offset="1" stop-color="#514639"/></linearGradient></defs>
+<ellipse cx="32" cy="16" rx="21" ry="15" fill="url(#gGlow)"/>
+
+<!-- STONE BASE PRISM -->
+<path d="M 21 37.3 L 32 50.4 L 32 57.4 L 21 44.3 Z" fill="url(#bLeft)"/>
+<path d="M 43 37.3 L 32 50.4 L 32 57.4 L 43 44.3 Z" fill="url(#bRight)"/>
+<path d="M 21 37.3 L 43 37.3 L 32 50.4 Z" fill="url(#bTop)"/>
+<path d="M 21 37.3 L 32 50.4 L 43 37.3" fill="none" stroke="#b3a691" stroke-width="0.8" stroke-linejoin="round" opacity="0.8"/>
+<g stroke="#231e18" stroke-width="0.7" stroke-linecap="round" opacity="0.6">
+<line x1="32" y1="50.4" x2="32" y2="57.4"/><line x1="21" y1="37.3" x2="21" y2="44.3"/><line x1="43" y1="37.3" x2="43" y2="44.3"/></g>
+<path d="M 24 38.5 L 32 48 L 40 38.5" fill="none" stroke="#1c1812" stroke-width="0.8" opacity="0.5"/>
+
+<!-- RELIC PRISM -->
+<path d="M 40 9 L 32 18.5 L 32 48 L 40 38.5 Z" fill="url(#rRight)"/>
+<path d="M 24 9 L 32 18.5 L 32 48 L 24 38.5 Z" fill="url(#rLeft)"/>
+<path d="M 24 9 L 40 9 L 32 18.5 Z" fill="url(#rTop)"/>
+<g stroke="#e6fdff" stroke-width="0.55" opacity="0.5" stroke-linecap="round">
+<line x1="27" y1="12.6" x2="27" y2="42.1"/><line x1="29.5" y1="15.5" x2="29.5" y2="45"/>
+<line x1="37" y1="12.6" x2="37" y2="42.1"/><line x1="34.5" y1="15.5" x2="34.5" y2="45"/></g>
+<line x1="32" y1="18.5" x2="32" y2="48" stroke="#f0ffff" stroke-width="0.8" opacity="0.7" stroke-linecap="round"/>
+<path d="M 24 9 L 32 18.5 L 40 9 M 32 18.5 L 32 48" fill="none" stroke="#0a3a48" stroke-width="0.5" opacity="0.5"/>
+</svg>

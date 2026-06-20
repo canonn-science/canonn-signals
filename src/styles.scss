@@ -3,19 +3,24 @@
 @use '@angular/material' as mat;
 // Plus imports for other components in your app.
 
-@import 'material-icons/iconfont/material-icons.css';
+// Self-hosted Roboto (the font Angular Material's typography requests by name).
+// Bundling it avoids a third-party request and the "font blocked" warning that
+// occurs when the browser falls back to resolving a locally-installed copy.
+@import '@fontsource/roboto/300.css';
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/500.css';
 
 // Include the common styles for Angular Material. We include this here so that you only
 // have to load a single css file for Angular Material in your app.
 // Be sure that you only ever include this mixin once!
 @include mat.core();
 
-$dark-theme: mat.define-dark-theme((color: (primary: mat.define-palette(mat.$orange-palette),
-        accent: mat.define-palette(mat.$amber-palette),
-        warn: mat.define-palette(mat.$red-palette),
+$dark-theme: mat.m2-define-dark-theme((color: (primary: mat.m2-define-palette(mat.$m2-orange-palette),
+        accent: mat.m2-define-palette(mat.$m2-amber-palette),
+        warn: mat.m2-define-palette(mat.$m2-red-palette),
       ),
       // Only include `typography` and `density` in the default dark theme.
-      typography: mat.define-typography-config(),
+      typography: mat.m2-define-typography-config(),
       density: 0,
     ));
 
@@ -24,6 +29,77 @@ $dark-theme: mat.define-dark-theme((color: (primary: mat.define-palette(mat.$ora
 // that you are using.
 @include mat.all-component-themes($dark-theme);
 
+/* ---------------------------------------------------------------------------
+ * Design tokens — semantic colour palette shared across the app.
+ * Values mirror the previous hard-coded hex literals (no visual change);
+ * components reference these via var(--color-*) instead of raw hex.
+ * ------------------------------------------------------------------------- */
+:root {
+  --color-surface: #393939;
+  --color-surface-2: #2a2a2a;
+  --color-surface-3: #1c1c1c;
+  --color-surface-4: #1e1e1e;
+  --color-border: #797979;
+  --color-text: #e0e0e0;
+  --color-text-2: #d7d7d7;
+  --color-text-bright: #f2f2f2;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-accent: #ff9900;
+  --color-warning: #fc3;
+  --color-success: #51cf66;
+  --color-danger: #ff6b6b;
+  --color-info: #4dabf7;       /* informational status text (e.g. shepherd moon) */
+  --color-disclaimer: #b8860b; /* goldenrod caveat/disclaimer text */
+  --color-status-muted: #aaa;  /* neutral/inactive status text (e.g. "not a shepherd") */
+  --color-link: #fbd7b4;
+  --color-link-hover: #feeddc;
+
+  /* Badge palette (light fills on a dark surface). */
+  --color-badge-red: #f99;
+  --color-badge-green: #9c9;
+  --color-badge-blue: #9cf;
+  --color-badge-cyan: #0ff;
+
+  /* Landing-safety traffic-light palette — single source of truth for the
+     .safety-* helpers and the on-foot safety indicators. */
+  --color-safety-green: #4caf50;
+  --color-safety-amber: #ff9800;
+  --color-safety-red: #f44336;
+
+  /* Low-emphasis text/border/surface variants used by the body views & dialogs. */
+  --color-text-muted: #888;       /* faint controls (e.g. the anchor-link icon) */
+  --color-text-subtle: #ccc;      /* low-emphasis light text */
+  --color-text-code: #d4d4d4;     /* monospace/code text */
+  --color-border-muted: #666;     /* subtle borders/dividers on dark surfaces */
+  --color-surface-hover: #555;    /* hover fill on a dark surface */
+  --color-surface-5: #333;        /* darkest inset panel / divider on dialogs */
+
+  /* Dark text shown on the light (white) chart panels inside dialogs. */
+  --color-text-on-light: #333;
+  --color-text-on-light-muted: #666;
+  --color-border-on-light: #ddd;
+
+  /* Callout boxes inside the analysis dialogs (tinted fill + accent left border). */
+  --color-callout-warning-bg: #3a3a2a;
+  --color-callout-info-border: #6b9fff;
+  --color-callout-danger-bg: #3a2a2a;
+  --color-callout-danger-border: #f66;
+  --color-callout-success-bg: #2a3a2a;
+  --color-callout-success-border: #6f6;
+
+  /* Geometry for the body-tree connector lines (drawn with pseudo-elements).
+     Deriving every offset from these keeps the elbows aligned if they change. */
+  --tree-color: var(--color-surface);
+  --tree-thickness: 4px;
+  --tree-indent: 36px;   /* horizontal distance from a child back to the trunk */
+  /* Vertical offset of the branch into each child. The 4px-thick branch is drawn
+     *below* this offset, so its visual centre is `--tree-elbow-y + 2px` = 19px.
+     Headers are a uniform 38px box (`.body-title`: 22px min-height + 8px padding
+     top/bottom), whose middle is 19px — so the branch lands centred on every body. */
+  --tree-elbow-y: 17px;
+}
+
 /* You can add global styles to this file, and also import other style files */
 
 html,
@@ -31,9 +107,20 @@ body {
   height: 100%;
 }
 
+html {
+  /* Always reserve the vertical scrollbar's space so the page doesn't jump
+     horizontally when content crosses the viewport-height threshold and the
+     scrollbar is added/removed. On overlay-scrollbar platforms (which don't
+     take layout space) this is a no-op. */
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   font-family: "Roboto", sans-serif;
+  /* Dark fallback behind the background image (e.g. overscroll / uncovered area).
+     The removed Material sidenav container used to paint this. */
+  background-color: var(--color-surface-3);
 }
 
 .badge {
@@ -51,62 +138,64 @@ a {
   text-decoration: none;
 }
 
-a,
-.link {
-  color: #fbd7b4;
+a {
+  color: var(--color-link);
 }
 
-a:hover,
-.link:hover {
-  color: #feeddc;
+a:hover {
+  color: var(--color-link-hover);
 }
 
 .child-bodies {
-  padding-left: 104px;
+  /* Indent each nesting level by the connector width plus a small gap. Kept
+     modest so deep trees don't accumulate enough indentation to overflow. */
+  padding-left: 56px;
 }
 
 .body-container {
   position: relative;
-  min-width: 500px;
+  /* No min-width floor: the body box is fluid and shrinks to whatever width the
+     tree leaves it, so a deeply-nested body never forces horizontal overflow.
+     Inner content (labels/values, the header) wraps when space is tight. */
+  min-width: 0;
 }
 
+/* Vertical trunk running the full height of a non-last child. */
 .child-container-default::after,
 .child-container-title-only::after {
   position: absolute;
-  content: " ";
-  border-left: 4px solid #393939;
+  content: "";
+  top: calc(-1 * var(--tree-thickness));
+  left: calc(-1 * var(--tree-indent));
+  width: 0;
   height: 100%;
-  width: 0px;
-  top: -4px;
-  left: -56px;
+  border-left: var(--tree-thickness) solid var(--tree-color);
 }
 
+/* Horizontal branch from the trunk into each child. */
 .child-container-default::before,
 .child-container-title-only::before {
   position: absolute;
-  content: " ";
-  height: 0px;
-  width: 56px;
-  top: 20px;
-  left: -56px;
-  border-bottom: 4px solid #393939;
+  content: "";
+  top: var(--tree-elbow-y);
+  left: calc(-1 * var(--tree-indent));
+  width: var(--tree-indent);
+  height: 0;
+  border-bottom: var(--tree-thickness) solid var(--tree-color);
 }
 
+/* Last child: the trunk stops at the elbow and rounds into the branch. */
 .child-container-default-last::after,
 .child-container-title-only-last::after {
   position: absolute;
-  content: " ";
-  border-left: 4px solid #393939;
-  top: -4px;
-  left: -56px;
-  border-bottom: 4px solid #393939;
-  width: 52px;
-  border-radius: 0px 0px 0px 4px;
-}
-
-.child-container-default-last::after,
-.child-container-title-only-last::after {
-  height: 24px;
+  content: "";
+  top: calc(-1 * var(--tree-thickness));
+  left: calc(-1 * var(--tree-indent));
+  width: calc(var(--tree-indent) - var(--tree-thickness));
+  height: calc(var(--tree-elbow-y) + var(--tree-thickness));
+  border-left: var(--tree-thickness) solid var(--tree-color);
+  border-bottom: var(--tree-thickness) solid var(--tree-color);
+  border-radius: 0 0 0 4px;
 }
 
 hr {
@@ -122,30 +211,34 @@ hr {
   white-space: pre-line;
 }
 
-.resource-tooltip {
-  z-index: 10000 !important;
-  font-size: 14px !important;
-  min-width: 200px !important;
-  max-width: 400px !important;
-  white-space: normal !important;
-}
-
-.hill-limit-dialog-panel {
-  z-index: 1000 !important;
-}
-
 .cdk-overlay-dark-backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
 
 .safety-green {
-  color: #4caf50;
+  color: var(--color-safety-green);
 }
 
 .safety-amber {
-  color: #ff9800;
+  color: var(--color-safety-amber);
 }
 
 .safety-red {
-  color: #f44336;
+  color: var(--color-safety-red);
+}
+
+/* ---------------------------------------------------------------------------
+ * Responsive — small screens (phones).
+ * The body box is already fluid (no min-width), so the tree never overflows at
+ * any width. On a phone we additionally tighten the connectors so the limited
+ * horizontal space goes to the body content rather than to indentation.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  :root {
+    --tree-indent: 18px;   /* was 36px */
+  }
+
+  .child-bodies {
+    padding-left: 26px;    /* was 56px */
+  }
 }
