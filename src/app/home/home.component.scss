@@ -33,11 +33,70 @@
     border-radius: 4px;
 }
 
+/* Scan-completeness bar shown directly above the bodies list. */
+.system-completeness {
+    margin-top: 32px;
+    background-color: rgba(150, 150, 150, 0.7);
+    backdrop-filter: blur(6px);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.system-completeness-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    color: var(--color-white);
+    font-weight: bold;
+}
+
+.system-completeness-label {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.system-completeness-value {
+    font-size: 16px;
+}
+
+.system-completeness-track {
+    position: relative;
+    height: 12px;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* Shown in place of the fill when the system JSON has no body count. Overlaid
+   on (and centred over) the empty track rather than taking part in its layout. */
+.system-completeness-unknown {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-white);
+    font-size: 9px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.system-completeness-fill {
+    height: 100%;
+    /* Grows from the left edge; hue is set inline from the completeness %
+       (red → green; see the template). */
+    border-radius: 6px;
+    transition: width 0.4s ease, background-color 0.4s ease;
+}
+
 .bodies {
     background-color: rgba(150, 150, 150, 0.7);
     backdrop-filter: blur(6px);
     padding: 4px;
-    margin-top: 32px;
+    margin-top: 8px;
 }
 
 .credits-panel {

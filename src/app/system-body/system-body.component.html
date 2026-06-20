@@ -1,1004 +1,1066 @@
-<div class="body-container" [class]="styleClass" [id]="'body-' + body().bodyData.bodyId">
+<div class="body-container"
+     [class]="styleClass"
+     [id]="'body-' + body().bodyData.bodyId">
   <div class="body-title">
     <div class="title-left">
       <b>{{ getBodyDisplayName(body().bodyData.name) }}</b>
-      <fa-icon [icon]="faLink" class="clickable body-anchor-link" [class.body-anchor-link--copied]="bodyLinkCopied()" [attr.aria-label]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'" (click)="copyBodyLink()" [matTooltip]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"></fa-icon>
+      <fa-icon [icon]="faLink"
+               class="clickable body-anchor-link"
+               [class.body-anchor-link--copied]="bodyLinkCopied()"
+               [attr.aria-label]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"
+               (click)="copyBodyLink()"
+               [matTooltip]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"></fa-icon>
       @if (body().bodyData.subType) {
-        <span>-</span>
+      <span>-</span>
       }
       @if (body().bodyData.subType) {
-        <span [matTooltip]="getSolidCompositionTooltip()"
-          matTooltipClass="multiline-tooltip">{{ body().bodyData.subType }}@if (classifyNeutronStar()) {
-          <span> ({{
+      <span [matTooltip]="getSolidCompositionTooltip()"
+            matTooltipClass="multiline-tooltip">{{ body().bodyData.subType }}@if (classifyNeutronStar()) {
+        <span> ({{
           classifyNeutronStar() }})</span>
         }</span>
       }
       @if (body().bodyData.atmosphereType || body().bodyData.atmosphereComposition || getWhiteDwarfAtmosphere()) {
-        <span
-          [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip"
-          class="atmosphere-type">
-          - {{ getAtmosphereDisplay() }}
-        </span>
+      <span [matTooltip]="getAtmosphereCompositionTooltip()"
+            matTooltipClass="multiline-tooltip"
+            class="atmosphere-type">
+        - {{ getAtmosphereDisplay() }}
+      </span>
       }
       @if (isRingNotVisible()) {
-        <span class="badge badge-red clickable"
-        (click)="showInvisibleRingExplanation()">Invisible</span>
+      <span class="badge badge-red clickable"
+            (click)="showInvisibleRingExplanation()">Invisible</span>
       }
       @if (isActualShepherd()) {
-        <span class="badge badge-blue clickable"
-          [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
-        (click)="showShepherdingHillLimitChart()">Shepherd</span>
+      <span class="badge badge-blue clickable"
+            [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
+            (click)="showShepherdingHillLimitChart()">Shepherd</span>
       }
       @if (body().bodyData.isLandable) {
-        <span [class]="'badge clickable ' + getLandableBadgeClass()"
-          [matTooltip]="getLandableTooltip()" [attr.aria-label]="getLandableTooltip()" (click)="showOnFootSafetyDialog()">
-          <img alt="" src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
-        </span>
+      <span [class]="'badge clickable ' + getLandableBadgeClass()"
+            [matTooltip]="getLandableTooltip()"
+            [attr.aria-label]="getLandableTooltip()"
+            (click)="showOnFootSafetyDialog()">
+        <img alt=""
+             src="assets/icons/footprint.svg"
+             style="width: 12px; height: 12px; filter: brightness(0);" />
+      </span>
       }
       @if (getSpinResonance() !== 'none' || body().bodyData.rotationalPeriodTidallyLocked) {
-        <span
-          class="badge badge-purple clickable" [matTooltip]="getSpinResonanceTooltip()"
-          (click)="showTidalLockDialog()">
-          @if (getSpinResonance() !== 'none') {
-            <span>{{ getSpinResonance() }}</span>
-          }
-          @if (body().bodyData.rotationalPeriodTidallyLocked) {
-            <fa-icon [icon]="faLock" class="lock-icon"
-            [matTooltip]="'Click for tidal locking explanation'"></fa-icon>
-          }
-        </span>
+      <span class="badge badge-purple clickable"
+            [matTooltip]="getSpinResonanceTooltip()"
+            (click)="showTidalLockDialog()">
+        @if (getSpinResonance() !== 'none') {
+        <span>{{ getSpinResonance() }}</span>
+        }
+        @if (body().bodyData.rotationalPeriodTidallyLocked) {
+        <fa-icon [icon]="faLock"
+                 class="lock-icon"
+                 [matTooltip]="'Click for tidal locking explanation'"></fa-icon>
+        }
+      </span>
       }
-      @if (body().bodyData.isLandable &&  body().bodyData.atmosphereType && body().bodyData.atmosphereType != '') {
-        <span
-        class="badge badge-blue">Odyssey</span>
+      @if (body().bodyData.isLandable && body().bodyData.atmosphereType && body().bodyData.atmosphereType != '') {
+      <span class="badge badge-blue">Odyssey</span>
       }
       @if (body().bodyData.terraformingState == 'Terraformable') {
-        <span
-        class="badge badge-gray">Terraformable</span>
+      <span class="badge badge-gray">Terraformable</span>
       }
       @if (trojanHostStatus) {
-        <span class="badge badge-blue"
-        matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points">Host</span>
+      <span class="badge badge-blue"
+            matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points">Host</span>
       }
       @if (trojanStatus) {
-        <span class="badge badge-blue" [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{
+      <span class="badge badge-blue"
+            [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{
         trojanStatus }}</span>
       }
       @if (rosetteStatus) {
-        <span class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{
+      <span class="badge badge-red"
+            [matTooltip]="'Klemperer ' + rosetteStatus">{{
         rosetteStatus }}</span>
       }
       @if (getRocheExcess() !== null) {
-        <span class="badge badge-red"
-          [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
-          <img alt="" src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
-        </span>
+      <span class="badge badge-red"
+            [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
+        <img alt=""
+             src="assets/icons/roche.svg"
+             style="width: 12px; height: 12px; filter: brightness(0);" />
+      </span>
       }
       @if ((geologySignals.length || geologySignalCount) && body().bodyData.type !== 'Star') {
-        <div
-          matTooltip="Geological signals">
-          <img alt="" src="assets/icons/Geology.svg" />
-        </div>
+      <div matTooltip="Geological signals">
+        <img alt=""
+             src="assets/icons/Geology.svg" />
+      </div>
       }
       @if ((biologySignals.length || biologySignalCount) && body().bodyData.type !== 'Star') {
-        <div
-          matTooltip="Biological signals">
-          <img alt="" src="assets/icons/Biology.svg" />
-        </div>
+      <div matTooltip="Biological signals">
+        <img alt=""
+             src="assets/icons/Biology.svg" />
+      </div>
       }
       @if (thargoidSignals.length || thargoidSignalCount) {
-        <div matTooltip="Thargoid signals">
-          <img alt="" src="assets/icons/Thargoid.svg" />
-        </div>
+      <div matTooltip="Thargoid signals">
+        <img alt=""
+             src="assets/icons/Thargoid.svg" />
+      </div>
       }
       @if (guardianSignals.length || guardianSignalCount) {
-        <div matTooltip="Guardian signals">
-          <img alt="" src="assets/icons/Guardian.svg" />
-        </div>
+      <div matTooltip="Guardian signals">
+        <img alt=""
+             src="assets/icons/Guardian.svg" />
+      </div>
       }
       @if (humanSignalCount) {
-        <div matTooltip="Human signals">
-          <img alt="" src="assets/icons/Human.svg" />
-        </div>
+      <div matTooltip="Human signals">
+        <img alt=""
+             src="assets/icons/Human.svg" />
+      </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Gemstone')) {
-        <div
-          matTooltip="Contains gemstones">
-          <span style="font-size: 16px;">💎</span>
-        </div>
+      <div matTooltip="Contains gemstones">
+        <span style="font-size: 16px;">💎</span>
+      </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Metal')) {
-        <div
-          matTooltip="Contains metals">
-          <span style="font-size: 16px;">⚙️</span>
-        </div>
+      <div matTooltip="Contains metals">
+        <span style="font-size: 16px;">⚙️</span>
+      </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Mineral')) {
-        <div
-          matTooltip="Contains minerals">
-          <span style="font-size: 16px;">🪨</span>
-        </div>
+      <div matTooltip="Contains minerals">
+        <span style="font-size: 16px;">🪨</span>
+      </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Fuel')) {
-        <div matTooltip="Contains fuel">
-          <span style="font-size: 16px;">⚡</span>
-        </div>
+      <div matTooltip="Contains fuel">
+        <span style="font-size: 16px;">⚡</span>
+      </div>
       }
       @if (expandable && !expanded()) {
-        <div (click)="toggleExpand()" class="clickable" matTooltip="Expand" aria-label="Expand body details">
-          <fa-icon [icon]="faSquareCaretDown"></fa-icon>
-        </div>
+      <div (click)="toggleExpand()"
+           class="clickable"
+           matTooltip="Expand"
+           aria-label="Expand body details">
+        <fa-icon [icon]="faSquareCaretDown"></fa-icon>
+      </div>
       }
       @if (expandable && expanded()) {
-        <div (click)="toggleExpand()" class="clickable" matTooltip="Collapse" aria-label="Collapse body details">
-          <fa-icon [icon]="faSquareCaretUp"></fa-icon>
-        </div>
+      <div (click)="toggleExpand()"
+           class="clickable"
+           matTooltip="Collapse"
+           aria-label="Collapse body details">
+        <fa-icon [icon]="faSquareCaretUp"></fa-icon>
+      </div>
       }
       @if (hasChildren() && getChildrenExpandedState()) {
-        <div (click)="toggleChildren()" class="clickable"
-          matTooltip="Collapse all children" aria-label="Collapse all child bodies">
-          <fa-icon [icon]="faSquareCaretUp"></fa-icon>
-        </div>
+      <div (click)="toggleChildren()"
+           class="clickable"
+           matTooltip="Collapse all children"
+           aria-label="Collapse all child bodies">
+        <fa-icon [icon]="faSquareCaretUp"></fa-icon>
+      </div>
       }
       @if (hasChildren() && !getChildrenExpandedState()) {
-        <div (click)="toggleChildren()" class="clickable"
-          matTooltip="Expand all children" aria-label="Expand all child bodies">
-          <fa-icon [icon]="faSquareCaretDown"></fa-icon>
-        </div>
+      <div (click)="toggleChildren()"
+           class="clickable"
+           matTooltip="Expand all children"
+           aria-label="Expand all child bodies">
+        <fa-icon [icon]="faSquareCaretDown"></fa-icon>
+      </div>
       }
     </div>
-    <div class="materials-badges" (mouseleave)="hoveredIndex = -1">
+    <div class="materials-badges"
+         (mouseleave)="hoveredIndex = -1">
       @for (material of getMaterialBadges(); track trackByMaterial(i, material); let i = $index) {
-        <span
-          [class]="'badge ' + material.class" (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ?
+      <span [class]="'badge ' + material.class"
+            (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ?
         material.tooltip : material.name }}</span>
       }
-      <button class="json-button" (click)="showBodyJsonDialog()"
-        (contextmenu)="copyBodyJson(); $event.preventDefault()"
-        matTooltip="View body JSON (right-click to copy)"
-        aria-label="View body JSON (right-click to copy)">
+      <button class="json-button"
+              (click)="showBodyJsonDialog()"
+              (contextmenu)="copyBodyJson(); $event.preventDefault()"
+              matTooltip="View body JSON (right-click to copy)"
+              aria-label="View body JSON (right-click to copy)">
         <fa-icon [icon]="faCode"></fa-icon>
       </button>
     </div>
   </div>
   @if (expanded()) {
-    <div class="system-body-grow" animate.enter="grow--enter" animate.leave="grow--leave">
+  <div class="system-body-grow"
+       animate.enter="grow--enter"
+       animate.leave="grow--leave">
     <div class="system-body">
       <div class="body-image">
         @if (bodyCoronaImage) {
-          <img alt="" src="assets/{{ bodyCoronaImage }}" class="body-image-corona"
-            (error)="bodyCoronaImage = ''" loading="lazy" />
+        <img alt=""
+             src="assets/{{ bodyCoronaImage }}"
+             class="body-image-corona"
+             (error)="bodyCoronaImage = ''"
+             loading="lazy" />
         }
         @if (bodyImage) {
-          <img alt="" src="assets/{{ bodyImage }}" (error)="bodyImage = ''" loading="lazy" />
+        <img alt=""
+             src="assets/{{ bodyImage }}"
+             (error)="bodyImage = ''"
+             loading="lazy" />
         }
       </div>
       <div class="body-content">
         <div class="body-data-columns">
           <!-- Orbit Section -->
-          @if (body().bodyData.orbitalPeriod || body().bodyData.semiMajorAxis || body().bodyData.orbitalEccentricity !== undefined || body().bodyData.orbitalInclination || body().bodyData.argOfPeriapsis || body().bodyData.ascendingNode || getNextPeriapsis() || getNextApoapsis()) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Orbit</div>
-              @if (body().bodyData.orbitalPeriod) {
-                <div class="body-data-entry">
-                  <div>
-                    Orbital period
-                  </div>
-                  <div [matTooltip]="body().bodyData.orbitalPeriod + ' days'">
-                    {{ getOrbitalPeriodDisplay() }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.semiMajorAxis) {
-                <div class="body-data-entry">
-                  <div>
-                    Semi-major axis
-                  </div>
-                  <div [matTooltip]="body().bodyData.semiMajorAxis + ' au'">
-                    {{ (body().bodyData.semiMajorAxis! * 149597870.7) | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.orbitalEccentricity !== undefined && body().bodyData.orbitalEccentricity !== null) {
-                <div
-                  class="body-data-entry">
-                  <div>
-                    Orbital eccentricity
-                  </div>
-                  <div [matTooltip]="body().bodyData.orbitalEccentricity!.toString()">
-                    {{ body().bodyData.orbitalEccentricity | number:'0.4-4' }} {{
-                    getEccentricityAnalysis(body().bodyData.orbitalEccentricity!) }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.semiMajorAxis && body().bodyData.orbitalEccentricity !== undefined && body().bodyData.orbitalEccentricity !== null && body().bodyData.orbitalEccentricity !== 0) {
-                <div
-                  class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
-                  <div>
-                    Apoapsis
-                  </div>
-                  <div [matTooltip]="getApoapsis() + ' km'">
-                    {{ getApoapsis() | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (getNextApoapsis()) {
-                <div class="body-data-entry clickable"
-                  (click)="showApoPeriDialog('apo')">
-                  <div>
-                    Next apoapsis
-                  </div>
-                  <div [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
-                    {{ getNextApoapsis()!.days | number:'0.1-1' }} days
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.semiMajorAxis && body().bodyData.orbitalEccentricity !== undefined && body().bodyData.orbitalEccentricity !== null && body().bodyData.orbitalEccentricity !== 0) {
-                <div
-                  class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
-                  <div>
-                    Periapsis
-                  </div>
-                  <div [matTooltip]="getPeriapsis() + ' km'">
-                    {{ getPeriapsis() | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (getNextPeriapsis()) {
-                <div class="body-data-entry clickable"
-                  (click)="showApoPeriDialog('peri')">
-                  <div>
-                    Next periapsis
-                  </div>
-                  <div [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
-                    {{ getNextPeriapsis()!.days | number:'0.1-1' }} days
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.orbitalInclination) {
-                <div class="body-data-entry">
-                  <div>
-                    Orbital inclination
-                  </div>
-                  <div [matTooltip]="body().bodyData.orbitalInclination + '°'">
-                    {{ body().bodyData.orbitalInclination | number:'0.2-2' }}°
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.argOfPeriapsis) {
-                <div class="body-data-entry">
-                  <div>
-                    Argument of periapsis
-                  </div>
-                  <div [matTooltip]="body().bodyData.argOfPeriapsis + '°'">
-                    {{ body().bodyData.argOfPeriapsis | number:'0.2-2' }}°
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.ascendingNode) {
-                <div class="body-data-entry">
-                  <div>
-                    Ascending node
-                  </div>
-                  <div [matTooltip]="body().bodyData.ascendingNode + '°'">
-                    {{ body().bodyData.ascendingNode | number:'0.2-2' }}°
-                  </div>
-                </div>
-              }
-              @if (getTangentialVelocity() !== null) {
-                <div class="body-data-entry">
-                  <div>
-                    Tangential velocity
-                  </div>
-                  <div [matTooltip]="getTangentialVelocityTooltip()">
-                    {{ getTangentialVelocityDisplay() }}
-                  </div>
-                </div>
-              }
+          @if (body().bodyData.orbitalPeriod || body().bodyData.semiMajorAxis || body().bodyData.orbitalEccentricity !==
+          undefined || body().bodyData.orbitalInclination || body().bodyData.argOfPeriapsis ||
+          body().bodyData.ascendingNode || getNextPeriapsis() || getNextApoapsis()) {
+          <div class="body-data-section">
+            <div class="body-data-section-header">Orbit</div>
+            @if (body().bodyData.orbitalPeriod) {
+            <div class="body-data-entry">
+              <div>
+                Orbital period
+              </div>
+              <div [matTooltip]="body().bodyData.orbitalPeriod + ' days'">
+                {{ getOrbitalPeriodDisplay() }}
+              </div>
             </div>
+            }
+            @if (body().bodyData.semiMajorAxis) {
+            <div class="body-data-entry">
+              <div>
+                Semi-major axis
+              </div>
+              <div [matTooltip]="body().bodyData.semiMajorAxis + ' au'">
+                {{ (body().bodyData.semiMajorAxis! * 149597870.7) | number:'0.2-2' }} km
+              </div>
+            </div>
+            }
+            @if (body().bodyData.orbitalEccentricity !== undefined && body().bodyData.orbitalEccentricity !== null) {
+            <div class="body-data-entry">
+              <div>
+                Orbital eccentricity
+              </div>
+              <div [matTooltip]="body().bodyData.orbitalEccentricity!.toString()">
+                {{ body().bodyData.orbitalEccentricity | number:'0.4-4' }} {{
+                getEccentricityAnalysis(body().bodyData.orbitalEccentricity!) }}
+              </div>
+            </div>
+            }
+            @if (body().bodyData.semiMajorAxis && body().bodyData.orbitalEccentricity !== undefined &&
+            body().bodyData.orbitalEccentricity !== null && body().bodyData.orbitalEccentricity !== 0) {
+            <div class="body-data-entry clickable"
+                 (click)="showApoPeriDialog('apo')">
+              <div>
+                Apoapsis
+              </div>
+              <div [matTooltip]="getApoapsis() + ' km'">
+                {{ getApoapsis() | number:'0.2-2' }} km
+              </div>
+            </div>
+            }
+            @if (getNextApoapsis()) {
+            <div class="body-data-entry clickable"
+                 (click)="showApoPeriDialog('apo')">
+              <div>
+                Next apoapsis
+              </div>
+              <div [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
+                {{ getNextApoapsis()!.days | number:'0.1-1' }} days
+              </div>
+            </div>
+            }
+            @if (body().bodyData.semiMajorAxis && body().bodyData.orbitalEccentricity !== undefined &&
+            body().bodyData.orbitalEccentricity !== null && body().bodyData.orbitalEccentricity !== 0) {
+            <div class="body-data-entry clickable"
+                 (click)="showApoPeriDialog('peri')">
+              <div>
+                Periapsis
+              </div>
+              <div [matTooltip]="getPeriapsis() + ' km'">
+                {{ getPeriapsis() | number:'0.2-2' }} km
+              </div>
+            </div>
+            }
+            @if (getNextPeriapsis()) {
+            <div class="body-data-entry clickable"
+                 (click)="showApoPeriDialog('peri')">
+              <div>
+                Next periapsis
+              </div>
+              <div [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
+                {{ getNextPeriapsis()!.days | number:'0.1-1' }} days
+              </div>
+            </div>
+            }
+            @if (body().bodyData.argOfPeriapsis) {
+            <div class="body-data-entry clickable"
+                 (click)="showOrbitalDiagram('periapsis')">
+              <div>
+                Argument of periapsis
+              </div>
+              <div [matTooltip]="body().bodyData.argOfPeriapsis + '° - click for diagram'">
+                {{ body().bodyData.argOfPeriapsis | number:'0.2-2' }}°
+              </div>
+            </div>
+            }
+            @if (body().bodyData.orbitalInclination) {
+            <div class="body-data-entry clickable"
+                 (click)="showOrbitalDiagram('inclination')">
+              <div>
+                Orbital inclination
+              </div>
+              <div [matTooltip]="body().bodyData.orbitalInclination + '° - click for diagram'">
+                {{ body().bodyData.orbitalInclination | number:'0.2-2' }}°
+              </div>
+            </div>
+            }
+            @if (body().bodyData.ascendingNode) {
+            <div class="body-data-entry">
+              <div>
+                Ascending node
+              </div>
+              <div [matTooltip]="body().bodyData.ascendingNode + '°'">
+                {{ body().bodyData.ascendingNode | number:'0.2-2' }}°
+              </div>
+            </div>
+            }
+            @if (getTangentialVelocity() !== null) {
+            <div class="body-data-entry">
+              <div>
+                Tangential velocity
+              </div>
+              <div [matTooltip]="getTangentialVelocityTooltip()">
+                {{ getTangentialVelocityDisplay() }}
+              </div>
+            </div>
+            }
+          </div>
           }
           <!-- Limits Section (Bodies only - when Roche limit breached or within parent rings) -->
           @if (calculateBodyRocheLimits(); as rocheLimits) {
-            @if (rocheLimits.periapsis < rocheLimits.rigid || rocheLimits.apoapsis < rocheLimits.fluid || isBodyWithinParentRings()) {
-              <div class="body-data-section"
-                >
-                <div class="body-data-section-header">Limits</div>
-                <div class="body-data-entry clickable" (click)="showBodyRocheLimitChart()">
-                  <div>
-                    Roche limit (rigid)
-                  </div>
-                  <div
-                    [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">
-                    {{ rocheLimits.rigid | number:'0.2-2' }} km
-                    @if (rocheLimits.periapsis < rocheLimits.rigid) {
-                      <span class="status-danger">⚠</span>
-                    }
-                    @if (rocheLimits.periapsis >= rocheLimits.rigid) {
-                      <span class="status-success">✓</span>
-                    }
-                  </div>
-                </div>
-                <div class="body-data-entry clickable" (click)="showBodyRocheLimitChart()">
-                  <div>
-                    Roche limit (fluid)
-                  </div>
-                  <div
-                    [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">
-                    {{ rocheLimits.fluid | number:'0.2-2' }} km
-                    @if (rocheLimits.apoapsis < rocheLimits.fluid) {
-                      <span class="status-danger">⚠</span>
-                    }
-                    @if (rocheLimits.apoapsis >= rocheLimits.fluid) {
-                      <span class="status-success">✓</span>
-                    }
-                  </div>
-                </div>
+          @if (rocheLimits.periapsis < rocheLimits.rigid
+            ||
+            rocheLimits.apoapsis
+            <
+            rocheLimits.fluid
+            ||
+            isBodyWithinParentRings())
+            {
+            <div
+            class="body-data-section">
+            <div class="body-data-section-header">Limits</div>
+            <div class="body-data-entry clickable"
+                 (click)="showBodyRocheLimitChart()">
+              <div>
+                Roche limit (rigid)
               </div>
+              <div
+                   [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">
+                {{ rocheLimits.rigid | number:'0.2-2' }} km
+                @if (rocheLimits.periapsis < rocheLimits.rigid)
+                  {
+                  <span
+                  class="status-danger">⚠</span>
+                  }
+                  @if (rocheLimits.periapsis >= rocheLimits.rigid) {
+                  <span class="status-success">✓</span>
+                  }
+              </div>
+            </div>
+            <div class="body-data-entry clickable"
+                 (click)="showBodyRocheLimitChart()">
+              <div>
+                Roche limit (fluid)
+              </div>
+              <div
+                   [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">
+                {{ rocheLimits.fluid | number:'0.2-2' }} km
+                @if (rocheLimits.apoapsis < rocheLimits.fluid)
+                  {
+                  <span
+                  class="status-danger">⚠</span>
+                  }
+                  @if (rocheLimits.apoapsis >= rocheLimits.fluid) {
+                  <span class="status-success">✓</span>
+                  }
+              </div>
+            </div>
+        </div>
+        }
+        }
+        <!-- Hill Limit Section (for shepherding bodies) -->
+        @if (calculateShepherdingHillLimit(); as hillData) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Shepherding Analysis</div>
+          <div class="body-data-entry clickable"
+               (click)="showShepherdingHillLimitChart()">
+            <div>
+              Hill sphere radius
+            </div>
+            <div [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
+              {{ hillData.hillRadius | number:'0.2-2' }} km
+            </div>
+          </div>
+          @if (hillData.withinRings || hillData.isFirstOutside) {
+          <div class="body-data-entry clickable"
+               (click)="showShepherdingHillLimitChart()">
+            <div>
+              Position
+            </div>
+            <div>
+              @if (hillData.withinRings) {
+              <span matTooltip="This body orbits within the parent's ring system">Within rings</span>
+              }
+              @if (hillData.isFirstOutside) {
+              <span matTooltip="This is the first body outside the parent's ring system">First
+                outside</span>
+              }
+            </div>
+          </div>
+          }
+        </div>
+        }
+        <!-- Physical Properties Section -->
+        @if (body().bodyData.radius || body().bodyData.earthMasses || body().bodyData.solarMasses ||
+        body().bodyData.solarRadius || body().bodyData.gravity || body().bodyData.axialTilt || body().bodyData.age ||
+        body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Physical Properties</div>
+          @if (body().bodyData.radius) {
+          <div class="body-data-entry">
+            <div>
+              Radius
+            </div>
+            <div [matTooltip]="body().bodyData.radius + ' km'">
+              {{ body().bodyData.radius | number:'0.2-2' }} km
+            </div>
+          </div>
+          }
+          @if (body().bodyData.solarRadius) {
+          <div class="body-data-entry">
+            <div>
+              Solar radius
+            </div>
+            <div [matTooltip]="body().bodyData.solarRadius!.toString()">
+              @if (body().bodyData.subType === 'Neutron Star') {
+              {{ (body().bodyData.solarRadius! * 695700) | number:'0.2-2' }} km
+              } @else {
+              {{ body().bodyData.solarRadius | number:'0.2-2' }}
+              }
+            </div>
+          </div>
+          }
+          @if (getSchwarzschildRadius(); as schwarzschildRadius) {
+          <div class="body-data-entry">
+            <div>
+              Schwarzschild radius
+            </div>
+            <div [matTooltip]="'Event-horizon radius r_s = 2GM/c² = ' + (schwarzschildRadius | number:'0.2-4') + ' km'"
+                 matTooltipClass="multiline-tooltip">
+              {{ schwarzschildRadius | number:'0.2-2' }} km
+            </div>
+          </div>
+          }
+          @if (body().bodyData.earthMasses && body().bodyData.type === 'Planet') {
+          <div class="body-data-entry">
+            <div>
+              Mass
+            </div>
+            <div [matTooltip]="formattedEarthMass?.tooltip || ''">
+              {{ formattedEarthMass?.display }}
+            </div>
+          </div>
+          }
+          @if (body().bodyData.solarMasses) {
+          <div class="body-data-entry">
+            <div>
+              Solar masses
+            </div>
+            <div>
+              <span [matTooltip]="formattedSolarMass?.tooltip || ''">
+                {{ formattedSolarMass?.display }}
+              </span>
+              @if (getMassStabilityAlert(); as massAlert) {
+              <span class="status-danger"
+                    [matTooltip]="massAlert"
+                    matTooltipClass="multiline-tooltip">⚠</span>
+              }
+            </div>
+          </div>
+          }
+          @if (body().bodyData.mass) {
+          <div class="body-data-entry">
+            <div>
+              Mass
+            </div>
+            <div [matTooltip]="body().bodyData.mass + ' Mt'">
+              {{ body().bodyData.mass | number:'0.2-2' }} Mt
+            </div>
+          </div>
+          }
+          @if (body().bodyData.gravity) {
+          <div class="body-data-entry">
+            <div>
+              Gravity
+            </div>
+            <div [matTooltip]="body().bodyData.gravity + ' G'">
+              {{ body().bodyData.gravity | number:'0.2-2' }} G
+            </div>
+          </div>
+          }
+          @if (getPlanetaryDensity()) {
+          <div class="body-data-entry">
+            <div>
+              Density
+            </div>
+            <div [matTooltip]="getPlanetaryDensity()!.tooltip">
+              {{ getPlanetaryDensity()!.value | number:'0.2-2' }} {{ getPlanetaryDensity()!.unit }}
+            </div>
+          </div>
+          }
+          @if (body().bodyData.axialTilt) {
+          <div class="body-data-entry clickable"
+               (click)="showOrbitalDiagram('tilt')">
+            <div>
+              Axial tilt
+            </div>
+            <div [matTooltip]="radToDeg(body().bodyData.axialTilt) + '° - click for diagram'">
+              {{ radToDeg(body().bodyData.axialTilt) | number:'0.2-2' }}°
+            </div>
+          </div>
+          }
+          @if (body().bodyData.age) {
+          <div class="body-data-entry">
+            <div>
+              Age
+            </div>
+            <div>
+              {{ body().bodyData.age }} million years
+            </div>
+          </div>
+          }
+          @if (body().bodyData.innerRadius) {
+          <div class="body-data-entry">
+            <div>
+              Inner radius
+            </div>
+            <div [matTooltip]="body().bodyData.innerRadius + ' km'">
+              {{ body().bodyData.innerRadius | number:'0.2-2' }} km
+            </div>
+          </div>
+          }
+          @if (body().bodyData.outerRadius) {
+          <div class="body-data-entry">
+            <div>
+              Outer radius
+            </div>
+            <div [matTooltip]="body().bodyData.outerRadius + ' km'">
+              {{ body().bodyData.outerRadius | number:'0.2-2' }} km
+            </div>
+          </div>
+          }
+          @if (body().bodyData.innerRadius && body().bodyData.outerRadius) {
+          <div class="body-data-entry">
+            <div>
+              Ring width
+            </div>
+            <div [matTooltip]="getRingWidth() + ' km'">
+              {{ getRingWidth() | number:'0.2-2' }} km
+            </div>
+          </div>
+          }
+          @if (body().bodyData.innerRadius && body().bodyData.outerRadius) {
+          <div class="body-data-entry">
+            <div>
+              Ring area
+            </div>
+            <div [matTooltip]="getRingArea() + ' km²'">
+              {{ getRingArea() | number:'0.2-2' }} km²
+            </div>
+          </div>
+          }
+          @if (body().bodyData.mass && body().bodyData.innerRadius && body().bodyData.outerRadius) {
+          <div class="body-data-entry">
+            <div>
+              Density
+            </div>
+            <div [matTooltip]="getRingDensity() + ' Mt/km²'">
+              {{ getRingDensity() | number:'0.2-2' }} Mt/km²
+            </div>
+          </div>
+          }
+        </div>
+        }
+        <!-- Limits Section (Rings only) -->
+        @if (body().bodyData.type === 'Ring' && (calculateRigidRocheLimit() !== null || calculateFluidRocheLimit() !==
+        null)) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Limits</div>
+          @if (calculateRigidRocheLimit() !== null) {
+          <div class="body-data-entry clickable"
+               (click)="showRocheLimitChart()">
+            <div>
+              Roche limit (rigid)
+            </div>
+            <div [matTooltip]="'Rigid body Roche limit: ' + calculateRigidRocheLimit()! + ' km'">
+              {{ calculateRigidRocheLimit()! | number:'0.2-2' }} km
+            </div>
+          </div>
+          }
+          @if (calculateFluidRocheLimit() !== null) {
+          <div class="body-data-entry clickable"
+               (click)="showRocheLimitChart()">
+            <div>
+              Roche limit (fluid)
+            </div>
+            <div [matTooltip]="'Fluid body Roche limit: ' + calculateFluidRocheLimit()! + ' km'">
+              {{ calculateFluidRocheLimit()! | number:'0.2-2' }} km
+            </div>
+          </div>
+          }
+        </div>
+        }
+        <!-- Atmosphere & Environment Section -->
+        @if ((body().bodyData.surfaceTemperature != null && body().bodyData.surfaceTemperature !== 0) ||
+        (body().bodyData.surfacePressure != null && body().bodyData.surfacePressure !== 0) ||
+        body().bodyData.volcanismType) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Atmosphere & Environment</div>
+          @if (body().bodyData.surfaceTemperature) {
+          <div class="body-data-entry">
+            <div>
+              {{ body().bodyData.type === 'Star' ? 'Surface Temperature' : 'Average Surface Temperature'
+              }}
+            </div>
+            <div [matTooltip]="body().bodyData.surfaceTemperature + ' K'">
+              {{ body().bodyData.surfaceTemperature | number:'0.2-2' }} K
+            </div>
+          </div>
+          }
+          @if (body().bodyData.isLandable && getEstimatedTempRange(); as estTemp) {
+          <div class="body-data-entry">
+            <div>Min Surface Temperature Estimate</div>
+            <div [matTooltip]="estTemp.min + ' K'">{{ estTemp.min | number:'0.2-2' }} K</div>
+          </div>
+          <div class="body-data-entry">
+            <div>Max Surface Temperature Estimate</div>
+            <div [matTooltip]="estTemp.max + ' K'">{{ estTemp.max | number:'0.2-2' }} K</div>
+          </div>
+          }
+          @if (body().bodyData.surfacePressure != null && body().bodyData.surfacePressure !== 0) {
+          <div class="body-data-entry">
+            <div>
+              Surface pressure
+            </div>
+            <div [matTooltip]="cachedSurfacePressureTooltip() || ''"
+                 matTooltipClass="multiline-tooltip">
+              {{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres
+            </div>
+          </div>
+          }
+          @if (body().bodyData.volcanismType) {
+          <div class="body-data-entry">
+            <div>
+              Volcanism
+            </div>
+            <div>
+              {{ body().bodyData.volcanismType }}
+            </div>
+          </div>
+          }
+        </div>
+        }
+        <!-- Dynamics Section -->
+        @if (body().bodyData.rotationalPeriod || body().bodyData.distanceToArrival !== undefined) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Dynamics</div>
+          @if (body().bodyData.rotationalPeriod) {
+          <div class="body-data-entry">
+            <div>
+              Rotational period
+            </div>
+            <div [matTooltip]="body().bodyData.rotationalPeriod + ' days'">
+              {{ getRotationalPeriodDisplay() }}
+            </div>
+          </div>
+          }
+          @if (body().bodyData.distanceToArrival !== undefined && body().bodyData.distanceToArrival !== null &&
+          (body().bodyData.bodyId !== 0 || body().bodyData.distanceToArrival! > 0)) {
+          <div class="body-data-entry">
+            <div>
+              Distance to arrival
+            </div>
+            <div [matTooltip]="body().bodyData.distanceToArrival + ' ls'">
+              {{ body().bodyData.distanceToArrival | number:'0.2-2' }} ls
+            </div>
+          </div>
+          }
+        </div>
+        }
+        <!-- Stellar Properties Section (Stars only) -->
+        @if (body().bodyData.type === 'Star' && (body().bodyData.luminosity || body().bodyData.absoluteMagnitude !==
+        undefined || body().bodyData.spectralClass || getJetConeAngle() !== null)) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Stellar Properties</div>
+          @if (body().bodyData.spectralClass) {
+          <div class="body-data-entry">
+            <div>
+              Spectral class
+            </div>
+            <div>
+              {{ body().bodyData.spectralClass }}
+            </div>
+          </div>
+          }
+          @if (body().bodyData.luminosity) {
+          <div class="body-data-entry">
+            <div>
+              Luminosity class
+            </div>
+            <div>
+              {{ body().bodyData.luminosity }}
+            </div>
+          </div>
+          }
+          @if (body().bodyData.absoluteMagnitude !== undefined && body().bodyData.absoluteMagnitude !== null) {
+          <div class="body-data-entry">
+            <div>
+              Absolute magnitude
+            </div>
+            <div [matTooltip]="body().bodyData.absoluteMagnitude!.toString()">
+              {{ body().bodyData.absoluteMagnitude | number:'0.2-2' }}
+            </div>
+          </div>
+          }
+          @if (getJetConeAngle() !== null) {
+          <div class="body-data-entry clickable"
+               (click)="showJetAngleDialog()">
+            <div>
+              Jet cone half angle
+            </div>
+            <div [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
+              {{ getJetConeAngle() | number:'0.2-2' }}°
+            </div>
+          </div>
+          }
+        </div>
+        }
+        <!-- Resources Section (Rings/Belts) -->
+        @if (body().bodyData.reserveLevel || (body().bodyData.type === 'Ring' && getSignalsCount() > 0)) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Resources</div>
+          @if (body().bodyData.reserveLevel && body().bodyData.type !== 'Ring') {
+          <div class="body-data-entry">
+            <div>
+              Reserve level
+            </div>
+            <div>
+              {{ body().bodyData.reserveLevel }}
+            </div>
+          </div>
+          }
+          @if (body().bodyData.type === 'Ring') {
+          @for (hotspot of getHotspotsList(); track trackByHotspot($index, hotspot)) {
+          <div class="body-data-entry">
+            <div [matTooltip]="hotspot.description">
+              {{ hotspot.displayName }}
+            </div>
+            <div>
+              {{ hotspot.count }}
+            </div>
+          </div>
+          }
+          }
+        </div>
+        }
+        <!-- Signals Section (Human and Other only) -->
+        @if (humanSignalCount || otherSignalCount) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">
+            Signals
+            @if (humanSignalCount) {
+            <img alt=""
+                 src="assets/icons/Human.svg"
+                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
             }
-          }
-          <!-- Hill Limit Section (for shepherding bodies) -->
-          @if (calculateShepherdingHillLimit(); as hillData) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Shepherding Analysis</div>
-              <div class="body-data-entry clickable" (click)="showShepherdingHillLimitChart()">
-                <div>
-                  Hill sphere radius
-                </div>
-                <div
-                  [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
-                  {{ hillData.hillRadius | number:'0.2-2' }} km
-                </div>
-              </div>
-              @if (hillData.withinRings || hillData.isFirstOutside) {
-                <div class="body-data-entry clickable"
-                  (click)="showShepherdingHillLimitChart()">
-                  <div>
-                    Position
-                  </div>
-                  <div>
-                    @if (hillData.withinRings) {
-                      <span
-                      matTooltip="This body orbits within the parent's ring system">Within rings</span>
-                    }
-                    @if (hillData.isFirstOutside) {
-                      <span
-                        matTooltip="This is the first body outside the parent's ring system">First
-                      outside</span>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <!-- Physical Properties Section -->
-          @if (body().bodyData.radius || body().bodyData.earthMasses || body().bodyData.solarMasses || body().bodyData.solarRadius || body().bodyData.gravity || body().bodyData.axialTilt || body().bodyData.age || body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Physical Properties</div>
-              @if (body().bodyData.radius) {
-                <div class="body-data-entry">
-                  <div>
-                    Radius
-                  </div>
-                  <div [matTooltip]="body().bodyData.radius + ' km'">
-                    {{ body().bodyData.radius | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.solarRadius) {
-                <div class="body-data-entry">
-                  <div>
-                    Solar radius
-                  </div>
-                  <div [matTooltip]="body().bodyData.solarRadius!.toString()">
-                    @if (body().bodyData.subType === 'Neutron Star') {
-                      {{ (body().bodyData.solarRadius! * 695700) | number:'0.2-2' }} km
-                    } @else {
-                      {{ body().bodyData.solarRadius | number:'0.2-2' }}
-                    }
-                  </div>
-                </div>
-              }
-              @if (getSchwarzschildRadius(); as schwarzschildRadius) {
-                <div class="body-data-entry">
-                  <div>
-                    Schwarzschild radius
-                  </div>
-                  <div [matTooltip]="'Event-horizon radius r_s = 2GM/c² = ' + (schwarzschildRadius | number:'0.2-4') + ' km'"
-                    matTooltipClass="multiline-tooltip">
-                    {{ schwarzschildRadius | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.earthMasses && body().bodyData.type === 'Planet') {
-                <div
-                  class="body-data-entry">
-                  <div>
-                    Mass
-                  </div>
-                  <div [matTooltip]="formattedEarthMass?.tooltip || ''">
-                    {{ formattedEarthMass?.display }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.solarMasses) {
-                <div class="body-data-entry">
-                  <div>
-                    Solar masses
-                  </div>
-                  <div>
-                    <span [matTooltip]="formattedSolarMass?.tooltip || ''">
-                      {{ formattedSolarMass?.display }}
-                    </span>
-                    @if (getMassStabilityAlert(); as massAlert) {
-                      <span class="status-danger" [matTooltip]="massAlert" matTooltipClass="multiline-tooltip">⚠</span>
-                    }
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.mass) {
-                <div class="body-data-entry">
-                  <div>
-                    Mass
-                  </div>
-                  <div [matTooltip]="body().bodyData.mass + ' Mt'">
-                    {{ body().bodyData.mass | number:'0.2-2' }} Mt
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.gravity) {
-                <div class="body-data-entry">
-                  <div>
-                    Gravity
-                  </div>
-                  <div [matTooltip]="body().bodyData.gravity + ' G'">
-                    {{ body().bodyData.gravity | number:'0.2-2' }} G
-                  </div>
-                </div>
-              }
-              @if (getPlanetaryDensity()) {
-                <div class="body-data-entry">
-                  <div>
-                    Density
-                  </div>
-                  <div [matTooltip]="getPlanetaryDensity()!.tooltip">
-                    {{ getPlanetaryDensity()!.value | number:'0.2-2' }} {{ getPlanetaryDensity()!.unit }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.axialTilt) {
-                <div class="body-data-entry">
-                  <div>
-                    Axial tilt
-                  </div>
-                  <div [matTooltip]="radToDeg(body().bodyData.axialTilt) + '°'">
-                    {{ radToDeg(body().bodyData.axialTilt) | number:'0.2-2' }}°
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.age) {
-                <div class="body-data-entry">
-                  <div>
-                    Age
-                  </div>
-                  <div>
-                    {{ body().bodyData.age }} million years
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.innerRadius) {
-                <div class="body-data-entry">
-                  <div>
-                    Inner radius
-                  </div>
-                  <div [matTooltip]="body().bodyData.innerRadius + ' km'">
-                    {{ body().bodyData.innerRadius | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.outerRadius) {
-                <div class="body-data-entry">
-                  <div>
-                    Outer radius
-                  </div>
-                  <div [matTooltip]="body().bodyData.outerRadius + ' km'">
-                    {{ body().bodyData.outerRadius | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.innerRadius && body().bodyData.outerRadius) {
-                <div class="body-data-entry">
-                  <div>
-                    Ring width
-                  </div>
-                  <div [matTooltip]="getRingWidth() + ' km'">
-                    {{ getRingWidth() | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.innerRadius && body().bodyData.outerRadius) {
-                <div class="body-data-entry">
-                  <div>
-                    Ring area
-                  </div>
-                  <div [matTooltip]="getRingArea() + ' km²'">
-                    {{ getRingArea() | number:'0.2-2' }} km²
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.mass && body().bodyData.innerRadius && body().bodyData.outerRadius) {
-                <div
-                  class="body-data-entry">
-                  <div>
-                    Density
-                  </div>
-                  <div [matTooltip]="getRingDensity() + ' Mt/km²'">
-                    {{ getRingDensity() | number:'0.2-2' }} Mt/km²
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <!-- Limits Section (Rings only) -->
-          @if (body().bodyData.type === 'Ring' && (calculateRigidRocheLimit() !== null || calculateFluidRocheLimit() !== null)) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Limits</div>
-              @if (calculateRigidRocheLimit() !== null) {
-                <div class="body-data-entry clickable"
-                  (click)="showRocheLimitChart()">
-                  <div>
-                    Roche limit (rigid)
-                  </div>
-                  <div [matTooltip]="'Rigid body Roche limit: ' + calculateRigidRocheLimit()! + ' km'">
-                    {{ calculateRigidRocheLimit()! | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-              @if (calculateFluidRocheLimit() !== null) {
-                <div class="body-data-entry clickable"
-                  (click)="showRocheLimitChart()">
-                  <div>
-                    Roche limit (fluid)
-                  </div>
-                  <div [matTooltip]="'Fluid body Roche limit: ' + calculateFluidRocheLimit()! + ' km'">
-                    {{ calculateFluidRocheLimit()! | number:'0.2-2' }} km
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <!-- Atmosphere & Environment Section -->
-          @if ((body().bodyData.surfaceTemperature != null && body().bodyData.surfaceTemperature !== 0) || (body().bodyData.surfacePressure != null && body().bodyData.surfacePressure !== 0) || body().bodyData.volcanismType) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Atmosphere & Environment</div>
-              @if (body().bodyData.surfaceTemperature) {
-                <div class="body-data-entry">
-                  <div>
-                    {{ body().bodyData.type === 'Star' ? 'Surface Temperature' : 'Average Surface Temperature'
-                    }}
-                  </div>
-                  <div [matTooltip]="body().bodyData.surfaceTemperature + ' K'">
-                    {{ body().bodyData.surfaceTemperature | number:'0.2-2' }} K
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.isLandable && getEstimatedTempRange(); as estTemp) {
-                <div class="body-data-entry">
-                  <div>Min Surface Temperature Estimate</div>
-                  <div [matTooltip]="estTemp.min + ' K'">{{ estTemp.min | number:'0.2-2' }} K</div>
-                </div>
-                <div class="body-data-entry">
-                  <div>Max Surface Temperature Estimate</div>
-                  <div [matTooltip]="estTemp.max + ' K'">{{ estTemp.max | number:'0.2-2' }} K</div>
-                </div>
-              }
-              @if (body().bodyData.surfacePressure != null && body().bodyData.surfacePressure !== 0) {
-                <div
-                  class="body-data-entry">
-                  <div>
-                    Surface pressure
-                  </div>
-                  <div [matTooltip]="cachedSurfacePressureTooltip() || ''" matTooltipClass="multiline-tooltip">
-                    {{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.volcanismType) {
-                <div class="body-data-entry">
-                  <div>
-                    Volcanism
-                  </div>
-                  <div>
-                    {{ body().bodyData.volcanismType }}
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <!-- Dynamics Section -->
-          @if (body().bodyData.rotationalPeriod || body().bodyData.distanceToArrival !== undefined) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Dynamics</div>
-              @if (body().bodyData.rotationalPeriod) {
-                <div class="body-data-entry">
-                  <div>
-                    Rotational period
-                  </div>
-                  <div [matTooltip]="body().bodyData.rotationalPeriod + ' days'">
-                    {{ getRotationalPeriodDisplay() }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.distanceToArrival !== undefined && body().bodyData.distanceToArrival !== null && (body().bodyData.bodyId !== 0 || body().bodyData.distanceToArrival! > 0)) {
-                <div
-                  class="body-data-entry">
-                  <div>
-                    Distance to arrival
-                  </div>
-                  <div [matTooltip]="body().bodyData.distanceToArrival + ' ls'">
-                    {{ body().bodyData.distanceToArrival | number:'0.2-2' }} ls
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <!-- Stellar Properties Section (Stars only) -->
-          @if (body().bodyData.type === 'Star' && (body().bodyData.luminosity || body().bodyData.absoluteMagnitude !== undefined || body().bodyData.spectralClass || getJetConeAngle() !== null)) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Stellar Properties</div>
-              @if (body().bodyData.spectralClass) {
-                <div class="body-data-entry">
-                  <div>
-                    Spectral class
-                  </div>
-                  <div>
-                    {{ body().bodyData.spectralClass }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.luminosity) {
-                <div class="body-data-entry">
-                  <div>
-                    Luminosity class
-                  </div>
-                  <div>
-                    {{ body().bodyData.luminosity }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.absoluteMagnitude !== undefined && body().bodyData.absoluteMagnitude !== null) {
-                <div
-                  class="body-data-entry">
-                  <div>
-                    Absolute magnitude
-                  </div>
-                  <div [matTooltip]="body().bodyData.absoluteMagnitude!.toString()">
-                    {{ body().bodyData.absoluteMagnitude | number:'0.2-2' }}
-                  </div>
-                </div>
-              }
-              @if (getJetConeAngle() !== null) {
-                <div class="body-data-entry clickable"
-                  (click)="showJetAngleDialog()">
-                  <div>
-                    Jet cone half angle
-                  </div>
-                  <div
-                    [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
-                    {{ getJetConeAngle() | number:'0.2-2' }}°
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <!-- Resources Section (Rings/Belts) -->
-          @if (body().bodyData.reserveLevel || (body().bodyData.type === 'Ring' && getSignalsCount() > 0)) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">Resources</div>
-              @if (body().bodyData.reserveLevel && body().bodyData.type !== 'Ring') {
-                <div
-                  class="body-data-entry">
-                  <div>
-                    Reserve level
-                  </div>
-                  <div>
-                    {{ body().bodyData.reserveLevel }}
-                  </div>
-                </div>
-              }
-              @if (body().bodyData.type === 'Ring') {
-                @for (hotspot of getHotspotsList(); track trackByHotspot($index, hotspot)) {
-                  <div
-                    class="body-data-entry">
-                    <div [matTooltip]="hotspot.description">
-                      {{ hotspot.displayName }}
-                    </div>
-                    <div>
-                      {{ hotspot.count }}
-                    </div>
-                  </div>
-                }
-              }
-            </div>
-          }
-          <!-- Signals Section (Human and Other only) -->
-          @if (humanSignalCount || otherSignalCount) {
-            <div class="body-data-section">
-              <div class="body-data-section-header">
-                Signals
-                @if (humanSignalCount) {
-                  <img alt="" src="assets/icons/Human.svg"
-                    style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
-                }
-                @if (otherSignalCount) {
-                  <img alt="" src="assets/icons/Other.png"
-                    style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
-                }
-              </div>
-              @if (humanSignalCount) {
-                <div class="body-data-entry">
-                  <div>
-                    Human
-                  </div>
-                  <div>
-                    {{ humanSignalCount }}
-                  </div>
-                </div>
-              }
-              @if (otherSignalCount) {
-                <div class="body-data-entry">
-                  <div>
-                    Other
-                  </div>
-                  <div>
-                    {{ otherSignalCount }}
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <!-- Geology Section -->
-          @if ((geologySignals.length || geologySignalCount) && body().bodyData.type !== 'Star') {
-            <div class="body-data-section">
-              <div class="body-data-section-header">
-                Geology
-                <img alt="" src="assets/icons/Geology.svg"
-                  style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
-                </div>
-                <div class="body-data-entry">
-                  <div>
-                    Total Signals
-                  </div>
-                  <div>
-                    {{ geologySignals.length }}/{{ geologySignalCount || 0 }}
-                  </div>
-                </div>
-                @if (geologySignals.length) {
-                  @for (geologySignal of geologySignals; track trackByString($index, geologySignal)) {
-                    <div
-                      class="body-data-entry">
-                      <div>
-                        {{ geologySignal }}
-                      </div>
-                      <div></div>
-                    </div>
-                  }
-                }
-              </div>
-            }
-            <!-- Biology Section -->
-            @if ((biologySignals.length || biologySignalCount) && body().bodyData.type !== 'Star') {
-              <div class="body-data-section">
-                <div class="body-data-section-header">
-                  Biology
-                  <img alt="" src="assets/icons/Biology.svg"
-                    style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
-                  </div>
-                  <div class="body-data-entry">
-                    <div>
-                      Total Signals
-                    </div>
-                    <div>
-                      {{ getConfirmedBiologyCount() }}/{{ biologySignalCount || 0 }}
-                    </div>
-                  </div>
-                  @if (biologySignals.length) {
-                    @for (biologySignal of biologySignals; track trackByBiologySignal($index, biologySignal)) {
-                      <div
-                        class="body-data-entry">
-                        <div>
-                          @if (biologySignal.isGuess) {
-                            <fa-icon [icon]="faCircleQuestion"
-                            matTooltip="Guess"></fa-icon>
-                          }
-                          @if (!biologySignal.entryId) {
-                            <span>
-                            {{ biologySignal.signal }}</span>
-                          }
-                          @if (biologySignal.entryId) {
-                            <span>
-                              <a href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}"
-                                target="_blank" rel="noopener noreferrer">
-                                {{ biologySignal.signal }}
-                                <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
-                              </a>
-                            </span>
-                          }
-                        </div>
-                        <div>
-                          @if (biologySignal.codex?.reward) {
-                            <span>{{ biologySignal.codex.reward |
-                              number }}
-                            cr</span>
-                          }
-                        </div>
-                      </div>
-                    }
-                  }
-                </div>
-              }
-              <!-- Thargoid Section -->
-              @if (thargoidSignals.length || thargoidSignalCount) {
-                <div class="body-data-section">
-                  <div class="body-data-section-header">
-                    Thargoid
-                    <img alt="" src="assets/icons/Thargoid.svg"
-                      style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
-                    </div>
-                    <div class="body-data-entry">
-                      <div>
-                        Total Signals
-                      </div>
-                      <div>
-                        {{ thargoidSignals.length }}/{{ thargoidSignalCount || 0 }}
-                      </div>
-                    </div>
-                    @if (thargoidSignals.length) {
-                      @for (thargoidSignal of thargoidSignals; track trackByString($index, thargoidSignal)) {
-                        <div
-                          class="body-data-entry">
-                          <div>
-                            {{ thargoidSignal }}
-                          </div>
-                          <div></div>
-                        </div>
-                      }
-                    }
-                  </div>
-                }
-                <!-- Guardian Section -->
-                @if (guardianSignals.length || guardianSignalCount) {
-                  <div class="body-data-section">
-                    <div class="body-data-section-header">
-                      Guardian
-                      <img alt="" src="assets/icons/Guardian.svg"
-                        style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
-                      </div>
-                      <div class="body-data-entry">
-                        <div>
-                          Total Signals
-                        </div>
-                        <div>
-                          {{ guardianSignals.length }}/{{ guardianSignalCount || 0 }}
-                        </div>
-                      </div>
-                      @if (guardianSignals.length) {
-                        @for (guardianSignal of guardianSignals; track trackByString($index, guardianSignal)) {
-                          <div
-                            class="body-data-entry">
-                            <div>
-                              {{ guardianSignal }}
-                            </div>
-                            <div></div>
-                          </div>
-                        }
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-            </div>
-          }
-          <div class="system-body-end"></div>
-          <div class="child-bodies">
-            @for (body of body().subBodies; track $index; let isLast = $last) {
-              <app-system-body [body]="body"
-              [isLast]="isLast" [forceExpanded]="forceExpanded() || isAnchorBody" [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxyData()"></app-system-body>
+            @if (otherSignalCount) {
+            <img alt=""
+                 src="assets/icons/Other.png"
+                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
             }
           </div>
+          @if (humanSignalCount) {
+          <div class="body-data-entry">
+            <div>
+              Human
+            </div>
+            <div>
+              {{ humanSignalCount }}
+            </div>
+          </div>
+          }
+          @if (otherSignalCount) {
+          <div class="body-data-entry">
+            <div>
+              Other
+            </div>
+            <div>
+              {{ otherSignalCount }}
+            </div>
+          </div>
+          }
         </div>
+        }
+        <!-- Geology Section -->
+        @if ((geologySignals.length || geologySignalCount) && body().bodyData.type !== 'Star') {
+        <div class="body-data-section">
+          <div class="body-data-section-header">
+            Geology
+            <img alt=""
+                 src="assets/icons/Geology.svg"
+                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+          </div>
+          <div class="body-data-entry">
+            <div>
+              Total Signals
+            </div>
+            <div>
+              {{ geologySignals.length }}/{{ geologySignalCount || 0 }}
+            </div>
+          </div>
+          @if (geologySignals.length) {
+          @for (geologySignal of geologySignals; track trackByString($index, geologySignal)) {
+          <div class="body-data-entry">
+            <div>
+              {{ geologySignal }}
+            </div>
+            <div></div>
+          </div>
+          }
+          }
+        </div>
+        }
+        <!-- Biology Section -->
+        @if ((biologySignals.length || biologySignalCount) && body().bodyData.type !== 'Star') {
+        <div class="body-data-section">
+          <div class="body-data-section-header">
+            Biology
+            <img alt=""
+                 src="assets/icons/Biology.svg"
+                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+          </div>
+          <div class="body-data-entry">
+            <div>
+              Total Signals
+            </div>
+            <div>
+              {{ getConfirmedBiologyCount() }}/{{ biologySignalCount || 0 }}
+            </div>
+          </div>
+          @if (biologySignals.length) {
+          @for (biologySignal of biologySignals; track trackByBiologySignal($index, biologySignal)) {
+          <div class="body-data-entry">
+            <div>
+              @if (biologySignal.isGuess) {
+              <fa-icon [icon]="faCircleQuestion"
+                       matTooltip="Guess"></fa-icon>
+              }
+              @if (!biologySignal.entryId) {
+              <span>
+                {{ biologySignal.signal }}</span>
+              }
+              @if (biologySignal.entryId) {
+              <span>
+                <a href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  {{ biologySignal.signal }}
+                  <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
+                </a>
+              </span>
+              }
+            </div>
+            <div>
+              @if (biologySignal.codex?.reward) {
+              <span>{{ biologySignal.codex.reward |
+                number }}
+                cr</span>
+              }
+            </div>
+          </div>
+          }
+          }
+        </div>
+        }
+        <!-- Thargoid Section -->
+        @if (thargoidSignals.length || thargoidSignalCount) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">
+            Thargoid
+            <img alt=""
+                 src="assets/icons/Thargoid.svg"
+                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+          </div>
+          <div class="body-data-entry">
+            <div>
+              Total Signals
+            </div>
+            <div>
+              {{ thargoidSignals.length }}/{{ thargoidSignalCount || 0 }}
+            </div>
+          </div>
+          @if (thargoidSignals.length) {
+          @for (thargoidSignal of thargoidSignals; track trackByString($index, thargoidSignal)) {
+          <div class="body-data-entry">
+            <div>
+              {{ thargoidSignal }}
+            </div>
+            <div></div>
+          </div>
+          }
+          }
+        </div>
+        }
+        <!-- Guardian Section -->
+        @if (guardianSignals.length || guardianSignalCount) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">
+            Guardian
+            <img alt=""
+                 src="assets/icons/Guardian.svg"
+                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+          </div>
+          <div class="body-data-entry">
+            <div>
+              Total Signals
+            </div>
+            <div>
+              {{ guardianSignals.length }}/{{ guardianSignalCount || 0 }}
+            </div>
+          </div>
+          @if (guardianSignals.length) {
+          @for (guardianSignal of guardianSignals; track trackByString($index, guardianSignal)) {
+          <div class="body-data-entry">
+            <div>
+              {{ guardianSignal }}
+            </div>
+            <div></div>
+          </div>
+          }
+          }
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+}
+<div class="system-body-end"></div>
+<div class="child-bodies">
+  @for (body of body().subBodies; track $index; let isLast = $last) {
+  <app-system-body [body]="body"
+                   [isLast]="isLast"
+                   [forceExpanded]="forceExpanded() || isAnchorBody"
+                   [anchorBodyId]="anchorBodyId()"
+                   [edGalaxyData]="edGalaxyData()"></app-system-body>
+  }
+</div>
+</div>
 
-        <ng-template #hillLimitDialogTemplate>
-          @if (hillLimitDialogData) {
-            <div class="hill-limit-dialog">
-              <h2 mat-dialog-title>Shepherding Moon Analysis</h2>
-              <mat-dialog-content>
-                <p class="intro">
-                  This analysis evaluates whether this moon could act as a "shepherd moon" - a small satellite that helps
-                  maintain or shape the parent body's ring system through gravitational interactions.
-                </p>
-                <p class="intro">
-                  The Hill sphere represents the region around the moon where its gravity dominates. If this sphere
-                  extends close to or overlaps with the ring system, the moon could influence ring particle orbits.
-                </p>
-                <div class="chart-container">
-                  @if (isChartLoading()) {
-                    <div class="chart-loading">
-                      <p>Generating visualization...</p>
-                    </div>
-                  }
-                  <canvas width="700" height="500" role="img"
-                    [attr.aria-label]="'Logarithmic orbital diagram showing the orbit of ' + hillLimitDialogData.bodyName + ' relative to the rings of ' + hillLimitDialogData.parentName + ', with the Hill sphere extent used for shepherding analysis. The numeric analysis results follow below.'"></canvas>
-                </div>
-                <div class="values">
-                  <p><strong>Analysis Results</strong></p>
-                  <ul>
-                    <li><strong>Moon name:</strong> {{ hillLimitDialogData.bodyName }}</li>
-                    <li><strong>Parent body:</strong> {{ hillLimitDialogData.parentName }}</li>
-                    <li><strong>Moon orbital radius:</strong> {{
-                    hillLimitDialogData.bodyOrbitalRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
-                    maximumFractionDigits: 0})
-                  }} km</li>
-                  <li><strong>Moon periapsis:</strong> {{
-                  hillLimitDialogData.bodyPeriapsis.toLocaleString('en-US', {minimumFractionDigits: 0,
-                  maximumFractionDigits: 0})
-                }} km</li>
-                <li><strong>Moon apoapsis:</strong> {{
-                hillLimitDialogData.bodyApoapsis.toLocaleString('en-US', {minimumFractionDigits: 0,
-                maximumFractionDigits: 0})
-              }} km</li>
-              <li><strong>Hill sphere radius:</strong> {{
-              hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
-              maximumFractionDigits: 0})
+<ng-template #hillLimitDialogTemplate>
+  @if (hillLimitDialogData) {
+  <div class="hill-limit-dialog">
+    <h2 mat-dialog-title>Shepherding Moon Analysis</h2>
+    <mat-dialog-content>
+      <p class="intro">
+        This analysis evaluates whether this moon could act as a "shepherd moon" - a small satellite that helps
+        maintain or shape the parent body's ring system through gravitational interactions.
+      </p>
+      <p class="intro">
+        The Hill sphere represents the region around the moon where its gravity dominates. If this sphere
+        extends close to or overlaps with the ring system, the moon could influence ring particle orbits.
+      </p>
+      <div class="chart-container">
+        @if (isChartLoading()) {
+        <div class="chart-loading">
+          <p>Generating visualization...</p>
+        </div>
+        }
+        <canvas width="700"
+                height="500"
+                role="img"
+                [attr.aria-label]="'Logarithmic orbital diagram showing the orbit of ' + hillLimitDialogData.bodyName + ' relative to the rings of ' + hillLimitDialogData.parentName + ', with the Hill sphere extent used for shepherding analysis. The numeric analysis results follow below.'"></canvas>
+      </div>
+      <div class="values">
+        <p><strong>Analysis Results</strong></p>
+        <ul>
+          <li><strong>Moon name:</strong> {{ hillLimitDialogData.bodyName }}</li>
+          <li><strong>Parent body:</strong> {{ hillLimitDialogData.parentName }}</li>
+          <li><strong>Moon orbital radius:</strong> {{
+            hillLimitDialogData.bodyOrbitalRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
+            maximumFractionDigits: 0})
             }} km</li>
-            <li><strong>Outermost ring:</strong> {{
+          <li><strong>Moon periapsis:</strong> {{
+            hillLimitDialogData.bodyPeriapsis.toLocaleString('en-US', {minimumFractionDigits: 0,
+            maximumFractionDigits: 0})
+            }} km</li>
+          <li><strong>Moon apoapsis:</strong> {{
+            hillLimitDialogData.bodyApoapsis.toLocaleString('en-US', {minimumFractionDigits: 0,
+            maximumFractionDigits: 0})
+            }} km</li>
+          <li><strong>Hill sphere radius:</strong> {{
+            hillLimitDialogData.hillRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
+            maximumFractionDigits: 0})
+            }} km</li>
+          <li><strong>Outermost ring:</strong> {{
             hillLimitDialogData.outermostRingRadius.toLocaleString('en-US', {minimumFractionDigits: 0,
             maximumFractionDigits: 0})
-          }} km</li>
+            }} km</li>
         </ul>
         <p><strong>Shepherding Analysis:</strong></p>
         <div class="conclusion">
           @switch (hillLimitDialogData.shepherdStatus) {
-            @case ('shepherd') {
-              <div>
-                <strong>Status:</strong> <span class="status-info">Shepherd Moon</span><br>
-                The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US',
+          @case ('shepherd') {
+          <div>
+            <strong>Status:</strong> <span class="status-info">Shepherd Moon</span><br>
+            The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US',
               {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) extends
-              close enough to the ring system to potentially confine or shape the outer edge of the rings.
-              Its gravity likely influences ring particle orbits through direct gravitational interaction
-              or resonances.
-            </div>
+            close enough to the ring system to potentially confine or shape the outer edge of the rings.
+            Its gravity likely influences ring particle orbits through direct gravitational interaction
+            or resonances.
+          </div>
           }
           @case ('inner') {
-            <div>
-              <strong>Status:</strong> <span class="status-success">Inner Moon (not a
-            shepherd)</span><br>
+          <div>
+            <strong>Status:</strong> <span class="status-success">Inner Moon (not a
+              shepherd)</span><br>
             This moon orbits within the ring system but is too far from the ring edge for its Hill
             sphere to influence the rings. It is not considered a shepherd moon.
           </div>
-        }
-        @case ('none') {
+          }
+          @case ('none') {
           <div>
             <strong>Status:</strong> <span class="status-muted">Not a Shepherd</span><br>
             The moon's Hill sphere (<strong>{{ hillLimitDialogData.hillRadius.toLocaleString('en-US',
-          {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) is too far
-          from the ring system to have any shepherding effect.
+              {minimumFractionDigits: 0, maximumFractionDigits: 0}) }} km</strong> radius) is too far
+            from the ring system to have any shepherding effect.
+          </div>
+          }
+          }
         </div>
-      }
-    }
+      </div>
+      <div class="disclaimer">
+        <p><strong>Note:</strong> This is a simplified analysis focusing on the local gravitational environment.
+          Actual shepherding effects depend on many factors including orbital resonances, ring particle size
+          distribution, and long-term dynamical evolution.</p>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+    </mat-dialog-actions>
   </div>
-</div>
-<div class="disclaimer">
-  <p><strong>Note:</strong> This is a simplified analysis focusing on the local gravitational environment.
-  Actual shepherding effects depend on many factors including orbital resonances, ring particle size
-distribution, and long-term dynamical evolution.</p>
-</div>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Close</button>
-</mat-dialog-actions>
-</div>
-}
+  }
 </ng-template>
 
 <ng-template #jetAngleDialogTemplate>
@@ -1036,35 +1098,36 @@ distribution, and long-term dynamical evolution.</p>
       </p>
       <h3>Fit vs sample data</h3>
       <p>The chart below is a bubble plot: <strong>x</strong> = rotational period (days, log scale),
-      <strong>y</strong> = solar radius (Ls). Point color encodes <strong>age</strong> (older → red), and
-      point size indicates the measured jet cone half angle (degrees).
-    </p>
-    @if (jetAngleChartDataUrl) {
+        <strong>y</strong> = solar radius (Ls). Point color encodes <strong>age</strong> (older → red), and
+        point size indicates the measured jet cone half angle (degrees).
+      </p>
+      @if (jetAngleChartDataUrl) {
       <div>
         <img [src]="jetAngleChartDataUrl"
-          alt="Bubble plot of neutron-star jet-cone angle against rotational period and radius, with bubble colour indicating stellar age and bubble size the jet angle."
-          class="jet-angle-chart-image" />
+             alt="Bubble plot of neutron-star jet-cone angle against rotational period and radius, with bubble colour indicating stellar age and bubble size the jet angle."
+             class="jet-angle-chart-image" />
       </div>
-    }
-  </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Close</button>
-  </mat-dialog-actions>
-</div>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  </div>
 </ng-template>
 
 <ng-template #apoPeriDialogTemplate>
   @if (apoPeriDialogData) {
-    <div class="apo-peri-dialog">
-      <h2 mat-dialog-title>{{ apoPeriDialogData.type === 'apo' ? 'Next Apoapsis' : 'Next Periapsis' }}</h2>
-      <mat-dialog-content>
-        <div class="values">
-          <ul>
-            <li><strong>Event:</strong> {{ apoPeriDialogData.type === 'apo' ? 'Apoapsis' : 'Periapsis' }}</li>
-            <li><strong>Date (UTC):</strong> {{ apoPeriDialogData.date | date:'yyyy-MM-dd HH:mm' }}</li>
-            <li><strong>Time until event:</strong> {{ apoPeriDialogData.days | number:'0.1-1' }} days</li>
-            @if (apoPeriDialogData.distanceKm !== undefined) {
-              <li><strong>Distance at event:</strong>
+  <div class="apo-peri-dialog">
+    <h2 mat-dialog-title>{{ apoPeriDialogData.type === 'apo' ? 'Next Apoapsis' : 'Next Periapsis' }}</h2>
+    <mat-dialog-content>
+      <div class="values">
+        <ul>
+          <li><strong>Event:</strong> {{ apoPeriDialogData.type === 'apo' ? 'Apoapsis' : 'Periapsis' }}</li>
+          <li><strong>Date (UTC):</strong> {{ apoPeriDialogData.date | date:'yyyy-MM-dd HH:mm' }}</li>
+          <li><strong>Time until event:</strong> {{ apoPeriDialogData.days | number:'0.1-1' }} days</li>
+          @if (apoPeriDialogData.distanceKm !== undefined) {
+          <li><strong>Distance at event:</strong>
             {{ apoPeriDialogData.distanceKm | number:'0.0-0' }} km</li>
           }
         </ul>
@@ -1083,49 +1146,50 @@ distribution, and long-term dynamical evolution.</p>
         </p>
         <p><strong>How is the next date estimated?</strong></p>
         @if (apoPeriDialogData.meanAnomaly !== undefined) {
-          <p>
-            The calculation uses the stored mean anomaly (M0) and its timestamp (t0). Steps:
-          </p>
+        <p>
+          The calculation uses the stored mean anomaly (M0) and its timestamp (t0). Steps:
+        </p>
         }
         @if (apoPeriDialogData.meanAnomaly !== undefined) {
-          <ol>
-            <li>Compute elapsed time since the timestamp: <em>Δt = now - t0</em> (in days).</li>
-            <li>Compute the number of orbital cycles since then: <em>cycles = Δt / P</em>, where <em>P</em> is
-          the orbital period (days).</li>
+        <ol>
+          <li>Compute elapsed time since the timestamp: <em>Δt = now - t0</em> (in days).</li>
+          <li>Compute the number of orbital cycles since then: <em>cycles = Δt / P</em>, where <em>P</em> is
+            the orbital period (days).</li>
           <li>Advance the mean anomaly by <em>cycles × 360°</em> to get the current mean anomaly <em>M</em>:
-        </li>
-        <li><strong>M = (M0 + cycles × 360°) mod 360°</strong></li>
-        <li>Find the angular distance to the event:
-          <br>* For periapsis: <strong>Δθ = (360° − M) mod 360°</strong>
-          <br>* For apoapsis: <strong>Δθ = (180° − M) mod 360°</strong>
-        </li>
-        <li>Convert to time: <strong>Δt_event = (Δθ / 360°) × P</strong>. The event date is now + Δt_event.
-      </li>
-    </ol>
+          </li>
+          <li><strong>M = (M0 + cycles × 360°) mod 360°</strong></li>
+          <li>Find the angular distance to the event:
+            <br>* For periapsis: <strong>Δθ = (360° − M) mod 360°</strong>
+            <br>* For apoapsis: <strong>Δθ = (180° − M) mod 360°</strong>
+          </li>
+          <li>Convert to time: <strong>Δt_event = (Δθ / 360°) × P</strong>. The event date is now + Δt_event.
+          </li>
+        </ol>
+        }
+        @if (apoPeriDialogData.meanAnomaly === undefined) {
+        <p>
+          A next-event estimate requires a recorded mean anomaly and timestamp. If that data is unavailable
+          the
+          application cannot compute the next occurrence.
+        </p>
+        }
+        @if (apoPeriDialogData.currentMeanAnomaly !== undefined) {
+        <p>
+          Debug values used in the calculation:<br>
+          Recorded M0 = {{ apoPeriDialogData.meanAnomaly }}° at {{ apoPeriDialogData.timestamp |
+          date:'yyyy-MM-dd HH:mm' }}<br>
+          Current mean anomaly M ≈ {{ apoPeriDialogData.currentMeanAnomaly | number:'0.1-1' }}°<br>
+          Angular distance to event Δθ ≈ {{ apoPeriDialogData.degreesToEvent | number:'0.1-1' }}°
+        </p>
+        }
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  </div>
   }
-  @if (apoPeriDialogData.meanAnomaly === undefined) {
-    <p>
-      A next-event estimate requires a recorded mean anomaly and timestamp. If that data is unavailable
-      the
-      application cannot compute the next occurrence.
-    </p>
-  }
-  @if (apoPeriDialogData.currentMeanAnomaly !== undefined) {
-    <p>
-      Debug values used in the calculation:<br>
-      Recorded M0 = {{ apoPeriDialogData.meanAnomaly }}° at {{ apoPeriDialogData.timestamp |
-      date:'yyyy-MM-dd HH:mm' }}<br>
-      Current mean anomaly M ≈ {{ apoPeriDialogData.currentMeanAnomaly | number:'0.1-1' }}°<br>
-      Angular distance to event Δθ ≈ {{ apoPeriDialogData.degreesToEvent | number:'0.1-1' }}°
-    </p>
-  }
-</div>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Close</button>
-</mat-dialog-actions>
-</div>
-}
 </ng-template>
 
 <ng-template #invisibleRingDialogTemplate>
@@ -1151,207 +1215,226 @@ distribution, and long-term dynamical evolution.</p>
       </div>
 
       @if (invisibleRingDialogData) {
-        <div class="values">
-          <p><strong>Values for this ring:</strong></p>
-          <ul>
-            <li><strong>Ring name:</strong> {{ invisibleRingDialogData.ringName }}</li>
-            <li><strong>Inner radius:</strong> {{ invisibleRingDialogData.innerRadius.toLocaleString() }} km
+      <div class="values">
+        <p><strong>Values for this ring:</strong></p>
+        <ul>
+          <li><strong>Ring name:</strong> {{ invisibleRingDialogData.ringName }}</li>
+          <li><strong>Inner radius:</strong> {{ invisibleRingDialogData.innerRadius.toLocaleString() }} km
           </li>
           <li><strong>Outer radius:</strong> {{ invisibleRingDialogData.outerRadius.toLocaleString() }} km
-        </li>
-        <li><strong>Ring width:</strong> {{ invisibleRingDialogData.width.toLocaleString() }} km</li>
-        <li><strong>Ring area:</strong> {{ invisibleRingDialogData.area.toLocaleString() }} km²</li>
-        <li><strong>Ring mass:</strong> {{ invisibleRingDialogData.mass.toLocaleString() }} Mt</li>
-        <li><strong>Density:</strong> {{ invisibleRingDialogData.density.toFixed(6) }} Mt/km²</li>
-      </ul>
-    </div>
-  }
+          </li>
+          <li><strong>Ring width:</strong> {{ invisibleRingDialogData.width.toLocaleString() }} km</li>
+          <li><strong>Ring area:</strong> {{ invisibleRingDialogData.area.toLocaleString() }} km²</li>
+          <li><strong>Ring mass:</strong> {{ invisibleRingDialogData.mass.toLocaleString() }} Mt</li>
+          <li><strong>Density:</strong> {{ invisibleRingDialogData.density.toFixed(6) }} Mt/km²</li>
+        </ul>
+      </div>
+      }
 
-  @if (invisibleRingDialogData) {
-    <div class="result">
-      <p><strong>Analysis:</strong></p>
-      @if (invisibleRingDialogData.isInvisible) {
+      @if (invisibleRingDialogData) {
+      <div class="result">
+        <p><strong>Analysis:</strong></p>
+        @if (invisibleRingDialogData.isInvisible) {
         <p class="conclusion">
           This ring meets both criteria (density &lt; 0.1 Mt/km² and width &gt; 1,000,000 km) and is likely
           invisible in-game. The extremely low density means there is insufficient material to scatter light
           and create a visible ring structure.
         </p>
-      }
-      @if (!invisibleRingDialogData.isInvisible) {
+        }
+        @if (!invisibleRingDialogData.isInvisible) {
         <p class="conclusion-safe">
           This ring does not meet the invisibility criteria and should be visible in-game.
         </p>
+        }
+      </div>
       }
-    </div>
-  }
 
-  <p class="disclaimer">
-    <strong>Disclaimer:</strong> Ring visibility in Elite Dangerous depends on multiple factors including
-    camera position, lighting conditions, and game rendering settings. This calculation provides only an
-    estimate based on density and size.
+      <p class="disclaimer">
+        <strong>Disclaimer:</strong> Ring visibility in Elite Dangerous depends on multiple factors including
+        camera position, lighting conditions, and game rendering settings. This calculation provides only an
+        estimate based on density and size.
 
-    There may be some inaccuracies in this determination due to loss of precision in
-    the database compared to ship logs. The values stored in the database may have been rounded or truncated
-    during data collection.
+        There may be some inaccuracies in this determination due to loss of precision in
+        the database compared to ship logs. The values stored in the database may have been rounded or truncated
+        during data collection.
 
-  </p>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Close</button>
-</mat-dialog-actions>
-</div>
+      </p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  </div>
 </ng-template>
 
 <ng-template #jsonDialogTemplate>
   <div class="json-dialog">
-    <h2 mat-dialog-title #jsonDialogTitle tabindex="-1">
+    <h2 mat-dialog-title
+        #jsonDialogTitle
+        tabindex="-1">
       Body JSON Data
       <a class="edgalaxy-link"
-                [href]="'https://edgalaxydata.space/eddn-lookup/bodies.php?systemName=' + encodeURIComponent((edGalaxyData()?.Name || body().bodyData.name)) + '&systemId64=' + (edGalaxyData()?.SystemAddress || body().bodyData.id64) + '&bodyId=' + getEdGalaxyBodyId(body())"
-                title="Click to find journals in EDGalaxyData" target="_blank" rel="noopener noreferrer">
-                <img src="assets/icons/eddn.png" alt="EDDN" />
-                <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="JSON" />
-            </a>
-        </h2>
-        <mat-dialog-content class="json-dialog-content">
-            <pre>{{ getFormattedBodyJson() }}</pre>
-        </mat-dialog-content>
-        <mat-dialog-actions align="end">
-            <button mat-button mat-dialog-close>Close</button>
-            <button mat-button (click)="copyBodyJson()">{{ bodyJsonCopied() ? 'Copied!' : 'Copy to Clipboard' }}</button>
-        </mat-dialog-actions>
-    </div>
+         [href]="'https://edgalaxydata.space/eddn-lookup/bodies.php?systemName=' + encodeURIComponent((edGalaxyData()?.Name || body().bodyData.name)) + '&systemId64=' + (edGalaxyData()?.SystemAddress || body().bodyData.id64) + '&bodyId=' + getEdGalaxyBodyId(body())"
+         title="Click to find journals in EDGalaxyData"
+         target="_blank"
+         rel="noopener noreferrer">
+        <img src="assets/icons/eddn.png"
+             alt="EDDN" />
+        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg"
+             alt="JSON" />
+      </a>
+    </h2>
+    <mat-dialog-content class="json-dialog-content">
+      <pre>{{ getFormattedBodyJson() }}</pre>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+      <button mat-button
+              (click)="copyBodyJson()">{{ bodyJsonCopied() ? 'Copied!' : 'Copy to Clipboard' }}</button>
+    </mat-dialog-actions>
+  </div>
 </ng-template>
 
 <ng-template #rocheLimitDialogTemplate>
-    @if (rocheLimitDialogData) {
-<div class="roche-dialog">
-        <h2 mat-dialog-title>Roche Limit Analysis@if (!rocheLimitDialogData.isBody) {
-<span> - {{
-                rocheLimitDialogData.parentName }}</span>
-} - {{
-            rocheLimitDialogData.ringName }}</h2>
-        <mat-dialog-content>
-            <div class="chart-description">
-                <p>
-                    This chart shows the relationship between particle density and Roche limit distance.
-                    The Roche limit is the distance within which tidal forces would disintegrate a satellite.
-                </p>
-                <ul>
-                    <li><strong>Rigid limit</strong> (1.26 coefficient): for solid bodies held together by internal
-                        strength</li>
-                    <li><strong>Fluid limit</strong> (2.456 coefficient): for liquid or loosely bound bodies</li>
-                </ul>
-            </div>
-
-            <div class="chart-container">
-                @if (isChartLoading()) {
-<div class="chart-loading">
-                    <div class="spinner"></div>
-                    <p>Generating chart...</p>
-                </div>
-}
-                <canvas #rocheCanvas width="700" height="400" role="img"
-                  [attr.aria-label]="'Roche limit chart for ' + rocheLimitDialogData.ringName + ' around ' + rocheLimitDialogData.parentName + ', plotting the rigid and fluid Roche limits against particle density. See the summary below for the values.'"></canvas>
-            </div>
-
-            <div class="ring-summary">
-                <h3>Ring Positions</h3>
-                @for (ring of rocheLimitDialogData.rings; track ring) {
-<div class="ring-entry">
-                    <strong>{{ ring.name }}</strong> ({{ ring.type }})
-                    <br>
-                    Position: {{ ring.innerRadius | number:'0.0-0' }} - {{ ring.outerRadius | number:'0.0-0' }} km
-              <br>
-                Assumed density: {{ ring.density }} kg/m³
-              </div>
-            }
-          </div>
-        </mat-dialog-content>
-        <mat-dialog-actions align="end">
-          <button mat-button mat-dialog-close>Close</button>
-        </mat-dialog-actions>
-      </div>
-    }
-  </ng-template>
-
-  <ng-template #tidalLockDialogTemplate>
-    @if (tidalLockDialogData) {
-    <div class="tidal-lock-dialog">
-      <h2 mat-dialog-title>Tidal Locking & Synchronous Rotation</h2>
-      <mat-dialog-content>
-        <p class="intro">
-          @if (tidalLockDialogData.tidallyLocked) {
-            This body is <strong>tidally locked</strong>
-            @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
-              with a spin resonance of <strong>{{ tidalLockDialogData.resonance }}</strong>.
-            } @else {
-              without any detected spin resonance.
-            }
-          } @else {
-            This body is <strong>not flagged as tidally locked</strong> by the game journal,
-            @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
-              but it is in a <strong>{{ tidalLockDialogData.resonance }}</strong> spin–orbit resonance.
-              This means its rotation rate is synchronised with its orbit in a stable ratio,
-              which is itself a form of tidal evolution — even if the game does not set the tidal lock flag.
-            }
-          }
+  @if (rocheLimitDialogData) {
+  <div class="roche-dialog">
+    <h2 mat-dialog-title>Roche Limit Analysis@if (!rocheLimitDialogData.isBody) {
+      <span> - {{
+        rocheLimitDialogData.parentName }}</span>
+      } - {{
+      rocheLimitDialogData.ringName }}
+    </h2>
+    <mat-dialog-content>
+      <div class="chart-description">
+        <p>
+          This chart shows the relationship between particle density and Roche limit distance.
+          The Roche limit is the distance within which tidal forces would disintegrate a satellite.
         </p>
         <ul>
-          <li><strong>Rotational period:</strong> {{ tidalLockDialogData.rotationalPeriod | number:'0.2-2' }} days
+          <li><strong>Rigid limit</strong> (1.26 coefficient): for solid bodies held together by internal
+            strength</li>
+          <li><strong>Fluid limit</strong> (2.456 coefficient): for liquid or loosely bound bodies</li>
+        </ul>
+      </div>
+
+      <div class="chart-container">
+        @if (isChartLoading()) {
+        <div class="chart-loading">
+          <div class="spinner"></div>
+          <p>Generating chart...</p>
+        </div>
+        }
+        <canvas #rocheCanvas
+                width="700"
+                height="400"
+                role="img"
+                [attr.aria-label]="'Roche limit chart for ' + rocheLimitDialogData.ringName + ' around ' + rocheLimitDialogData.parentName + ', plotting the rigid and fluid Roche limits against particle density. See the summary below for the values.'"></canvas>
+      </div>
+
+      <div class="ring-summary">
+        <h3>Ring Positions</h3>
+        @for (ring of rocheLimitDialogData.rings; track ring) {
+        <div class="ring-entry">
+          <strong>{{ ring.name }}</strong> ({{ ring.type }})
+          <br>
+          Position: {{ ring.innerRadius | number:'0.0-0' }} - {{ ring.outerRadius | number:'0.0-0' }} km
+          <br>
+          Assumed density: {{ ring.density }} kg/m³
+        </div>
+        }
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  </div>
+  }
+</ng-template>
+
+<ng-template #tidalLockDialogTemplate>
+  @if (tidalLockDialogData) {
+  <div class="tidal-lock-dialog">
+    <h2 mat-dialog-title>Tidal Locking & Synchronous Rotation</h2>
+    <mat-dialog-content>
+      <p class="intro">
+        @if (tidalLockDialogData.tidallyLocked) {
+        This body is <strong>tidally locked</strong>
+        @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
+        with a spin resonance of <strong>{{ tidalLockDialogData.resonance }}</strong>.
+        } @else {
+        without any detected spin resonance.
+        }
+        } @else {
+        This body is <strong>not flagged as tidally locked</strong> by the game journal,
+        @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
+        but it is in a <strong>{{ tidalLockDialogData.resonance }}</strong> spin–orbit resonance.
+        This means its rotation rate is synchronised with its orbit in a stable ratio,
+        which is itself a form of tidal evolution — even if the game does not set the tidal lock flag.
+        }
+        }
+      </p>
+      <ul>
+        <li><strong>Rotational period:</strong> {{ tidalLockDialogData.rotationalPeriod | number:'0.2-2' }} days
         </li>
         <li><strong>Orbital period:</strong> {{ tidalLockDialogData.orbitalPeriod | number:'0.2-2' }} days</li>
         @if (tidalLockDialogData.difference !== null) {
-          <li><strong>Difference:</strong> {{
-        tidalLockDialogData.difference | number:'0.4-4' }} days</li>
-      }
-      @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
+        <li><strong>Difference:</strong> {{
+          tidalLockDialogData.difference | number:'0.4-4' }} days</li>
+        }
+        @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
         <li><strong>Spin-orbit
-        resonance:</strong> {{ tidalLockDialogData.resonance }}</li>
-      }
-    </ul>
-    <p class="explanation">
-      <strong>What is tidal locking?</strong><br>
-      The tidal lock indicator is often misinterpreted. It does not always mean that the body faces the same
-      direction relative to its parent body like the Moon faces the Earth. That is just a special
-      case.<br><br>
-      Tidal locking is the process by which tidal forces alter the rotation of a body until it reaches a
-      long-term rotational equilibrium with its orbit. A body is considered tidally locked when its average
-      rotational evolution has stabilised and the net tidal torque over an orbit is effectively zero
-      (<em>dω/dt ≈ 0</em>).<br><br>
-      <em>ω (omega)</em> means rotational speed — how fast the body spins.<br>
-      <em>dω/dt</em> means "how the spin rate changes over time."<br><br>
-      This equilibrium may occur in several forms depending on orbital eccentricity and axial tilt.
-    </p>
-    <p><strong>Special cases include:</strong></p>
-    <ul>
-      <li>
-        <strong>Synchronous rotation (1:1 resonance)</strong><br>
-        The rotation period equals the orbital period and the same hemisphere always faces the parent body.
-        Example: Earth's Moon.
+            resonance:</strong> {{ tidalLockDialogData.resonance }}</li>
+        }
+      </ul>
+      <p class="explanation">
+        <strong>What is tidal locking?</strong><br>
+        The tidal lock indicator is often misinterpreted. It does not always mean that the body faces the same
+        direction relative to its parent body like the Moon faces the Earth. That is just a special
+        case.<br><br>
+        Tidal locking is the process by which tidal forces alter the rotation of a body until it reaches a
+        long-term rotational equilibrium with its orbit. A body is considered tidally locked when its average
+        rotational evolution has stabilised and the net tidal torque over an orbit is effectively zero
+        (<em>dω/dt ≈ 0</em>).<br><br>
+        <em>ω (omega)</em> means rotational speed — how fast the body spins.<br>
+        <em>dω/dt</em> means "how the spin rate changes over time."<br><br>
+        This equilibrium may occur in several forms depending on orbital eccentricity and axial tilt.
+      </p>
+      <p><strong>Special cases include:</strong></p>
+      <ul>
+        <li>
+          <strong>Synchronous rotation (1:1 resonance)</strong><br>
+          The rotation period equals the orbital period and the same hemisphere always faces the parent body.
+          Example: Earth's Moon.
 
-        However, axial tilt can result in some surface seasonality over the course of an orbit.
-      </li>
-      <li>
-        <strong>Higher-order spin–orbit resonances</strong><br>
-        The body rotates in a stable ratio other than 1:1. Example: Mercury's 3:2 resonance, where it
-        rotates three times every two orbits.
-      </li>
-    </ul>
+          However, axial tilt can result in some surface seasonality over the course of an orbit.
+        </li>
+        <li>
+          <strong>Higher-order spin–orbit resonances</strong><br>
+          The body rotates in a stable ratio other than 1:1. Example: Mercury's 3:2 resonance, where it
+          rotates three times every two orbits.
+        </li>
+      </ul>
 
-    <p><strong>Further reading:</strong></p>
-    <ul>
-      <li><a href="https://astro4edu.org/resources/glossary/term/484/" target="_blank" rel="noopener noreferrer"
-      rel="noopener noreferrer">Tidal locking — astro4edu glossary</a></li>
-      <li><a href="https://arxiv.org/pdf/1101.2156.pdf" target="_blank" rel="noopener noreferrer">Tidal
-      evolution of close-in extra-solar planets (Ferraz-Mello et al., 2011) — arXiv</a></li>
-    </ul>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Close</button>
-  </mat-dialog-actions>
-</div>
-    }
+      <p><strong>Further reading:</strong></p>
+      <ul>
+        <li><a href="https://astro4edu.org/resources/glossary/term/484/"
+             target="_blank"
+             rel="noopener noreferrer"
+             rel="noopener noreferrer">Tidal locking — astro4edu glossary</a></li>
+        <li><a href="https://arxiv.org/pdf/1101.2156.pdf"
+             target="_blank"
+             rel="noopener noreferrer">Tidal
+            evolution of close-in extra-solar planets (Ferraz-Mello et al., 2011) — arXiv</a></li>
+      </ul>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  </div>
+  }
 </ng-template>
 
 <ng-template #onFootSafetyDialogTemplate>
@@ -1363,136 +1446,170 @@ distribution, and long-term dynamical evolution.</p>
       <!-- Verdict -->
       <p class="intro">
         @if (onFootSafetyDialogData.gravity && onFootSafetyDialogData.gravity > 2.7) {
-          <strong class="safety-red">&#x26A0; Cannot disembark.</strong>
-          Gravity of {{ onFootSafetyDialogData.gravity | number:'0.2-2' }} g exceeds the 2.7 g threshold
-          &mdash;
-          the SRV bay will not permit on-foot activities regardless of temperature.
+        <strong class="safety-red">&#x26A0; Cannot disembark.</strong>
+        Gravity of {{ onFootSafetyDialogData.gravity | number:'0.2-2' }} g exceeds the 2.7 g threshold
+        &mdash;
+        the SRV bay will not permit on-foot activities regardless of temperature.
         }
-        @if (!onFootSafetyDialogData.gravity || onFootSafetyDialogData.gravity <= 2.7) {
-          @if (onFootSafetyDialogData.badgeClass === 'badge-green') {
-            <strong class="safety-green">&#x2713; Safe to disembark.</strong>
-            The estimated temperature range is within safe limits across both the cooler and warmer sides of
-            this body.
+        @if (!onFootSafetyDialogData.gravity || onFootSafetyDialogData.gravity <= 2.7)
+           {
+           @if
+           (onFootSafetyDialogData.badgeClass==='badge-green'
+           )
+           {
+           <strong
+           class="safety-green">&#x2713; Safe to disembark.</strong>
+          The estimated temperature range is within safe limits across both the cooler and warmer sides of
+          this body.
           }
           @if (onFootSafetyDialogData.badgeClass === 'badge-orange') {
-            <strong class="safety-amber">&#x26A0; Partial risk.</strong>
-            Part of the estimated temperature range falls outside safe limits &mdash; conditions may be
-            hazardous depending on location. Seek out the safer side as indicated below.
+          <strong class="safety-amber">&#x26A0; Partial risk.</strong>
+          Part of the estimated temperature range falls outside safe limits &mdash; conditions may be
+          hazardous depending on location. Seek out the safer side as indicated below.
           }
           @if (onFootSafetyDialogData.badgeClass === 'badge-red') {
-            <strong class="safety-red">&#x2717; Not safe to disembark.</strong>
-            The entire estimated temperature range is outside safe limits &mdash; the suit cannot protect
-            you here.
+          <strong class="safety-red">&#x2717; Not safe to disembark.</strong>
+          The entire estimated temperature range is outside safe limits &mdash; the suit cannot protect
+          you here.
           }
           @if (onFootSafetyDialogData.badgeClass === 'badge-gray') {
-            <strong>Unknown.</strong> Insufficient data to assess on-foot safety.
+          <strong>Unknown.</strong> Insufficient data to assess on-foot safety.
           }
-        }
+          }
       </p>
 
       <!-- Key facts -->
       <ul>
         <li><strong>Surface temperature:</strong>
-      {{ onFootSafetyDialogData.surfaceTemperature | number:'0.2-2' }} K</li>
-      <li><strong>Estimated cool side (p5th percentile):</strong>
-    {{ onFootSafetyDialogData.estimatedMin | number:'0.2-2' }} K</li>
-    <li><strong>Estimated warm side (p95th percentile):</strong>
-  {{ onFootSafetyDialogData.estimatedMax | number:'0.2-2' }} K</li>
-  @if (onFootSafetyDialogData.gravity) {
-    <li><strong>Gravity:</strong>
-  {{ onFootSafetyDialogData.gravity | number:'0.2-2' }} g</li>
-}
-<li><strong>Atmosphere:</strong> {{ onFootSafetyDialogData.atmosphereType || 'None' }}</li>
-</ul>
+          {{ onFootSafetyDialogData.surfaceTemperature | number:'0.2-2' }} K</li>
+        <li><strong>Estimated cool side (p5th percentile):</strong>
+          {{ onFootSafetyDialogData.estimatedMin | number:'0.2-2' }} K</li>
+        <li><strong>Estimated warm side (p95th percentile):</strong>
+          {{ onFootSafetyDialogData.estimatedMax | number:'0.2-2' }} K</li>
+        @if (onFootSafetyDialogData.gravity) {
+        <li><strong>Gravity:</strong>
+          {{ onFootSafetyDialogData.gravity | number:'0.2-2' }} g</li>
+        }
+        <li><strong>Atmosphere:</strong> {{ onFootSafetyDialogData.atmosphereType || 'None' }}</li>
+      </ul>
 
-<!-- Day/night side assessment (min and max are always populated together) -->
-@if (onFootSafetyDialogData.estimatedMin !== null && onFootSafetyDialogData.estimatedMax !== null) {
-  <p class="explanation">
-    <strong>Cool side vs warm side:</strong><br>
-    The cool-side estimate represents shaded, polar, or night-side locations (5th percentile of observed
-    organic temperatures on bodies with matching characteristics). The warm-side estimate represents
-    sun-facing or equatorial locations (95th percentile).<br><br>
-    Cool side ({{ onFootSafetyDialogData.estimatedMin | number:'0.0-0' }} K):
-    @if (onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700) {
-      <strong class="safety-green">safe to disembark.</strong>
-    }
-    @if (onFootSafetyDialogData.estimatedMin < 182) {
-      <strong class="safety-amber">battery drain risk.</strong>
-    }
-    @if (onFootSafetyDialogData.estimatedMin >= 700) {
-      <strong class="safety-red">risk of injury or death.</strong>
-    }
-    <br>
-      Warm side ({{ onFootSafetyDialogData.estimatedMax | number:'0.0-0' }} K):
-      @if (onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700) {
-        <strong class="safety-green">safe to disembark.</strong>
+      <!-- Day/night side assessment (min and max are always populated together) -->
+      @if (onFootSafetyDialogData.estimatedMin !== null && onFootSafetyDialogData.estimatedMax !== null) {
+      <p class="explanation">
+        <strong>Cool side vs warm side:</strong><br>
+        The cool-side estimate represents shaded, polar, or night-side locations (5th percentile of observed
+        organic temperatures on bodies with matching characteristics). The warm-side estimate represents
+        sun-facing or equatorial locations (95th percentile).<br><br>
+        Cool side ({{ onFootSafetyDialogData.estimatedMin | number:'0.0-0' }} K):
+        @if (onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700)
+          {
+          <strong
+          class="safety-green">safe to disembark.</strong>
+          }
+          @if (onFootSafetyDialogData.estimatedMin < 182)
+            {
+            <strong
+            class="safety-amber">battery drain risk.</strong>
+            }
+            @if (onFootSafetyDialogData.estimatedMin >= 700) {
+            <strong class="safety-red">risk of injury or death.</strong>
+            }
+            <br>
+            Warm side ({{ onFootSafetyDialogData.estimatedMax | number:'0.0-0' }} K):
+            @if (onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700)
+              {
+              <strong
+              class="safety-green">safe to disembark.</strong>
+              }
+              @if (onFootSafetyDialogData.estimatedMax < 182)
+                {
+                <strong
+                class="safety-amber">battery drain risk.</strong>
+                }
+                @if (onFootSafetyDialogData.estimatedMax >= 700) {
+                <strong class="safety-red">risk of injury or death.</strong>
+                }
+                <br><br>
+                @if (onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700
+                  &&
+                  (onFootSafetyDialogData.estimatedMax
+                  <
+                  182
+                  ||
+                  onFootSafetyDialogData.estimatedMax>= 700)) {
+                  <strong>Recommendation:</strong> Favour the cooler, shaded or night-side locations.
+                  }
+                  @if (onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700
+                    &&
+                    onFootSafetyDialogData.estimatedMin
+                    <
+                    182)
+                    {
+                    <strong>Recommendation:</strong> Favour the warmer, sun-facing or day-side locations.
+                    }
+                    @if (onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700
+                      &&
+                      onFootSafetyDialogData.estimatedMax>= 182 && onFootSafetyDialogData.estimatedMax < 700)
+                        {
+                        <strong>Both sides are within safe limits.</strong> No particular location preference needed.
+                        }
+                        @if ((onFootSafetyDialogData.estimatedMin < 182
+                          ||
+                          onFootSafetyDialogData.estimatedMin>= 700) && (onFootSafetyDialogData.estimatedMax < 182
+                            ||
+                            onFootSafetyDialogData.estimatedMax>= 700)) {
+                            <strong class="safety-red">Caution:</strong> Neither side is estimated to be within safe
+                            limits.
+                            }
+      </p>
       }
-      @if (onFootSafetyDialogData.estimatedMax < 182) {
-        <strong class="safety-amber">battery drain risk.</strong>
-      }
-      @if (onFootSafetyDialogData.estimatedMax >= 700) {
-        <strong class="safety-red">risk of injury or death.</strong>
-      }
-      <br><br>
-      @if (onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700 && (onFootSafetyDialogData.estimatedMax < 182 || onFootSafetyDialogData.estimatedMax >= 700)) {
-        <strong>Recommendation:</strong> Favour the cooler, shaded or night-side locations.
-      }
-      @if (onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700 && onFootSafetyDialogData.estimatedMin < 182) {
-        <strong>Recommendation:</strong> Favour the warmer, sun-facing or day-side locations.
-      }
-      @if (onFootSafetyDialogData.estimatedMin >= 182 && onFootSafetyDialogData.estimatedMin < 700 && onFootSafetyDialogData.estimatedMax >= 182 && onFootSafetyDialogData.estimatedMax < 700) {
-        <strong>Both sides are within safe limits.</strong> No particular location preference needed.
-      }
-      @if ((onFootSafetyDialogData.estimatedMin < 182 || onFootSafetyDialogData.estimatedMin >= 700) && (onFootSafetyDialogData.estimatedMax < 182 || onFootSafetyDialogData.estimatedMax >= 700)) {
-        <strong class="safety-red">Caution:</strong> Neither side is estimated to be within safe limits.
-      }
-    </p>
+
+      <!-- Thresholds -->
+      <p class="explanation"><strong>On-foot safety thresholds:</strong></p>
+      <ul>
+        <li><strong>&lt; 182 K</strong> &mdash; battery drain risk. The suit's thermal management cannot cope
+          with extreme cold and battery life is severely reduced.</li>
+        <li><strong>182 &ndash; 699 K</strong> &mdash; safe to disembark.</li>
+        <li><strong>&ge; 700 K</strong> &mdash; risk of injury or death. The suit cannot protect against
+          extreme heat.</li>
+        <li><strong>&gt; 2.7 g</strong> &mdash; disembarking is blocked by the SRV bay regardless of
+          temperature.</li>
+      </ul>
+
+      <!-- How min/max was determined -->
+      <p class="explanation">
+        <strong>How are the estimated temperatures calculated?</strong><br>
+        The min and max figures come from a dataset of <strong>3,301,198 organic temperature
+          measurements</strong> collected from EDSM and in-game journal data. For each reading the on-foot
+        temperature was compared against the body's surface temperature to produce a <em>deltaT</em> value.
+        The 5th and 95th percentiles of these deltas give a ~90% coverage interval:<br><br>
+        <em>Est. min = surface temperature + p5 deltaT</em><br>
+        <em>Est. max = surface temperature + p95 deltaT</em>
+      </p>
+      <ul>
+        <li><strong>p5 deltaT applied:</strong> {{ onFootSafetyDialogData.p5Delta | number:'0.2-2' }} K</li>
+        <li><strong>p95 deltaT applied:</strong> {{ onFootSafetyDialogData.p95Delta | number:'0.2-2' }} K</li>
+        <li><strong>Lookup table matched:</strong> {{ onFootSafetyDialogData.lookupSource }}</li>
+      </ul>
+      <p>
+        The lookup uses a priority chain: (1) subType + atmosphere combination, (2) subType with confirmed zero
+        pressure, (3) subType alone, (4) atmosphere type alone, (5) surface pressure class, (6) global
+        fallback. The most specific match available for this body was used.
+      </p>
+
+      <!-- Download -->
+      <p>
+        <button mat-stroked-button
+                (click)="downloadOnFootReferenceData()">
+          Download full reference table (CSV)
+        </button>
+      </p>
+
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button
+              mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  </div>
   }
-
-  <!-- Thresholds -->
-  <p class="explanation"><strong>On-foot safety thresholds:</strong></p>
-  <ul>
-    <li><strong>&lt; 182 K</strong> &mdash; battery drain risk. The suit's thermal management cannot cope
-  with extreme cold and battery life is severely reduced.</li>
-  <li><strong>182 &ndash; 699 K</strong> &mdash; safe to disembark.</li>
-  <li><strong>&ge; 700 K</strong> &mdash; risk of injury or death. The suit cannot protect against
-extreme heat.</li>
-<li><strong>&gt; 2.7 g</strong> &mdash; disembarking is blocked by the SRV bay regardless of
-temperature.</li>
-</ul>
-
-<!-- How min/max was determined -->
-<p class="explanation">
-  <strong>How are the estimated temperatures calculated?</strong><br>
-  The min and max figures come from a dataset of <strong>3,301,198 organic temperature
-measurements</strong> collected from EDSM and in-game journal data. For each reading the on-foot
-temperature was compared against the body's surface temperature to produce a <em>deltaT</em> value.
-The 5th and 95th percentiles of these deltas give a ~90% coverage interval:<br><br>
-<em>Est. min = surface temperature + p5 deltaT</em><br>
-<em>Est. max = surface temperature + p95 deltaT</em>
-</p>
-<ul>
-  <li><strong>p5 deltaT applied:</strong> {{ onFootSafetyDialogData.p5Delta | number:'0.2-2' }} K</li>
-  <li><strong>p95 deltaT applied:</strong> {{ onFootSafetyDialogData.p95Delta | number:'0.2-2' }} K</li>
-  <li><strong>Lookup table matched:</strong> {{ onFootSafetyDialogData.lookupSource }}</li>
-</ul>
-<p>
-  The lookup uses a priority chain: (1) subType + atmosphere combination, (2) subType with confirmed zero
-  pressure, (3) subType alone, (4) atmosphere type alone, (5) surface pressure class, (6) global
-  fallback. The most specific match available for this body was used.
-</p>
-
-<!-- Download -->
-<p>
-  <button mat-stroked-button (click)="downloadOnFootReferenceData()">
-    Download full reference table (CSV)
-  </button>
-</p>
-
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Close</button>
-</mat-dialog-actions>
-</div>
-}
 </ng-template>

@@ -168,6 +168,35 @@ export class OrbitalRelationsService {
     return (((meanAnomalyDeg + orbitalCycles * 360) % 360) + 360) % 360;
   }
 
+  /**
+   * Converts a mean anomaly (degrees) to a true anomaly (degrees, wrapped to [0, 360))
+   * for the given eccentricity by solving Kepler's equation M = E - e·sin E with
+   * Newton–Raphson, then mapping the eccentric anomaly E to the true anomaly ν. This
+   * gives the body's actual angular position along its orbit, measured from periapsis.
+   */
+  meanToTrueAnomaly(meanAnomalyDeg: number, eccentricity: number): number {
+    // Guard against non-finite inputs (e.g. a NaN eccentricity) so a single bad field
+    // can't poison the solver into returning NaN and silently freezing the live marker.
+    const e = Number.isFinite(eccentricity) ? Math.min(Math.max(eccentricity, 0), 0.999) : 0;
+    const meanDeg = Number.isFinite(meanAnomalyDeg) ? meanAnomalyDeg : 0;
+    const M = ((meanDeg % 360) + 360) % 360 * (Math.PI / 180);
+
+    // Newton–Raphson on f(E) = E - e·sin E - M. A handful of iterations converges to
+    // machine precision for all bound (e < 1) orbits.
+    let E = e < 0.8 ? M : Math.PI;
+    for (let i = 0; i < 12; i++) {
+      const delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+      E -= delta;
+      if (Math.abs(delta) < 1e-10) break;
+    }
+
+    const trueAnomaly = 2 * Math.atan2(
+      Math.sqrt(1 + e) * Math.sin(E / 2),
+      Math.sqrt(1 - e) * Math.cos(E / 2),
+    );
+    return ((trueAnomaly * (180 / Math.PI)) % 360 + 360) % 360;
+  }
+
   /** Degrees the body must still travel to reach its next apoapsis (180°) or periapsis (360°/0°). */
   degreesToEvent(currentMeanAnomaly: number, type: 'apo' | 'peri'): number {
     if (type === 'apo') {
@@ -186,8 +215,10 @@ export class OrbitalRelationsService {
     // Use a null/undefined check for meanAnomaly (not a falsy check): a body that was
     // exactly at periapsis at sample time has a legitimate meanAnomaly of 0, which a
     // falsy check would wrongly treat as missing data and suppress the event row.
+    // `!bd.orbitalEccentricity` already excludes a circular orbit (e = 0, the "no
+    // distinguishable apsis" case) along with missing/NaN values.
     if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly ||
-      !bd.orbitalEccentricity || bd.orbitalEccentricity === 0) {
+      !bd.orbitalEccentricity) {
       return null;
     }
     const currentMeanAnomaly = this.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);

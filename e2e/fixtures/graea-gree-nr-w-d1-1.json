@@ -1,0 +1,49 @@
+{
+  "system": {
+    "allegiance": null,
+    "bodies": [
+      {
+        "absoluteMagnitude": 4.585052,
+        "age": 6526,
+        "axialTilt": 0.0,
+        "bodyId": 0,
+        "distanceToArrival": 0.0,
+        "id64": 44149006227,
+        "luminosity": "VII",
+        "mainStar": true,
+        "name": "Graea Gree NR-W d1-1",
+        "rotationalPeriod": 0.000126286597222222,
+        "solarMasses": 0.535156,
+        "solarRadius": 1.76918583752696e-05,
+        "spectralClass": "N0",
+        "stations": [],
+        "subType": "Neutron Star",
+        "surfaceTemperature": 2528852.0,
+        "timestamps": {
+          "distanceToArrival": "2026-06-19T16:51:14Z"
+        },
+        "type": "Star",
+        "updateTime": "2026-06-19 16:51:14+00"
+      }
+    ],
+    "bodyCount": 5,
+    "coords": {
+      "x": -3292.53125,
+      "y": -1151.4375,
+      "z": 56731.65625
+    },
+    "date": "2026-06-19 16:52:19+00",
+    "government": "None",
+    "id64": 44149006227,
+    "name": "Graea Gree NR-W d1-1",
+    "population": 0,
+    "primaryEconomy": "None",
+    "region": {
+      "name": "Formorian Frontier",
+      "region": 24
+    },
+    "secondaryEconomy": "None",
+    "security": "Anarchy",
+    "stations": []
+  }
+}

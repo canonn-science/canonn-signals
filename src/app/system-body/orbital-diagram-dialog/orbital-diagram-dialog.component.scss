@@ -1,0 +1,104 @@
+.orbital-diagram-dialog {
+    .diagram {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .orbital-diagram {
+        width: 380px;
+        max-width: 100%;
+        height: auto;
+        // Subtle backdrop so light strokes stay legible on any theme.
+        background: var(--color-surface-2);
+        border-radius: 8px;
+        // Generous padding + visible overflow so edge labels are never clipped.
+        padding: 20px;
+        overflow: visible;
+
+        // Shared stroke defaults; specific roles override below.
+        line,
+        path,
+        ellipse,
+        circle {
+            vector-effect: non-scaling-stroke;
+        }
+
+        .reference,
+        .reference-plane {
+            fill: none;
+            stroke: var(--color-text-muted);
+            stroke-width: 1.5;
+        }
+
+        .reference-dashed {
+            fill: none;
+            stroke: var(--color-text-muted);
+            stroke-width: 1.5;
+            stroke-dasharray: 4 3;
+        }
+
+        .arc {
+            fill: none;
+            stroke: var(--color-warning);
+            stroke-width: 1.5;
+        }
+
+        .axis {
+            stroke: var(--color-accent);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+        }
+
+        .orbit-plane {
+            fill: none;
+            stroke: var(--color-accent);
+            stroke-width: 2;
+        }
+
+        .equator {
+            fill: none;
+            stroke: var(--color-badge-cyan);
+            stroke-width: 1.5;
+        }
+
+        .planet {
+            fill: var(--color-info);
+            stroke: var(--color-text-bright);
+            stroke-width: 1;
+        }
+
+        .marker {
+            fill: var(--color-warning);
+            stroke: var(--color-text-bright);
+            stroke-width: 1;
+        }
+
+        .label {
+            fill: var(--color-text-bright);
+            font-size: 7px;
+            font-weight: 600;
+            // Halo so names stay legible over strokes and ellipses.
+            paint-order: stroke;
+            stroke: var(--color-surface-2);
+            stroke-width: 2.5px;
+            stroke-linejoin: round;
+        }
+    }
+
+    .value {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: var(--color-text-bright);
+    }
+
+    mat-dialog-content .explanation {
+        line-height: 1.6;
+
+        p {
+            margin-bottom: 8px;
+        }
+    }
+}
