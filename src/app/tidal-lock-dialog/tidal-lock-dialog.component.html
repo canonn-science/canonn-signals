@@ -3,7 +3,7 @@
   <mat-dialog-content>
     <p class="intro">
       @if (tidallyLocked) {
-        This body is <strong>tidally locked</strong>
+        This body <strong>carries the tidal-lock indicator</strong>
         @if (resonance && resonance !== 'none') {
           with a spin resonance of <strong>{{ resonance }}</strong>.
         } @else {
@@ -13,7 +13,7 @@
         This body <strong>does not carry the tidal-lock indicator</strong>,
         @if (resonance && resonance !== 'none') {
           but it is in a <strong>{{ resonance }}</strong> spin–orbit resonance.
-          This means its rotation rate is synchronised with its orbit in a stable ratio,
+          This means its rotation keeps a stable integer ratio with its orbit,
           which is itself a form of tidal evolution — even when the tidal-lock indicator is not set.
         }
       }
@@ -61,21 +61,27 @@
 
     <p class="explanation">
       <strong>What does the tidal-lock indicator mean?</strong><br>
-      The indicator is set when a body's rotation has settled into equilibrium with its orbit — its
-      rotational period matches its orbital period. It is often misread as "one face is permanently lit" or
-      "the same side always points at the parent." That fully-frozen, one-hemisphere-always-facing picture
-      (like the Moon toward Earth) is only the idealised case: zero axial tilt and a perfectly circular
-      orbit. The indicator does <strong>not</strong> guarantee those conditions hold.<br><br>
+      The indicator marks that a body's rotation has settled into a long-term equilibrium with its orbit.
+      It does <strong>not</strong> by itself mean the rotational period equals the orbital period — in this
+      data it can even be set on a body that still spins many times per orbit, so whether the same face
+      really stays fixed is judged separately by comparing the rotational and orbital periods (above). A
+      genuine 1:1 lock <em>does</em> keep the same hemisphere turned toward its parent — that part is real,
+      and the Moon toward Earth is the classic example. What it does <strong>not</strong> mean is a perfectly
+      frozen world: with any axial tilt or orbital eccentricity the body <strong>librates</strong>, rocking
+      slightly so that, over time, somewhat more than half its surface comes into view. Nor does a lock mean
+      "permanently lit" — that holds only when the parent is the light source (a star), not for a body locked
+      to a planet.<br><br>
       More precisely, tidal locking is the process by which tidal forces alter the rotation of a body until
       it reaches a long-term rotational equilibrium with its orbit. A body is considered tidally locked when
       its average rotational evolution has stabilised and the net tidal torque over an orbit is effectively
       zero (<em>dω/dt ≈ 0</em>).<br><br>
       <em>ω (omega)</em> means rotational speed — how fast the body spins.<br>
       <em>dω/dt</em> means "how the spin rate changes over time."<br><br>
-      Because the lock balances the <em>average</em> torque, the body can still rock back and forth slightly
-      relative to its parent over each orbit. This rocking — called <strong>optical libration</strong> — is
-      driven by orbital eccentricity and axial tilt, and it is what adds seasonality and variation in
-      illumination even on a "locked" world.
+      Even with the lock held, the body still appears to rock slightly relative to
+      its parent over each orbit — <strong>optical libration</strong>: a side-to-side swing in longitude
+      (driven by orbital eccentricity) and a north–south nod in latitude (driven by axial tilt). Those same
+      two effects also move the sub-stellar point over the orbit, which is what adds seasonality and variation
+      in illumination even on a "locked" world.
     </p>
     <p><strong>Special cases include:</strong></p>
     <ul>
@@ -138,7 +144,7 @@
         }
         giving it a <strong>permanent day hemisphere</strong> and a <strong>permanent night
         hemisphere</strong>. Its axial tilt (<strong>{{ cyc.axialTiltDeg | number:'0.1-1' }}°</strong>) makes
-        the sub-stellar point nod north–south by ±(its obliquity) over each orbit, sweeping the terminator
+        the sub-stellar point nod north–south by ±(its obliquity to the orbital plane) over each orbit, sweeping the terminator
         across a band of the surface. Because the body does not spin relative to the star, that swept band is
         <strong>two lunes down the dawn and dusk sides</strong> — pinched at the equator, widest at the
         poles — rather than a simple polar cap.<br><br>
@@ -160,7 +166,8 @@
         @if (cyc.eccentricity > 0) {
           <br><br>
           <em>Orbital eccentricity ({{ cyc.eccentricity | number:'0.3-3' }}) rocks the terminator east–west as
-          well, widening the band a little — a second-order effect not included in the figures above.</em>
+          well (by roughly ±2e in longitude), widening the band further — a separate effect not included in the
+          figures above.</em>
         }
       </p>
 
