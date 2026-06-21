@@ -1,6 +1,5 @@
-<div class="hr-diagram-dialog">
-  <h2 mat-dialog-title>{{ title }}</h2>
-  <mat-dialog-content cdkScrollable>
+<app-dialog-shell [heading]="title">
+  <div class="hr-diagram-dialog">
 
     @if (diagram(); as d) {
     <div class="diagram">
@@ -125,8 +124,5 @@
         age of the universe. An age well outside that expected window is flagged above.
       </p>
     </div>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Close</button>
-  </mat-dialog-actions>
-</div>
+  </div>
+</app-dialog-shell>

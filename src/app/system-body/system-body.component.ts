@@ -27,7 +27,7 @@ import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';
 import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
 import { TidalLockDialogComponent, TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
-import { HrDiagramDialogComponent } from './hr-diagram-dialog/hr-diagram-dialog.component';
+import { HrDiagramDialogComponent } from '../dialogs/hr-diagram-dialog/hr-diagram-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 
 @Component({

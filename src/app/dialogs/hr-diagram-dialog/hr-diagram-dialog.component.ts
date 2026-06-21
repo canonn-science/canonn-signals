@@ -1,14 +1,7 @@
 import { ChangeDetectionStrategy, Component, Signal, computed, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogTitle,
-} from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
-import { CdkScrollable } from '@angular/cdk/scrolling';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { HrDiagram, hrPlot } from '../../data/hr-diagram';
 import {
   StellarAgeAssessment,
@@ -41,7 +34,7 @@ export interface HrDiagramData {
   templateUrl: './hr-diagram-dialog.component.html',
   styleUrls: ['./hr-diagram-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatDialogClose, MatButton],
+  imports: [DecimalPipe, DialogShellComponent],
 })
 export class HrDiagramDialogComponent {
   readonly data = inject<HrDiagramData>(MAT_DIALOG_DATA);
