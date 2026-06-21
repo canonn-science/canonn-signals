@@ -200,6 +200,16 @@ describe('OrbitalRelationsService', () => {
       }), 'peri')).toBeNull();
     });
 
+    it('returns null when the meanAnomaly timestamp is present but unparseable', () => {
+      // A malformed timestamp string makes the computed date NaN; the row must be
+      // suppressed rather than emit an Invalid Date that breaks the template date pipe.
+      const event = service.nextOrbitalEvent(body({
+        meanAnomaly: 270, orbitalPeriod: 8, orbitalEccentricity: 0.3,
+        timestamps: { meanAnomaly: 'not-a-date' } as any,
+      }), 'peri', sampleMs);
+      expect(event).toBeNull();
+    });
+
     it('computes the days and date to the next periapsis', () => {
       // At the sample instant, mean anomaly 270° is 90° (= quarter period) short of periapsis.
       const event = service.nextOrbitalEvent(body({

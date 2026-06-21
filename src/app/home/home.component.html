@@ -8,7 +8,7 @@
         <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128"
           (input)="onSearchInput()" (keyup.enter)="search()">
           <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">
-            @for (system of filteredSystems(); track system) {
+            @for (system of filteredSystems(); track $index) {
               <mat-option [value]="system">
                 {{ system }}
               </mat-option>

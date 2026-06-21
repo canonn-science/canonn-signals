@@ -223,6 +223,12 @@ export class OrbitalRelationsService {
     }
     const currentMeanAnomaly = this.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);
     const days = (this.degreesToEvent(currentMeanAnomaly, type) / 360) * bd.orbitalPeriod;
+    // A present-but-unparseable meanAnomaly timestamp makes `currentMeanAnomaly`
+    // (and thus `days`) NaN; bail out rather than emit an Invalid Date that the
+    // template's date pipe would throw on (NG02100/NG02311).
+    if (!Number.isFinite(days)) {
+      return null;
+    }
     return { date: new Date(now + days * MS_PER_DAY), days };
   }
 }
