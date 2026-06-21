@@ -1,0 +1,128 @@
+<app-dialog-shell [heading]="title">
+  <div class="hr-diagram-dialog">
+
+    @if (diagram(); as d) {
+    <div class="diagram">
+      <svg [attr.viewBox]="d.viewBox" class="hr-diagram" role="img" aria-label="Hertzsprung-Russell diagram">
+        <defs>
+          <linearGradient id="hr-temp-gradient" gradientUnits="userSpaceOnUse"
+            [attr.x1]="d.plot.x" y1="0" [attr.x2]="d.plot.x + d.plot.w" y2="0">
+            @for (s of d.mainSequenceStops; track s.offset) {
+            <stop [attr.offset]="s.offset" [attr.stop-color]="s.color" />
+            }
+          </linearGradient>
+          <!-- Feathers the main-sequence band edges so there is no hard border. -->
+          <filter id="hr-soft" x="-50%" y="-150%" width="200%" height="400%" color-interpolation-filters="sRGB">
+            <feGaussianBlur stdDeviation="2.5" />
+          </filter>
+          <!-- Softer blur for the larger luminosity clouds, so neighbouring regions blend
+               into one another (supergiants↔main sequence, giants↔main sequence/supergiants). -->
+          <filter id="hr-cloud" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+            <feGaussianBlur stdDeviation="5" />
+          </filter>
+        </defs>
+
+        <!-- Plot frame -->
+        <rect class="frame" [attr.x]="d.plot.x" [attr.y]="d.plot.y" [attr.width]="d.plot.w" [attr.height]="d.plot.h" />
+
+        <!-- Absolute-magnitude gridlines (brighter at the top) -->
+        @for (m of d.magTicks; track m.label) {
+        <line class="gridline" [attr.x1]="d.plot.x" [attr.y1]="m.y" [attr.x2]="d.plot.x + d.plot.w" [attr.y2]="m.y" />
+        }
+
+        <!-- Vertical separators between spectral classes -->
+        @for (sx of d.classSeparators; track sx) {
+        <line class="classtick" [attr.x1]="sx" [attr.y1]="d.plot.y" [attr.x2]="sx" [attr.y2]="d.plot.y + d.plot.h" />
+        }
+
+        <!-- Labelled luminosity regions: filled with the shared temperature gradient so they
+             carry spectral colours across their width, just like the main sequence. The
+             star's own region is rendered brighter. -->
+        @for (rg of d.regions; track rg.key) {
+        <ellipse class="hr-region" [class.hr-region--current]="rg.current"
+                 [attr.cx]="rg.cx" [attr.cy]="rg.cy" [attr.rx]="rg.rx" [attr.ry]="rg.ry"
+                 fill="url(#hr-temp-gradient)" filter="url(#hr-cloud)" />
+        }
+
+        <!-- Main-sequence band, tinted by spectral class -->
+        <path class="main-sequence" [class.main-sequence--current]="d.mainSequenceCurrent"
+              [attr.d]="d.mainSequencePath" stroke="url(#hr-temp-gradient)" filter="url(#hr-soft)" />
+
+        <!-- Region labels (drawn over the fills so they stay legible) -->
+        @for (rg of d.regions; track rg.key) {
+        <text class="hr-region-label" [attr.x]="rg.labelX" [attr.y]="rg.labelY + 2" text-anchor="middle">{{ rg.label }}</text>
+        }
+        <text class="hr-region-label" [attr.x]="d.mainSequenceLabel.x" [attr.y]="d.mainSequenceLabel.y" text-anchor="middle">Main Sequence</text>
+
+        <!-- Absolute-magnitude labels -->
+        @for (m of d.magTicks; track m.label) {
+        <text class="axis-tick" [attr.x]="d.plot.x - 6" [attr.y]="m.y + 3" text-anchor="end">{{ m.label }}</text>
+        }
+
+        <!-- Spectral-class letters along the temperature axis (hot on the left) -->
+        @for (t of d.classTicks; track t.label) {
+        <text class="axis-tick classtick-label" [attr.x]="t.x" [attr.y]="d.plot.y + d.plot.h + 14" text-anchor="middle" [attr.fill]="t.color">{{ t.label }}</text>
+        }
+
+        <!-- The star itself, coloured by its spectral class. A dark backing disc gives the
+             marker a dark outer ring so it stays legible over the bright luminosity clouds,
+             with the bright inner ring keeping it crisp over the dark background. -->
+        @if (d.point) {
+        <circle class="star-halo" [attr.cx]="d.point.x" [attr.cy]="d.point.y" r="6" />
+        <circle class="star" [class.star--out]="!d.inRange" [attr.cx]="d.point.x" [attr.cy]="d.point.y" r="4.5"
+                [attr.fill]="d.pointColor || '#ffffff'" />
+        }
+
+        <!-- Axis titles -->
+        <text class="axis-title" [attr.x]="d.plot.x + d.plot.w / 2" [attr.y]="d.plot.y + d.plot.h + 30" text-anchor="middle">← hotter · cooler →</text>
+        <text class="axis-title" [attr.x]="14" [attr.y]="d.plot.y + d.plot.h / 2" text-anchor="middle"
+              [attr.transform]="'rotate(-90 14 ' + (d.plot.y + d.plot.h / 2) + ')'">brighter ↑ absolute magnitude</text>
+      </svg>
+
+      @if (!d.point) {
+      <p class="note">This body has no temperature / absolute-magnitude data, so it cannot be placed on the diagram.</p>
+      } @else if (!d.inRange) {
+      <p class="note">This star lies beyond the normal stellar range; its marker is pinned to the diagram edge.</p>
+      }
+    </div>
+    }
+
+    <!-- Age comparison -->
+    <div class="age-section">
+      <h3>Age vs. its class</h3>
+      <div class="age-facts">
+        <span><strong>Age:</strong> {{ formatAge(assessment().ageMyr) }}</span>
+        @if (data.spectralClass) { <span><strong>Class:</strong> {{ data.spectralClass }}@if (data.luminosity) { {{ data.luminosity }} }</span> }
+        @if (data.solarMasses != null) { <span><strong>Mass:</strong> {{ data.solarMasses | number:'0.0-2' }} M☉</span> }
+      </div>
+
+      @if (assessment().barFraction != null) {
+      <div class="age-bar" [class.age-bar--over]="assessment().outOfRange" [class.age-bar--old]="assessment().status === 'old'" [class.age-bar--young]="assessment().status === 'young'">
+        <div class="age-bar__track">
+          <div class="age-bar__fill" [style.width.%]="assessment().barFraction! * 100"></div>
+          <div class="age-bar__marker" [style.left.%]="assessment().barFraction! * 100"></div>
+        </div>
+        <div class="age-bar__scale">
+          <span>0</span>
+          <span>main-sequence lifetime ~{{ formatAge(assessment().barMaxMyr) }}</span>
+        </div>
+      </div>
+      }
+
+      <p class="age-message" [class.age-message--warn]="assessment().outOfRange">{{ assessment().message }}</p>
+    </div>
+
+    <div class="explanation">
+      <p>
+        The <strong>Hertzsprung–Russell diagram</strong> plots stars by surface temperature (hot on the left) against
+        brightness (luminous at the top). Most stars lie along the <strong>main sequence</strong> — the diagonal band
+        shown — where they spend the bulk of their lives fusing hydrogen.
+      </p>
+      <p>
+        A star's mass sets both where it sits on the main sequence and how long it stays there: massive O- and B-type
+        stars blaze through their fuel in millions of years, while cool K and M dwarfs last far longer than the present
+        age of the universe. An age well outside that expected window is flagged above.
+      </p>
+    </div>
+  </div>
+</app-dialog-shell>

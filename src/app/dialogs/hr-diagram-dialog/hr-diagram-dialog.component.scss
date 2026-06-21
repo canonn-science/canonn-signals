@@ -1,0 +1,168 @@
+.hr-diagram-dialog {
+    .diagram {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .hr-diagram {
+        width: 460px;
+        max-width: 100%;
+        height: auto;
+        background: var(--color-surface-2);
+        border-radius: 8px;
+        padding: 12px;
+        overflow: visible;
+
+        line,
+        path,
+        rect,
+        circle {
+            vector-effect: non-scaling-stroke;
+        }
+
+        // Labelled luminosity clouds (supergiants, giants, white dwarfs). Soft-edged via
+        // the blur filter in the template — no hard borders.
+        .hr-region {
+            opacity: 0.85;
+        }
+
+        .hr-region--current {
+            opacity: 1;
+        }
+
+        .hr-region-label {
+            fill: var(--color-text-bright);
+            font-size: 8px;
+            font-weight: 600;
+            // Halo so labels stay legible over the translucent fills.
+            paint-order: stroke;
+            stroke: var(--color-surface-2);
+            stroke-width: 2.5px;
+            stroke-linejoin: round;
+        }
+
+        .frame {
+            fill: none;
+            stroke: var(--color-text-muted);
+            stroke-width: 1;
+        }
+
+        .gridline {
+            stroke: var(--color-text-muted);
+            stroke-width: 0.5;
+            opacity: 0.35;
+        }
+
+        .classtick {
+            stroke: var(--color-text-muted);
+            stroke-width: 0.5;
+            opacity: 0.35;
+        }
+
+        .axis-tick {
+            fill: var(--color-text-2);
+            font-size: 8px;
+        }
+
+        .classtick-label {
+            font-weight: 600;
+        }
+
+        .axis-title {
+            fill: var(--color-text-muted);
+            font-size: 8px;
+        }
+
+        // The main-sequence band: a thick gradient stroke running O→M.
+        .main-sequence {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.8;
+        }
+
+        .main-sequence--current {
+            opacity: 1;
+        }
+
+        // Dark backing disc, slightly larger than the marker, so a dark ring shows around
+        // the bright stroke — keeps the marker visible over the pale clouds.
+        .star-halo {
+            fill: #000;
+            opacity: 0.85;
+        }
+
+        .star {
+            // fill comes from the spectral-class colour bound in the template.
+            stroke: var(--color-text-bright);
+            stroke-width: 1.5;
+        }
+
+        // Clamped to the diagram edge — mark it with a dashed outline rather than recolour.
+        .star--out {
+            stroke-dasharray: 2 1.5;
+        }
+    }
+
+    .note {
+        font-size: 0.85em;
+        color: var(--color-text-muted);
+        text-align: center;
+        max-width: 420px;
+    }
+
+    .age-section {
+        margin-bottom: 16px;
+
+        h3 {
+            margin: 0 0 8px;
+            font-size: 1em;
+            color: var(--color-text-bright);
+        }
+
+        .age-facts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 16px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+    }
+
+    // The .age-bar base lives in src/styles.scss (shared with the inline row); the
+    // dialog only enlarges it slightly and adds the 0 → lifetime scale labels.
+    .age-bar {
+        .age-bar__track { height: 10px; border-radius: 5px; }
+        .age-bar__fill { border-radius: 5px 0 0 5px; }
+        .age-bar__marker { height: 16px; }
+
+        .age-bar__scale {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 0.78em;
+            color: var(--color-text-muted);
+        }
+    }
+
+    .age-message {
+        margin-top: 10px;
+        line-height: 1.5;
+
+        &.age-message--warn {
+            color: var(--color-warning);
+        }
+    }
+
+    .explanation {
+        line-height: 1.6;
+
+        p {
+            margin-bottom: 8px;
+        }
+    }
+}

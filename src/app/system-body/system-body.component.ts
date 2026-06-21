@@ -27,6 +27,8 @@ import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';
 import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
 import { TidalLockDialogComponent, TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
+import { HrDiagramDialogComponent } from '../dialogs/hr-diagram-dialog/hr-diagram-dialog.component';
+import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 
 @Component({
   selector: 'app-system-body',
@@ -215,6 +217,7 @@ export class SystemBodyComponent implements OnChanges {
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
     this.getRocheExcess.set(this.calculateRocheExcess());
+    this.getStellarAgeAssessment.set(this.computeStellarAgeAssessment());
 
     // Calculate formatted mass values once when body changes
     this.formattedEarthMass = body.bodyData.earthMasses
@@ -559,6 +562,44 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
+  /**
+   * Opens the Hertzsprung–Russell diagram modal for this star, plotting it by temperature
+   * and absolute magnitude and comparing its age to the lifetime its class implies.
+   */
+  public showHrDiagram(): void {
+    const body = this.body();
+    const bodyData = body.bodyData;
+    this.dialog.open(HrDiagramDialogComponent, {
+      width: '720px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        bodyName: this.getBodyDisplayName(bodyData.name),
+        subType: bodyData.subType,
+        spectralClass: bodyData.spectralClass,
+        luminosity: bodyData.luminosity,
+        solarMasses: bodyData.solarMasses,
+        solarRadius: bodyData.solarRadius,
+        surfaceTemperature: bodyData.surfaceTemperature,
+        absoluteMagnitude: bodyData.absoluteMagnitude,
+        ageMyr: bodyData.age,
+      },
+    });
+  }
+
+  /**
+   * True when the star-age / H-R feature applies: a star with an age whose spectral class
+   * is one the diagram actually depicts (the main sequence O–M, including their giants).
+   * Excludes brown dwarfs, white dwarfs, Wolf-Rayet/carbon stars, neutron stars and black
+   * holes, none of which appear on the diagram.
+   */
+  public showStarAgeFeature(): boolean {
+    const bodyData = this.body().bodyData;
+    return bodyData.type === BODY_TYPE.Star
+      && bodyData.age != null
+      && isPlottableStarClass(bodyData.spectralClass, bodyData.subType);
+  }
 
   public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
     return {
@@ -1229,6 +1270,23 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getNextApoapsis = signal<{ date: Date, days: number } | null>(null);
   public readonly getChildrenExpandedState = signal<boolean>(false);
   public readonly getRocheExcess = signal<number | null>(null);
+  public readonly getStellarAgeAssessment = signal<StellarAgeAssessment | null>(null);
+
+  /** Assesses the star's age against its spectral / luminosity class, or null for non-stars. */
+  private computeStellarAgeAssessment(): StellarAgeAssessment | null {
+    const bodyData = this.body().bodyData;
+    if (!this.showStarAgeFeature()) {
+      return null;
+    }
+    return assessStellarAge({
+      spectralClass: bodyData.spectralClass,
+      subType: bodyData.subType,
+      luminosity: bodyData.luminosity,
+      solarMasses: bodyData.solarMasses,
+      ageMyr: bodyData.age,
+    });
+  }
+
   private computeJetConeAngle(): number | null {
     // Only apply to neutron stars with the required inputs.
     const bodyData = this.body().bodyData;
