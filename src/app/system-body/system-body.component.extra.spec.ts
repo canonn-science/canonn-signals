@@ -476,4 +476,48 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.bodyImage).toBe('Orbit2.gif');
     });
   });
+
+  describe('star-age / H-R diagram feature', () => {
+    it('enables the feature for an aged main-sequence star the diagram depicts', () => {
+      render(makeBody({ type: 'Star', subType: 'G (White-Yellow) Star', spectralClass: 'G2', luminosity: 'V', solarMasses: 1, age: 4600 }));
+      expect(component.showStarAgeFeature()).toBe(true);
+      const assessment = component.getStellarAgeAssessment();
+      expect(assessment).not.toBeNull();
+      expect(assessment!.status).toBe('typical');
+    });
+
+    it('disables the feature (and yields a null assessment) when the star has no age', () => {
+      render(makeBody({ type: 'Star', subType: 'G (White-Yellow) Star', spectralClass: 'G2', luminosity: 'V', solarMasses: 1 }));
+      expect(component.showStarAgeFeature()).toBe(false);
+      expect(component.getStellarAgeAssessment()).toBeNull();
+    });
+
+    it('enables the feature for a white dwarf (its own region on the diagram)', () => {
+      render(makeBody({ type: 'Star', subType: 'White Dwarf (DA) Star', spectralClass: 'DA5', luminosity: 'VII', surfaceTemperature: 27735, solarRadius: 0.0038452, solarMasses: 1.26, age: 1298 }));
+      expect(component.showStarAgeFeature()).toBe(true);
+      const assessment = component.getStellarAgeAssessment();
+      expect(assessment).not.toBeNull();
+      expect(assessment!.status).toBe('evolved'); // remnant — no young/old badge
+    });
+
+    it('excludes classes the diagram never draws (neutron star)', () => {
+      render(makeBody({ type: 'Star', subType: 'Neutron Star', age: 5000 }));
+      expect(component.showStarAgeFeature()).toBe(false);
+      expect(component.getStellarAgeAssessment()).toBeNull();
+    });
+
+    it('excludes non-stars even when they carry an age', () => {
+      render(makeBody({ type: 'Planet', subType: 'Rocky body', age: 3000 }));
+      expect(component.showStarAgeFeature()).toBe(false);
+      expect(component.getStellarAgeAssessment()).toBeNull();
+    });
+
+    it('opens the H-R diagram dialog for a star', () => {
+      render(makeBody({ type: 'Star', subType: 'B (Blue-White) Star', spectralClass: 'B2', luminosity: 'V', solarMasses: 8, age: 50 }));
+      const before = dialogOpenCalls;
+      component.showHrDiagram();
+      vi.runOnlyPendingTimers();
+      expect(dialogOpenCalls).toBe(before + 1);
+    });
+  });
 });

@@ -246,3 +246,58 @@ hr {
     padding-left: 26px;    /* was 56px */
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Stellar-age bar — shared by the inline "Age" row and the H-R diagram dialog.
+ * Defined globally so both contexts reuse one definition (and to keep the
+ * system-body component stylesheet within its size budget). Status modifiers
+ * recolour the accent; --over flags an age outside its plausible range.
+ * ------------------------------------------------------------------------- */
+.age-bar {
+  --age-bar-accent: var(--color-accent);
+
+  &.age-bar--old { --age-bar-accent: var(--color-warning); }
+  &.age-bar--young { --age-bar-accent: var(--color-badge-cyan); }
+
+  .age-bar__track {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--color-surface-4);
+  }
+
+  .age-bar__fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-radius: 3px 0 0 3px;
+    background: var(--age-bar-accent);
+    opacity: 0.55;
+  }
+
+  .age-bar__marker {
+    position: absolute;
+    top: -3px;
+    width: 2.5px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--age-bar-accent);
+    transform: translateX(-50%);
+  }
+
+  &.age-bar--over .age-bar__marker { background: var(--color-badge-red); }
+}
+
+/* Inline age bar in the body "Age" row: stack the value above a fixed-width bar. */
+.system-body .age-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.system-body .age-cell .age-bar {
+  width: 120px;
+  max-width: 100%;
+}

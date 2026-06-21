@@ -59,6 +59,16 @@
           }
         </span>
       }
+      @if (getStellarAgeAssessment(); as ageAssessment) {
+      @if (ageAssessment.status === 'old' || ageAssessment.status === 'young') {
+      <span class="badge clickable"
+            [class.badge-orange]="ageAssessment.status === 'old'"
+            [class.badge-cyan]="ageAssessment.status === 'young'"
+            [matTooltip]="ageAssessment.message + ' - click for the H–R diagram'"
+            matTooltipClass="multiline-tooltip"
+            (click)="showHrDiagram()">{{ ageAssessment.label }}</span>
+      }
+      }
       @if (body().bodyData.isLandable && body().bodyData.atmosphereType && body().bodyData.atmosphereType != '') {
       <span class="badge badge-blue">Odyssey</span>
       }
@@ -529,12 +539,30 @@
           </div>
           }
           @if (body().bodyData.age) {
-          <div class="body-data-entry">
+          <div class="body-data-entry"
+               [class.clickable]="showStarAgeFeature()"
+               (click)="showStarAgeFeature() && showHrDiagram()">
             <div>
               Age
             </div>
-            <div>
-              {{ body().bodyData.age }} million years
+            <div class="age-cell">
+              <div [matTooltip]="showStarAgeFeature() ? 'Click for the H–R diagram' : ''">
+                {{ body().bodyData.age }} million years
+              </div>
+              @if (getStellarAgeAssessment(); as ageAssessment) {
+              @if (ageAssessment.barFraction !== null) {
+              <div class="age-bar"
+                   [class.age-bar--over]="ageAssessment.outOfRange"
+                   [class.age-bar--old]="ageAssessment.status === 'old'"
+                   [class.age-bar--young]="ageAssessment.status === 'young'"
+                   [matTooltip]="ageAssessment.message">
+                <div class="age-bar__track">
+                  <div class="age-bar__fill" [style.width.%]="ageAssessment.barFraction! * 100"></div>
+                  <div class="age-bar__marker" [style.left.%]="ageAssessment.barFraction! * 100"></div>
+                </div>
+              </div>
+              }
+              }
             </div>
           </div>
           }
