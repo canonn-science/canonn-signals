@@ -25,8 +25,8 @@ import { WHITE_DWARF_ATMOSPHERE, WHITE_DWARF_TOOLTIPS, whiteDwarfSpectralCode } 
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';
-import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from './orbital-diagram-dialog/orbital-diagram-dialog.component';
-import { TidalLockDialogComponent, TidalLockDialogData } from '../tidal-lock-dialog/tidal-lock-dialog.component';
+import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
+import { TidalLockDialogComponent, TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 
 @Component({
   selector: 'app-system-body',

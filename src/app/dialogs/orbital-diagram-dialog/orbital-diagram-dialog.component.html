@@ -1,6 +1,5 @@
-<div class="orbital-diagram-dialog">
-  <h2 mat-dialog-title>{{ title }}</h2>
-  <mat-dialog-content>
+<app-dialog-shell [heading]="title">
+  <div class="orbital-diagram-dialog">
     <div class="diagram">
       <svg [attr.viewBox]="viewBox" class="orbital-diagram" role="img" [attr.aria-label]="title + ' diagram'">
 
@@ -111,8 +110,5 @@
         }
       }
     </div>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Close</button>
-  </mat-dialog-actions>
-</div>
+  </div>
+</app-dialog-shell>

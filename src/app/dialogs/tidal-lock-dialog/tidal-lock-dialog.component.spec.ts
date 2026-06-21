@@ -3,7 +3,7 @@ import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection } from '@angular/core'
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { TidalLockDialogComponent, TidalLockDialogData } from './tidal-lock-dialog.component';
-import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
+import { SystemBody, CanonnBiostatsBody } from '../../home/home.component';
 
 function makeBody(data: Partial<CanonnBiostatsBody>, parent: SystemBody | null = null): SystemBody {
   return {

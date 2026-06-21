@@ -1,0 +1,14 @@
+:host {
+    display: block;
+}
+
+h2[mat-dialog-title] {
+    margin: 0;
+    padding: 24px 24px 0;
+    color: var(--color-text);
+}
+
+mat-dialog-content {
+    padding: 24px;
+    color: var(--color-text);
+}

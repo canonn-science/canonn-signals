@@ -1,10 +1,9 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
-import { CdkScrollable } from '@angular/cdk/scrolling';
-import { MatButton } from '@angular/material/button';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DecimalPipe } from '@angular/common';
-import { SystemBody } from '../home/home.component';
-import { BODY_TYPE } from '../data/body-types';
+import { SystemBody } from '../../home/home.component';
+import { BODY_TYPE } from '../../data/body-types';
+import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 
 /** Data passed to the tidal-lock dialog when it is opened. */
 export interface TidalLockDialogData {
@@ -66,7 +65,7 @@ export interface TidalCycling {
   templateUrl: './tidal-lock-dialog.component.html',
   styleUrls: ['./tidal-lock-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe]
+  imports: [DialogShellComponent, DecimalPipe]
 })
 export class TidalLockDialogComponent {
   private readonly data = inject<TidalLockDialogData>(MAT_DIALOG_DATA);

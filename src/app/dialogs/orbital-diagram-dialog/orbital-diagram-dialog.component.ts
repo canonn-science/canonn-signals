@@ -9,14 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogTitle,
-} from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { OrbitalRelationsService } from '../../data/orbital-relations.service';
 import {
   AxialTiltDiagram,
@@ -68,7 +62,7 @@ export interface OrbitalDiagramData {
   templateUrl: './orbital-diagram-dialog.component.html',
   styleUrls: ['./orbital-diagram-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose, MatButton],
+  imports: [DecimalPipe, DialogShellComponent],
 })
 export class OrbitalDiagramDialogComponent {
   readonly data = inject<OrbitalDiagramData>(MAT_DIALOG_DATA);

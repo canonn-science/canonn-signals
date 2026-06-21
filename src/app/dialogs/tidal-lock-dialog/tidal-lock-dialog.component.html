@@ -1,6 +1,5 @@
-<div class="tidal-lock-dialog">
-  <h2 mat-dialog-title>Tidal Locking &amp; Synchronous Rotation</h2>
-  <mat-dialog-content>
+<app-dialog-shell heading="Tidal Locking &amp; Synchronous Rotation">
+  <div class="tidal-lock-dialog">
     <p class="intro">
       @if (tidallyLocked) {
         This body <strong>carries the tidal-lock indicator</strong>
@@ -257,8 +256,5 @@
       <li><a href="https://arxiv.org/pdf/1101.2156.pdf" target="_blank" rel="noopener noreferrer">Tidal
           evolution of close-in extra-solar planets (Ferraz-Mello et al., 2011) — arXiv</a></li>
     </ul>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Close</button>
-  </mat-dialog-actions>
-</div>
+  </div>
+</app-dialog-shell>
