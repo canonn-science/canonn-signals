@@ -47,18 +47,17 @@
       </span>
       }
       @if (getSpinResonance() !== 'none' || body().bodyData.rotationalPeriodTidallyLocked) {
-      <span class="badge badge-purple clickable"
-            [matTooltip]="getSpinResonanceTooltip()"
-            (click)="showTidalLockDialog()">
-        @if (getSpinResonance() !== 'none') {
-        <span>{{ getSpinResonance() }}</span>
-        }
-        @if (body().bodyData.rotationalPeriodTidallyLocked) {
-        <fa-icon [icon]="faLock"
-                 class="lock-icon"
-                 [matTooltip]="'Click for tidal locking explanation'"></fa-icon>
-        }
-      </span>
+        <span
+          class="badge badge-purple clickable"
+          [matTooltip]="getSpinResonanceTooltip() + ' — click for tidal locking explanation'"
+          (click)="showTidalLockDialog()">
+          @if (getSpinResonance() !== 'none') {
+            <span>{{ getSpinResonance() }}</span>
+          }
+          @if (body().bodyData.rotationalPeriodTidallyLocked) {
+            <fa-icon [icon]="faLock" class="lock-icon"></fa-icon>
+          }
+        </span>
       }
       @if (body().bodyData.isLandable && body().bodyData.atmosphereType && body().bodyData.atmosphereType != '') {
       <span class="badge badge-blue">Odyssey</span>
@@ -1344,90 +1343,6 @@
         </div>
         }
       </div>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button
-              mat-dialog-close>Close</button>
-    </mat-dialog-actions>
-  </div>
-  }
-</ng-template>
-
-<ng-template #tidalLockDialogTemplate>
-  @if (tidalLockDialogData) {
-  <div class="tidal-lock-dialog">
-    <h2 mat-dialog-title>Tidal Locking & Synchronous Rotation</h2>
-    <mat-dialog-content>
-      <p class="intro">
-        @if (tidalLockDialogData.tidallyLocked) {
-        This body is <strong>tidally locked</strong>
-        @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
-        with a spin resonance of <strong>{{ tidalLockDialogData.resonance }}</strong>.
-        } @else {
-        without any detected spin resonance.
-        }
-        } @else {
-        This body is <strong>not flagged as tidally locked</strong> by the game journal,
-        @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
-        but it is in a <strong>{{ tidalLockDialogData.resonance }}</strong> spin–orbit resonance.
-        This means its rotation rate is synchronised with its orbit in a stable ratio,
-        which is itself a form of tidal evolution — even if the game does not set the tidal lock flag.
-        }
-        }
-      </p>
-      <ul>
-        <li><strong>Rotational period:</strong> {{ tidalLockDialogData.rotationalPeriod | number:'0.2-2' }} days
-        </li>
-        <li><strong>Orbital period:</strong> {{ tidalLockDialogData.orbitalPeriod | number:'0.2-2' }} days</li>
-        @if (tidalLockDialogData.difference !== null) {
-        <li><strong>Difference:</strong> {{
-          tidalLockDialogData.difference | number:'0.4-4' }} days</li>
-        }
-        @if (tidalLockDialogData.resonance && tidalLockDialogData.resonance !== 'none') {
-        <li><strong>Spin-orbit
-            resonance:</strong> {{ tidalLockDialogData.resonance }}</li>
-        }
-      </ul>
-      <p class="explanation">
-        <strong>What is tidal locking?</strong><br>
-        The tidal lock indicator is often misinterpreted. It does not always mean that the body faces the same
-        direction relative to its parent body like the Moon faces the Earth. That is just a special
-        case.<br><br>
-        Tidal locking is the process by which tidal forces alter the rotation of a body until it reaches a
-        long-term rotational equilibrium with its orbit. A body is considered tidally locked when its average
-        rotational evolution has stabilised and the net tidal torque over an orbit is effectively zero
-        (<em>dω/dt ≈ 0</em>).<br><br>
-        <em>ω (omega)</em> means rotational speed — how fast the body spins.<br>
-        <em>dω/dt</em> means "how the spin rate changes over time."<br><br>
-        This equilibrium may occur in several forms depending on orbital eccentricity and axial tilt.
-      </p>
-      <p><strong>Special cases include:</strong></p>
-      <ul>
-        <li>
-          <strong>Synchronous rotation (1:1 resonance)</strong><br>
-          The rotation period equals the orbital period and the same hemisphere always faces the parent body.
-          Example: Earth's Moon.
-
-          However, axial tilt can result in some surface seasonality over the course of an orbit.
-        </li>
-        <li>
-          <strong>Higher-order spin–orbit resonances</strong><br>
-          The body rotates in a stable ratio other than 1:1. Example: Mercury's 3:2 resonance, where it
-          rotates three times every two orbits.
-        </li>
-      </ul>
-
-      <p><strong>Further reading:</strong></p>
-      <ul>
-        <li><a href="https://astro4edu.org/resources/glossary/term/484/"
-             target="_blank"
-             rel="noopener noreferrer"
-             rel="noopener noreferrer">Tidal locking — astro4edu glossary</a></li>
-        <li><a href="https://arxiv.org/pdf/1101.2156.pdf"
-             target="_blank"
-             rel="noopener noreferrer">Tidal
-            evolution of close-in extra-solar planets (Ferraz-Mello et al., 2011) — arXiv</a></li>
-      </ul>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button

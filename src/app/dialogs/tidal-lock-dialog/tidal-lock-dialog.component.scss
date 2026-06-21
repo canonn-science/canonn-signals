@@ -1,0 +1,225 @@
+.tidal-lock-dialog {
+    .intro,
+    .explanation {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .diagram {
+        margin: 16px 0 4px;
+        padding: 12px;
+        background: var(--color-surface-3);
+        border: 1px solid var(--color-border-muted);
+        border-radius: 6px;
+        text-align: center;
+
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        figcaption {
+            margin-top: 8px;
+            font-size: 0.85em;
+            line-height: 1.5;
+            color: var(--color-text-subtle);
+        }
+    }
+
+    .cycling-diagram {
+        // Gradient stop colours (set in CSS so the tokens resolve — var() does not work
+        // in SVG `stop-color` presentation attributes).
+        .stop-day {
+            stop-color: var(--color-illum-day);
+        }
+
+        .stop-night {
+            stop-color: var(--color-illum-night);
+        }
+
+        // The globe rocks ±tilt (set inline via --tl) as the poles nod toward and away
+        // from the star; the resting frame is the base transform on the element.
+        .globe-nod {
+            animation: tl-nod 5s ease-in-out infinite alternate;
+        }
+
+        // Wireframe latitude/longitude lines that give the sphere its 3D read.
+        .graticule {
+            ellipse,
+            line {
+                fill: none;
+                stroke: var(--color-text-bright);
+                stroke-width: 0.6;
+                opacity: 0.25;
+            }
+        }
+
+        // The day↔night-cycling band (two dawn/dusk lunes seen edge-on).
+        .leaf {
+            fill: var(--color-accent);
+            opacity: 0.55;
+        }
+
+        // The larger, only-possible extent of that band.
+        .leaf-range {
+            fill: var(--color-accent);
+            opacity: 0.25;
+        }
+
+        .globe-outline {
+            fill: none;
+            stroke: var(--color-text-subtle);
+            stroke-width: 1.5;
+        }
+
+        .spin-axis {
+            stroke: var(--color-text-subtle);
+            stroke-width: 1;
+            stroke-dasharray: 3 3;
+        }
+
+        .pole {
+            fill: var(--color-text-bright);
+        }
+
+        .sun {
+            circle {
+                fill: var(--color-accent);
+            }
+
+            line {
+                stroke: var(--color-accent);
+                stroke-width: 1.5;
+                stroke-linecap: round;
+            }
+        }
+
+        .zone-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .zone-label.on-day {
+            fill: var(--color-illum-night);
+        }
+
+        .zone-label.on-night {
+            fill: var(--color-text-bright);
+        }
+    }
+
+    .diagram-legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px 16px;
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .legend-note {
+            flex-basis: 100%;
+            font-style: italic;
+            opacity: 0.85;
+        }
+
+        .swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            border: 1px solid var(--color-border-muted);
+        }
+
+        .swatch-day {
+            background: var(--color-illum-day);
+        }
+
+        .swatch-night {
+            background: var(--color-illum-night);
+        }
+
+        .swatch-cycle {
+            background: var(--color-accent);
+        }
+    }
+
+    .scenario-diagram {
+        .diagram-title {
+            fill: var(--color-text-bright);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .orbit {
+            fill: none;
+            stroke: var(--color-border-muted);
+            stroke-width: 1;
+            stroke-dasharray: 4 4;
+        }
+
+        .parent {
+            fill: var(--color-accent);
+        }
+
+        .moon {
+            fill: var(--color-surface-hover);
+            stroke: var(--color-text-subtle);
+            stroke-width: 1;
+        }
+
+        .marker {
+            fill: var(--color-info);
+        }
+
+        .facing {
+            stroke: var(--color-text-muted);
+            stroke-width: 1;
+        }
+
+        // Outer arm: one revolution per orbit (also carries the 1:1 rotation).
+        .arm {
+            animation: tl-orbit 9s linear infinite;
+        }
+
+        // Inner spin: a further half-turn per orbit, only on the 3:2 panel,
+        // for a net 1.5 rotations per orbit. 18s = 2× the orbit period.
+        .spin {
+            animation: tl-orbit 18s linear infinite;
+        }
+    }
+
+    // Respect users who prefer reduced motion: show the diagrams as a still frame.
+    @media (prefers-reduced-motion: reduce) {
+        .scenario-diagram .arm,
+        .scenario-diagram .spin,
+        .cycling-diagram .globe-nod {
+            animation: none;
+        }
+    }
+}
+
+@keyframes tl-orbit {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+// The globe rocks between the two extremes of its seasonal nod (±tilt about vertical),
+// carrying each pole toward and away from the star.
+@keyframes tl-nod {
+    from {
+        transform: rotate(calc(-1 * var(--tl)));
+    }
+
+    to {
+        transform: rotate(var(--tl));
+    }
+}

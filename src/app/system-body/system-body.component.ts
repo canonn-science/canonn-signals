@@ -25,7 +25,8 @@ import { WHITE_DWARF_ATMOSPHERE, WHITE_DWARF_TOOLTIPS, whiteDwarfSpectralCode } 
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';
-import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from './orbital-diagram-dialog/orbital-diagram-dialog.component';
+import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
+import { TidalLockDialogComponent, TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 
 @Component({
   selector: 'app-system-body',
@@ -66,7 +67,6 @@ export class SystemBodyComponent implements OnChanges {
   readonly jsonDialogTemplate = viewChild.required<TemplateRef<unknown>>('jsonDialogTemplate');
   readonly jsonDialogTitle = viewChild.required<ElementRef<HTMLElement>>('jsonDialogTitle');
   readonly rocheLimitDialogTemplate = viewChild.required<TemplateRef<unknown>>('rocheLimitDialogTemplate');
-  readonly tidalLockDialogTemplate = viewChild.required<TemplateRef<unknown>>('tidalLockDialogTemplate');
   readonly onFootSafetyDialogTemplate = viewChild.required<TemplateRef<unknown>>('onFootSafetyDialogTemplate');
   readonly jetAngleDialogTemplate = viewChild.required<TemplateRef<unknown>>('jetAngleDialogTemplate');
   readonly apoPeriDialogTemplate = viewChild.required<TemplateRef<unknown>>('apoPeriDialogTemplate');
@@ -1267,7 +1267,6 @@ export class SystemBodyComponent implements OnChanges {
     return this.physics.rocheExcess(this.body());
   }
 
-  public tidalLockDialogData: TidalLockDialogData | null = null;
   public onFootSafetyDialogData: OnFootSafetyDialogData | null = null;
 
   public showOnFootSafetyDialog(): void {
@@ -1355,41 +1354,19 @@ export class SystemBodyComponent implements OnChanges {
 
 
   public showTidalLockDialog(): void {
-    const rot = this.body().bodyData.rotationalPeriod;
-    const orb = this.body().bodyData.orbitalPeriod;
-    let difference: number | null = null;
-    let solarDay: number | null = null;
-    if (rot && orb) {
-      difference = Math.abs(rot - orb);
-      // Solar day formula: 1 / |1/rot - 1/orb|
-      const rotAbs = Math.abs(rot);
-      const orbAbs = Math.abs(orb);
-      if (rotAbs > 0.0001 && orbAbs > 0.0001 && Math.abs(rotAbs - orbAbs) > 0.00001) {
-        solarDay = 1 / Math.abs(1 / rotAbs - 1 / orbAbs);
-      } else {
-        solarDay = null;
-      }
-    }
-    const resonance = this.getSpinResonance();
-    this.tidalLockDialogData = {
-      rotationalPeriod: rot,
-      orbitalPeriod: orb,
-      difference,
-      solarDay,
-      resonance,
-      tidallyLocked: !!this.body().bodyData.rotationalPeriodTidallyLocked
-    };
-    const dialogRef = this.dialog.open(this.tidalLockDialogTemplate(), {
-      width: '600px',
-      maxWidth: '90vw',
+    this.dialog.open(TidalLockDialogComponent, {
+      width: '800px',
+      maxWidth: '95vw',
       hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
-    });
-    dialogRef.afterOpened().subscribe(() => {
-      setTimeout(() => {
-        const container = document.querySelector('.tidal-lock-dialog .mat-mdc-dialog-content, .tidal-lock-dialog mat-dialog-content');
-        if (container) container.scrollTop = 0;
-      });
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      // Focus the dialog heading rather than the default first tabbable element
+      // (a "Further reading" link near the bottom), which would scroll the long
+      // content to the end on open.
+      autoFocus: 'first-heading',
+      data: {
+        body: this.body(),
+        resonance: this.getSpinResonance()
+      } satisfies TidalLockDialogData
     });
   }
 
@@ -1411,15 +1388,6 @@ interface InvisibleRingDialogData {
   mass: number;
   density: number;
   isInvisible: boolean;
-}
-
-interface TidalLockDialogData {
-  rotationalPeriod: number | undefined;
-  orbitalPeriod: number | undefined;
-  difference: number | null;
-  solarDay: number | null;
-  resonance: string;
-  tidallyLocked: boolean;
 }
 
 interface OnFootSafetyDialogData {

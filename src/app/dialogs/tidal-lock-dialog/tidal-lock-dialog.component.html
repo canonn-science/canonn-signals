@@ -1,0 +1,260 @@
+<app-dialog-shell heading="Tidal Locking &amp; Synchronous Rotation">
+  <div class="tidal-lock-dialog">
+    <p class="intro">
+      @if (tidallyLocked) {
+        This body <strong>carries the tidal-lock indicator</strong>
+        @if (resonance && resonance !== 'none') {
+          with a spin resonance of <strong>{{ resonance }}</strong>.
+        } @else {
+          without any detected spin resonance.
+        }
+      } @else {
+        This body <strong>does not carry the tidal-lock indicator</strong>,
+        @if (resonance && resonance !== 'none') {
+          but it is in a <strong>{{ resonance }}</strong> spin–orbit resonance.
+          This means its rotation keeps a stable integer ratio with its orbit,
+          which is itself a form of tidal evolution — even when the tidal-lock indicator is not set.
+        }
+      }
+    </p>
+    <ul>
+      <li><strong>Rotational period:</strong> {{ rotationalPeriod | number:'0.2-2' }} days</li>
+      <li><strong>Orbital period:</strong> {{ orbitalPeriod | number:'0.2-2' }} days</li>
+      @if (difference !== null) {
+        <li><strong>Difference:</strong> {{ difference | number:'0.4-4' }} days</li>
+      }
+      @if (resonance && resonance !== 'none') {
+        <li><strong>Spin-orbit resonance:</strong> {{ resonance }}</li>
+      }
+    </ul>
+
+    @if (bodyDiagram; as bd) {
+      <figure class="diagram body-diagram scenario-diagram">
+        <svg viewBox="0 0 200 184" role="img"
+          [attr.aria-label]="'Animated diagram of this body orbiting its parent, ' + (bd.locked ? 'keeping the same face toward the parent (a 1:1 lock).' : 'spinning about ' + (bd.spinsPerOrbit | number:'0.0-1') + ' times per orbit.')">
+          <circle class="orbit" [attr.cx]="bd.parentX" [attr.cy]="bd.parentY" [attr.r]="bd.orbitR"/>
+          <circle class="parent" [attr.cx]="bd.parentX" [attr.cy]="bd.parentY" [attr.r]="bd.parentR"/>
+          <g class="arm" [style.transform-box]="'view-box'"
+            [style.transform-origin]="bd.parentX + 'px ' + bd.parentY + 'px'">
+            <g [class.spin]="!bd.locked" [style.transform-box]="'view-box'"
+              [style.transform-origin]="bd.moonX + 'px ' + bd.moonY + 'px'"
+              [style.animation-duration]="bd.spinSec + 's'"
+              [style.animation-direction]="bd.spinReverse ? 'reverse' : 'normal'">
+              <line class="facing" [attr.x1]="bd.moonX" [attr.y1]="bd.moonY" [attr.x2]="bd.markerX" [attr.y2]="bd.markerY"/>
+              <circle class="moon" [attr.cx]="bd.moonX" [attr.cy]="bd.moonY" [attr.r]="bd.bodyR"/>
+              <circle class="marker" [attr.cx]="bd.markerX" [attr.cy]="bd.markerY" r="3.8"/>
+            </g>
+          </g>
+        </svg>
+        <figcaption>
+          @if (bd.locked) {
+            This body is synchronous: it spins once per orbit, so the marked face always points back at its
+            parent.
+          } @else {
+            This body spins about <strong>{{ bd.spinsPerOrbit | number:'0.0-1' }}×</strong> per orbit, so the
+            marked face sweeps around relative to its parent{{ bd.clamped ? ' (spin speed shown reduced for clarity)' : '' }}.
+          }
+        </figcaption>
+      </figure>
+    }
+
+    <p class="explanation">
+      <strong>What does the tidal-lock indicator mean?</strong><br>
+      The indicator marks that a body's rotation has settled into a long-term equilibrium with its orbit.
+      It does <strong>not</strong> by itself mean the rotational period equals the orbital period — in this
+      data it can even be set on a body that still spins many times per orbit, so whether the same face
+      really stays fixed is judged separately by comparing the rotational and orbital periods (above). A
+      genuine 1:1 lock <em>does</em> keep the same hemisphere turned toward its parent — that part is real,
+      and the Moon toward Earth is the classic example. What it does <strong>not</strong> mean is a perfectly
+      frozen world: with any axial tilt or orbital eccentricity the body <strong>librates</strong>, rocking
+      slightly so that, over time, somewhat more than half its surface comes into view. Nor does a lock mean
+      "permanently lit" — that holds only when the parent is the light source (a star), not for a body locked
+      to a planet.<br><br>
+      More precisely, tidal locking is the process by which tidal forces alter the rotation of a body until
+      it reaches a long-term rotational equilibrium with its orbit. A body is considered tidally locked when
+      its average rotational evolution has stabilised and the net tidal torque over an orbit is effectively
+      zero (<em>dω/dt ≈ 0</em>).<br><br>
+      <em>ω (omega)</em> means rotational speed — how fast the body spins.<br>
+      <em>dω/dt</em> means "how the spin rate changes over time."<br><br>
+      Even with the lock held, the body still appears to rock slightly relative to
+      its parent over each orbit — <strong>optical libration</strong>: a side-to-side swing in longitude
+      (driven by orbital eccentricity) and a north–south nod in latitude (driven by axial tilt). Those same
+      two effects also move the sub-stellar point over the orbit, which is what adds seasonality and variation
+      in illumination even on a "locked" world.
+    </p>
+    <p><strong>Special cases include:</strong></p>
+    <ul>
+      <li>
+        <strong>Synchronous rotation (1:1 resonance)</strong><br>
+        The rotation period equals the orbital period and, on average, the same hemisphere faces the parent
+        body. Example: Earth's Moon.<br>
+        It is <em>not</em> perfectly frozen, though: <strong>axial tilt</strong> makes the sub-stellar point
+        drift north–south, and <strong>orbital eccentricity</strong> makes it drift east–west (the body
+        orbits faster near periapsis than it spins, then slower near apoapsis). Together these add
+        seasonality and a band near the terminator that swings between day and night over each orbit.
+      </li>
+      <li>
+        <strong>Higher-order spin–orbit resonances</strong><br>
+        The body rotates in a stable ratio other than 1:1. Example: Mercury's 3:2 resonance, where it
+        rotates three times every two orbits.
+      </li>
+    </ul>
+
+    <figure class="diagram scenario-diagram">
+      <svg viewBox="0 0 340 196" role="img"
+        aria-label="Animated schematic comparing 1:1 synchronous rotation, where the same surface feature always points back at the parent, with a 3:2 resonance, where the body spins one-and-a-half times per orbit so the feature sweeps around.">
+        @for (panel of [
+          { p: scenarioDiagram.synchronous, title: '1:1 synchronous', spin: false },
+          { p: scenarioDiagram.resonance, title: '3:2 resonance', spin: true }
+        ]; track panel.title) {
+          <text class="diagram-title" [attr.x]="panel.p.parentX" y="16" text-anchor="middle">{{ panel.title }}</text>
+          <circle class="orbit" [attr.cx]="panel.p.parentX" [attr.cy]="panel.p.parentY" [attr.r]="panel.p.orbitR"/>
+          <circle class="parent" [attr.cx]="panel.p.parentX" [attr.cy]="panel.p.parentY" [attr.r]="scenarioDiagram.parentR"/>
+          <!-- Outer group revolves the moon around the parent (one turn = one orbit, which
+               also carries one rotation, i.e. the 1:1 lock). The inner group adds a further
+               ½-turn-per-orbit spin only for the 3:2 panel, giving 1.5 spins per orbit. -->
+          <g class="arm" [style.transform-box]="'view-box'"
+            [style.transform-origin]="panel.p.parentX + 'px ' + panel.p.parentY + 'px'">
+            <g [class.spin]="panel.spin" [style.transform-box]="'view-box'"
+              [style.transform-origin]="panel.p.moonX + 'px ' + panel.p.moonY + 'px'">
+              <line class="facing" [attr.x1]="panel.p.moonX" [attr.y1]="panel.p.moonY"
+                [attr.x2]="panel.p.markerX" [attr.y2]="panel.p.markerY"/>
+              <circle class="moon" [attr.cx]="panel.p.moonX" [attr.cy]="panel.p.moonY" [attr.r]="scenarioDiagram.bodyR"/>
+              <circle class="marker" [attr.cx]="panel.p.markerX" [attr.cy]="panel.p.markerY" r="3.6"/>
+            </g>
+          </g>
+        }
+      </svg>
+      <figcaption>
+        A marker tracks one fixed surface feature. Left: in a 1:1 lock the feature always points back at the
+        parent (same face). Right: in Mercury's 3:2 resonance the body spins 1.5× per orbit, so the feature
+        sweeps around relative to the parent.
+      </figcaption>
+    </figure>
+
+    @if (tidalCycling; as cyc) {
+      <p class="explanation">
+        <strong>Illumination geometry: the day/night-cycling region</strong><br>
+        This body keeps a fixed face toward
+        @if (cyc.indirect) {
+          the barycentre it orbits (the stars sit at its centre),
+        } @else {
+          the star,
+        }
+        giving it a <strong>permanent day hemisphere</strong> and a <strong>permanent night
+        hemisphere</strong>. Its axial tilt (<strong>{{ cyc.axialTiltDeg | number:'0.1-1' }}°</strong>) makes
+        the sub-stellar point nod north–south by ±(its obliquity to the orbital plane) over each orbit, sweeping the terminator
+        across a band of the surface. Because the body does not spin relative to the star, that swept band is
+        <strong>two lunes down the dawn and dusk sides</strong>, pinched at the equator.<br><br>
+
+        @if (cyc.hasCycling) {
+          The width of that band is set by the obliquity to the orbital plane: the axial tilt combines with
+          the orbital inclination (<strong>{{ cyc.inclinationDeg | number:'0.1-1' }}°</strong>) at a node
+          angle the data does not give, leaving the obliquity bounded rather than exact. With a swing of
+          <strong>{{ fmtRange(cyc.swingMinDeg, cyc.swingMaxDeg, 1) }}°</strong>, about
+          <strong>{{ fmtRange(cyc.cyclingFractionMin * 100, cyc.cyclingFractionMax * 100, 1) }}%</strong> of the
+          whole surface@if (cyc.cyclingAreaMaxKm2 !== null) {
+            (≈ <strong>{{ fmtRange(cyc.cyclingAreaMinKm2!, cyc.cyclingAreaMaxKm2, 0) }} km²</strong>)
+          } goes through a day/night cycle once per orbit. The rest stays in permanent day or permanent night.
+        } @else {
+          With negligible axial tilt and inclination the sub-stellar point barely moves, and almost none of the
+          surface cycles: the terminator stays effectively fixed, with one permanent day hemisphere and one
+          permanent night hemisphere.
+        }
+        @if (cyc.eccentricity > 0) {
+          <br><br>
+          <em>Orbital eccentricity ({{ cyc.eccentricity | number:'0.3-3' }}) rocks the terminator east–west as
+          well (by roughly ±2e in longitude), widening the band further — a separate effect not included in the
+          figures above.</em>
+        }
+      </p>
+
+      @if (cyclingDiagram; as d) {
+        <figure class="diagram cycling-diagram">
+          <svg viewBox="0 0 200 178" role="img"
+            aria-label="A tilted globe lit from the left, viewed edge-on along the dawn/dusk line. The day/night-cycling band is highlighted as a top and bottom leaf down the dawn and dusk sides; the globe rocks as the planet nods through its seasons.">
+            <defs>
+              <clipPath id="globeClip">
+                <circle [attr.cx]="d.cx" [attr.cy]="d.cy" [attr.r]="d.r"/>
+              </clipPath>
+              <linearGradient id="globeShade" x1="0" y1="0" x2="1" y2="0">
+                <stop class="stop-day" offset="0%"/>
+                <stop class="stop-day" offset="49%"/>
+                <stop class="stop-night" offset="51%"/>
+                <stop class="stop-night" offset="100%"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Star glyph (the light source): light comes from the left. -->
+            <g class="sun">
+              @for (ray of d.sun.rays; track $index) {
+                <line [attr.x1]="ray.x1" [attr.y1]="ray.y1" [attr.x2]="ray.x2" [attr.y2]="ray.y2"/>
+              }
+              <circle [attr.cx]="d.sun.cx" [attr.cy]="d.sun.cy" [attr.r]="d.sun.r"/>
+            </g>
+
+            <!-- The sphere, shaded day (left) → night (right). The terminator is set by the
+                 light, so it stays vertical and does not tilt with the planet. -->
+            <circle class="globe" [attr.cx]="d.cx" [attr.cy]="d.cy" [attr.r]="d.r" fill="url(#globeShade)"/>
+
+            <!-- The tilted globe: wireframe, cycling band and axis rock together as the
+                 planet nods through its seasons. Base transform = resting/reduced frame. -->
+            <g class="globe-nod" [style.transform-box]="'view-box'"
+              [style.transform-origin]="d.cx + 'px ' + d.cy + 'px'"
+              [style.--tl]="d.tiltDeg + 'deg'"
+              [style.transform]="'rotate(calc(-1 * var(--tl)))'">
+              <g class="graticule" clip-path="url(#globeClip)">
+                @for (rx of d.meridianRx; track rx) {
+                  <ellipse [attr.cx]="d.cx" [attr.cy]="d.cy" [attr.rx]="rx" [attr.ry]="d.r"/>
+                }
+                @for (lat of d.latitudes; track lat.y) {
+                  <line [attr.x1]="d.cx - lat.half" [attr.y1]="lat.y" [attr.x2]="d.cx + lat.half" [attr.y2]="lat.y"/>
+                }
+              </g>
+
+              @if (d.hasCycling) {
+                <g clip-path="url(#globeClip)">
+                  @if (d.hasRange) {
+                    <path class="leaf-range" [attr.d]="d.leafMaxPath"/>
+                  }
+                  <path class="leaf" [attr.d]="d.leafMinPath || d.leafMaxPath"/>
+                </g>
+              }
+
+              <line class="spin-axis" [attr.x1]="d.cx" [attr.y1]="d.cy - d.r - 7" [attr.x2]="d.cx" [attr.y2]="d.cy + d.r + 7"/>
+              <circle class="pole" [attr.cx]="d.cx" [attr.cy]="d.cy - d.r" r="2.4"/>
+              <circle class="pole" [attr.cx]="d.cx" [attr.cy]="d.cy + d.r" r="2.4"/>
+            </g>
+
+            <circle class="globe-outline" [attr.cx]="d.cx" [attr.cy]="d.cy" [attr.r]="d.r"/>
+
+            <text class="zone-label on-day" [attr.x]="d.cx - d.r * 0.55" [attr.y]="d.cy + 4" text-anchor="middle">DAY</text>
+            <text class="zone-label on-night" [attr.x]="d.cx + d.r * 0.55" [attr.y]="d.cy + 4" text-anchor="middle">NIGHT</text>
+          </svg>
+          <figcaption class="diagram-legend">
+            @if (d.hasCycling) {
+              <span class="legend-item"><span class="swatch swatch-day"></span>Permanent day side</span>
+              <span class="legend-item"><span class="swatch swatch-night"></span>Permanent night side</span>
+              <span class="legend-item"><span class="swatch swatch-cycle"></span>Cycles day ↔ night</span>
+              @if (d.hasRange) {
+                <span class="legend-note">Solid = guaranteed band; faint = possible (larger) extent.</span>
+              }
+            } @else {
+              <span class="legend-item"><span class="swatch swatch-day"></span>Permanent day side</span>
+              <span class="legend-item"><span class="swatch swatch-night"></span>Permanent night side</span>
+              <span class="legend-note">Negligible tilt — almost nothing cycles.</span>
+            }
+          </figcaption>
+        </figure>
+      }
+    }
+
+    <p><strong>Further reading:</strong></p>
+    <ul>
+      <li><a href="https://astro4edu.org/resources/glossary/term/484/" target="_blank"
+          rel="noopener noreferrer">Tidal locking — astro4edu glossary</a></li>
+      <li><a href="https://arxiv.org/pdf/1101.2156.pdf" target="_blank" rel="noopener noreferrer">Tidal
+          evolution of close-in extra-solar planets (Ferraz-Mello et al., 2011) — arXiv</a></li>
+    </ul>
+  </div>
+</app-dialog-shell>

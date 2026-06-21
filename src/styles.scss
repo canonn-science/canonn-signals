@@ -88,6 +88,10 @@ $dark-theme: mat.m2-define-dark-theme((color: (primary: mat.m2-define-palette(ma
   --color-callout-success-bg: #2a3a2a;
   --color-callout-success-border: #6f6;
 
+  /* Tidal-lock illumination diagram zone fills (day side, night side). */
+  --color-illum-day: #f3c969;
+  --color-illum-night: #1b2233;
+
   /* Geometry for the body-tree connector lines (drawn with pseudo-elements).
      Deriving every offset from these keeps the elbows aligned if they change. */
   --tree-color: var(--color-surface);

@@ -314,11 +314,13 @@
 .badge-purple {
     display: flex;
     align-items: center;
-    justify-content: center
+    justify-content: center;
+    // Space text and icon when both are present, but keep a lone icon centred
+    // (a left margin on the icon would push a single-icon badge off-centre).
+    gap: 4px
 }
 
 .badge-purple .lock-icon {
-    margin-left: 4px;
     font-size: 0.8em
 }
 
