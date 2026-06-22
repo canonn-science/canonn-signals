@@ -221,6 +221,23 @@
                                         }
                                       </div>
                                     }
+                                    @if (getNearestNebulae().length) {
+                                      <div class="system-data-section">
+                                        <div class="system-data-section-header">Nearest Nebulae</div>
+                                        @for (nebula of getNearestNebulae(); track nebula) {
+                                          <div class="system-data-entry">
+                                            <div class="distance-system-link" role="button" tabindex="0"
+                                              (click)="openSignalsPage(nebula.system)"
+                                              (keydown.enter)="openSignalsPage(nebula.system)"
+                                              (keydown.space)="$event.preventDefault(); openSignalsPage(nebula.system)"
+                                              title="Open signals page for {{ nebula.system }}">
+                                              {{ nebula.name }}
+                                            </div>
+                                            <div>{{ nebula.distance | number: '1.1-1' }} ly</div>
+                                          </div>
+                                        }
+                                      </div>
+                                    }
                                     @if (data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length) {
                                       <div class="system-data-section"
                                         >

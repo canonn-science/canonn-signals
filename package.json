@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "generate-credits": "node scripts/generate-credits.js",
+    "generate-nebulae": "node scripts/generate-nebulae.js",
     "start": "ng serve",
     "prestart": "npm run generate-credits",
     "prebuild": "npm run generate-credits",

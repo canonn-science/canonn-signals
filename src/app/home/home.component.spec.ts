@@ -24,6 +24,8 @@ describe('HomeComponent', () => {
           useValue: {
             edastroSystems: signal([]),
             independentOutposts: signal([]),
+            nebulae: signal([]),
+            ensureNebulae: () => {},
             codexEntries: signal([]),
             getBodyDisplayName: (n: string) => n,
             getEdastroData: () => Promise.resolve(null),

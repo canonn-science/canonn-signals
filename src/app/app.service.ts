@@ -3,6 +3,7 @@ import { environment } from 'src/environments/environment';
 import { parseJsonWithBigIntIds } from './data/json-bigint';
 import type { CanonnBiostats, SimbadApiResponse } from './home/home.component';
 import type { GnosisData } from './region-map/region-map.component';
+import type { Nebula } from './data/nebulae';
 
 /** Default per-request timeout for remote API calls (ms). */
 const HTTP_TIMEOUT_MS = 20000;
@@ -104,6 +105,12 @@ export class AppService {
   private readonly _independentOutposts = signal<IndependentOutpost[]>([]);
   public readonly independentOutposts: Signal<IndependentOutpost[]> = this._independentOutposts.asReadonly();
 
+  private readonly _nebulae = signal<Nebula[]>([]);
+  /** The nebula catalogue; empty until {@link ensureNebulae} has loaded the asset. */
+  public readonly nebulae: Signal<Nebula[]> = this._nebulae.asReadonly();
+  /** Memoises the one-shot nebula asset load so concurrent callers share a single fetch. */
+  private nebulaeLoad?: Promise<void>;
+
   constructor() {
     void this.loadCodexEntries();
     void this.loadEdastroSystems();
@@ -146,6 +153,24 @@ export class AppService {
       } as IndependentOutpost));
 
     this._independentOutposts.set(outposts);
+  }
+
+  /**
+   * Lazily loads the nebula catalogue asset the first time it's needed (it's ~600KB, so
+   * it's kept out of the initial bundle and off the startup critical path). The fetch runs
+   * at most once; failures leave the catalogue empty and are retried on the next call.
+   */
+  public ensureNebulae(): void {
+    if (this.nebulaeLoad) {
+      return;
+    }
+    this.nebulaeLoad = this.resilientGet<Nebula[]>('assets/nebulae.json', 60000)
+      .then(nebulae => { this._nebulae.set(nebulae); })
+      .catch(() => {
+        this._nebulae.set([]);
+        // Clear the memo so a later call can retry the load.
+        this.nebulaeLoad = undefined;
+      });
   }
 
   public getEdastroData(id64: number | bigint): Promise<EdastroData> {
