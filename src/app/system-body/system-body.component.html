@@ -445,17 +445,22 @@
             </div>
           </div>
           }
-          @if (body().bodyData.solarRadius) {
+          @if (getCompactObjectRadiusKm(); as compactRadiusKm) {
+          <div class="body-data-entry">
+            <div>
+              Radius
+            </div>
+            <div [matTooltip]="compactRadiusKm + ' km'">
+              {{ compactRadiusKm | number:'0.2-2' }} km
+            </div>
+          </div>
+          } @else if (body().bodyData.solarRadius) {
           <div class="body-data-entry">
             <div>
               Solar radius
             </div>
             <div [matTooltip]="body().bodyData.solarRadius!.toString()">
-              @if (body().bodyData.subType === 'Neutron Star') {
-              {{ (body().bodyData.solarRadius! * 695700) | number:'0.2-2' }} km
-              } @else {
               {{ body().bodyData.solarRadius | number:'0.2-2' }}
-              }
             </div>
           </div>
           }

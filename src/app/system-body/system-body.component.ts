@@ -316,7 +316,7 @@ export class SystemBodyComponent implements OnChanges {
         body.bodyData.subType === 'Earth-like world' ||
         body.bodyData.subType === 'Water world' ||
         body.bodyData.subType === 'Ammonia world' ||
-        body.bodyData.subType === 'Black Hole' ||
+        body.bodyData.subType?.includes('Black Hole') ||
         body.bodyData.subType === 'Neutron Star' ||
         body.bodyData.subType?.includes('White Dwarf') ||
         body.bodyData.subType?.includes('Wolf-Rayet') ||
@@ -1159,8 +1159,15 @@ export class SystemBodyComponent implements OnChanges {
   public isBlackHoleOrNeutronStar(): boolean {
     const body = this.body();
     return body.bodyData.type === BODY_TYPE.Star &&
-      (body.bodyData.subType === 'Black Hole' ||
-        body.bodyData.subType === 'Neutron Star');
+      (body.bodyData.subType?.includes('Black Hole') ||
+        body.bodyData.subType === 'Neutron Star') === true;
+  }
+
+  /** Physical radius in km for compact objects (neutron stars, black holes), whose solar-radius is too small to read; null otherwise. */
+  public getCompactObjectRadiusKm(): number | null {
+    if (!this.isBlackHoleOrNeutronStar()) { return null; }
+    const bd = this.body().bodyData;
+    return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
   }
 
   private formatPeriodDays(days: number): string {
