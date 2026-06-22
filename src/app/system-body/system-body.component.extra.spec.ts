@@ -315,6 +315,21 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getJetConeAngle()).not.toBeNull();
     });
 
+    it('renders a black hole radius in km rather than a rounded-to-zero solar radius', () => {
+      render(makeBody({ type: 'Star', subType: 'Black Hole', solarMasses: 8, solarRadius: 0.00001 }));
+      expect(component.isBlackHoleOrNeutronStar()).toBe(true);
+      // 0.00001 solar radii * 695700 km = 6.957 km -> "6.96 km"; without conversion it would render "0.00".
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain('6.96 km');
+      expect(text).not.toContain('Solar radius0.00');
+    });
+
+    it('treats a supermassive black hole as a compact object', () => {
+      render(makeBody({ type: 'Star', subType: 'Supermassive Black Hole', solarMasses: 4e6, solarRadius: 0.00002 }));
+      expect(component.isBlackHoleOrNeutronStar()).toBe(true);
+      expect(fixture.nativeElement.textContent as string).toContain('13.91 km');
+    });
+
     it('returns no tangential velocity for non-compact bodies', () => {
       render(makeBody({ type: 'Planet', subType: 'Rocky body', rotationalPeriod: 1 }));
       expect(component.getTangentialVelocity()).toBeNull();

@@ -448,10 +448,14 @@
           @if (body().bodyData.solarRadius) {
           <div class="body-data-entry">
             <div>
+              @if (isBlackHoleOrNeutronStar()) {
+              Radius
+              } @else {
               Solar radius
+              }
             </div>
             <div [matTooltip]="body().bodyData.solarRadius!.toString()">
-              @if (body().bodyData.subType === 'Neutron Star') {
+              @if (isBlackHoleOrNeutronStar()) {
               {{ (body().bodyData.solarRadius! * 695700) | number:'0.2-2' }} km
               } @else {
               {{ body().bodyData.solarRadius | number:'0.2-2' }}
