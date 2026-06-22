@@ -1,0 +1,66 @@
+<app-dialog-shell [heading]="heading">
+  <div class="apo-peri-dialog">
+    <div class="values">
+      <ul>
+        <li><strong>Event:</strong> {{ data.type === 'apo' ? 'Apoapsis' : 'Periapsis' }}</li>
+        <li><strong>Date (UTC):</strong> {{ data.date | date:'yyyy-MM-dd HH:mm' }}</li>
+        <li><strong>Time until event:</strong> {{ data.days | number:'0.1-1' }} days</li>
+        @if (data.distanceKm !== undefined) {
+        <li><strong>Distance at event:</strong>
+          {{ data.distanceKm | number:'0.0-0' }} km</li>
+        }
+      </ul>
+    </div>
+    <div class="explanation">
+      <p><strong>What is {{ data.type === 'apo' ? 'apoapsis' : 'periapsis' }}?</strong></p>
+      <p>
+        <strong>Apoapsis</strong> is the point in the orbit farthest from the parent body;
+        <strong>periapsis</strong>
+        is the closest point. Their distances are computed from the orbital semi-major axis <em>a</em>
+        and eccentricity <em>e</em> using:
+      </p>
+      <p>
+        Periapsis: <strong>a × (1 - e)</strong><br>
+        Apoapsis: <strong>a × (1 + e)</strong>
+      </p>
+      <p><strong>How is the next date estimated?</strong></p>
+      @if (data.meanAnomaly !== undefined) {
+      <p>
+        The calculation uses the stored mean anomaly (M0) and its timestamp (t0). Steps:
+      </p>
+      }
+      @if (data.meanAnomaly !== undefined) {
+      <ol>
+        <li>Compute elapsed time since the timestamp: <em>Δt = now - t0</em> (in days).</li>
+        <li>Compute the number of orbital cycles since then: <em>cycles = Δt / P</em>, where <em>P</em> is
+          the orbital period (days).</li>
+        <li>Advance the mean anomaly by <em>cycles × 360°</em> to get the current mean anomaly <em>M</em>:
+        </li>
+        <li><strong>M = (M0 + cycles × 360°) mod 360°</strong></li>
+        <li>Find the angular distance to the event:
+          <br>* For periapsis: <strong>Δθ = (360° − M) mod 360°</strong>
+          <br>* For apoapsis: <strong>Δθ = (180° − M) mod 360°</strong>
+        </li>
+        <li>Convert to time: <strong>Δt_event = (Δθ / 360°) × P</strong>. The event date is now + Δt_event.
+        </li>
+      </ol>
+      }
+      @if (data.meanAnomaly === undefined) {
+      <p>
+        A next-event estimate requires a recorded mean anomaly and timestamp. If that data is unavailable
+        the
+        application cannot compute the next occurrence.
+      </p>
+      }
+      @if (data.currentMeanAnomaly !== undefined) {
+      <p>
+        Debug values used in the calculation:<br>
+        Recorded M0 = {{ data.meanAnomaly }}° at {{ data.timestamp |
+        date:'yyyy-MM-dd HH:mm' }}<br>
+        Current mean anomaly M ≈ {{ data.currentMeanAnomaly | number:'0.1-1' }}°<br>
+        Angular distance to event Δθ ≈ {{ data.degreesToEvent | number:'0.1-1' }}°
+      </p>
+      }
+    </div>
+  </div>
+</app-dialog-shell>

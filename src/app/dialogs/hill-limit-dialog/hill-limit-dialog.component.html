@@ -1,0 +1,65 @@
+<app-dialog-shell heading="Shepherding Moon Analysis">
+  <div class="hill-limit-dialog">
+    <p class="intro">
+      This analysis evaluates whether this moon could act as a "shepherd moon" - a small satellite that helps
+      maintain or shape the parent body's ring system through gravitational interactions.
+    </p>
+    <p class="intro">
+      The Hill sphere represents the region around the moon where its gravity dominates. If this sphere
+      extends close to or overlaps with the ring system, the moon could influence ring particle orbits.
+    </p>
+    <div class="chart-container">
+      <canvas #canvas
+              width="700"
+              height="500"
+              role="img"
+              [attr.aria-label]="'Logarithmic orbital diagram showing the orbit of ' + data.bodyName + ' relative to the rings of ' + data.parentName + ', with the Hill sphere extent used for shepherding analysis. The numeric analysis results follow below.'"></canvas>
+    </div>
+    <div class="values">
+      <p><strong>Analysis Results</strong></p>
+      <ul>
+        <li><strong>Moon name:</strong> {{ data.bodyName }}</li>
+        <li><strong>Parent body:</strong> {{ data.parentName }}</li>
+        <li><strong>Moon orbital radius:</strong> {{ fmt(data.bodyOrbitalRadius) }} km</li>
+        <li><strong>Moon periapsis:</strong> {{ fmt(data.bodyPeriapsis) }} km</li>
+        <li><strong>Moon apoapsis:</strong> {{ fmt(data.bodyApoapsis) }} km</li>
+        <li><strong>Hill sphere radius:</strong> {{ fmt(data.hillRadius) }} km</li>
+        <li><strong>Outermost ring:</strong> {{ fmt(data.outermostRingRadius) }} km</li>
+      </ul>
+      <p><strong>Shepherding Analysis:</strong></p>
+      <div class="conclusion">
+        @switch (data.shepherdStatus) {
+        @case ('shepherd') {
+        <div>
+          <strong>Status:</strong> <span class="status-info">Shepherd Moon</span><br>
+          The moon's Hill sphere (<strong>{{ fmt(data.hillRadius) }} km</strong> radius) extends
+          close enough to the ring system to potentially confine or shape the outer edge of the rings.
+          Its gravity likely influences ring particle orbits through direct gravitational interaction
+          or resonances.
+        </div>
+        }
+        @case ('inner') {
+        <div>
+          <strong>Status:</strong> <span class="status-success">Inner Moon (not a
+            shepherd)</span><br>
+          This moon orbits within the ring system but is too far from the ring edge for its Hill
+          sphere to influence the rings. It is not considered a shepherd moon.
+        </div>
+        }
+        @case ('none') {
+        <div>
+          <strong>Status:</strong> <span class="status-muted">Not a Shepherd</span><br>
+          The moon's Hill sphere (<strong>{{ fmt(data.hillRadius) }} km</strong> radius) is too far
+          from the ring system to have any shepherding effect.
+        </div>
+        }
+        }
+      </div>
+    </div>
+    <div class="disclaimer">
+      <p><strong>Note:</strong> This is a simplified analysis focusing on the local gravitational environment.
+        Actual shepherding effects depend on many factors including orbital resonances, ring particle size
+        distribution, and long-term dynamical evolution.</p>
+    </div>
+  </div>
+</app-dialog-shell>

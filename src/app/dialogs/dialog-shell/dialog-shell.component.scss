@@ -1,14 +1,31 @@
 :host {
-    display: block;
+    // Every dialog that uses the shell shares one height so they don't jump in size
+    // as content varies. The header and actions stay pinned; the content area scrolls.
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    max-height: 90vh;
 }
 
 h2[mat-dialog-title] {
+    flex: 0 0 auto;
     margin: 0;
     padding: 24px 24px 0;
     color: var(--color-text);
+    // Flex so a projected [shell-title-extra] element can sit beside the heading
+    // text (e.g. push a link to the trailing edge with margin-left: auto).
+    display: flex;
+    align-items: center;
 }
 
 mat-dialog-content {
+    // Fill the remaining height between the header and the actions, scrolling overflow.
+    flex: 1 1 auto;
+    max-height: none;
     padding: 24px;
     color: var(--color-text);
+}
+
+mat-dialog-actions {
+    flex: 0 0 auto;
 }

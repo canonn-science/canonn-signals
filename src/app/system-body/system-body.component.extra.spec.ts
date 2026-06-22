@@ -21,13 +21,18 @@ describe('SystemBodyComponent (extended coverage)', () => {
   let fixture: ComponentFixture<SystemBodyComponent>;
   let component: SystemBodyComponent;
   let dialogOpenCalls: number;
-  let dialogOpenArgs: { component: unknown; config: { data?: { body: SystemBody; resonance: string } } }[];
+  let dialogOpenArgs: { component: unknown; config: { data?: any } }[];
+
+  /** The data object handed to the most recent dialog.open call. */
+  function lastDialogData(): any {
+    return dialogOpenArgs[dialogOpenArgs.length - 1].config.data;
+  }
 
   beforeEach(() => {
     dialogOpenCalls = 0;
     dialogOpenArgs = [];
     const dialogStub = {
-      open: (component: unknown, config: { data?: { body: SystemBody; resonance: string } } = {}) => {
+      open: (component: unknown, config: { data?: any } = {}) => {
         dialogOpenCalls++;
         dialogOpenArgs.push({ component, config });
         return { afterClosed: () => of(undefined), afterOpened: () => of(undefined) };
@@ -70,12 +75,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getBodyDisplayName('Foo')).toBe('Foo!');
     });
 
-    it('encodes URI components and tolerates nullish input', () => {
-      render(makeBody({}));
-      expect(component.encodeURIComponent('a b')).toBe('a%20b');
-      expect(component.encodeURIComponent(null)).toBe('');
-    });
-
     it('classifies eccentricity bands', () => {
       render(makeBody({}));
       expect(component.getEccentricityAnalysis(0)).toBe('Circular');
@@ -89,14 +88,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.radToDeg(Math.PI)).toBeCloseTo(180, 6);
       expect(component.radToDeg(null)).toBeNull();
       expect(component.radToDeg(undefined)).toBeNull();
-    });
-
-    it('resolves EDSM galaxy body ids with a parent fallback', () => {
-      const parent = makeBody({ bodyId: 7 });
-      expect(component.getEdGalaxyBodyId(makeBody({ bodyId: 3 }))).toBe(3);
-      const ring = makeBody({ bodyId: -1 }, parent);
-      expect(component.getEdGalaxyBodyId(ring)).toBe(7);
-      expect(component.getEdGalaxyBodyId(null as any)).toBe(-1);
     });
 
     it('formats Earth and Solar masses', () => {
@@ -225,10 +216,8 @@ describe('SystemBodyComponent (extended coverage)', () => {
       }, parent);
       render(ring);
       component.showRocheLimitChart();
-      vi.runOnlyPendingTimers(); // fires the deferred renderRocheChart callback
-      expect(component.rocheLimitDialogData).not.toBeNull();
-      expect(component.rocheLimitDialogData!.isBody).toBe(false);
       expect(dialogOpenCalls).toBeGreaterThan(0);
+      expect(lastDialogData().isBody).toBe(false);
     });
 
     it('opens the invisible-ring explanation dialog', () => {
@@ -239,8 +228,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       }, parent);
       render(ring);
       component.showInvisibleRingExplanation();
-      expect(component.invisibleRingDialogData).not.toBeNull();
-      expect(component.invisibleRingDialogData!.isInvisible).toBe(true);
+      expect(lastDialogData().isInvisible).toBe(true);
     });
   });
 
@@ -254,8 +242,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(moon);
       expect(component.calculateBodyRocheLimits()).not.toBeNull();
       component.showBodyRocheLimitChart();
-      vi.runOnlyPendingTimers();
-      expect(component.rocheLimitDialogData!.isBody).toBe(true);
+      expect(lastDialogData().isBody).toBe(true);
     });
 
     it('opens the shepherding Hill-limit chart for a shepherd moon', () => {
@@ -271,9 +258,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.isShepherdingCandidate()).toBe(true);
       expect(component.isActualShepherd()).toBe(true);
       component.showShepherdingHillLimitChart();
-      vi.runOnlyPendingTimers();
-      expect(component.hillLimitDialogData).not.toBeNull();
-      expect(component.hillLimitDialogData!.shepherdStatus).toBe('shepherd');
+      expect(lastDialogData().shepherdStatus).toBe('shepherd');
     });
   });
 
@@ -284,17 +269,17 @@ describe('SystemBodyComponent (extended coverage)', () => {
         timestamps: { distanceToArrival: '', meanAnomaly: new Date(Date.now() - 5 * 86400000).toISOString() },
       }));
       component.showApoPeriDialog('apo');
-      expect(component.apoPeriDialogData?.type).toBe('apo');
-      expect(component.apoPeriDialogData?.distanceKm).toBeGreaterThan(0);
+      expect(lastDialogData().type).toBe('apo');
+      expect(lastDialogData().distanceKm).toBeGreaterThan(0);
       component.showApoPeriDialog('peri');
-      expect(component.apoPeriDialogData?.type).toBe('peri');
+      expect(lastDialogData().type).toBe('peri');
     });
 
     it('does nothing when there is no next-event data', () => {
       render(makeBody({ orbitalEccentricity: 0 }));
-      component.apoPeriDialogData = null;
+      const before = dialogOpenCalls;
       component.showApoPeriDialog('apo');
-      expect(component.apoPeriDialogData).toBeNull();
+      expect(dialogOpenCalls).toBe(before);
     });
   });
 
@@ -419,8 +404,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
     it('opens the on-foot safety dialog', () => {
       render(makeBody({ type: 'Planet', subType: 'Rocky body', isLandable: true, surfaceTemperature: 250, atmosphereType: 'Thin Argon', surfacePressure: 0.01, gravity: 0.5 }));
       component.showOnFootSafetyDialog();
-      expect(component.onFootSafetyDialogData).not.toBeNull();
-      expect(component.onFootSafetyDialogData!.lookupSource).toContain('Argon');
+      expect(lastDialogData().lookupSource).toContain('Argon');
     });
 
     it('opens the tidal-lock dialog with the body and computed resonance', () => {
@@ -439,29 +423,20 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(dialogOpenCalls).toBeGreaterThan(0);
     });
 
-    it('opens the JSON dialog and exposes formatted JSON', () => {
+    it('opens the JSON dialog with the body and galaxy data', () => {
       render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
-      // The pretty-printed JSON is prepared when the dialog opens (cached so the
-      // template binding doesn't re-stringify on every change-detection pass).
-      // The dialog's focus setTimeout touches a viewChild that only exists inside the
-      // dialog ng-template, so it's discarded in afterEach rather than run here.
       component.showBodyJsonDialog();
       expect(dialogOpenCalls).toBeGreaterThan(0);
-      expect(component.getFormattedBodyJson()).toContain('"subType": "Rocky body"');
+      expect(lastDialogData().body.bodyData.subType).toBe('Rocky body');
     });
 
-    it('downloads the on-foot reference CSV without throwing', () => {
+    it('copies the body JSON to the clipboard on the right-click shortcut', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText } });
       render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
-      const origCreate = URL.createObjectURL;
-      const origRevoke = URL.revokeObjectURL;
-      (URL as any).createObjectURL = () => 'blob:test';
-      (URL as any).revokeObjectURL = () => {};
-      try {
-        expect(() => component.downloadOnFootReferenceData()).not.toThrow();
-      } finally {
-        URL.createObjectURL = origCreate;
-        URL.revokeObjectURL = origRevoke;
-      }
+      component.copyBodyJson();
+      await Promise.resolve();
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"subType": "Rocky body"'));
     });
   });
 

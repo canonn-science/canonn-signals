@@ -1,0 +1,41 @@
+.edgalaxy-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    text-decoration: none;
+    // Push the link to the trailing edge of the flex title bar.
+    margin-left: auto;
+
+    img {
+        height: 26px;
+        width: auto;
+        display: block;
+        border-radius: 2px;
+    }
+
+    img + img {
+        margin-left: -8px; // slight overlap
+    }
+
+    &:hover img {
+        transform: scale(1.05);
+    }
+}
+
+.json-dialog {
+    // Cancel the shell's content padding so the code block fills the panel edge-to-edge.
+    margin: -24px;
+    background: var(--color-surface-4);
+
+    pre {
+        margin: 0;
+        padding: 16px 24px;
+        color: var(--color-text-code);
+        font-family: Consolas, Monaco, 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: pre;
+        overflow-x: auto;
+        tab-size: 2;
+    }
+}

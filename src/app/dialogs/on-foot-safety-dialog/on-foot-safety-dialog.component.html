@@ -1,0 +1,139 @@
+<app-dialog-shell [heading]="heading">
+  <div class="on-foot-safety-dialog">
+
+    <!-- Verdict -->
+    <p class="intro">
+      @if (data.gravity && data.gravity > 2.7) {
+      <strong class="safety-red">&#x26A0; Cannot disembark.</strong>
+      Gravity of {{ data.gravity | number:'0.2-2' }} g exceeds the 2.7 g threshold
+      &mdash;
+      the SRV bay will not permit on-foot activities regardless of temperature.
+      }
+      @if (!data.gravity || data.gravity <= 2.7) {
+      @if (data.badgeClass === 'badge-green') {
+      <strong class="safety-green">&#x2713; Safe to disembark.</strong>
+      The estimated temperature range is within safe limits across both the cooler and warmer sides of
+      this body.
+      }
+      @if (data.badgeClass === 'badge-orange') {
+      <strong class="safety-amber">&#x26A0; Partial risk.</strong>
+      Part of the estimated temperature range falls outside safe limits &mdash; conditions may be
+      hazardous depending on location. Seek out the safer side as indicated below.
+      }
+      @if (data.badgeClass === 'badge-red') {
+      <strong class="safety-red">&#x2717; Not safe to disembark.</strong>
+      The entire estimated temperature range is outside safe limits &mdash; the suit cannot protect
+      you here.
+      }
+      @if (data.badgeClass === 'badge-gray') {
+      <strong>Unknown.</strong> Insufficient data to assess on-foot safety.
+      }
+      }
+    </p>
+
+    <!-- Key facts -->
+    <ul>
+      <li><strong>Surface temperature:</strong>
+        {{ data.surfaceTemperature | number:'0.2-2' }} K</li>
+      <li><strong>Estimated cool side (p5th percentile):</strong>
+        {{ data.estimatedMin | number:'0.2-2' }} K</li>
+      <li><strong>Estimated warm side (p95th percentile):</strong>
+        {{ data.estimatedMax | number:'0.2-2' }} K</li>
+      @if (data.gravity) {
+      <li><strong>Gravity:</strong>
+        {{ data.gravity | number:'0.2-2' }} g</li>
+      }
+      <li><strong>Atmosphere:</strong> {{ data.atmosphereType || 'None' }}</li>
+    </ul>
+
+    <!-- Day/night side assessment (min and max are always populated together) -->
+    @if (data.estimatedMin !== null && data.estimatedMax !== null) {
+    <p class="explanation">
+      <strong>Cool side vs warm side:</strong><br>
+      The cool-side estimate represents shaded, polar, or night-side locations (5th percentile of observed
+      organic temperatures on bodies with matching characteristics). The warm-side estimate represents
+      sun-facing or equatorial locations (95th percentile).<br><br>
+      Cool side ({{ data.estimatedMin | number:'0.0-0' }} K):
+      @if (data.estimatedMin >= 182 && data.estimatedMin < 700) {
+      <strong class="safety-green">safe to disembark.</strong>
+      }
+      @if (data.estimatedMin < 182) {
+      <strong class="safety-amber">battery drain risk.</strong>
+      }
+      @if (data.estimatedMin >= 700) {
+      <strong class="safety-red">risk of injury or death.</strong>
+      }
+      <br>
+      Warm side ({{ data.estimatedMax | number:'0.0-0' }} K):
+      @if (data.estimatedMax >= 182 && data.estimatedMax < 700) {
+      <strong class="safety-green">safe to disembark.</strong>
+      }
+      @if (data.estimatedMax < 182) {
+      <strong class="safety-amber">battery drain risk.</strong>
+      }
+      @if (data.estimatedMax >= 700) {
+      <strong class="safety-red">risk of injury or death.</strong>
+      }
+      <br><br>
+      @if (data.estimatedMin >= 182 && data.estimatedMin < 700 &&
+        (data.estimatedMax < 182 || data.estimatedMax >= 700)) {
+      <strong>Recommendation:</strong> Favour the cooler, shaded or night-side locations.
+      }
+      @if (data.estimatedMax >= 182 && data.estimatedMax < 700 && data.estimatedMin < 182) {
+      <strong>Recommendation:</strong> Favour the warmer, sun-facing or day-side locations.
+      }
+      @if (data.estimatedMin >= 182 && data.estimatedMin < 700 &&
+        data.estimatedMax >= 182 && data.estimatedMax < 700) {
+      <strong>Both sides are within safe limits.</strong> No particular location preference needed.
+      }
+      @if ((data.estimatedMin < 182 || data.estimatedMin >= 700) &&
+        (data.estimatedMax < 182 || data.estimatedMax >= 700)) {
+      <strong class="safety-red">Caution:</strong> Neither side is estimated to be within safe
+      limits.
+      }
+    </p>
+    }
+
+    <!-- Thresholds -->
+    <p class="explanation"><strong>On-foot safety thresholds:</strong></p>
+    <ul>
+      <li><strong>&lt; 182 K</strong> &mdash; battery drain risk. The suit's thermal management cannot cope
+        with extreme cold and battery life is severely reduced.</li>
+      <li><strong>182 &ndash; 699 K</strong> &mdash; safe to disembark.</li>
+      <li><strong>&ge; 700 K</strong> &mdash; risk of injury or death. The suit cannot protect against
+        extreme heat.</li>
+      <li><strong>&gt; 2.7 g</strong> &mdash; disembarking is blocked by the SRV bay regardless of
+        temperature.</li>
+    </ul>
+
+    <!-- How min/max was determined -->
+    <p class="explanation">
+      <strong>How are the estimated temperatures calculated?</strong><br>
+      The min and max figures come from a dataset of <strong>3,301,198 organic temperature
+        measurements</strong> collected from EDSM and in-game journal data. For each reading the on-foot
+      temperature was compared against the body's surface temperature to produce a <em>deltaT</em> value.
+      The 5th and 95th percentiles of these deltas give a ~90% coverage interval:<br><br>
+      <em>Est. min = surface temperature + p5 deltaT</em><br>
+      <em>Est. max = surface temperature + p95 deltaT</em>
+    </p>
+    <ul>
+      <li><strong>p5 deltaT applied:</strong> {{ data.p5Delta | number:'0.2-2' }} K</li>
+      <li><strong>p95 deltaT applied:</strong> {{ data.p95Delta | number:'0.2-2' }} K</li>
+      <li><strong>Lookup table matched:</strong> {{ data.lookupSource }}</li>
+    </ul>
+    <p>
+      The lookup uses a priority chain: (1) subType + atmosphere combination, (2) subType with confirmed zero
+      pressure, (3) subType alone, (4) atmosphere type alone, (5) surface pressure class, (6) global
+      fallback. The most specific match available for this body was used.
+    </p>
+
+    <!-- Download -->
+    <p>
+      <button mat-stroked-button
+              (click)="downloadReferenceData()">
+        Download full reference table (CSV)
+      </button>
+    </p>
+
+  </div>
+</app-dialog-shell>
