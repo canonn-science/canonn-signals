@@ -1,6 +1,5 @@
-<div class="white-dwarf-dialog">
-  <h2 mat-dialog-title>White Dwarf Spectral Types</h2>
-  <mat-dialog-content>
+<app-dialog-shell [heading]="'White Dwarf Spectral Types'">
+  <div class="white-dwarf-dialog">
     <p class="intro">
       White dwarfs are classified by their spectral features, which reflect the composition of their
       outer atmosphere (not their core).
@@ -31,8 +30,5 @@
         <li>DZ white dwarfs are of particular interest because their metal lines often indicate accretion from planetary debris.</li>
       </ul>
     </div>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Close</button>
-  </mat-dialog-actions>
-</div>
+  </div>
+</app-dialog-shell>

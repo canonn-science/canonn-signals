@@ -22,7 +22,7 @@ import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { ChartRenderingService, RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
-import { WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData } from '../white-dwarf-types-dialog/white-dwarf-types-dialog.component';
+import { WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData } from '../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component';
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
 import { JET_SAMPLE_CSV } from '../data/jet-sample';

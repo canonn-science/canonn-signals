@@ -14,11 +14,13 @@
       <span>-</span>
       }
       @if (body().bodyData.subType) {
-      <span [matTooltip]="getSolidCompositionTooltip()"
-            matTooltipClass="multiline-tooltip">{{ body().bodyData.subType }}@if (classifyNeutronStar()) {
+      <span [class.clickable]="getWhiteDwarfSpectralCode()"
+            [matTooltip]="getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip()"
+            matTooltipClass="multiline-tooltip"
+            (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{ body().bodyData.subType }}@if (classifyNeutronStar()) {
         <span> ({{
-          classifyNeutronStar() }})</span>
-        }</span>
+        classifyNeutronStar() }})</span>
+      }</span>
       }
       @if (body().bodyData.atmosphereType || body().bodyData.atmosphereComposition || getWhiteDwarfAtmosphere()) {
       <span [matTooltip]="getAtmosphereCompositionTooltip()"
@@ -26,11 +28,6 @@
             class="atmosphere-type">
         - {{ getAtmosphereDisplay() }}
       </span>
-      }
-      @if (getWhiteDwarfSpectralCode(); as wdCode) {
-        <span class="badge badge-cyan clickable"
-          [matTooltip]="'White dwarf spectral type — click for the full classification'"
-          (click)="showWhiteDwarfSpectralDialog()">{{ wdCode }}</span>
       }
       @if (isRingNotVisible()) {
       <span class="badge badge-red clickable"

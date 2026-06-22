@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
-import { WHITE_DWARF_SPECTRAL_TYPES } from '../data/white-dwarf';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
+import { WHITE_DWARF_SPECTRAL_TYPES } from '../../data/white-dwarf';
 
 /** Data passed to the white-dwarf spectral-type reference modal. */
 export interface WhiteDwarfTypesDialogData {
@@ -19,7 +19,7 @@ export interface WhiteDwarfTypesDialogData {
   templateUrl: './white-dwarf-types-dialog.component.html',
   styleUrls: ['./white-dwarf-types-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose, MatButton],
+  imports: [DialogShellComponent],
 })
 export class WhiteDwarfTypesDialogComponent {
   /** The full spectral-type catalogue, in display order. */

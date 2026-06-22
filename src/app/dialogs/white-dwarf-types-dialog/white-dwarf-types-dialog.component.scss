@@ -1,22 +1,5 @@
-.white-dwarf-dialog h2 {
-    margin: 0;
-    padding: 16px 24px;
-    background: var(--color-surface-4);
-    color: var(--color-white);
-    font-size: 18px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-}
-
-.white-dwarf-dialog mat-dialog-content {
-    padding: 24px;
-    color: var(--color-text)
-}
-
-.white-dwarf-dialog mat-dialog-content .intro,
-.white-dwarf-dialog mat-dialog-content .notes {
+.white-dwarf-dialog .intro,
+.white-dwarf-dialog .notes {
     margin-bottom: 20px;
     line-height: 1.6
 }
@@ -62,13 +45,4 @@
 
 .white-dwarf-dialog .notes ul li {
     padding: 4px 0
-}
-
-.white-dwarf-dialog mat-dialog-actions {
-    padding: 16px 24px;
-    border-top: 1px solid var(--color-surface-5)
-}
-
-.white-dwarf-dialog mat-dialog-actions button {
-    min-width: 100px
 }
