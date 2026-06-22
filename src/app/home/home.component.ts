@@ -16,6 +16,7 @@ import { BODY_TYPE } from '../data/body-types';
 import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
 import { CREDITS_HTML } from '../data/credits.generated';
+import { findNearestNebulae, NearestNebula } from '../data/nebulae';
 
 @Component({
   selector: 'app-home',
@@ -249,6 +250,15 @@ export class HomeComponent implements OnInit, OnDestroy {
       })
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 3);
+  });
+
+  readonly getNearestNebulae = computed<NearestNebula[]>(() => {
+    const coords = this.data()?.system?.coords;
+    const nebulae = this.appService.nebulae();
+    if (!coords || nebulae.length === 0) {
+      return [];
+    }
+    return findNearestNebulae(coords, nebulae, 3);
   });
 
   readonly getTotalBodyCount = computed<number>(() => this.countBodies(this.bodies()));
@@ -603,6 +613,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.bodies.set([]);
     // Ensure edGalaxyData is updated/fetched when system changes
     this.updateEdGalaxyData();
+    // Kick off the lazy nebula-catalogue load so the "Nearest Nebulae" panel can populate.
+    this.appService.ensureNebulae();
 
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {

@@ -24,6 +24,7 @@ describe('HomeComponent (extended coverage)', () => {
   let navigate: ReturnType<typeof vi.fn>;
   let edastroSystems$: WritableSignal<any[]>;
   let independentOutposts$: WritableSignal<any[]>;
+  let nebulae$: WritableSignal<any[]>;
   let setBackgroundImage: ReturnType<typeof vi.fn>;
   let getEdastroData: ReturnType<typeof vi.fn>;
 
@@ -57,6 +58,7 @@ describe('HomeComponent (extended coverage)', () => {
     navigate = vi.fn(() => Promise.resolve(true));
     edastroSystems$ = signal<any[]>([]);
     independentOutposts$ = signal<any[]>([]);
+    nebulae$ = signal<any[]>([]);
     setBackgroundImage = vi.fn();
     getEdastroData = vi.fn(() => Promise.resolve(null));
 
@@ -71,6 +73,8 @@ describe('HomeComponent (extended coverage)', () => {
           useValue: {
             edastroSystems: edastroSystems$,
             independentOutposts: independentOutposts$,
+            nebulae: nebulae$,
+            ensureNebulae: vi.fn(),
             codexEntries: signal([]),
             getBodyDisplayName: (n: string) => `${n}*`,
             getEdastroData,
@@ -163,6 +167,24 @@ describe('HomeComponent (extended coverage)', () => {
     it('derives the display-name -> systemName/id64 map from the EdAstro feed', () => {
       edastroSystems$.set([{ name: 'Display Name', galMapSearch: 'Real Sys', id64: 42 }]);
       expect((component as any).systemMapping().get('Display Name')).toEqual({ systemName: 'Real Sys', id64: 42 });
+    });
+
+    it('lists the three nearest nebulae from the catalogue, nearest first', () => {
+      component.data.set({ system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any);
+      nebulae$.set([
+        { name: 'Far', system: 'Far Sys', x: 100, y: 0, z: 0, type: 'planetary' },
+        { name: 'Close', system: 'Close Sys', x: 1, y: 0, z: 0, type: 'real' },
+        { name: 'Mid', system: 'Mid Sys', x: 10, y: 0, z: 0, type: 'planetary' },
+        { name: 'Furthest', system: 'Furthest Sys', x: 1000, y: 0, z: 0, type: 'procgen' },
+      ]);
+      const nearest = component.getNearestNebulae();
+      expect(nearest.map(n => n.name)).toEqual(['Close', 'Mid', 'Far']);
+      expect(nearest[0].distance).toBeCloseTo(1, 10);
+    });
+
+    it('returns no nearest nebulae before the catalogue has loaded', () => {
+      component.data.set({ system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any);
+      expect(component.getNearestNebulae()).toEqual([]);
     });
   });
 

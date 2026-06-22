@@ -358,6 +358,19 @@
     overflow-wrap: anywhere;
 }
 
+/* Clickable system/nebula names in the Distances, Nearest DSSA and Nearest Nebulae
+   panels: just a pointer cursor so they read as actionable (without looking like
+   coloured/underlined links), plus a visible focus ring for keyboard users. */
+.system-container .system-container-data .system-data .distance-system-link {
+    cursor: pointer;
+}
+
+.system-container .system-container-data .system-data .distance-system-link:focus-visible {
+    outline: 2px solid var(--color-link-hover);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 
 .system-container .system-container-data .system-data .gec-image-container {
     min-width: 200px;
