@@ -319,9 +319,10 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(makeBody({ type: 'Star', subType: 'Black Hole', solarMasses: 8, solarRadius: 0.00001 }));
       expect(component.isBlackHoleOrNeutronStar()).toBe(true);
       // 0.00001 solar radii * 695700 km = 6.957 km -> "6.96 km"; without conversion it would render "0.00".
+      expect(component.getCompactObjectRadiusKm()).toBeCloseTo(6.957, 3);
       const text = fixture.nativeElement.textContent as string;
       expect(text).toContain('6.96 km');
-      expect(text).not.toContain('Solar radius0.00');
+      expect(text).not.toContain('Solar radius');
     });
 
     it('treats a supermassive black hole as a compact object', () => {

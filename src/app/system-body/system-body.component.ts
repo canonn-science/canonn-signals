@@ -1163,6 +1163,13 @@ export class SystemBodyComponent implements OnChanges {
         body.bodyData.subType === 'Neutron Star') === true;
   }
 
+  /** Physical radius in km for compact objects (neutron stars, black holes), whose solar-radius is too small to read; null otherwise. */
+  public getCompactObjectRadiusKm(): number | null {
+    if (!this.isBlackHoleOrNeutronStar()) { return null; }
+    const bd = this.body().bodyData;
+    return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+  }
+
   private formatPeriodDays(days: number): string {
     const absDays = Math.abs(days);
     const seconds = absDays * 86400;
