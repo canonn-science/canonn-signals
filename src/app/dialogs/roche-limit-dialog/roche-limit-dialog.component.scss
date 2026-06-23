@@ -1,0 +1,62 @@
+.roche-dialog {
+    color: var(--color-text);
+
+    .chart-description {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .chart-description p {
+        margin: 0 0 12px 0;
+    }
+
+    .chart-description ul {
+        margin: 0;
+        padding-left: 24px;
+    }
+
+    .chart-description li {
+        margin-bottom: 8px;
+    }
+
+    .chart-container {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+        background: var(--color-white);
+        padding: 10px;
+        border-radius: 4px;
+        position: relative;
+    }
+
+    .ring-summary {
+        margin-top: 24px;
+        padding: 16px;
+        background: var(--color-surface-2);
+        border-radius: 4px;
+    }
+
+    .ring-summary h3 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--color-white);
+    }
+
+    .ring-entry {
+        margin-bottom: 12px;
+        padding: 8px;
+        background: var(--color-surface-5);
+        border-radius: 3px;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .ring-entry:last-child {
+        margin-bottom: 0;
+    }
+
+    .ring-entry strong {
+        color: var(--color-success);
+    }
+}

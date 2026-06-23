@@ -1,7 +1,11 @@
-<h2 mat-dialog-title>{{ heading }}</h2>
+<h2 mat-dialog-title>
+  {{ heading }}
+  <ng-content select="[shell-title-extra]"></ng-content>
+</h2>
 <mat-dialog-content>
   <ng-content></ng-content>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button mat-button mat-dialog-close>Close</button>
+  <ng-content select="[shell-actions]"></ng-content>
 </mat-dialog-actions>

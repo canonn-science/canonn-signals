@@ -1,34 +1,34 @@
-import {
-  estimateTempRange, isTempSafe, lookupTempDelta,
-  DELTA_BY_SUBTYPE_ATMOSPHERE, DELTA_BY_SUBTYPE_NO_ATM, DELTA_BY_SUBTYPE,
-  DELTA_BY_ATMOSPHERE, DELTA_BY_PRESSURE, DELTA_GLOBAL,
-} from '../data/temperature-estimation';
-import { Component, OnChanges, ElementRef, TemplateRef, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, viewChild, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
+import { estimateTempRange, isTempSafe, lookupTempDelta } from '../data/temperature-estimation';
+import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
 import { SystemBody, EdGalaxyData } from '../home/home.component';
-import { faCircleChevronRight, faCircleQuestion, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
+import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
 import { MINING_RESOURCES } from '../data/mining-resources';
 import { MatTooltip } from '@angular/material/tooltip';
-import { MatDialog, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
-import { CdkScrollable } from '@angular/cdk/scrolling';
-import { MatButton } from '@angular/material/button';
 import { ClickableDirective } from '../clickable.directive';
 import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
-import { ChartRenderingService, RocheChartData, HillChartData } from '../data/chart-rendering.service';
+import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
 import { WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData } from '../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component';
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
-import { JET_SAMPLE_CSV } from '../data/jet-sample';
 import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
 import { TidalLockDialogComponent, TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 import { HrDiagramDialogComponent } from '../dialogs/hr-diagram-dialog/hr-diagram-dialog.component';
+import { HillLimitDialogComponent } from '../dialogs/hill-limit-dialog/hill-limit-dialog.component';
+import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-limit-dialog.component';
+import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
+import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
+import { JetAngleDialogComponent } from '../dialogs/jet-angle-dialog/jet-angle-dialog.component';
+import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
+import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 
 @Component({
@@ -36,7 +36,7 @@ import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '..
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FaIconComponent, MatTooltip, MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DecimalPipe, DatePipe, ClickableDirective]
+  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective]
 })
 export class SystemBodyComponent implements OnChanges {
   private readonly appService = inject(AppService);
@@ -44,7 +44,6 @@ export class SystemBodyComponent implements OnChanges {
   private readonly physics = inject(BodyPhysicsService);
   private readonly stellarPhysics = inject(StellarPhysicsService);
   private readonly orbitalRelations = inject(OrbitalRelationsService);
-  private readonly chartRenderer = inject(ChartRenderingService);
 
   // Expose Math.abs for template use
   abs(value: number): number {
@@ -52,6 +51,7 @@ export class SystemBodyComponent implements OnChanges {
   }
   public readonly faChevronRight = faCircleChevronRight;
   public readonly faCircleQuestion = faCircleQuestion;
+  public readonly faInfo = faInfo;
   public readonly faUpRightFromSquare = faUpRightFromSquare;
   public readonly faSquareCaretDown = faSquareCaretDown;
   public readonly faSquareCaretUp = faSquareCaretUp;
@@ -65,14 +65,6 @@ export class SystemBodyComponent implements OnChanges {
   readonly forceExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
   readonly childComponents = viewChildren(SystemBodyComponent);
-  readonly hillLimitDialogTemplate = viewChild.required<TemplateRef<unknown>>('hillLimitDialogTemplate');
-  readonly invisibleRingDialogTemplate = viewChild.required<TemplateRef<unknown>>('invisibleRingDialogTemplate');
-  readonly jsonDialogTemplate = viewChild.required<TemplateRef<unknown>>('jsonDialogTemplate');
-  readonly jsonDialogTitle = viewChild.required<ElementRef<HTMLElement>>('jsonDialogTitle');
-  readonly rocheLimitDialogTemplate = viewChild.required<TemplateRef<unknown>>('rocheLimitDialogTemplate');
-  readonly onFootSafetyDialogTemplate = viewChild.required<TemplateRef<unknown>>('onFootSafetyDialogTemplate');
-  readonly jetAngleDialogTemplate = viewChild.required<TemplateRef<unknown>>('jetAngleDialogTemplate');
-  readonly apoPeriDialogTemplate = viewChild.required<TemplateRef<unknown>>('apoPeriDialogTemplate');
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
 
@@ -99,17 +91,6 @@ export class SystemBodyComponent implements OnChanges {
   public readonly expanded = signal(false);
 
   public hoveredIndex: number = -1;
-
-  public hillLimitDialogData: HillChartData | null = null;
-  public invisibleRingDialogData: InvisibleRingDialogData | null = null;
-  public rocheLimitDialogData: RocheChartData | null = null;
-  public readonly isChartLoading = signal(false);
-  public jetAngleChartDataUrl: string | null = null;
-
-  public apoPeriDialogData: {
-    type: 'apo' | 'peri', date: Date, days: number, distanceKm?: number,
-    meanAnomaly?: number, orbitalPeriod?: number, timestamp?: Date, currentMeanAnomaly?: number, degreesToEvent?: number
-  } | null = null;
 
   public formattedEarthMass: { display: string; tooltip: string } | null = null;
   public formattedSolarMass: { display: string; tooltip: string } | null = null;
@@ -154,16 +135,7 @@ export class SystemBodyComponent implements OnChanges {
     return this.appService.getBodyDisplayName(bodyName);
   }
 
-  public encodeURIComponent(value: string | number | null | undefined): string {
-    try {
-      return encodeURIComponent(value ?? '');
-    } catch {
-      return '';
-    }
-  }
-
   public readonly bodyLinkCopied = signal(false);
-  public readonly bodyJsonCopied = signal(false);
 
   private containsAnchorBody(body: SystemBody): boolean {
     const anchorBodyId = this.anchorBodyId();
@@ -182,27 +154,11 @@ export class SystemBodyComponent implements OnChanges {
     if (bodyId === undefined || bodyId === null) { return; }
     const url = `${window.location.href.split('#')[0]}#body-${bodyId}`;
     navigator.clipboard?.writeText(url)
-      .then(() => this.flashCopied('bodyLinkCopied'))
+      .then(() => {
+        this.bodyLinkCopied.set(true);
+        setTimeout(() => this.bodyLinkCopied.set(false), 1500);
+      })
       .catch(() => { /* clipboard unavailable */ });
-  }
-
-  /** Flash a "Copied!" state for 1.5s. The signal writes schedule change detection under zoneless. */
-  private flashCopied(key: 'bodyLinkCopied' | 'bodyJsonCopied'): void {
-    this[key].set(true);
-    setTimeout(() => this[key].set(false), 1500);
-  }
-
-  public getEdGalaxyBodyId(b: SystemBody): number {
-    if (!b || !b.bodyData) { return -1; }
-    const bid = typeof b.bodyData.bodyId === 'number' ? b.bodyData.bodyId : -1;
-    if (bid && bid > -1) {
-      return bid;
-    }
-    // Fallback to parent's bodyId if available (useful for rings/belts)
-    if (b.parent && b.parent.bodyData && typeof b.parent.bodyData.bodyId === 'number' && b.parent.bodyData.bodyId > -1) {
-      return b.parent.bodyData.bodyId;
-    }
-    return bid;
   }
 
   public ngOnChanges(changes?: SimpleChanges): void {
@@ -571,8 +527,9 @@ export class SystemBodyComponent implements OnChanges {
     }
 
     this.dialog.open(OrbitalDiagramDialogComponent, {
-      width: '720px',
+      width: '900px',
       maxWidth: '95vw',
+      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: { type, degrees, eccentricity: bodyData.orbitalEccentricity, bodyName, parentName, orbit },
@@ -587,8 +544,9 @@ export class SystemBodyComponent implements OnChanges {
     const body = this.body();
     const bodyData = body.bodyData;
     this.dialog.open(HrDiagramDialogComponent, {
-      width: '720px',
+      width: '900px',
       maxWidth: '95vw',
+      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -807,35 +765,20 @@ export class SystemBodyComponent implements OnChanges {
     this.hoveredIndex = index;
   }
 
-  // The pretty-printed body JSON shown in (and copied from) the JSON dialog. Cached when
-  // the dialog opens so the template binding doesn't re-stringify on every CD pass.
-  public readonly getFormattedBodyJson = signal('');
-  public copyBodyJson(): void {
-    navigator.clipboard?.writeText(this.getFormattedBodyJson())
-      .then(() => this.flashCopied('bodyJsonCopied'))
-      .catch(() => { /* clipboard unavailable */ });
+  public showBodyJsonDialog(): void {
+    this.dialog.open(JsonDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
+      restoreFocus: false,
+      data: { body: this.body(), edGalaxyData: this.edGalaxyData() } satisfies JsonDialogData,
+    });
   }
 
-
-  public showBodyJsonDialog(): void {
-    // id64 is a bigint to preserve 64-bit precision; JSON.stringify can't serialize
-    // BigInt natively, so render it as its exact decimal string.
-    this.getFormattedBodyJson.set(
-      JSON.stringify(this.body().bodyData, (_key, value) =>
-        typeof value === 'bigint' ? value.toString() : value, 2));
-    this.dialog.open(this.jsonDialogTemplate(), {
-      width: '800px',
-      autoFocus: false,
-      restoreFocus: false
-    });
-
-    // Focus the title after the dialog opens
-    setTimeout(() => {
-      const jsonDialogTitle = this.jsonDialogTitle();
-      if (jsonDialogTitle) {
-        jsonDialogTitle.nativeElement.focus();
-      }
-    }, 100);
+  /** Copies the body JSON to the clipboard (right-click shortcut on the JSON button). */
+  public copyBodyJson(): void {
+    navigator.clipboard?.writeText(formatBodyJson(this.body().bodyData))
+      .catch(() => { /* clipboard unavailable */ });
   }
 
   public showInvisibleRingExplanation(): void {
@@ -854,21 +797,32 @@ export class SystemBodyComponent implements OnChanges {
 
     const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
-    this.invisibleRingDialogData = {
-      ringName,
-      innerRadius,
-      outerRadius,
-      width,
-      area,
-      mass,
-      density,
-      isInvisible
-    };
+    this.dialog.open(InvisibleRingDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
+      data: {
+        ringName,
+        innerRadius,
+        outerRadius,
+        width,
+        area,
+        mass,
+        density,
+        isInvisible,
+      } satisfies InvisibleRingDialogData,
+    });
+  }
 
-    this.dialog.open(this.invisibleRingDialogTemplate(), {
-      width: '700px',
-      maxWidth: '90vw',
-      panelClass: 'invisible-ring-dialog'
+  /** Opens the Roche-limit chart dialog with the prepared chart data. */
+  private openRocheLimitDialog(data: RocheChartData): void {
+    this.dialog.open(RocheLimitDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data,
     });
   }
 
@@ -897,7 +851,7 @@ export class SystemBodyComponent implements OnChanges {
       density: this.physics.ringSatelliteDensityKgM3(body.bodyData.subType)
     };
 
-    this.rocheLimitDialogData = {
+    this.openRocheLimitDialog({
       parentName: parent.name,
       ringName: body.bodyData.name,
       densityRange,
@@ -906,21 +860,6 @@ export class SystemBodyComponent implements OnChanges {
       rings: [currentRing],
       primaryRadius,
       isBody: false
-    };
-
-    this.isChartLoading.set(true);
-
-    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
-      width: '800px',
-      maxWidth: '90vw',
-      hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
-    });
-
-    // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
-    dialogRef.afterOpened().subscribe(() => {
-      this.renderRocheChart();
-      this.isChartLoading.set(false);
     });
   }
 
@@ -958,7 +897,7 @@ export class SystemBodyComponent implements OnChanges {
       density: bodyDensity
     };
 
-    this.rocheLimitDialogData = {
+    this.openRocheLimitDialog({
       parentName: parent.name,
       ringName: body.bodyData.name,
       densityRange,
@@ -967,21 +906,6 @@ export class SystemBodyComponent implements OnChanges {
       rings: [bodyRing],
       primaryRadius,
       isBody: true
-    };
-
-    this.isChartLoading.set(true);
-
-    const dialogRef = this.dialog.open(this.rocheLimitDialogTemplate(), {
-      width: '800px',
-      maxWidth: '90vw',
-      hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
-    });
-
-    // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
-    dialogRef.afterOpened().subscribe(() => {
-      this.renderRocheChart();
-      this.isChartLoading.set(false);
     });
   }
 
@@ -1018,23 +942,23 @@ export class SystemBodyComponent implements OnChanges {
       degreesToEvent = this.orbitalRelations.degreesToEvent(currentMeanAnomaly, type);
     }
 
-    this.apoPeriDialogData = {
-      type,
-      date: data.date,
-      days: data.days,
-      distanceKm,
-      meanAnomaly,
-      orbitalPeriod,
-      timestamp,
-      currentMeanAnomaly,
-      degreesToEvent
-    };
-
-    this.dialog.open(this.apoPeriDialogTemplate(), {
-      width: '600px',
-      maxWidth: '90vw',
+    this.dialog.open(ApoPeriDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
       hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        type,
+        date: data.date,
+        days: data.days,
+        distanceKm,
+        meanAnomaly,
+        orbitalPeriod,
+        timestamp,
+        currentMeanAnomaly,
+        degreesToEvent
+      } satisfies ApoPeriDialogData,
     });
   }
 
@@ -1066,52 +990,28 @@ export class SystemBodyComponent implements OnChanges {
     // truth in BodyPhysicsService (shared with the isActualShepherd badge).
     const shepherdStatus = this.physics.shepherdStatus(hillData);
 
-    this.hillLimitDialogData = {
-      parentName: parent.name,
-      bodyName: body.bodyData.name,
-      parentRadius,
-      outermostRingRadius: hillData.outermostRingRadius,
-      bodyOrbitalRadius: hillData.bodyOrbitalRadius,
-      bodyPeriapsis: hillData.bodyPeriapsis,
-      bodyApoapsis: hillData.bodyApoapsis,
-      hillRadius: hillData.hillRadius,
-      withinRings: hillData.withinRings,
-      isFirstOutside: hillData.isFirstOutside,
-      rings: ringData,
-      bodyRadius: body.bodyData.radius || 0,
-      shepherdStatus
-    };
-
-    this.isChartLoading.set(true);
-
-    const dialogRef = this.dialog.open(this.hillLimitDialogTemplate(), {
-      width: '800px',
-      maxWidth: '90vw',
+    this.dialog.open(HillLimitDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
       hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        parentName: parent.name,
+        bodyName: body.bodyData.name,
+        parentRadius,
+        outermostRingRadius: hillData.outermostRingRadius,
+        bodyOrbitalRadius: hillData.bodyOrbitalRadius,
+        bodyPeriapsis: hillData.bodyPeriapsis,
+        bodyApoapsis: hillData.bodyApoapsis,
+        hillRadius: hillData.hillRadius,
+        withinRings: hillData.withinRings,
+        isFirstOutside: hillData.isFirstOutside,
+        rings: ringData,
+        bodyRadius: body.bodyData.radius || 0,
+        shepherdStatus
+      } satisfies HillChartData,
     });
-
-    // Draw the chart once the dialog has finished opening and its canvas is in the DOM.
-    dialogRef.afterOpened().subscribe(() => {
-      this.renderShepherdingHillChart();
-      this.isChartLoading.set(false);
-    });
-  }
-
-  /** Locates the open Roche dialog's canvas and renders the prepared chart data into it. */
-  private renderRocheChart(): void {
-    const canvas = document.querySelector('.roche-dialog canvas') as HTMLCanvasElement | null;
-    if (canvas && this.rocheLimitDialogData) {
-      this.chartRenderer.drawRocheChart(canvas, this.rocheLimitDialogData);
-    }
-  }
-
-  /** Locates the open Hill-limit dialog's canvas and renders the shepherding diagram into it. */
-  private renderShepherdingHillChart(): void {
-    const canvas = document.querySelector('.hill-limit-dialog canvas') as HTMLCanvasElement | null;
-    if (canvas && this.hillLimitDialogData) {
-      this.chartRenderer.drawShepherdingHillChart(canvas, this.hillLimitDialogData);
-    }
   }
 
   private computeSpinResonance(): string {
@@ -1349,86 +1249,39 @@ export class SystemBodyComponent implements OnChanges {
     return this.physics.rocheExcess(this.body());
   }
 
-  public onFootSafetyDialogData: OnFootSafetyDialogData | null = null;
-
   public showOnFootSafetyDialog(): void {
     const bd = this.body().bodyData;
     const surfTemp = bd.surfaceTemperature ?? null;
     const estRange = surfTemp ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure) : null;
     const { delta, source } = lookupTempDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
-    this.onFootSafetyDialogData = {
-      bodyName: bd.name,
-      subType: bd.subType,
-      atmosphereType: bd.atmosphereType || null,
-      surfacePressure: bd.surfacePressure ?? null,
-      surfaceTemperature: surfTemp,
-      gravity: bd.gravity ?? null,
-      estimatedMin: estRange?.min ?? null,
-      estimatedMax: estRange?.max ?? null,
-      badgeClass: this.getLandableBadgeClass(),
-      lookupSource: source,
-      p5Delta: delta.p5,
-      p95Delta: delta.p95,
-    };
-    const dialogRef = this.dialog.open(this.onFootSafetyDialogTemplate(), {
-      width: '650px',
-      maxWidth: '90vw',
+    this.dialog.open(OnFootSafetyDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
       hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        bodyName: bd.name,
+        subType: bd.subType,
+        atmosphereType: bd.atmosphereType || null,
+        surfacePressure: bd.surfacePressure ?? null,
+        surfaceTemperature: surfTemp,
+        gravity: bd.gravity ?? null,
+        estimatedMin: estRange?.min ?? null,
+        estimatedMax: estRange?.max ?? null,
+        badgeClass: this.getLandableBadgeClass(),
+        lookupSource: source,
+        p5Delta: delta.p5,
+        p95Delta: delta.p95,
+      } satisfies OnFootSafetyDialogData,
     });
-    dialogRef.afterOpened().subscribe(() => {
-      setTimeout(() => {
-        const container = document.querySelector('.on-foot-safety-dialog .mat-mdc-dialog-content, .on-foot-safety-dialog mat-dialog-content');
-        if (container) container.scrollTop = 0;
-      });
-    });
-  }
-
-  public downloadOnFootReferenceData(): void {
-    const rows: string[] = ['Source,SubType,AtmosphereType,p5_delta_K,p95_delta_K'];
-    for (const key of Object.keys(DELTA_BY_SUBTYPE_ATMOSPHERE)) {
-      const [st, at] = key.split('|');
-      const d = DELTA_BY_SUBTYPE_ATMOSPHERE[key];
-      rows.push(`subtype+atmosphere,"${st}","${at}",${d.p5},${d.p95}`);
-    }
-    for (const st of Object.keys(DELTA_BY_SUBTYPE_NO_ATM)) {
-      const d = DELTA_BY_SUBTYPE_NO_ATM[st];
-      rows.push(`subtype+no-atmosphere,"${st}","No atmosphere",${d.p5},${d.p95}`);
-    }
-    for (const st of Object.keys(DELTA_BY_SUBTYPE)) {
-      const d = DELTA_BY_SUBTYPE[st];
-      rows.push(`subtype,"${st}",,${d.p5},${d.p95}`);
-    }
-    for (const at of Object.keys(DELTA_BY_ATMOSPHERE)) {
-      const d = DELTA_BY_ATMOSPHERE[at];
-      rows.push(`atmosphere,,"${at}",${d.p5},${d.p95}`);
-    }
-    for (const pc of Object.keys(DELTA_BY_PRESSURE)) {
-      const d = DELTA_BY_PRESSURE[pc];
-      rows.push(`pressure_class,,"${pc} pressure",${d.p5},${d.p95}`);
-    }
-    rows.push(`global,,,${DELTA_GLOBAL.p5},${DELTA_GLOBAL.p95}`);
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'on-foot-temperature-reference.csv';
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   public showJetAngleDialog(): void {
-    // Generate the chart image for the dialog and then open it
-    try {
-      this.jetAngleChartDataUrl = this.chartRenderer.generateJetAngleChart(JET_SAMPLE_CSV);
-    } catch {
-      // If chart generation fails, clear URL and still open dialog
-      this.jetAngleChartDataUrl = null;
-    }
-
-    this.dialog.open(this.jetAngleDialogTemplate(), {
-      width: '800px',
+    this.dialog.open(JetAngleDialogComponent, {
+      width: '900px',
       maxWidth: '95vw',
+      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop'
     });
@@ -1437,7 +1290,7 @@ export class SystemBodyComponent implements OnChanges {
 
   public showTidalLockDialog(): void {
     this.dialog.open(TidalLockDialogComponent, {
-      width: '800px',
+      width: '900px',
       maxWidth: '95vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
@@ -1459,30 +1312,4 @@ interface BiologySignal {
   signal: string;
   codex: CanonnCodexEntry | null | undefined;
   isGuess: boolean;
-}
-
-interface InvisibleRingDialogData {
-  ringName: string;
-  innerRadius: number;
-  outerRadius: number;
-  width: number;
-  area: number;
-  mass: number;
-  density: number;
-  isInvisible: boolean;
-}
-
-interface OnFootSafetyDialogData {
-  bodyName: string;
-  subType: string;
-  atmosphereType: string | null;
-  surfacePressure: number | null;
-  surfaceTemperature: number | null;
-  gravity: number | null;
-  estimatedMin: number | null;
-  estimatedMax: number | null;
-  badgeClass: string;
-  lookupSource: string;
-  p5Delta: number;
-  p95Delta: number;
 }

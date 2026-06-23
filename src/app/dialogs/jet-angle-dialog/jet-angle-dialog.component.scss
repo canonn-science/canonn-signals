@@ -1,0 +1,14 @@
+.jet-angle-dialog {
+    line-height: 1.6;
+
+    .disclaimer.caveat {
+        margin-top: 0.5em;
+        font-style: italic;
+        color: var(--color-disclaimer);
+    }
+
+    .jet-angle-chart-image {
+        max-width: 100%;
+        border: 1px solid var(--color-border-on-light);
+    }
+}

@@ -1,0 +1,65 @@
+.invisible-ring-dialog {
+    .intro,
+    .disclaimer,
+    .conclusion,
+    .conclusion-safe,
+    .formula,
+    .parameters,
+    .values,
+    .result {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .disclaimer {
+        padding: 12px;
+        background: var(--color-surface-2);
+        border-left: 4px solid var(--color-callout-info-border);
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    .formula {
+        background: var(--color-surface-2);
+        padding: 12px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+    }
+
+    .parameters p,
+    .values p,
+    .result p {
+        margin-bottom: 8px;
+    }
+
+    .parameters ul,
+    .values ul,
+    .result ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+
+    .parameters ul li,
+    .values ul li,
+    .result ul li {
+        padding: 4px 0;
+        line-height: 1.5;
+    }
+
+    .conclusion {
+        padding: 12px;
+        background: var(--color-callout-danger-bg);
+        border-left: 4px solid var(--color-callout-danger-border);
+        border-radius: 4px;
+        font-style: italic;
+    }
+
+    .conclusion-safe {
+        padding: 12px;
+        background: var(--color-callout-success-bg);
+        border-left: 4px solid var(--color-callout-success-border);
+        border-radius: 4px;
+        font-style: italic;
+    }
+}

@@ -26,7 +26,7 @@ test.describe('id64 64-bit precision', () => {
       .first()
       .click();
 
-    const json = page.locator('.json-dialog-content pre');
+    const json = page.locator('.json-dialog pre');
     await expect(json).toBeVisible();
 
     // Web-first assertions auto-retry until the dialog's signal-rendered text settles.

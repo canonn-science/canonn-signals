@@ -1,0 +1,21 @@
+<app-dialog-shell heading="Body JSON Data">
+  <a shell-title-extra
+     class="edgalaxy-link"
+     [href]="edGalaxyHref"
+     title="Click to find journals in EDGalaxyData"
+     target="_blank"
+     rel="noopener noreferrer">
+    <img src="assets/icons/eddn.png"
+         alt="EDDN" />
+    <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg"
+         alt="JSON" />
+  </a>
+
+  <div class="json-dialog">
+    <pre>{{ formattedBodyJson }}</pre>
+  </div>
+
+  <button shell-actions
+          mat-button
+          (click)="copyBodyJson()">{{ bodyJsonCopied() ? 'Copied!' : 'Copy to Clipboard' }}</button>
+</app-dialog-shell>
