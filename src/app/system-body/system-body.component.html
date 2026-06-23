@@ -260,7 +260,7 @@
             <div class="body-data-entry clickable"
                  (click)="showApoPeriDialog('apo')">
               <div>
-                Apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="getApoapsis() + ' km'">
                 {{ getApoapsis() | number:'0.2-2' }} km
@@ -271,7 +271,7 @@
             <div class="body-data-entry clickable"
                  (click)="showApoPeriDialog('apo')">
               <div>
-                Next apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Next apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
                 {{ getNextApoapsis()!.days | number:'0.1-1' }} days
@@ -283,7 +283,7 @@
             <div class="body-data-entry clickable"
                  (click)="showApoPeriDialog('peri')">
               <div>
-                Periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="getPeriapsis() + ' km'">
                 {{ getPeriapsis() | number:'0.2-2' }} km
@@ -294,7 +294,7 @@
             <div class="body-data-entry clickable"
                  (click)="showApoPeriDialog('peri')">
               <div>
-                Next periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Next periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
                 {{ getNextPeriapsis()!.days | number:'0.1-1' }} days
@@ -305,7 +305,7 @@
             <div class="body-data-entry clickable"
                  (click)="showOrbitalDiagram('periapsis')">
               <div>
-                Argument of periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Argument of periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="body().bodyData.argOfPeriapsis + '° - click for diagram'">
                 {{ body().bodyData.argOfPeriapsis | number:'0.2-2' }}°
@@ -316,7 +316,7 @@
             <div class="body-data-entry clickable"
                  (click)="showOrbitalDiagram('inclination')">
               <div>
-                Orbital inclination<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Orbital inclination<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="body().bodyData.orbitalInclination + '° - click for diagram'">
                 {{ body().bodyData.orbitalInclination | number:'0.2-2' }}°
@@ -361,7 +361,7 @@
             <div class="body-data-entry clickable"
                  (click)="showBodyRocheLimitChart()">
               <div>
-                Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div
                    [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">
@@ -379,7 +379,7 @@
             <div class="body-data-entry clickable"
                  (click)="showBodyRocheLimitChart()">
               <div>
-                Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+                Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div
                    [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">
@@ -404,7 +404,7 @@
           <div class="body-data-entry clickable"
                (click)="showShepherdingHillLimitChart()">
             <div>
-              Hill sphere radius<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+              Hill sphere radius<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
               {{ hillData.hillRadius | number:'0.2-2' }} km
@@ -414,7 +414,7 @@
           <div class="body-data-entry clickable"
                (click)="showShepherdingHillLimitChart()">
             <div>
-              Position<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+              Position<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
             <div>
               @if (hillData.withinRings) {
@@ -531,7 +531,7 @@
           <div class="body-data-entry clickable"
                (click)="showOrbitalDiagram('tilt')">
             <div>
-              Axial tilt<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+              Axial tilt<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="radToDeg(body().bodyData.axialTilt) + '° - click for diagram'">
               {{ radToDeg(body().bodyData.axialTilt) | number:'0.2-2' }}°
@@ -545,7 +545,7 @@
             <div>
               Age
               @if (showStarAgeFeature()) {
-              <fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+              <fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               }
             </div>
             <div class="age-cell">
@@ -630,7 +630,7 @@
           <div class="body-data-entry clickable"
                (click)="showRocheLimitChart()">
             <div>
-              Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+              Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="'Rigid body Roche limit: ' + calculateRigidRocheLimit()! + ' km'">
               {{ calculateRigidRocheLimit()! | number:'0.2-2' }} km
@@ -641,7 +641,7 @@
           <div class="body-data-entry clickable"
                (click)="showRocheLimitChart()">
             <div>
-              Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+              Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="'Fluid body Roche limit: ' + calculateFluidRocheLimit()! + ' km'">
               {{ calculateFluidRocheLimit()! | number:'0.2-2' }} km
@@ -766,7 +766,7 @@
           <div class="body-data-entry clickable"
                (click)="showJetAngleDialog()">
             <div>
-              Jet cone half angle<fa-icon class="info-icon" title="Click for more information" [icon]="faCircleInfo"></fa-icon>
+              Jet cone half angle<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
               {{ getJetConeAngle() | number:'0.2-2' }}°

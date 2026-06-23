@@ -1,7 +1,7 @@
 import { estimateTempRange, isTempSafe, lookupTempDelta } from '../data/temperature-estimation';
 import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
 import { SystemBody, EdGalaxyData } from '../home/home.component';
-import { faCircleChevronRight, faCircleQuestion, faCircleInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
+import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
 import { MINING_RESOURCES } from '../data/mining-resources';
@@ -50,7 +50,7 @@ export class SystemBodyComponent implements OnChanges {
   }
   public readonly faChevronRight = faCircleChevronRight;
   public readonly faCircleQuestion = faCircleQuestion;
-  public readonly faCircleInfo = faCircleInfo;
+  public readonly faInfo = faInfo;
   public readonly faUpRightFromSquare = faUpRightFromSquare;
   public readonly faSquareCaretDown = faSquareCaretDown;
   public readonly faSquareCaretUp = faSquareCaretUp;
