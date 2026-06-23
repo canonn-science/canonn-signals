@@ -182,4 +182,67 @@ describe('HomeComponent', () => {
       expect(component.systemCompleteness()).toEqual({ known: 2, total: 4, percent: 50 });
     });
   });
+
+  describe('isPermitLocked', () => {
+    function loadSystemNamed(name: string, id64: bigint) {
+      component.data.set({
+        system: {
+          name, id64, coords: { x: 0, y: 0, z: 0 },
+          region: { name: 'Inner Orion Spur', region: 18 }, population: 0, bodies: [],
+        },
+      } as any);
+    }
+
+    it('is true for a permit-locked system', () => {
+      loadSystemNamed('Sol', 10477373803n);
+      expect(component.isPermitLocked()).toBe(true);
+    });
+
+    it('is false for an open system', () => {
+      loadSystemNamed('Maia', 224644818084n);
+      expect(component.isPermitLocked()).toBe(false);
+    });
+
+    it('is false when no system is loaded', () => {
+      component.data.set(null);
+      expect(component.isPermitLocked()).toBe(false);
+    });
+  });
+
+  describe('systemEconomyDisplay', () => {
+    it('joins primary and secondary economies', () => {
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'Refinery', secondaryEconomy: 'Service' } as any))
+        .toBe('Refinery / Service');
+    });
+
+    it('shows only the primary when the secondary is "None" or a duplicate', () => {
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'Industrial', secondaryEconomy: 'None' } as any))
+        .toBe('Industrial');
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'Extraction', secondaryEconomy: 'Extraction' } as any))
+        .toBe('Extraction');
+    });
+
+    it('returns an empty string when there is no economy', () => {
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'None', secondaryEconomy: 'None' } as any)).toBe('');
+      expect(component.systemEconomyDisplay({ primaryEconomy: null, secondaryEconomy: null } as any)).toBe('');
+    });
+  });
+
+  describe('formatUpdated', () => {
+    it('renders local wall-clock time in a stable YYYY-MM-DD HH:mm layout', () => {
+      expect(component.formatUpdated('2026-06-19 16:46:17+00')).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    });
+
+    it('honors the source UTC offset (the same instant renders identically)', () => {
+      // 16:46 UTC and 18:46+02 are the same moment, so both map to the same local time
+      // whatever the host time zone — proving the offset is applied, not the raw digits.
+      expect(component.formatUpdated('2026-06-19 18:46:17+02'))
+        .toBe(component.formatUpdated('2026-06-19 16:46:17+00'));
+    });
+
+    it('returns an empty string for a missing date', () => {
+      expect(component.formatUpdated('')).toBe('');
+      expect(component.formatUpdated(null)).toBe('');
+    });
+  });
 });

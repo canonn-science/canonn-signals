@@ -18,6 +18,7 @@ import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
 import { CREDITS_HTML } from '../data/credits.generated';
 import { findNearestNebulae, NearestNebula } from '../data/nebulae';
+import { isPermitLockedSystem } from '../data/permit-locked-systems';
 
 @Component({
   selector: 'app-home',
@@ -288,6 +289,53 @@ export class HomeComponent implements OnInit, OnDestroy {
     const percent = total ? Math.min(100, Math.round((known / total) * 100)) : null;
     return { known, total, percent };
   });
+
+  /**
+   * Whether the loaded system requires a permit. The biostats API carries no
+   * permit field, so this is matched against a hand-maintained static list
+   * (see permit-locked-systems.ts).
+   */
+  readonly isPermitLocked = computed<boolean>(() => {
+    const system = this.data()?.system;
+    return !!system && isPermitLockedSystem(system.name);
+  });
+
+  /**
+   * Combined economy label, e.g. "Refinery / Service". Drops the placeholder
+   * "None" and any null/duplicate so a single-economy system shows just one name
+   * and an unpopulated system shows nothing.
+   */
+  systemEconomyDisplay(system: CanonnBiostats['system']): string {
+    const seen = new Set<string>();
+    const parts: string[] = [];
+    for (const economy of [system.primaryEconomy, system.secondaryEconomy]) {
+      if (!economy || economy === 'None') continue;
+      if (seen.has(economy)) continue;
+      seen.add(economy);
+      parts.push(economy);
+    }
+    return parts.join(' / ');
+  }
+
+  /**
+   * Formats the system's update timestamp — a UTC value like "2026-06-19 16:46:17+00"
+   * — as wall-clock time in the browser's local time zone (e.g. "2026-06-19 18:46" for
+   * a UTC+2 viewer). The layout is fixed ("YYYY-MM-DD HH:mm") and locale-independent;
+   * only the zone offset varies. Uses the timestamp's own offset, not the current
+   * clock, so it stays deterministic under the e2e timezone pin. Returns '' for a
+   * missing date and the raw string if it can't be parsed.
+   */
+  formatUpdated(date: string | null | undefined): string {
+    if (!date) return '';
+    // Normalise the API's "YYYY-MM-DD HH:mm:ss+00" into a parseable ISO instant
+    // (space → 'T', bare "+00" hour offset → "+00:00"), then render local components.
+    const iso = date.trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+    const instant = new Date(iso);
+    if (isNaN(instant.getTime())) return date;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())} `
+      + `${pad(instant.getHours())}:${pad(instant.getMinutes())}`;
+  }
 
   private distance3d(a: { x: number, y: number, z: number }, b: { x: number, y: number, z: number }): number {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
@@ -995,11 +1043,17 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 export interface CanonnBiostats {
   system: {
-    allegiance: string;
+    // Null on unpopulated systems (the API reports no allegiance for those).
+    allegiance: string | null;
     bodies: CanonnBiostatsBody[];
     // Optional: some systems (e.g. unsurveyed ones) omit this in the API payload.
     bodyCount?: number;
-    // controllingFaction
+    controllingFaction?: {
+      name: string;
+      allegiance?: string;
+      government?: string;
+      state?: string;
+    };
     coords: {
       x: number;
       y: number;
@@ -1012,7 +1066,7 @@ export interface CanonnBiostats {
     population: number;
     // powerState
     // powers
-    // primaryEconomy
+    primaryEconomy?: string | null;
     // Absent for some systems (e.g. uninhabited deep-space systems served by Spansh), so optional.
     region?: {
       name: string;
@@ -1022,8 +1076,8 @@ export interface CanonnBiostats {
       anomaly?: string[];
       cloud?: string[];
     };
-    // secondaryEconomy
-    // security
+    secondaryEconomy?: string | null;
+    security?: string | null;
   }
 }
 

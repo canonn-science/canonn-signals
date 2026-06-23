@@ -27,6 +27,7 @@ test.describe('System completeness bar', () => {
     const bar = page.locator('.system-completeness');
     await expect(bar).toBeVisible();
     await expect(bar.locator('.system-completeness-value')).toHaveText('100%');
+    await expect(bar.locator('.system-completeness-count')).toHaveText('40 / 40 bodies');
     await expect(bar.locator('.system-completeness-fill')).toHaveCSS('width', /.+/);
     // Full completeness → green (green channel dominates).
     const green = await fillRgb(bar.locator('.system-completeness-fill'));
@@ -44,6 +45,7 @@ test.describe('System completeness bar', () => {
     const bar = page.locator('.system-completeness');
     await expect(bar).toBeVisible();
     await expect(bar.locator('.system-completeness-value')).toHaveText('20%');
+    await expect(bar.locator('.system-completeness-count')).toHaveText('1 / 5 bodies');
     await expect(bar.locator('.system-completeness-unknown')).toHaveCount(0);
     // Low completeness → red (red channel dominates).
     const red = await fillRgb(bar.locator('.system-completeness-fill'));
@@ -62,6 +64,7 @@ test.describe('System completeness bar', () => {
     const bar = page.locator('.system-completeness');
     await expect(bar).toBeVisible();
     await expect(bar.locator('.system-completeness-value')).toHaveText('?%');
+    await expect(bar.locator('.system-completeness-count')).toHaveText('0 / ? bodies');
     await expect(bar.locator('.system-completeness-unknown')).toHaveText('Unknown');
     await expect(bar.locator('.system-completeness-fill')).toHaveCount(0);
     // No bodies in the JSON → the bodies list is omitted entirely.

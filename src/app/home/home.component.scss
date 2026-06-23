@@ -61,6 +61,13 @@
     font-size: 16px;
 }
 
+/* Known/total body count, sits between the label and the % in the header. */
+.system-completeness-count {
+    font-size: 11px;
+    font-weight: normal;
+    opacity: 0.85;
+}
+
 .system-completeness-track {
     position: relative;
     height: 12px;
