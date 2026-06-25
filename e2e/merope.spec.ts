@@ -24,8 +24,8 @@ const BODY_SPECS: BodySpec[] = [
       {
         header: 'Physical Properties',
         rows: {
-          'Solar radius': '3.03',
-          'Solar masses': '5.25',
+          Radius: '3.03 R☉',
+          Mass: '5.25 Solar masses',
           Density: '0.27 g/cm³',
           Age: '774 million years',
         },

@@ -1,0 +1,61 @@
+.unit-conversion-dialog .hint {
+    margin: 0 0 12px;
+    opacity: 0.7;
+    font-size: 0.9em
+}
+
+.unit-conversion-dialog .conversion-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em
+}
+
+.unit-conversion-dialog .conversion-table th,
+.unit-conversion-dialog .conversion-table td {
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-surface-5);
+    line-height: 1.5
+}
+
+.unit-conversion-dialog .conversion-table thead th {
+    font-weight: 600
+}
+
+.unit-conversion-dialog .conversion-table tbody th {
+    white-space: nowrap;
+    font-weight: 600
+}
+
+.unit-conversion-dialog .conversion-table td.value {
+    font-family: monospace;
+    text-align: right;
+    white-space: nowrap;
+    user-select: none
+}
+
+.unit-conversion-dialog .conversion-table td.value.clickable:hover,
+.unit-conversion-dialog .conversion-table td.value.clickable:focus-visible {
+    color: var(--color-white);
+    text-decoration: underline
+}
+
+.unit-conversion-dialog .comparisons {
+    margin-top: 20px;
+    line-height: 1.6
+}
+
+.unit-conversion-dialog .comparisons-heading {
+    font-weight: 600;
+    margin-bottom: 8px
+}
+
+.unit-conversion-dialog .comparisons ul {
+    margin: 0;
+    padding-left: 20px
+}
+
+.unit-conversion-dialog .comparisons ul li {
+    padding: 4px 0
+}

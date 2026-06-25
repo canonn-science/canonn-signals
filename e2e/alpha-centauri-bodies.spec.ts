@@ -52,8 +52,8 @@ const BODY_SPECS: BodySpec[] = [
       {
         header: 'Physical Properties',
         rows: {
-          'Solar radius': '1.10',
-          'Solar masses': '1.18',
+          Radius: '1.10 R☉',
+          Mass: '1.18 Solar masses',
           Density: '1.24 g/cm³',
           'Axial tilt': '10.05°',
           Age: '9440 million years',
@@ -90,8 +90,8 @@ const BODY_SPECS: BodySpec[] = [
       {
         header: 'Physical Properties',
         rows: {
-          'Solar radius': '0.90',
-          'Solar masses': '0.86',
+          Radius: '0.90 R☉',
+          Mass: '0.86 Solar masses',
           Density: '1.63 g/cm³',
           'Axial tilt': '11.63°',
           Age: '9212 million years',
@@ -272,7 +272,7 @@ const BODY_SPECS: BodySpec[] = [
           Volcanism: 'Minor Metallic Magma',
         },
       },
-      { header: 'Dynamics', rows: { 'Rotational period': '1.05 days', 'Distance to arrival': '6,395,278.54 ls' } },
+      { header: 'Dynamics', rows: { 'Rotational period': '1.05 days', 'Distance to arrival': '0.20 ly' } },
     ],
   },
 ];

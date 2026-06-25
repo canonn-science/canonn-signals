@@ -30,6 +30,19 @@ import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
 import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dialog.component';
 import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
+import { ConvertIconComponent } from '../dialogs/unit-conversion-dialog/convert-icon.component';
+import {
+  formatDynamicArea,
+  formatDynamicDistanceLs,
+  formatDynamicLength,
+  formatDynamicMass,
+  KM_PER_AU,
+  KM_PER_LIGHT_SECOND,
+  KM_PER_SOLAR_RADIUS,
+  KG_PER_EARTH_MASS,
+  KG_PER_MEGATONNE,
+  KG_PER_SOLAR_MASS,
+} from '../data/unit-conversions';
 
 /** Horizon (days) over which simultaneous (multi-body) collisions are scanned for the dialog's section. */
 const SIMULTANEOUS_COLLISION_HORIZON_DAYS = 180;
@@ -66,7 +79,7 @@ const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective]
+  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective, ConvertIconComponent]
 })
 export class SystemBodyComponent implements OnChanges {
   private readonly appService = inject(AppService);
@@ -122,9 +135,6 @@ export class SystemBodyComponent implements OnChanges {
   public readonly expanded = signal(false);
 
   public hoveredIndex: number = -1;
-
-  public formattedEarthMass: { display: string; tooltip: string } | null = null;
-  public formattedSolarMass: { display: string; tooltip: string } | null = null;
 
   // Cache for expensive computed properties
   public readonly getMaterialBadges = signal<{ name: string, class: string, tooltip: string }[]>([]);
@@ -230,14 +240,6 @@ export class SystemBodyComponent implements OnChanges {
     this.getNextApoapsis.set(this.calculateNextApoapsis());
     this.getRocheExcess.set(this.calculateRocheExcess());
     this.getStellarAgeAssessment.set(this.computeStellarAgeAssessment());
-
-    // Calculate formatted mass values once when body changes
-    this.formattedEarthMass = body.bodyData.earthMasses
-      ? this.formatEarthMass(body.bodyData.earthMasses)
-      : null;
-    this.formattedSolarMass = body.bodyData.solarMasses
-      ? this.formatSolarMass(body.bodyData.solarMasses)
-      : null;
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
@@ -664,19 +666,66 @@ export class SystemBodyComponent implements OnChanges {
       && isPlottableStarClass(bodyData.spectralClass, bodyData.subType);
   }
 
-  public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
-    return {
-      display: `${earthMasses.toFixed(2)} Earth masses`,
-      tooltip: `${earthMasses} Earth masses`
-    };
+  // --- Inline dynamic-by-magnitude formatters (delegated to the shared pure module) ---
+  public formatLength(km: number): string { return formatDynamicLength(km); }
+  public formatDistanceLs(ls: number): string { return formatDynamicDistanceLs(ls); }
+  public formatMass(kg: number): string { return formatDynamicMass(kg); }
+  public formatArea(km2: number): string { return formatDynamicArea(km2); }
+
+  /** This body's mass in kilograms from whichever source field it carries, or null. */
+  public getMassKg(): number | null {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) { return bd.solarMasses * KG_PER_SOLAR_MASS; }
+    if (bd.earthMasses != null) { return bd.earthMasses * KG_PER_EARTH_MASS; }
+    if (bd.mass != null) { return bd.mass * KG_PER_MEGATONNE; }
+    return null;
   }
 
-  public formatSolarMass(solarMasses: number): { display: string; tooltip: string } {
-    return {
-      display: `${solarMasses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      tooltip: `${solarMasses.toLocaleString('en-US', { maximumFractionDigits: 20 })} Solar masses`
-    };
+  /** Tooltip for the mass row: the value in its stored unit at full precision. */
+  public getMassTooltip(): string {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) {
+      return `${bd.solarMasses.toLocaleString('en-US', { maximumFractionDigits: 20 })} Solar masses`;
+    }
+    if (bd.earthMasses != null) { return `${bd.earthMasses} Earth masses`; }
+    if (bd.mass != null) { return `${bd.mass} Mt`; }
+    return '';
   }
+
+  /** This body's semi-major axis in km (stored in AU), or null. */
+  public getSemiMajorAxisKm(): number | null {
+    const au = this.body().bodyData.semiMajorAxis;
+    return au == null ? null : au * KM_PER_AU;
+  }
+
+  /** This body's distance-to-arrival in km (stored in light-seconds), or null. */
+  public getDistanceToArrivalKm(): number | null {
+    const ls = this.body().bodyData.distanceToArrival;
+    return ls == null ? null : ls * KM_PER_LIGHT_SECOND;
+  }
+
+  /** An ordinary star's radius in km (stored in solar radii), for the conversion dialog; null if absent. */
+  public getSolarRadiusKm(): number | null {
+    const solarRadius = this.body().bodyData.solarRadius;
+    return solarRadius == null ? null : solarRadius * KM_PER_SOLAR_RADIUS;
+  }
+
+  /**
+   * Physical radius in km for stars shown in km rather than solar radii: neutron stars,
+   * black holes (compact objects) and — per the display spec — white dwarfs. Null for
+   * ordinary stars, which keep solar radii. Kept distinct from {@link isBlackHoleOrNeutronStar}
+   * so the tangential-velocity gate stays compact-object-only.
+   */
+  public getStarRadiusKm(): number | null {
+    const compact = this.getCompactObjectRadiusKm();
+    if (compact !== null) { return compact; }
+    const bd = this.body().bodyData;
+    if (bd.subType?.startsWith('White Dwarf')) {
+      return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+    }
+    return null;
+  }
+
 
 
   /**

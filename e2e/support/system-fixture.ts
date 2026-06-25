@@ -140,7 +140,7 @@ export function bodyRowValue(page: Page, bodyId: number, label: string): Locator
 }
 
 /**
- * Asserts the degeneracy-limit warning (⚠) on a star's "Solar masses" row is present
+ * Asserts the degeneracy-limit warning (⚠) on a star's "Mass" row is present
  * or absent, and — when present and an `tooltip` is given — that hovering it shows that
  * text. When a `severity` is given, also asserts the indicator carries the matching colour
  * class (`status-warning` / `status-danger`). Tooltip comparison is whitespace-normalised,
@@ -152,7 +152,7 @@ export async function expectMassStabilityWarning(
   opts: { present: boolean; tooltip?: string; severity?: 'warning' | 'danger' },
 ): Promise<void> {
   const selector = opts.severity ? `.status-${opts.severity}` : '.status-danger, .status-warning';
-  const warning = bodyRowValue(page, bodyId, 'Solar masses').locator(selector);
+  const warning = bodyRowValue(page, bodyId, 'Mass').locator(selector);
   await expect(warning, `#body-${bodyId} mass-stability warning presence`).toHaveCount(opts.present ? 1 : 0);
 
   if (opts.present && opts.tooltip) {

@@ -211,6 +211,22 @@ hr {
   cursor: pointer;
 }
 
+/* Small "⇄" affordance after an attribute value that opens its unit-conversion dialog. */
+.convert-icon {
+  margin-left: 6px;
+  font-size: 0.8em;
+  vertical-align: middle;
+  color: var(--color-text);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.convert-icon:hover,
+.convert-icon:focus-visible {
+  opacity: 1;
+  color: var(--color-white);
+}
+
 .multiline-tooltip {
   white-space: pre-line;
 }
