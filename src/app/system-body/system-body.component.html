@@ -628,6 +628,33 @@
           }
         </div>
         }
+        <!-- Dynamics Section (Rings and Belts) -->
+        @if ((body().bodyData.type === 'Ring' || body().bodyData.type === 'Belt') && (getRingRotationalPeriod() !== null
+        || getRingMaxVelocity() !== null)) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Dynamics</div>
+          @if (getRingRotationalPeriod() !== null) {
+          <div class="body-data-entry">
+            <div [matTooltip]="'Rotational period calculated at nominal radius (inner + (outer−inner)×3/8)'">
+              Rotational period
+            </div>
+            <div [matTooltip]="getRingRotationalPeriodTooltip()">
+              {{ getRingRotationalPeriodDisplay() }}
+            </div>
+          </div>
+          }
+          @if (getRingMaxVelocity() !== null) {
+          <div class="body-data-entry">
+            <div [matTooltip]="'Tangential velocity at outer radius using the nominal rotational period'">
+              Max velocity
+            </div>
+            <div [matTooltip]="getRingMaxVelocityTooltip()">
+              {{ getRingMaxVelocityDisplay() }}
+            </div>
+          </div>
+          }
+        </div>
+        }
         <!-- Limits Section (Rings only) -->
         @if (body().bodyData.type === 'Ring' && (calculateRigidRocheLimit() !== null || calculateFluidRocheLimit() !==
         null)) {

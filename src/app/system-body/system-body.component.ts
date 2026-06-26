@@ -114,6 +114,12 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingArea = signal(0);
   public readonly getRingDensity = signal(0);
   public readonly isRingNotVisible = signal(false);
+  public readonly getRingRotationalPeriod = signal<number | null>(null);
+  public readonly getRingRotationalPeriodDisplay = signal('');
+  public readonly getRingRotationalPeriodTooltip = signal('');
+  public readonly getRingMaxVelocity = signal<number | null>(null);
+  public readonly getRingMaxVelocityDisplay = signal('');
+  public readonly getRingMaxVelocityTooltip = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -342,6 +348,45 @@ export class SystemBodyComponent implements OnChanges {
     this.getRingDensity.set(this.getRingArea() > 0 ? (bd.mass ?? 0) / this.getRingArea() : 0);
     this.isRingNotVisible.set(bd.type === BODY_TYPE.Ring
       && this.getRingDensity() < 0.1 && this.getRingWidth() > 1000000);
+
+    // Ring dynamics: orbital period and max velocity.
+    if (outer > 0 && inner >= 0 && body.parent) {
+      const parentBd = body.parent.bodyData;
+      const G = 6.674e-11; // m³/(kg·s²)
+      const solarMassKg = 1.989e30;
+      const earthMassKg = 5.972e24;
+      const parentMassKg = parentBd.solarMasses != null
+        ? parentBd.solarMasses * solarMassKg
+        : (parentBd.earthMasses != null ? parentBd.earthMasses * earthMassKg : 0);
+      if (parentMassKg > 0) {
+        const nominalRadiusM = (inner + (outer - inner) * (3 / 8)) * 1000;
+        const outerRadiusM = outer * 1000;
+        const periodS = 2 * Math.PI * Math.sqrt(Math.pow(nominalRadiusM, 3) / (G * parentMassKg));
+        const periodDays = periodS / 86400;
+        const maxVelocityKms = (2 * Math.PI * outerRadiusM / periodS) / 1000;
+        this.getRingRotationalPeriod.set(periodDays);
+        this.getRingRotationalPeriodDisplay.set(this.formatPeriodDays(periodDays));
+        this.getRingRotationalPeriodTooltip.set(`${periodDays.toFixed(6)} days`);
+        const velocityDisplay = this.formatVelocityKms(maxVelocityKms);
+        this.getRingMaxVelocity.set(maxVelocityKms);
+        this.getRingMaxVelocityDisplay.set(velocityDisplay);
+        this.getRingMaxVelocityTooltip.set(`${maxVelocityKms.toFixed(3)} km/s`);
+      } else {
+        this.getRingRotationalPeriod.set(null);
+        this.getRingRotationalPeriodDisplay.set('');
+        this.getRingRotationalPeriodTooltip.set('');
+        this.getRingMaxVelocity.set(null);
+        this.getRingMaxVelocityDisplay.set('');
+        this.getRingMaxVelocityTooltip.set('');
+      }
+    } else {
+      this.getRingRotationalPeriod.set(null);
+      this.getRingRotationalPeriodDisplay.set('');
+      this.getRingRotationalPeriodTooltip.set('');
+      this.getRingMaxVelocity.set(null);
+      this.getRingMaxVelocityDisplay.set('');
+      this.getRingMaxVelocityTooltip.set('');
+    }
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -1085,6 +1130,15 @@ export class SystemBodyComponent implements OnChanges {
     if (!this.isBlackHoleOrNeutronStar()) { return null; }
     const bd = this.body().bodyData;
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+  }
+
+  private formatVelocityKms(velocityKms: number): string {
+    const speedOfLight = 299792.458; // km/s
+    const fractionOfC = velocityKms / speedOfLight;
+    if (fractionOfC >= 0.01) {
+      return `${fractionOfC.toFixed(3)}c`;
+    }
+    return `${velocityKms.toFixed(3)} km/s`;
   }
 
   private formatPeriodDays(days: number): string {
