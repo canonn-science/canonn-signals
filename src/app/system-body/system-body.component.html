@@ -737,7 +737,7 @@
         }
         <!-- Stellar Properties Section (Stars only) -->
         @if (body().bodyData.type === 'Star' && (body().bodyData.luminosity || body().bodyData.absoluteMagnitude !==
-        undefined || body().bodyData.spectralClass || getJetConeAngle() !== null)) {
+        undefined || body().bodyData.spectralClass)) {
         <div class="body-data-section">
           <div class="body-data-section-header">Stellar Properties</div>
           @if (body().bodyData.spectralClass) {
@@ -767,17 +767,6 @@
             </div>
             <div [matTooltip]="body().bodyData.absoluteMagnitude!.toString()">
               {{ body().bodyData.absoluteMagnitude | number:'0.2-2' }}
-            </div>
-          </div>
-          }
-          @if (getJetConeAngle() !== null) {
-          <div class="body-data-entry clickable"
-               (click)="showJetAngleDialog()">
-            <div>
-              Jet cone half angle<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
-            </div>
-            <div [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
-              {{ getJetConeAngle() | number:'0.2-2' }}°
             </div>
           </div>
           }

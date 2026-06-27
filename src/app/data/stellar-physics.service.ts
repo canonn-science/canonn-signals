@@ -3,21 +3,9 @@ import { Injectable } from '@angular/core';
 const KM_PER_SOLAR_RADIUS = 695700;
 const SECONDS_PER_DAY = 86400;
 
-/** Fitted parameters for the neutron-star jet-cone half-angle model. */
-const JET_CONE = {
-  Amin: -83.8389,
-  Amax: -60.8896,
-  k: 2.2037,
-  x0: -5.0497,
-  alpha: 0.001517,
-  gammaSr: 0.724671,
-  gammaRot: -0.025587,
-  gammaAge: 0.045594,
-};
-
 /**
  * Pure rotational/stellar physics extracted from SystemBodyComponent: spin-orbit
- * resonance, tangential surface velocity and the neutron-star jet-cone angle model.
+ * resonance and tangential surface velocity.
  * No Angular/DOM dependency, so it can be unit-tested directly.
  */
 @Injectable({ providedIn: 'root' })
@@ -57,43 +45,6 @@ export class StellarPhysicsService {
     if (radius) { return radius; }
     if (solarRadius) { return solarRadius * KM_PER_SOLAR_RADIUS; }
     return null;
-  }
-
-  /**
-   * Predicted neutron-star jet-cone half-angle (degrees) from a fitted model, given
-   * rotation period (days), radius (solar radii) and age. Returns null for non-positive inputs.
-   */
-  jetConeAngle(
-    rotationalPeriodDays: number | null | undefined,
-    solarRadius: number | null | undefined,
-    age: number | null | undefined,
-  ): number | null {
-    if (!rotationalPeriodDays || !solarRadius || !age) { return null; }
-    if (rotationalPeriodDays <= 0 || solarRadius <= 0 || age <= 0) { return null; }
-
-    const { Amin, Amax, k, x0, alpha, gammaSr, gammaRot, gammaAge } = JET_CONE;
-
-    // Combined predictor: x = ln(solarRadius / sqrt(rotationalPeriod)) + alpha * ln(age)
-    const x = Math.log(solarRadius / Math.sqrt(rotationalPeriodDays)) + alpha * Math.log(age);
-
-    // Sigmoid plus quadratic log corrections
-    const angleSigmoid = Amin + (Amax - Amin) / (1 + Math.exp(-k * (x - x0)));
-    const lnSr = Math.log(solarRadius);
-    const lnRot = Math.log(rotationalPeriodDays);
-    const lnAge = Math.log(age);
-    const quad = gammaSr * lnSr ** 2 + gammaRot * lnRot ** 2 + gammaAge * lnAge ** 2;
-
-    return angleSigmoid + quad;
-  }
-
-  /** Jet-cone angle for a CSV sample row where rotation is expressed in seconds. */
-  jetConeAngleFromSeconds(
-    rotSeconds: number | null,
-    solarRadius: number | null,
-    age: number | null,
-  ): number | null {
-    if (!rotSeconds) { return null; }
-    return this.jetConeAngle(Number(rotSeconds) / SECONDS_PER_DAY, solarRadius, age);
   }
 
   /**
