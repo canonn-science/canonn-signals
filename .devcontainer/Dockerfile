@@ -12,6 +12,12 @@ EXPOSE 4200 4201 4205 4206 9876
 # Switch to `root`.
 USER root
 
+# Extra runtime libraries Playwright's `--with-deps` doesn't pull on this base
+# image: recent Firefox builds link against libxslt at launch (libxslt.so.1).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libxslt1.1 \
+  && rm -rf /var/lib/apt/lists/*
+
 # Install the Playwright browsers (Chromium + Firefox) and their system
 # dependencies for end-to-end tests. Keep the version in sync with the
 # `@playwright/test` dependency in package.json.

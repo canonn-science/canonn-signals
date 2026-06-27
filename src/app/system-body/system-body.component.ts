@@ -1,6 +1,6 @@
 import { estimateTempRange, isTempSafe, lookupTempDelta } from '../data/temperature-estimation';
 import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
-import { SystemBody, EdGalaxyData } from '../home/home.component';
+import { SystemBody, EdGalaxyData, CanonnBiostatsBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
@@ -10,7 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
-import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, SPEED_OF_LIGHT } from '../data/body-physics.service';
+import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
@@ -26,7 +26,6 @@ import { HillLimitDialogComponent } from '../dialogs/hill-limit-dialog/hill-limi
 import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-limit-dialog.component';
 import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
 import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
-import { JetAngleDialogComponent } from '../dialogs/jet-angle-dialog/jet-angle-dialog.component';
 import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
 import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
@@ -103,7 +102,6 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getSolidCompositionTooltip = signal('');
   public readonly getRingResourceTypes = signal<Set<string>>(new Set());
   // Cached values for template bindings that are read multiple times per render.
-  public readonly getJetConeAngle = signal<number | null>(null);
   public readonly getSpinResonance = signal('none');
   public readonly getConfirmedBiologyCount = signal(0);
   // Orbit/ring geometry and physics-service results, computed once per body change
@@ -146,7 +144,7 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getTangentialVelocityTooltip = signal('');
   public readonly classifyNeutronStar = signal<string | null>(null);
   public readonly getSchwarzschildRadius = signal<number | null>(null);
-  public readonly getMassStabilityAlert = signal<string | null>(null);
+  public readonly getMassStabilityAlert = signal<MassStabilityAlert | null>(null);
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
   }
@@ -326,7 +324,6 @@ export class SystemBodyComponent implements OnChanges {
 
     // Cache values read several times per render from the template.
     this.getSpinResonance.set(this.computeSpinResonance());
-    this.getJetConeAngle.set(this.computeJetConeAngle());
     this.getConfirmedBiologyCount.set(this.biologySignals.filter(b => !b.isGuess).length);
     this.getAtmosphereDisplay.set(this.computeAtmosphereDisplay());
     this.getSolidCompositionTooltip.set(this.computeSolidCompositionTooltip());
@@ -1320,15 +1317,6 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  private computeJetConeAngle(): number | null {
-    // Only apply to neutron stars with the required inputs.
-    const bodyData = this.body().bodyData;
-    if (bodyData.type !== BODY_TYPE.Star || !bodyData.subType?.includes('Neutron Star')) {
-      return null;
-    }
-    return this.stellarPhysics.jetConeAngle(bodyData.rotationalPeriod, bodyData.solarRadius, bodyData.age);
-  }
-
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
     return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'peri');
   }
@@ -1385,17 +1373,6 @@ export class SystemBodyComponent implements OnChanges {
       } satisfies OnFootSafetyDialogData,
     });
   }
-
-  public showJetAngleDialog(): void {
-    this.dialog.open(JetAngleDialogComponent, {
-      width: '900px',
-      maxWidth: '95vw',
-      autoFocus: 'first-heading',
-      hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
-    });
-  }
-
 
   public showTidalLockDialog(): void {
     this.dialog.open(TidalLockDialogComponent, {
