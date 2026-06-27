@@ -10,7 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
-import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
+import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
@@ -349,44 +349,8 @@ export class SystemBodyComponent implements OnChanges {
     this.isRingNotVisible.set(bd.type === BODY_TYPE.Ring
       && this.getRingDensity() < 0.1 && this.getRingWidth() > 1000000);
 
-    // Ring dynamics: orbital period and max velocity.
-    if (outer > 0 && inner >= 0 && body.parent) {
-      const parentBd = body.parent.bodyData;
-      const G = 6.674e-11; // m³/(kg·s²)
-      const solarMassKg = 1.989e30;
-      const earthMassKg = 5.972e24;
-      const parentMassKg = parentBd.solarMasses != null
-        ? parentBd.solarMasses * solarMassKg
-        : (parentBd.earthMasses != null ? parentBd.earthMasses * earthMassKg : 0);
-      if (parentMassKg > 0) {
-        const nominalRadiusM = (inner + (outer - inner) * (3 / 8)) * 1000;
-        const outerRadiusM = outer * 1000;
-        const periodS = 2 * Math.PI * Math.sqrt(Math.pow(nominalRadiusM, 3) / (G * parentMassKg));
-        const periodDays = periodS / 86400;
-        const maxVelocityKms = (2 * Math.PI * outerRadiusM / periodS) / 1000;
-        this.getRingOrbitalPeriod.set(periodDays);
-        this.getRingOrbitalPeriodDisplay.set(this.formatPeriodDays(periodDays));
-        this.getRingOrbitalPeriodTooltip.set(`${periodDays.toFixed(6)} days`);
-        const velocityDisplay = this.formatVelocityKms(maxVelocityKms);
-        this.getRingMaxVelocity.set(maxVelocityKms);
-        this.getRingMaxVelocityDisplay.set(velocityDisplay);
-        this.getRingMaxVelocityTooltip.set(`${maxVelocityKms.toFixed(3)} km/s`);
-      } else {
-        this.getRingOrbitalPeriod.set(null);
-        this.getRingOrbitalPeriodDisplay.set('');
-        this.getRingOrbitalPeriodTooltip.set('');
-        this.getRingMaxVelocity.set(null);
-        this.getRingMaxVelocityDisplay.set('');
-        this.getRingMaxVelocityTooltip.set('');
-      }
-    } else {
-      this.getRingOrbitalPeriod.set(null);
-      this.getRingOrbitalPeriodDisplay.set('');
-      this.getRingOrbitalPeriodTooltip.set('');
-      this.getRingMaxVelocity.set(null);
-      this.getRingMaxVelocityDisplay.set('');
-      this.getRingMaxVelocityTooltip.set('');
-    }
+    // Ring dynamics: orbital period and max velocity (Kepler math lives in the service).
+    this.applyRingDynamics(this.physics.ringDynamics(body));
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -1130,6 +1094,24 @@ export class SystemBodyComponent implements OnChanges {
     if (!this.isBlackHoleOrNeutronStar()) { return null; }
     const bd = this.body().bodyData;
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+  }
+
+  private applyRingDynamics(dynamics: RingDynamics | null): void {
+    if (dynamics) {
+      this.getRingOrbitalPeriod.set(dynamics.orbitalPeriodDays);
+      this.getRingOrbitalPeriodDisplay.set(this.formatPeriodDays(dynamics.orbitalPeriodDays));
+      this.getRingOrbitalPeriodTooltip.set(`${dynamics.orbitalPeriodDays.toFixed(6)} days`);
+      this.getRingMaxVelocity.set(dynamics.maxVelocityKms);
+      this.getRingMaxVelocityDisplay.set(this.formatVelocityKms(dynamics.maxVelocityKms));
+      this.getRingMaxVelocityTooltip.set(`${dynamics.maxVelocityKms.toFixed(3)} km/s`);
+    } else {
+      this.getRingOrbitalPeriod.set(null);
+      this.getRingOrbitalPeriodDisplay.set('');
+      this.getRingOrbitalPeriodTooltip.set('');
+      this.getRingMaxVelocity.set(null);
+      this.getRingMaxVelocityDisplay.set('');
+      this.getRingMaxVelocityTooltip.set('');
+    }
   }
 
   private formatVelocityKms(velocityKms: number): string {
