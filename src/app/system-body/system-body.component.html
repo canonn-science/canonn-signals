@@ -78,6 +78,15 @@
       <span class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{
         rosetteStatus }}</span>
       }
+      @if (collisionStatus?.isCandidate) {
+      <span class="badge badge-red"
+            [matTooltip]="collisionStatus!.nextCollision
+              ? ('Collision candidate: collides with ' + collisionStatus!.partnerName
+                 + ' on ' + (collisionStatus!.nextCollision!.start | date:'yyyy-MM-dd HH:mm:ss')
+                 + ' until ' + (collisionStatus!.nextCollision!.end | date:'HH:mm:ss')
+                 + ' (synodic period ' + (collisionStatus!.synodicPeriodDays | number:'1.0-0') + ' days)')
+              : ('Collision candidate: crossing orbit with ' + collisionStatus!.partnerName)">Collision</span>
+      }
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"
         [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">

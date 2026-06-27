@@ -264,4 +264,195 @@ describe('OrbitalRelationsService', () => {
       expect(tip(peri.date)).toBe('2049-06-09 07:48');
     });
   });
+
+  describe('detectCollisionStatus', () => {
+    const now = Date.parse('2026-06-27T00:00:00Z');
+
+    it('flags two crossing-orbit siblings as collision candidates of each other', () => {
+      // Identical coplanar orbits, different periods, large radii → they collide at every
+      // conjunction. Aligned in longitude now, so the next contact is immediate.
+      const [a, b] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.1, orbitalInclination: 0,
+          radius: 60000, meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0,
+          timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any },
+        { orbitalPeriod: 11, semiMajorAxis: 1, orbitalEccentricity: 0.1, orbitalInclination: 0,
+          radius: 60000, meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0,
+          timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any },
+      ]);
+      const ra = service.detectCollisionStatus(a, now);
+      const rb = service.detectCollisionStatus(b, now);
+      expect(ra.isCandidate).toBe(true);
+      expect(rb.isCandidate).toBe(true);
+      expect(ra.partnerName).toBe('Child 2');
+      expect(rb.partnerName).toBe('Child 1');
+      // Synodic period = 1 / |1/10 − 1/11| = 110 days for both.
+      expect(ra.synodicPeriodDays).toBeCloseTo(110, 6);
+      expect(rb.synodicPeriodDays).toBeCloseTo(110, 6);
+      // Same orbit, same position now → contact essentially immediate.
+      expect(ra.nextCollision!.days).toBeLessThan(1);
+    });
+
+    it('does not flag co-orbital (equal-period) siblings — synodic period is infinite', () => {
+      const [a] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.1, argOfPeriapsis: 0, radius: 60000 },
+        { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.1, argOfPeriapsis: 60, radius: 60000 },
+      ]);
+      expect(service.detectCollisionStatus(a, now).isCandidate).toBe(false);
+    });
+
+    it('does not flag well-separated orbits whose radial ranges cannot meet', () => {
+      const [a] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.01, radius: 6000 },
+        { orbitalPeriod: 20, semiMajorAxis: 5, orbitalEccentricity: 0.01, radius: 6000 },
+      ]);
+      expect(service.detectCollisionStatus(a, now).isCandidate).toBe(false);
+    });
+
+    it('does not flag radially-overlapping orbits that a relative tilt holds 3D-apart', () => {
+      // Same distance band, but one orbit is steeply inclined and offset in node so the two
+      // curves stay far apart in 3D despite the overlapping radial ranges. Small radii.
+      const [a] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.001, radius: 3000,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0 },
+        { orbitalPeriod: 11, semiMajorAxis: 1, orbitalEccentricity: 0.001, radius: 3000,
+          orbitalInclination: 60, ascendingNode: 90, argOfPeriapsis: 0 },
+      ]);
+      expect(service.detectCollisionStatus(a, now).isCandidate).toBe(false);
+    });
+
+    it('flags the real Grae Eaec AA-A h0 D 2 c / d pair and dates the contact in 3D', () => {
+      // Razor-thin nearly-circular orbits ~1825 km apart radially; the ~2700 km moons sit
+      // closer than their radii sum, so they truly collide. A full 3D Kepler propagation
+      // (verified independently) puts the next contact on 2026-10-18.
+      const [c, d] = makeFamily([
+        { name: 'D 2 c', orbitalPeriod: 1.90164928358796, semiMajorAxis: 0.0128560641816413,
+          orbitalEccentricity: 8.4e-5, orbitalInclination: -0.727422, radius: 2780.05725,
+          argOfPeriapsis: 201.101444, ascendingNode: -128.723473, meanAnomaly: 18.25511,
+          timestamps: { meanAnomaly: '2022-05-21T02:21:30Z' } as any },
+        { name: 'D 2 d', orbitalPeriod: 1.90435777659722, semiMajorAxis: 0.0128682681673058,
+          orbitalEccentricity: 2.8e-5, orbitalInclination: -0.020247, radius: 2715.17175,
+          argOfPeriapsis: 100.379093, ascendingNode: 25.401207, meanAnomaly: 38.691326,
+          timestamps: { meanAnomaly: '2022-05-21T02:21:30Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(c, now);
+      expect(r.isCandidate).toBe(true);
+      expect(r.partnerName).toBe('D 2 d');
+      expect(r.synodicPeriodDays).toBeCloseTo(1337, 0);
+      expect(r.nextCollision).not.toBeNull();
+      // Within a day of the independently computed 3D contact time.
+      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2026-10-18');
+    });
+
+    it('skips off-node near-miss conjunctions and dates the first true 3D contact', () => {
+      // Two tilted orbits whose longitude conjunctions precess across the mutual node. The
+      // next two conjunctions (≈2026-06-29 and ≈2026-08-27) pass 15000+ km apart — far wider
+      // than the 6000 km contact distance — so they are NOT collisions. A naive
+      // same-longitude model would wrongly report the imminent one; the 3D search skips both
+      // and reports the first conjunction that actually lands on the node. An independent
+      // brute-force propagation puts that first real contact on 2027-05-03.
+      const [a] = makeFamily([
+        { name: 'A', orbitalPeriod: 2.0, semiMajorAxis: 0.01, orbitalEccentricity: 0.001,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, radius: 3000,
+          timestamps: { meanAnomaly: '2026-01-01T00:00:00Z' } as any },
+        { name: 'B', orbitalPeriod: 2.07, semiMajorAxis: 0.01, orbitalEccentricity: 0.001,
+          orbitalInclination: 1, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 90, radius: 3000,
+          timestamps: { meanAnomaly: '2026-01-01T00:00:00Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(a, now);
+      expect(r.isCandidate).toBe(true);
+      expect(r.nextCollision).not.toBeNull();
+      // The reported contact is the real on-node one, ~10 months out — not the imminent
+      // near-miss conjunction a naive model would have flagged days from now.
+      expect(r.nextCollision!.days).toBeGreaterThan(180);
+      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2027-05-03');
+    });
+
+    it('catches a grazing contact whose minimum falls between coarse time samples', () => {
+      // The bodies pass ~17949 km apart — just inside the 18000 km contact distance — at a
+      // moment between the coarse scan steps. The contact time must be found by refining the
+      // window minimum before the contact test, not judged against an over-wide coarse sample.
+      const [a] = makeFamily([
+        { name: 'A', orbitalPeriod: 10, semiMajorAxis: 0.01, orbitalEccentricity: 0,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, radius: 9000,
+          timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any },
+        { name: 'B', orbitalPeriod: 11, semiMajorAxis: 0.01, orbitalEccentricity: 0,
+          orbitalInclination: 5, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 50, radius: 9000,
+          timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(a, now);
+      expect(r.isCandidate).toBe(true);
+      expect(r.nextCollision).not.toBeNull();
+      expect(r.nextCollision!.days).toBeGreaterThan(0);
+      expect(r.nextCollision!.days).toBeLessThan(30);
+    });
+
+    it('flags the real Dryio Hypue RY-A e0 A 6 a / b pair (sharp minimum, multi-basin)', () => {
+      // These moons' closest orbital approach (~3000 km, inside the ~3909 km radii sum) sits
+      // in a narrow valley whose basin a coarse single-best grid search misses — it must be
+      // found by the finer grid + multi-basin refinement. Brute-force 3D contact: 2028-08-10.
+      const [a] = makeFamily([
+        { name: 'A 6 a', orbitalPeriod: 2.04546135608796, semiMajorAxis: 0.0128871889270589,
+          orbitalEccentricity: 0.000555, orbitalInclination: 0.025846, argOfPeriapsis: 107.388455,
+          ascendingNode: 82.705832, meanAnomaly: 183.01898, radius: 2097.79225,
+          timestamps: { meanAnomaly: '2023-04-07T20:50:46Z' } as any },
+        { name: 'A 6 b', orbitalPeriod: 2.05459880332176, semiMajorAxis: 0.0129255400416571,
+          orbitalEccentricity: 0.000999, orbitalInclination: 0.006466, argOfPeriapsis: 25.373948,
+          ascendingNode: 21.680711, meanAnomaly: 53.449845, radius: 1811.117375,
+          timestamps: { meanAnomaly: '2023-04-07T20:50:43Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(a, now);
+      expect(r.isCandidate).toBe(true);
+      expect(r.partnerName).toBe('A 6 b');
+      expect(r.nextCollision).not.toBeNull();
+      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2028-08-10');
+    });
+
+    it('reports the contact window (start/end) for the real Braireau AA-A h761 1 b / c pair', () => {
+      // A collision is an interval, not an instant. An independent brute-force 3D Kepler
+      // propagation (combined radii 6509.6 km) puts the contact window on 2028-06-19:
+      // START ≈ 07:52:57 UTC, minimum separation (≈2929 km) at 08:33:52, END ≈ 09:14:49 UTC
+      // — a duration of ≈82 minutes.
+      const [b1, c1] = makeFamily([
+        { name: '1 b', orbitalPeriod: 3.12638586318287, semiMajorAxis: 0.0154507028533318,
+          orbitalEccentricity: 0.011564, orbitalInclination: -2.461662, argOfPeriapsis: 219.533956,
+          ascendingNode: -179.142714, meanAnomaly: 272.605583, radius: 3445.79375,
+          timestamps: { meanAnomaly: '2023-03-19T22:33:44Z' } as any },
+        { name: '1 c', orbitalPeriod: 3.17091274040509, semiMajorAxis: 0.015597059041845,
+          orbitalEccentricity: 5.6e-5, orbitalInclination: -0.160679, argOfPeriapsis: 305.081614,
+          ascendingNode: -78.606663, meanAnomaly: 309.399786, radius: 3063.84525,
+          timestamps: { meanAnomaly: '2023-03-19T22:33:52Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(b1, now);
+      expect(r.isCandidate).toBe(true);
+      expect(r.partnerName).toBe('1 c');
+      expect(r.nextCollision).not.toBeNull();
+      // Contact window starts on 2028-06-19 around 07:5x UTC.
+      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2028-06-19');
+      // The window is a genuine interval: end follows start…
+      expect(r.nextCollision!.end.getTime()).toBeGreaterThan(r.nextCollision!.start.getTime());
+      // …and lasts on the order of an hour and a half (≈82 minutes here).
+      const durationMin = (r.nextCollision!.end.getTime() - r.nextCollision!.start.getTime()) / 60000;
+      expect(durationMin).toBeGreaterThan(60);
+      expect(durationMin).toBeLessThan(100);
+    });
+
+    it('treats an unbound (e ≥ 1) sibling as a non-recurring, non-candidate orbit', () => {
+      const [a] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.1, radius: 60000 },
+        { orbitalPeriod: 11, semiMajorAxis: 1, orbitalEccentricity: 1.5, radius: 60000 },
+      ]);
+      expect(service.detectCollisionStatus(a, now).isCandidate).toBe(false);
+    });
+
+    it('still flags a geometric candidate when timing data is missing (no date)', () => {
+      const [a] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.1, orbitalInclination: 0, radius: 60000 },
+        { orbitalPeriod: 11, semiMajorAxis: 1, orbitalEccentricity: 0.1, orbitalInclination: 0, radius: 60000 },
+      ]);
+      const r = service.detectCollisionStatus(a, now);
+      expect(r.isCandidate).toBe(true);
+      expect(r.synodicPeriodDays).toBeCloseTo(110, 6);
+      expect(r.nextCollision).toBeNull();
+    });
+  });
 });

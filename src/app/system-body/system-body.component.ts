@@ -12,7 +12,7 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
 import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
-import { OrbitalRelationsService } from '../data/orbital-relations.service';
+import { OrbitalRelationsService, CollisionStatus } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
@@ -204,6 +204,13 @@ export class SystemBodyComponent implements OnChanges {
     this.trojanStatus = trojan.lagrangePoint;
     this.trojanHostStatus = trojan.isHost;
     this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
+    // Collision detection runs a costly 3D orbital search, so only redo it when the body
+    // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
+    // the async codex effect, which leave the orbital geometry untouched.
+    if (this.collisionBody !== body) {
+      this.collisionBody = body;
+      this.collisionStatus = this.orbitalRelations.detectCollisionStatus(body);
+    }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
     this.getRocheExcess.set(this.calculateRocheExcess());
@@ -1321,6 +1328,9 @@ export class SystemBodyComponent implements OnChanges {
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
+  public collisionStatus: CollisionStatus | null = null;
+  /** The body `collisionStatus` was last computed for, to skip recompute on unrelated re-renders. */
+  private collisionBody: SystemBody | null = null;
   public readonly getEstimatedTempRange = signal<{ min: number; max: number } | null>(null);
   public readonly getLandableBadgeClass = signal('badge-gray');
   public readonly getLandableTooltip = signal('');
