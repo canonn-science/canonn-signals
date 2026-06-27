@@ -119,7 +119,22 @@ async function loadSource(source) {
 
 async function main() {
   const source = process.argv[2] || DEFAULT_SOURCE;
-  const csv = await loadSource(source);
+
+  let csv;
+  try {
+    csv = await loadSource(source);
+  } catch (err) {
+    // This runs on every production build (prebuild), so a transient edastro
+    // outage, an offline CI runner, or a timeout must not break the build when a
+    // previously-generated module is already committed. Keep the existing file and
+    // warn; only hard-fail if there's nothing to fall back to.
+    if (fs.existsSync(dest)) {
+      console.warn(`Warning: could not fetch ${source} (${err.message || err}); keeping existing ${path.relative(path.resolve(__dirname, '..'), dest)}.`);
+      return;
+    }
+    throw err;
+  }
+
   const giants = parseGreenGasGiants(csv);
   if (giants.length === 0) {
     throw new Error('No Green Gas Giants parsed from source; aborting.');
