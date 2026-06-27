@@ -30,6 +30,11 @@ import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/
 import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 
+/** Rings below this surface density (kg/km²) are considered invisible. */
+const INVISIBLE_RING_MAX_DENSITY = 0.1;
+/** Rings wider than this (km) are considered invisible when density is also low. */
+const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
+
 @Component({
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
@@ -354,7 +359,7 @@ export class SystemBodyComponent implements OnChanges {
     this.getRingArea.set(Math.PI * (outer * outer - inner * inner));
     this.getRingDensity.set(this.getRingArea() > 0 ? (bd.mass ?? 0) / this.getRingArea() : 0);
     this.isRingNotVisible.set(bd.type === BODY_TYPE.Ring
-      && this.getRingDensity() < 0.1 && this.getRingWidth() > 1000000);
+      && this.getRingDensity() < INVISIBLE_RING_MAX_DENSITY && this.getRingWidth() > INVISIBLE_RING_MIN_WIDTH);
 
     // Ring dynamics: orbital period and max velocity (Kepler math lives in the service).
     this.applyRingDynamics(this.physics.ringDynamics(body));
@@ -833,7 +838,7 @@ export class SystemBodyComponent implements OnChanges {
     const width = this.getRingWidth();
     const area = this.getRingArea();
     const density = this.getRingDensity();
-    const isInvisible = density < 0.1 && width > 1000000;
+    const isInvisible = density < INVISIBLE_RING_MAX_DENSITY && width > INVISIBLE_RING_MIN_WIDTH;
 
     const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
@@ -1133,7 +1138,7 @@ export class SystemBodyComponent implements OnChanges {
     const width = outer - inner;
     const area = Math.PI * (outer * outer - inner * inner);
     const density = area > 0 ? (bd.mass ?? 0) / area : 0;
-    return density < 0.1 && width > 1000000;
+    return density < INVISIBLE_RING_MAX_DENSITY && width > INVISIBLE_RING_MIN_WIDTH;
   }
 
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
