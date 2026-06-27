@@ -114,9 +114,9 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingArea = signal(0);
   public readonly getRingDensity = signal(0);
   public readonly isRingNotVisible = signal(false);
-  public readonly getRingRotationalPeriod = signal<number | null>(null);
-  public readonly getRingRotationalPeriodDisplay = signal('');
-  public readonly getRingRotationalPeriodTooltip = signal('');
+  public readonly getRingOrbitalPeriod = signal<number | null>(null);
+  public readonly getRingOrbitalPeriodDisplay = signal('');
+  public readonly getRingOrbitalPeriodTooltip = signal('');
   public readonly getRingMaxVelocity = signal<number | null>(null);
   public readonly getRingMaxVelocityDisplay = signal('');
   public readonly getRingMaxVelocityTooltip = signal('');
@@ -364,25 +364,25 @@ export class SystemBodyComponent implements OnChanges {
         const periodS = 2 * Math.PI * Math.sqrt(Math.pow(nominalRadiusM, 3) / (G * parentMassKg));
         const periodDays = periodS / 86400;
         const maxVelocityKms = (2 * Math.PI * outerRadiusM / periodS) / 1000;
-        this.getRingRotationalPeriod.set(periodDays);
-        this.getRingRotationalPeriodDisplay.set(this.formatPeriodDays(periodDays));
-        this.getRingRotationalPeriodTooltip.set(`${periodDays.toFixed(6)} days`);
+        this.getRingOrbitalPeriod.set(periodDays);
+        this.getRingOrbitalPeriodDisplay.set(this.formatPeriodDays(periodDays));
+        this.getRingOrbitalPeriodTooltip.set(`${periodDays.toFixed(6)} days`);
         const velocityDisplay = this.formatVelocityKms(maxVelocityKms);
         this.getRingMaxVelocity.set(maxVelocityKms);
         this.getRingMaxVelocityDisplay.set(velocityDisplay);
         this.getRingMaxVelocityTooltip.set(`${maxVelocityKms.toFixed(3)} km/s`);
       } else {
-        this.getRingRotationalPeriod.set(null);
-        this.getRingRotationalPeriodDisplay.set('');
-        this.getRingRotationalPeriodTooltip.set('');
+        this.getRingOrbitalPeriod.set(null);
+        this.getRingOrbitalPeriodDisplay.set('');
+        this.getRingOrbitalPeriodTooltip.set('');
         this.getRingMaxVelocity.set(null);
         this.getRingMaxVelocityDisplay.set('');
         this.getRingMaxVelocityTooltip.set('');
       }
     } else {
-      this.getRingRotationalPeriod.set(null);
-      this.getRingRotationalPeriodDisplay.set('');
-      this.getRingRotationalPeriodTooltip.set('');
+      this.getRingOrbitalPeriod.set(null);
+      this.getRingOrbitalPeriodDisplay.set('');
+      this.getRingOrbitalPeriodTooltip.set('');
       this.getRingMaxVelocity.set(null);
       this.getRingMaxVelocityDisplay.set('');
       this.getRingMaxVelocityTooltip.set('');
