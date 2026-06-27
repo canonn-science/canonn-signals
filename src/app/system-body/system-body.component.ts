@@ -1159,6 +1159,7 @@ export class SystemBodyComponent implements OnChanges {
     return this.isLowDensityWideRing(width, density);
   }
 
+  /** Shared invisibility heuristic used for ring stats, badges, and dialog explanations. */
   private isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
     return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
   }
