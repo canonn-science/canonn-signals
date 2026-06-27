@@ -230,6 +230,36 @@ describe('SystemBodyComponent (extended coverage)', () => {
       component.showInvisibleRingExplanation();
       expect(lastDialogData().isInvisible).toBe(true);
     });
+
+    it('formats ring max velocity in c and period in sub-day units for an extreme neutron-star ring', () => {
+      // Flyae Flyuae AA-A h35 AB 10 A Ring: neutron star parent (0.894531 M☉),
+      // ring inner = 35.856 km, outer = 149 250 km (API layer converts from metres).
+      // v_max ≈ 3 880 km/s ≈ 0.013c → above the 0.01c display threshold.
+      // period ≈ 241 s ≈ 4.03 min → displayed in minutes, not days.
+      const parent = makeBody({ name: 'Neutron Star', subType: 'Neutron Star', solarMasses: 0.894531, solarRadius: 1.5e-5 });
+      const ring = makeBody({
+        name: 'Neutron Star A Ring', type: 'Ring', subType: 'Metallic',
+        innerRadius: 35.856, outerRadius: 149250, mass: 699750000000,
+      }, parent);
+      render(ring);
+      expect(component.getRingMaxVelocityDisplay()).toMatch(/c$/);
+      expect(component.getRingMaxVelocityDisplay()).not.toMatch(/km\/s/);
+      expect(component.getRingOrbitalPeriodDisplay()).toMatch(/min$/);
+    });
+
+    it('formats ring max velocity in km/s and period in days for a typical ring', () => {
+      // Lightweight parent (100 M⊕) with a wide ring: v_max ≈ 25 km/s < 0.01c,
+      // period ≈ 1.44 days.
+      const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 25000 });
+      const ring = makeBody({
+        name: 'Gas Giant A Ring', type: 'Ring', subType: 'Rocky',
+        innerRadius: 100000, outerRadius: 500000, mass: 1e12,
+      }, parent);
+      render(ring);
+      expect(component.getRingMaxVelocityDisplay()).toMatch(/km\/s$/);
+      expect(component.getRingMaxVelocityDisplay()).not.toMatch(/c$/);
+      expect(component.getRingOrbitalPeriodDisplay()).toMatch(/days$/);
+    });
   });
 
   describe('Roche / shepherding for a moon', () => {
