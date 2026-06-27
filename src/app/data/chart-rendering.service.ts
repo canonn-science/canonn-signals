@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 
 /** A ring (or body-orbit pseudo-ring) plotted on the Roche-limit chart. */
 export interface RocheChartRing {
@@ -47,10 +47,10 @@ export interface HillChartData {
 }
 
 /**
- * Renders the Roche-limit, shepherding Hill-sphere and neutron-star jet-angle charts
- * onto a 2D canvas. Pure drawing logic extracted from SystemBodyComponent: callers
- * pass the target canvas and the prepared chart data, keeping all imperative canvas
- * code out of the component.
+ * Renders the Roche-limit and shepherding Hill-sphere charts onto a 2D canvas.
+ * Pure drawing logic extracted from SystemBodyComponent: callers pass the target
+ * canvas and the prepared chart data, keeping all imperative canvas code out of
+ * the component.
  */
 @Injectable({ providedIn: 'root' })
 export class ChartRenderingService {

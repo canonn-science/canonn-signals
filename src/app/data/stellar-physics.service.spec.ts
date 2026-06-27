@@ -55,26 +55,6 @@ describe('StellarPhysicsService', () => {
     });
   });
 
-  describe('jetConeAngle', () => {
-    it('returns null for non-positive or missing inputs', () => {
-      expect(service.jetConeAngle(0, 1, 1000)).toBeNull();
-      expect(service.jetConeAngle(1, 0, 1000)).toBeNull();
-      expect(service.jetConeAngle(1, 1, null)).toBeNull();
-    });
-
-    it('produces a finite angle for valid neutron-star inputs', () => {
-      const angle = service.jetConeAngle(2.01, 1.5, 12830)!;
-      expect(angle).not.toBeNull();
-      expect(Number.isFinite(angle)).toBe(true);
-    });
-
-    it('matches jetConeAngleFromSeconds after unit conversion', () => {
-      const fromDays = service.jetConeAngle(1.0, 1.5, 12830);
-      const fromSeconds = service.jetConeAngleFromSeconds(86400, 1.5, 12830);
-      expect(fromSeconds).toBeCloseTo(fromDays!, 9);
-    });
-  });
-
   describe('classifyNeutronStar', () => {
     const SEC = 86400; // seconds per day; period args below are in days
 
