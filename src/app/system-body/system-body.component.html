@@ -497,8 +497,9 @@
                 {{ formattedSolarMass?.display }}
               </span>
               @if (getMassStabilityAlert(); as massAlert) {
-              <span class="status-danger"
-                    [matTooltip]="massAlert"
+              <span [class.status-danger]="massAlert.severity === 'danger'"
+                    [class.status-warning]="massAlert.severity === 'warning'"
+                    [matTooltip]="massAlert.message"
                     matTooltipClass="multiline-tooltip">⚠</span>
               }
             </div>

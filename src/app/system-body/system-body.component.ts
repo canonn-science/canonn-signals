@@ -10,7 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
-import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
+import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
@@ -130,7 +130,7 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getTangentialVelocityTooltip = signal('');
   public readonly classifyNeutronStar = signal<string | null>(null);
   public readonly getSchwarzschildRadius = signal<number | null>(null);
-  public readonly getMassStabilityAlert = signal<string | null>(null);
+  public readonly getMassStabilityAlert = signal<MassStabilityAlert | null>(null);
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
   }

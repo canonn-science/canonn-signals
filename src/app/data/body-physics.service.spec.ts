@@ -128,7 +128,9 @@ describe('BodyPhysicsService', () => {
 
   describe('massStabilityAlert', () => {
     it('warns when a white dwarf exceeds the Chandrasekhar limit (1.44 M☉)', () => {
-      expect(service.massStabilityAlert('White Dwarf (DA)', 1.45)).toContain('Chandrasekhar');
+      const alert = service.massStabilityAlert('White Dwarf (DA)', 1.45);
+      expect(alert?.message).toContain('Chandrasekhar');
+      expect(alert?.severity).toBe('danger');
     });
 
     it('does not warn for a white dwarf just below the Chandrasekhar limit', () => {
@@ -136,8 +138,16 @@ describe('BodyPhysicsService', () => {
       expect(service.massStabilityAlert('White Dwarf (DA)', 1.42)).toBeNull();
     });
 
-    it('warns when a neutron star exceeds the TOV limit (2.17 M☉)', () => {
-      expect(service.massStabilityAlert('Neutron Star', 2.2)).toContain('Tolman');
+    it('warns (warning severity) when a neutron star exceeds the theoretical TOV limit (2.17 M☉)', () => {
+      const alert = service.massStabilityAlert('Neutron Star', 2.2);
+      expect(alert?.message).toContain('Tolman');
+      expect(alert?.severity).toBe('warning');
+    });
+
+    it('flags (danger severity) a neutron star above the observed maximum (2.51 M☉)', () => {
+      const alert = service.massStabilityAlert('Neutron Star', 2.6);
+      expect(alert?.message).toContain('observed maximum');
+      expect(alert?.severity).toBe('danger');
     });
 
     it('does not warn for a neutron star below the TOV limit', () => {

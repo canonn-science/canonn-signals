@@ -20,8 +20,22 @@ const SPEED_OF_LIGHT = 299792458;
  * (TOV) limit caps a neutron star supported by neutron degeneracy pressure.
  */
 const CHANDRASEKHAR_LIMIT_SOLAR_MASSES = 1.44;
-// Modern maximum-mass estimate constrained by the GW170817 neutron-star merger.
+// Theoretical TOV maximum-mass estimate constrained by the GW170817 neutron-star merger.
 const TOV_LIMIT_SOLAR_MASSES = 2.17;
+// Observed upper bound: the heaviest neutron-star mass recorded in Elite Dangerous (not a
+// real-life measurement). A star above this is treated as a highly anomalous in-game body.
+const OBSERVED_NEUTRON_STAR_MAX_SOLAR_MASSES = 2.51;
+
+/**
+ * A degeneracy-pressure stability warning. `severity` is `'warning'` when a neutron star
+ * exceeds the theoretical TOV limit but stays within the observed mass range, and
+ * `'danger'` when a body exceeds a hard limit (Chandrasekhar, or the observed neutron-star
+ * maximum) and should already have collapsed.
+ */
+export interface MassStabilityAlert {
+  message: string;
+  severity: 'warning' | 'danger';
+}
 
 export interface PlanetaryDensity {
   value: number;
@@ -420,24 +434,41 @@ export class BodyPhysicsService {
 
   /**
    * Degeneracy-pressure stability warning when a body's mass exceeds the relevant limit:
-   * Chandrasekhar (1.44 M☉) for white dwarfs, TOV (~2.17 M☉) for neutron stars. Returns the
-   * tooltip message, or null when the body is stable / not a degenerate object. Black holes
-   * have already collapsed, so the "will collapse into a black hole" warning does not apply
-   * to them.
+   * Chandrasekhar (1.44 M☉) for white dwarfs, and for neutron stars the theoretical TOV
+   * limit (~2.17 M☉) and the observed maximum (~2.51 M☉). Returns the tooltip message and a
+   * severity, or null when the body is stable / not a degenerate object. A neutron star
+   * between the two limits is flagged as a `'warning'`; one above the observed maximum (or a
+   * super-Chandrasekhar white dwarf) is flagged as `'danger'`. Black holes have already
+   * collapsed, so the "will collapse into a black hole" warning does not apply to them.
    */
-  massStabilityAlert(subType: string | null | undefined, solarMasses: number | null | undefined): string | null {
+  massStabilityAlert(subType: string | null | undefined, solarMasses: number | null | undefined): MassStabilityAlert | null {
     if (solarMasses === null || solarMasses === undefined) { return null; }
 
     if (subType?.startsWith('White Dwarf') && solarMasses > CHANDRASEKHAR_LIMIT_SOLAR_MASSES) {
-      return 'Exceeds Chandrasekhar limit (1.44 M☉).\n'
-        + 'Electron degeneracy pressure can no longer support the star against gravity, '
-        + 'leading to gravitational collapse or a Type Ia supernova.';
+      return {
+        severity: 'danger',
+        message: 'Anomalous mass — exceeds the Chandrasekhar limit (1.44 M☉).\n'
+          + 'Electron degeneracy pressure is not expected to support a white dwarf this heavy, '
+          + 'which would normally trigger gravitational collapse or a Type Ia supernova.',
+      };
     }
 
-    if (subType === 'Neutron Star' && solarMasses > TOV_LIMIT_SOLAR_MASSES) {
-      return 'Exceeds Tolman–Oppenheimer–Volkoff limit.\n'
-        + 'Above the TOV limit (2.17 solar masses), neutron degeneracy pressure can no longer '
-        + 'support the star against gravity, and it collapses into a black hole.';
+    if (subType === 'Neutron Star') {
+      if (solarMasses > OBSERVED_NEUTRON_STAR_MAX_SOLAR_MASSES) {
+        return {
+          severity: 'danger',
+          message: 'Highly anomalous mass — exceeds the observed maximum neutron-star mass (2.51 M☉).\n'
+            + 'Beyond this point a star would normally be expected to collapse into a black hole.',
+        };
+      }
+
+      if (solarMasses > TOV_LIMIT_SOLAR_MASSES) {
+        return {
+          severity: 'warning',
+          message: 'Anomalous mass — exceeds the theoretical Tolman–Oppenheimer–Volkoff limit (2.17 M☉).\n'
+            + 'Beyond this, neutron degeneracy pressure is not expected to support the star.',
+        };
+      }
     }
 
     return null;
