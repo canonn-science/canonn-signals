@@ -35,6 +35,20 @@ const INVISIBLE_RING_MAX_DENSITY = 0.1;
 /** Rings wider than this (km) are considered invisible when density is also low. */
 const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
 
+/**
+ * Maximum gap between adjacent rings (km) for the Racing Rings badge.
+ * Set so that both ring edges are likely to be simultaneously visible when
+ * flying nearby. The value is intentionally generous and may be tightened
+ * once in-game observations are collected.
+ */
+const RACING_RINGS_MAX_GAP_KM = 50;
+/**
+ * Minimum outer-to-inner velocity difference (km/s) for the Racing Rings badge.
+ * Chosen as a speed differential large enough to be noticeable in-game;
+ * may be adjusted after in-game observations.
+ */
+const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
+
 @Component({
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
@@ -372,10 +386,10 @@ export class SystemBodyComponent implements OnChanges {
     this.getRingVelocityDiffDisplay.set(velocityDiff !== null ? this.formatVelocityKms(velocityDiff) : '');
     this.getRingVelocityDiffTooltip.set(velocityDiff !== null ? `${velocityDiff.toFixed(3)} km/s` : '');
 
-    // Racing Rings badge: inner ring gap < 50 km AND velocity difference > 5 km/s,
-    // and neither ring in the pair is invisible.
+    // Racing Rings badge: gap between adjacent rings below threshold AND speed
+    // differential above threshold, and neither ring in the pair is invisible.
     const racingRings = neighbourDist !== null && velocityDiff !== null
-      && neighbourDist < 50 && velocityDiff > 5 && !eitherRingInvisible;
+      && neighbourDist < RACING_RINGS_MAX_GAP_KM && velocityDiff > RACING_RINGS_MIN_SPEED_DIFF_KMS && !eitherRingInvisible;
     this.isRacingRings.set(racingRings);
     if (racingRings) {
       const dashIdx = neighbourLabel.indexOf('-');
