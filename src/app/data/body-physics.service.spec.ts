@@ -108,6 +108,91 @@ describe('BodyPhysicsService', () => {
     });
   });
 
+  describe('ringDynamics', () => {
+    // Hand-calculated reference values using:
+    //   G = 6.6743e-11 m³/(kg·s²)
+    //   nominalRadius = inner + (outer - inner) * 3/8
+    //   T = 2π * sqrt(nominalRadius³ / (G * M))
+    //   v_max = 2π * outerRadius / T  (converted to km/s)
+    //
+    // Note: Elite Dangerous rings rotate as a rigid body (single period for all
+    // radii), unlike real Keplerian rings where inner particles orbit faster.
+    // The 3/8 factor is empirically derived from observational data.
+
+    const G = 6.6743e-11;
+    const KG_PER_EARTH_MASS = 5.972e24;
+    // Mirror the service's conversion: solarMasses → earthMasses → kg
+    // (uses EARTH_MASSES_PER_SOLAR_MASS = 332950, not a direct KG_PER_SOLAR_MASS constant).
+    const EARTH_MASSES_PER_SOLAR_MASS = 332950;
+    const KG_PER_SOLAR_MASS_VIA_EARTH = EARTH_MASSES_PER_SOLAR_MASS * KG_PER_EARTH_MASS;
+
+    function expectedDynamics(innerKm: number, outerKm: number, massKg: number) {
+      const nominalM = (innerKm + (outerKm - innerKm) * (3 / 8)) * 1000;
+      const outerM = outerKm * 1000;
+      const periodS = 2 * Math.PI * Math.sqrt(nominalM ** 3 / (G * massKg));
+      return { periodDays: periodS / 86400, maxVelocityKms: (2 * Math.PI * outerM / periodS) / 1000 };
+    }
+
+    it('returns null when the ring has no parent', () => {
+      const ring = body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 });
+      expect(service.ringDynamics(ring)).toBeNull();
+    });
+
+    it('returns null when parent has no mass', () => {
+      const parent = body({ radius: 6371 });
+      const ring = body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, parent);
+      expect(service.ringDynamics(ring)).toBeNull();
+    });
+
+    it('returns null when outerRadius is zero or absent', () => {
+      const parent = body({ earthMasses: 1 });
+      expect(service.ringDynamics(body({ type: 'Ring', innerRadius: 0, outerRadius: 0 }, parent))).toBeNull();
+      expect(service.ringDynamics(body({ type: 'Ring' }, parent))).toBeNull();
+    });
+
+    it('computes correct dynamics for a ring around an Earth-mass planet', () => {
+      const inner = 10000; const outer = 50000;
+      const parent = body({ earthMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: inner, outerRadius: outer }, parent);
+      const result = service.ringDynamics(ring)!;
+      const expected = expectedDynamics(inner, outer, 1 * KG_PER_EARTH_MASS);
+      expect(result).not.toBeNull();
+      expect(result.orbitalPeriodDays).toBeCloseTo(expected.periodDays, 6);
+      expect(result.maxVelocityKms).toBeCloseTo(expected.maxVelocityKms, 6);
+    });
+
+    it('computes correct dynamics for a ring around a solar-mass star', () => {
+      const inner = 500000; const outer = 2000000;
+      const parent = body({ solarMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: inner, outerRadius: outer }, parent);
+      const result = service.ringDynamics(ring)!;
+      const expected = expectedDynamics(inner, outer, 1 * KG_PER_SOLAR_MASS_VIA_EARTH);
+      expect(result).not.toBeNull();
+      expect(result.orbitalPeriodDays).toBeCloseTo(expected.periodDays, 6);
+      expect(result.maxVelocityKms).toBeCloseTo(expected.maxVelocityKms, 6);
+    });
+
+    it('a more massive parent produces a higher max velocity for the same ring geometry', () => {
+      // Heavier parent → shorter period at the nominal radius → outer edge moves faster.
+      const light  = service.ringDynamics(body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, body({ earthMasses: 10 })))!;
+      const heavy  = service.ringDynamics(body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, body({ earthMasses: 1000 })))!;
+      expect(heavy.maxVelocityKms).toBeGreaterThan(light.maxVelocityKms);
+    });
+
+    it('nominal radius uses 3/8 of the ring width from the inner edge', () => {
+      // With inner=0 and outer=8000, nominalRadius = 8000 * 3/8 = 3000 km.
+      // Cross-check the period against Kepler at 3000 km.
+      const inner = 0; const outer = 8000;
+      const massKg = 1 * KG_PER_EARTH_MASS;
+      const parent = body({ earthMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: inner, outerRadius: outer }, parent);
+      const result = service.ringDynamics(ring)!;
+      const nominalM = 3000 * 1000;
+      const expectedPeriodS = 2 * Math.PI * Math.sqrt(nominalM ** 3 / (G * massKg));
+      expect(result.orbitalPeriodDays).toBeCloseTo(expectedPeriodS / 86400, 8);
+    });
+  });
+
   describe('schwarzschildRadiusKm', () => {
     it('returns ~2.95 km for one solar mass', () => {
       expect(service.schwarzschildRadiusKm(1)).toBeCloseTo(2.95, 1);
