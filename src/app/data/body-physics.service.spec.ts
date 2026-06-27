@@ -210,6 +210,18 @@ describe('BodyPhysicsService', () => {
       const expectedPeriodS = 2 * Math.PI * Math.sqrt(nominalM ** 3 / (G * massKg));
       expect(result.orbitalPeriodDays).toBeCloseTo(expectedPeriodS / 86400, 8);
     });
+
+    it('matches pinned reference values for an 8000 km ring around 1 Earth mass', () => {
+      const parent = body({ earthMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: 0, outerRadius: 8000 }, parent);
+      const result = service.ringDynamics(ring)!;
+
+      // Independent reference values (not computed by expectedDynamics):
+      // period ≈ 0.0189272 days, vmax ≈ 30.738 km/s
+      expect(result.orbitalPeriodDays).toBeCloseTo(0.0189272, 7);
+      expect(result.maxVelocityKms).toBeCloseTo(30.738, 3);
+      expect(result.minVelocityKms).toBe(0);
+    });
   });
 
   describe('schwarzschildRadiusKm', () => {

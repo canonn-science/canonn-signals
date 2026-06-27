@@ -373,7 +373,7 @@ export class SystemBodyComponent implements OnChanges {
     this.getRingArea.set(Math.PI * (outer * outer - inner * inner));
     this.getRingDensity.set(this.getRingArea() > 0 ? (bd.mass ?? 0) / this.getRingArea() : 0);
     this.isRingNotVisible.set(bd.type === BODY_TYPE.Ring
-      && this.getRingDensity() < INVISIBLE_RING_MAX_DENSITY && this.getRingWidth() > INVISIBLE_RING_MIN_WIDTH);
+      && this.isLowDensityWideRing(this.getRingWidth(), this.getRingDensity()));
 
     // Ring dynamics: orbital period and max velocity (Kepler math lives in the service).
     this.applyRingDynamics(this.physics.ringDynamics(body));
@@ -856,7 +856,7 @@ export class SystemBodyComponent implements OnChanges {
     const width = this.getRingWidth();
     const area = this.getRingArea();
     const density = this.getRingDensity();
-    const isInvisible = density < INVISIBLE_RING_MAX_DENSITY && width > INVISIBLE_RING_MIN_WIDTH;
+    const isInvisible = this.isLowDensityWideRing(width, density);
 
     const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
@@ -1156,7 +1156,11 @@ export class SystemBodyComponent implements OnChanges {
     const width = outer - inner;
     const area = Math.PI * (outer * outer - inner * inner);
     const density = area > 0 ? (bd.mass ?? 0) / area : 0;
-    return density < INVISIBLE_RING_MAX_DENSITY && width > INVISIBLE_RING_MIN_WIDTH;
+    return this.isLowDensityWideRing(width, density);
+  }
+
+  private isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
+    return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
   }
 
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
