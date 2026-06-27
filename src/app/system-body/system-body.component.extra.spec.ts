@@ -195,6 +195,35 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.isRingNotVisible()).toBe(true);
     });
 
+    it('ring with density exactly 0.1 is NOT invisible (threshold is strictly < 0.1)', () => {
+      // width > 1 000 000 km but density == 0.1 exactly → condition is density < 0.1, so false.
+      const parent = ringParent();
+      // area = π*(1100000² − 60000²) ≈ 3.789e12 km²; mass chosen so density = 0.1 exactly.
+      const area = Math.PI * (1100000 ** 2 - 60000 ** 2);
+      const mass = 0.1 * area;
+      const ring = makeBody({
+        name: 'Star A A Ring', type: 'Ring', subType: 'Icy',
+        innerRadius: 60000, outerRadius: 1100000, mass,
+      }, parent);
+      render(ring);
+      expect(component.getRingDensity()).toBeCloseTo(0.1, 9);
+      expect(component.getRingWidth()).toBeGreaterThan(1_000_000);
+      expect(component.isRingNotVisible()).toBe(false);
+    });
+
+    it('ring with width exactly 1 000 000 km is NOT invisible (threshold is strictly > 1 000 000)', () => {
+      // density < 0.1 but width == 1 000 000 exactly → condition is width > 1 000 000, so false.
+      const parent = ringParent();
+      const ring = makeBody({
+        name: 'Star A A Ring', type: 'Ring', subType: 'Icy',
+        innerRadius: 60000, outerRadius: 1060000, mass: 1, // width = 1 000 000 km exactly
+      }, parent);
+      render(ring);
+      expect(component.getRingWidth()).toBe(1_000_000);
+      expect(component.getRingDensity()).toBeLessThan(0.1);
+      expect(component.isRingNotVisible()).toBe(false);
+    });
+
     it('returns ring resource and signal info from the ring signals', () => {
       const parent = ringParent();
       const ring = makeBody({
@@ -278,6 +307,16 @@ describe('SystemBodyComponent (extended coverage)', () => {
       it('shows no distance for a single ring (no outward neighbour)', () => {
         const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 100000 }]);
         render(ringA);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+        expect(component.getRingNeighbourDistanceLabel()).toBe('');
+      });
+
+      it('returns null neighbour distance for a Belt body (Belts are excluded from ring-gap calculations)', () => {
+        // Belts are diffuse clusters; inter-ring spacing and speed comparisons are meaningless for them.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const belt = makeBody({ name: 'A Belt', type: 'Belt', subType: 'Rocky', innerRadius: 60000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(belt);
+        render(belt);
         expect(component.getRingNeighbourDistance()).toBeNull();
         expect(component.getRingNeighbourDistanceLabel()).toBe('');
       });
@@ -582,6 +621,8 @@ describe('SystemBodyComponent (extended coverage)', () => {
         render(ringA);
         expect(component.isRacingRings()).toBe(false);
       });
+
+
 
       it('only marks qualifying adjacent pairs in a three-ring set', () => {
         // A–B: gap=1 km, vel diff ≈10.7 km/s → badge ON.
