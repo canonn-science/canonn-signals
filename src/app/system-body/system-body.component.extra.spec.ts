@@ -262,6 +262,137 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getRingMinVelocityDisplay()).toMatch(/km\/s$/);
       expect(component.getRingOrbitalPeriodDisplay()).toMatch(/days$/);
     });
+
+    describe('ring neighbour distance', () => {
+      function makeRingSet(defs: Array<{ name: string; inner: number; outer: number }>) {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const rings = defs.map(d => makeBody(
+          { name: d.name, type: 'Ring', subType: 'Rocky', innerRadius: d.inner, outerRadius: d.outer },
+          parent,
+        ));
+        parent.subBodies.push(...rings);
+        return { parent, rings };
+      }
+
+      it('shows no distance for a single ring (no outward neighbour)', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 100000 }]);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+        expect(component.getRingNeighbourDistanceLabel()).toBe('');
+      });
+
+      it('shows Distance A-B on A Ring and no distance on B Ring', () => {
+        const { rings: [ringA, ringB] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+        ]);
+
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(10000); // 110000 − 100000
+        expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+
+        render(ringB);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+        expect(component.getRingNeighbourDistanceLabel()).toBe('');
+      });
+
+      it('shows Distance A-B on A, Distance B-C on B, and no distance on C', () => {
+        const { rings: [ringA, ringB, ringC] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+        ]);
+
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(10000); // 110000 − 100000
+        expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+
+        render(ringB);
+        expect(component.getRingNeighbourDistance()).toBe(10000); // 210000 − 200000
+        expect(component.getRingNeighbourDistanceLabel()).toBe('B-C');
+
+        render(ringC);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('shows 0 km when rings are touching (innerB === outerA)', () => {
+        const { rings: [ringA] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 100000 },
+          { name: 'B Ring', inner: 100000, outer: 200000 },
+        ]);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(0);
+      });
+
+      it('shows a negative distance when rings overlap', () => {
+        const { rings: [ringA] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 110000 },
+          { name: 'B Ring', inner: 100000, outer: 200000 },
+        ]);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(-10000); // 100000 − 110000
+      });
+
+      it('shows no distance for a non-ring body', () => {
+        render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
+        expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('supports four rings — each shows distance to the next, outermost shows none', () => {
+        const { rings: [a, b, c, d] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+          { name: 'D Ring', inner: 310000, outer: 400000 },
+        ]);
+        render(a); expect(component.getRingNeighbourDistance()).toBe(10000);  expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+        render(b); expect(component.getRingNeighbourDistance()).toBe(10000);  expect(component.getRingNeighbourDistanceLabel()).toBe('B-C');
+        render(c); expect(component.getRingNeighbourDistance()).toBe(10000);  expect(component.getRingNeighbourDistanceLabel()).toBe('C-D');
+        render(d); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('supports five rings — each shows distance to the next, outermost shows none', () => {
+        const { rings: [a, b, c, d, e] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+          { name: 'D Ring', inner: 310000, outer: 400000 },
+          { name: 'E Ring', inner: 410000, outer: 500000 },
+        ]);
+        render(a); expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+        render(b); expect(component.getRingNeighbourDistanceLabel()).toBe('B-C');
+        render(c); expect(component.getRingNeighbourDistanceLabel()).toBe('C-D');
+        render(d); expect(component.getRingNeighbourDistanceLabel()).toBe('D-E');
+        render(e); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('strips "Ring" from labels for mixed-name rings (Sol-style)', () => {
+        // Halo Ring → "Halo", A Ring → "A", D Ring → "D", Outer Ring → "Outer"
+        const { rings: [halo, a, d, outer] } = makeRingSet([
+          { name: 'Halo Ring',  inner: 60000,  outer: 100000 },
+          { name: 'A Ring',     inner: 110000, outer: 200000 },
+          { name: 'D Ring',     inner: 210000, outer: 300000 },
+          { name: 'Outer Ring', inner: 310000, outer: 400000 },
+        ]);
+        render(halo);  expect(component.getRingNeighbourDistanceLabel()).toBe('Halo-A');
+        render(a);     expect(component.getRingNeighbourDistanceLabel()).toBe('A-D');
+        render(d);     expect(component.getRingNeighbourDistanceLabel()).toBe('D-Outer');
+        render(outer); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('sorts rings by innerRadius, not by input order or name', () => {
+        // D is pushed first, then A, then B — correct order must come from the sort.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringD = makeBody({ name: 'D Ring', type: 'Ring', subType: 'Rocky', innerRadius: 210000, outerRadius: 300000 }, parent);
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 60000,  outerRadius: 100000 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 110000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(ringD, ringA, ringB);
+
+        render(ringA); expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+        render(ringB); expect(component.getRingNeighbourDistanceLabel()).toBe('B-D');
+        render(ringD); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+    });
   });
 
   describe('Roche / shepherding for a moon', () => {

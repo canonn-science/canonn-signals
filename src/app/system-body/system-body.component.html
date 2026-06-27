@@ -558,7 +558,7 @@
         }
         <!-- Dynamics Section (Rings and Belts) -->
         @if ((body().bodyData.type === 'Ring' || body().bodyData.type === 'Belt') && (getRingOrbitalPeriod() !== null
-        || getRingMaxVelocity() !== null)) {
+        || getRingMaxVelocity() !== null || getRingNeighbourDistance() !== null)) {
         <div class="body-data-section">
           <div class="body-data-section-header">Dynamics</div>
           @if (getRingOrbitalPeriod() !== null) {
@@ -588,6 +588,16 @@
             </div>
             <div [matTooltip]="getRingMaxVelocityTooltip()">
               {{ getRingMaxVelocityDisplay() }}
+            </div>
+          </div>
+          }
+          @if (getRingNeighbourDistance() !== null) {
+          <div class="body-data-entry">
+            <div>
+              Distance {{ getRingNeighbourDistanceLabel() }}
+            </div>
+            <div [matTooltip]="getRingNeighbourDistance() + ' km'">
+              {{ getRingNeighbourDistance() | number:'0.0-0' }} km
             </div>
           </div>
           }

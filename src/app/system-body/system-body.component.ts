@@ -123,6 +123,8 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingMaxVelocity = signal<number | null>(null);
   public readonly getRingMaxVelocityDisplay = signal('');
   public readonly getRingMaxVelocityTooltip = signal('');
+  public readonly getRingNeighbourDistance = signal<number | null>(null);
+  public readonly getRingNeighbourDistanceLabel = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -354,6 +356,11 @@ export class SystemBodyComponent implements OnChanges {
 
     // Ring dynamics: orbital period and max velocity (Kepler math lives in the service).
     this.applyRingDynamics(this.physics.ringDynamics(body));
+
+    // Distance to the next ring/belt sibling (by innerRadius order).
+    const { distance: neighbourDist, label: neighbourLabel } = this.computeRingNeighbourDistance(body);
+    this.getRingNeighbourDistance.set(neighbourDist);
+    this.getRingNeighbourDistanceLabel.set(neighbourLabel);
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -1096,6 +1103,25 @@ export class SystemBodyComponent implements OnChanges {
     if (!this.isBlackHoleOrNeutronStar()) { return null; }
     const bd = this.body().bodyData;
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+  }
+
+  private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string } {
+    const bd = body.bodyData;
+    if ((bd.type !== BODY_TYPE.Ring && bd.type !== BODY_TYPE.Belt) || !body.parent) {
+      return { distance: null, label: '' };
+    }
+    const siblings = body.parent.subBodies
+      .filter(s => s.bodyData.name.includes('Ring'))
+      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+    const idx = siblings.indexOf(body);
+    if (idx < 0 || idx === siblings.length - 1) {
+      return { distance: null, label: '' };
+    }
+    const next = siblings[idx + 1];
+    const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
+    const thisLabel = bd.name.replace('Ring', '').trim();
+    const nextLabel = next.bodyData.name.replace('Ring', '').trim();
+    return { distance, label: `${thisLabel}-${nextLabel}` };
   }
 
   private applyRingDynamics(dynamics: RingDynamics | null): void {
