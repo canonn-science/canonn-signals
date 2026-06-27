@@ -128,10 +128,21 @@ describe('BodyPhysicsService', () => {
 
     function expectedDynamics(innerKm: number, outerKm: number, massKg: number) {
       const nominalM = (innerKm + (outerKm - innerKm) * (3 / 8)) * 1000;
+      const innerM = innerKm * 1000;
       const outerM = outerKm * 1000;
       const periodS = 2 * Math.PI * Math.sqrt(nominalM ** 3 / (G * massKg));
-      return { periodDays: periodS / 86400, maxVelocityKms: (2 * Math.PI * outerM / periodS) / 1000 };
+      return {
+        periodDays: periodS / 86400,
+        minVelocityKms: (2 * Math.PI * innerM / periodS) / 1000,
+        maxVelocityKms: (2 * Math.PI * outerM / periodS) / 1000,
+      };
     }
+
+    it('returns null for a non-ring/belt body type', () => {
+      const parent = body({ earthMasses: 1 });
+      expect(service.ringDynamics(body({ type: 'Planet', innerRadius: 10000, outerRadius: 50000 }, parent))).toBeNull();
+      expect(service.ringDynamics(body({ type: 'Star',   innerRadius: 10000, outerRadius: 50000 }, parent))).toBeNull();
+    });
 
     it('returns null when the ring has no parent', () => {
       const ring = body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 });
@@ -158,6 +169,7 @@ describe('BodyPhysicsService', () => {
       const expected = expectedDynamics(inner, outer, 1 * KG_PER_EARTH_MASS);
       expect(result).not.toBeNull();
       expect(result.orbitalPeriodDays).toBeCloseTo(expected.periodDays, 6);
+      expect(result.minVelocityKms).toBeCloseTo(expected.minVelocityKms, 6);
       expect(result.maxVelocityKms).toBeCloseTo(expected.maxVelocityKms, 6);
     });
 
@@ -169,7 +181,14 @@ describe('BodyPhysicsService', () => {
       const expected = expectedDynamics(inner, outer, 1 * KG_PER_SOLAR_MASS_VIA_EARTH);
       expect(result).not.toBeNull();
       expect(result.orbitalPeriodDays).toBeCloseTo(expected.periodDays, 6);
+      expect(result.minVelocityKms).toBeCloseTo(expected.minVelocityKms, 6);
       expect(result.maxVelocityKms).toBeCloseTo(expected.maxVelocityKms, 6);
+    });
+
+    it('min velocity is always less than max velocity when inner < outer', () => {
+      const ring = service.ringDynamics(body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, body({ earthMasses: 100 })))!;
+      expect(ring.minVelocityKms).toBeGreaterThan(0);
+      expect(ring.minVelocityKms).toBeLessThan(ring.maxVelocityKms);
     });
 
     it('a more massive parent produces a higher max velocity for the same ring geometry', () => {

@@ -117,6 +117,9 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingOrbitalPeriod = signal<number | null>(null);
   public readonly getRingOrbitalPeriodDisplay = signal('');
   public readonly getRingOrbitalPeriodTooltip = signal('');
+  public readonly getRingMinVelocity = signal<number | null>(null);
+  public readonly getRingMinVelocityDisplay = signal('');
+  public readonly getRingMinVelocityTooltip = signal('');
   public readonly getRingMaxVelocity = signal<number | null>(null);
   public readonly getRingMaxVelocityDisplay = signal('');
   public readonly getRingMaxVelocityTooltip = signal('');
@@ -1100,6 +1103,9 @@ export class SystemBodyComponent implements OnChanges {
       this.getRingOrbitalPeriod.set(dynamics.orbitalPeriodDays);
       this.getRingOrbitalPeriodDisplay.set(this.formatPeriodDays(dynamics.orbitalPeriodDays));
       this.getRingOrbitalPeriodTooltip.set(`${dynamics.orbitalPeriodDays.toFixed(6)} days`);
+      this.getRingMinVelocity.set(dynamics.minVelocityKms);
+      this.getRingMinVelocityDisplay.set(this.formatVelocityKms(dynamics.minVelocityKms));
+      this.getRingMinVelocityTooltip.set(`${dynamics.minVelocityKms.toFixed(3)} km/s`);
       this.getRingMaxVelocity.set(dynamics.maxVelocityKms);
       this.getRingMaxVelocityDisplay.set(this.formatVelocityKms(dynamics.maxVelocityKms));
       this.getRingMaxVelocityTooltip.set(`${dynamics.maxVelocityKms.toFixed(3)} km/s`);
@@ -1107,6 +1113,9 @@ export class SystemBodyComponent implements OnChanges {
       this.getRingOrbitalPeriod.set(null);
       this.getRingOrbitalPeriodDisplay.set('');
       this.getRingOrbitalPeriodTooltip.set('');
+      this.getRingMinVelocity.set(null);
+      this.getRingMinVelocityDisplay.set('');
+      this.getRingMinVelocityTooltip.set('');
       this.getRingMaxVelocity.set(null);
       this.getRingMaxVelocityDisplay.set('');
       this.getRingMaxVelocityTooltip.set('');

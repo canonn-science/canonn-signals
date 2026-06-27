@@ -244,6 +244,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(ring);
       expect(component.getRingMaxVelocityDisplay()).toMatch(/c$/);
       expect(component.getRingMaxVelocityDisplay()).not.toMatch(/km\/s/);
+      expect(component.getRingMinVelocityDisplay()).toMatch(/km\/s$/);
       expect(component.getRingOrbitalPeriodDisplay()).toMatch(/min$/);
     });
 
@@ -258,6 +259,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(ring);
       expect(component.getRingMaxVelocityDisplay()).toMatch(/km\/s$/);
       expect(component.getRingMaxVelocityDisplay()).not.toMatch(/c$/);
+      expect(component.getRingMinVelocityDisplay()).toMatch(/km\/s$/);
       expect(component.getRingOrbitalPeriodDisplay()).toMatch(/days$/);
     });
   });

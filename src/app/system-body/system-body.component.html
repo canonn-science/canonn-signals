@@ -571,6 +571,16 @@
             </div>
           </div>
           }
+          @if (getRingMinVelocity() !== null) {
+          <div class="body-data-entry">
+            <div [matTooltip]="'Tangential velocity at inner radius using the nominal orbital period'">
+              Min velocity
+            </div>
+            <div [matTooltip]="getRingMinVelocityTooltip()">
+              {{ getRingMinVelocityDisplay() }}
+            </div>
+          </div>
+          }
           @if (getRingMaxVelocity() !== null) {
           <div class="body-data-entry">
             <div [matTooltip]="'Tangential velocity at outer radius using the nominal orbital period'">

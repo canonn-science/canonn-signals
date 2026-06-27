@@ -61,10 +61,12 @@ export interface RocheLimitCurves {
   fluidLimits: number[];
 }
 
-/** Orbital period and maximum tangential velocity for a ring or belt. */
+/** Orbital period and tangential velocity range for a ring or belt. */
 export interface RingDynamics {
   /** Orbital period in days, derived from Kepler's third law at the nominal radius. */
   orbitalPeriodDays: number;
+  /** Tangential velocity (km/s) at the inner radius using the nominal orbital period. */
+  minVelocityKms: number;
   /** Tangential velocity (km/s) at the outer radius using the nominal orbital period. */
   maxVelocityKms: number;
 }
@@ -297,10 +299,12 @@ export class BodyPhysicsService {
     const parentMassKg = this.parentMassKg(body.parent.bodyData);
     if (parentMassKg === null || parentMassKg <= 0) { return null; }
     const nominalRadiusM = (inner + (outer - inner) * (3 / 8)) * 1000;
+    const innerRadiusM = inner * 1000;
     const outerRadiusM = outer * 1000;
     const periodS = 2 * Math.PI * Math.sqrt(nominalRadiusM ** 3 / (GRAVITATIONAL_CONSTANT * parentMassKg));
     return {
       orbitalPeriodDays: periodS / 86400,
+      minVelocityKms: (2 * Math.PI * innerRadiusM / periodS) / 1000,
       maxVelocityKms: (2 * Math.PI * outerRadiusM / periodS) / 1000,
     };
   }
