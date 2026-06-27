@@ -128,6 +128,8 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingVelocityDiff = signal<number | null>(null);
   public readonly getRingVelocityDiffDisplay = signal('');
   public readonly getRingVelocityDiffTooltip = signal('');
+  public readonly isRacingRings = signal(false);
+  public readonly racingRingsTooltip = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -361,12 +363,28 @@ export class SystemBodyComponent implements OnChanges {
     this.applyRingDynamics(this.physics.ringDynamics(body));
 
     // Distance to the next ring/belt sibling (by innerRadius order).
-    const { distance: neighbourDist, label: neighbourLabel, velocityDiff } = this.computeRingNeighbourDistance(body);
+    const { distance: neighbourDist, label: neighbourLabel, velocityDiff, eitherRingInvisible } = this.computeRingNeighbourDistance(body);
     this.getRingNeighbourDistance.set(neighbourDist);
     this.getRingNeighbourDistanceLabel.set(neighbourLabel);
     this.getRingVelocityDiff.set(velocityDiff);
     this.getRingVelocityDiffDisplay.set(velocityDiff !== null ? this.formatVelocityKms(velocityDiff) : '');
     this.getRingVelocityDiffTooltip.set(velocityDiff !== null ? `${velocityDiff.toFixed(3)} km/s` : '');
+
+    // Racing Rings badge: inner ring gap < 50 km AND velocity difference > 5 km/s,
+    // and neither ring in the pair is invisible.
+    const racingRings = neighbourDist !== null && velocityDiff !== null
+      && neighbourDist < 50 && velocityDiff > 5 && !eitherRingInvisible;
+    this.isRacingRings.set(racingRings);
+    if (racingRings) {
+      const dashIdx = neighbourLabel.indexOf('-');
+      const innerLabel = dashIdx >= 0 ? neighbourLabel.slice(0, dashIdx) : neighbourLabel;
+      const outerLabel = dashIdx >= 0 ? neighbourLabel.slice(dashIdx + 1) : '';
+      this.racingRingsTooltip.set(
+        `Ring ${innerLabel} and Ring ${outerLabel} pass within ${neighbourDist!.toFixed(0)} km with a speed differential of ${velocityDiff!.toFixed(1)} km/s`,
+      );
+    } else {
+      this.racingRingsTooltip.set('');
+    }
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -1111,17 +1129,27 @@ export class SystemBodyComponent implements OnChanges {
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
   }
 
-  private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null } {
+  private isInvisibleRing(bd: CanonnBiostatsBody): boolean {
+    if (bd.type !== BODY_TYPE.Ring) { return false; }
+    const outer = bd.outerRadius ?? 0;
+    const inner = bd.innerRadius ?? 0;
+    const width = outer - inner;
+    const area = Math.PI * (outer * outer - inner * inner);
+    const density = area > 0 ? (bd.mass ?? 0) / area : 0;
+    return density < 0.1 && width > 1000000;
+  }
+
+  private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
     const bd = body.bodyData;
     if ((bd.type !== BODY_TYPE.Ring && bd.type !== BODY_TYPE.Belt) || !body.parent) {
-      return { distance: null, label: '', velocityDiff: null };
+      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
     }
     const siblings = body.parent.subBodies
       .filter(s => s.bodyData.name.includes('Ring'))
       .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
     const idx = siblings.indexOf(body);
     if (idx < 0 || idx === siblings.length - 1) {
-      return { distance: null, label: '', velocityDiff: null };
+      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
     }
     const next = siblings[idx + 1];
     const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
@@ -1132,7 +1160,8 @@ export class SystemBodyComponent implements OnChanges {
     const velocityDiff = (currentDynamics !== null && nextDynamics !== null)
       ? currentDynamics.maxVelocityKms - nextDynamics.minVelocityKms
       : null;
-    return { distance, label: `${thisLabel}-${nextLabel}`, velocityDiff };
+    const eitherRingInvisible = this.isInvisibleRing(bd) || this.isInvisibleRing(next.bodyData);
+    return { distance, label: `${thisLabel}-${nextLabel}`, velocityDiff, eitherRingInvisible };
   }
 
   private applyRingDynamics(dynamics: RingDynamics | null): void {

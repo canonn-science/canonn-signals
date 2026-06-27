@@ -26,6 +26,9 @@
       @if (isRingNotVisible()) {
       <span class="badge badge-red clickable" (click)="showInvisibleRingExplanation()">Invisible</span>
       }
+      @if (isRacingRings()) {
+      <span class="badge badge-orange" [matTooltip]="racingRingsTooltip()" matTooltipClass="multiline-tooltip">Racing Rings</span>
+      }
       @if (isActualShepherd()) {
       <span class="badge badge-blue clickable"
         [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
