@@ -380,11 +380,15 @@ export class SystemBodyComponent implements OnChanges {
 
     // Distance to the next ring/belt sibling (by innerRadius order).
     const { distance: neighbourDist, label: neighbourLabel, velocityDiff, eitherRingInvisible } = this.computeRingNeighbourDistance(body);
-    this.getRingNeighbourDistance.set(neighbourDist);
-    this.getRingNeighbourDistanceLabel.set(neighbourLabel);
-    this.getRingVelocityDiff.set(velocityDiff);
-    this.getRingVelocityDiffDisplay.set(velocityDiff !== null ? this.formatVelocityKms(velocityDiff) : '');
-    this.getRingVelocityDiffTooltip.set(velocityDiff !== null ? `${velocityDiff.toFixed(3)} km/s` : '');
+    // Suppress gap/velocity display when either ring in the pair is invisible — the values
+    // are physically real but the invisible ring cannot be observed in-game.
+    const displayDist = eitherRingInvisible ? null : neighbourDist;
+    const displayVelocityDiff = eitherRingInvisible ? null : velocityDiff;
+    this.getRingNeighbourDistance.set(displayDist);
+    this.getRingNeighbourDistanceLabel.set(displayDist !== null ? neighbourLabel : '');
+    this.getRingVelocityDiff.set(displayVelocityDiff);
+    this.getRingVelocityDiffDisplay.set(displayVelocityDiff !== null ? this.formatVelocityKms(displayVelocityDiff) : '');
+    this.getRingVelocityDiffTooltip.set(displayVelocityDiff !== null ? `${displayVelocityDiff.toFixed(3)} km/s` : '');
 
     // Racing Rings badge: gap between adjacent rings below threshold AND speed
     // differential above threshold, and neither ring in the pair is invisible.

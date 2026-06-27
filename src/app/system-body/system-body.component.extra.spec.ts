@@ -681,6 +681,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       it('does not show the badge when the outer ring is invisible (wide + low mass)', () => {
         // Ring B: width = 1 100 000 km > 1 000 000 and mass = 1 Mt → density ≈ 2.6e-13 Mt/km² < 0.1
         // → invisible. Gap A-B = 1 km, vel diff ≈ 27 km/s, so badge WOULD fire without the guard.
+        // Distance and velocity signals are also suppressed (null) when either ring is invisible.
         const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
         const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
           innerRadius: 50000, outerRadius: 50049, mass: 1e15 }, parent);
@@ -688,13 +689,14 @@ describe('SystemBodyComponent (extended coverage)', () => {
           innerRadius: 50050, outerRadius: 1100050, mass: 1 }, parent);
         parent.subBodies.push(ringA, ringB);
         render(ringA);
-        expect(component.getRingNeighbourDistance()).toBe(1);      // gap condition met
-        expect(component.getRingVelocityDiff()!).toBeGreaterThan(5); // vel condition met
+        expect(component.getRingNeighbourDistance()).toBeNull();    // suppressed: B is invisible
+        expect(component.getRingVelocityDiff()).toBeNull();         // suppressed: B is invisible
         expect(component.isRacingRings()).toBe(false);               // invisible guard fires
       });
 
       it('does not show the badge when the inner ring is invisible (wide + low mass)', () => {
         // Ring A: width = 1 050 000 km > 1 000 000 and mass = 1 Mt → invisible.
+        // Distance and velocity signals are also suppressed (null) when either ring is invisible.
         const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
         const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
           innerRadius: 50000, outerRadius: 1100000, mass: 1 }, parent);
@@ -702,8 +704,8 @@ describe('SystemBodyComponent (extended coverage)', () => {
           innerRadius: 1100001, outerRadius: 2000000, mass: 1e15 }, parent);
         parent.subBodies.push(ringA, ringB);
         render(ringA);
-        expect(component.getRingNeighbourDistance()).toBe(1);      // gap condition met
-        expect(component.getRingVelocityDiff()!).toBeGreaterThan(5); // vel condition met
+        expect(component.getRingNeighbourDistance()).toBeNull();    // suppressed: A is invisible
+        expect(component.getRingVelocityDiff()).toBeNull();         // suppressed: A is invisible
         expect(component.isRacingRings()).toBe(false);               // invisible guard fires
       });
     });
