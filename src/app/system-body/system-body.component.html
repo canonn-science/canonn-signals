@@ -601,6 +601,16 @@
             </div>
           </div>
           }
+          @if (getRingVelocityDiff() !== null) {
+          <div class="body-data-entry">
+            <div>
+              Velocity Difference {{ getRingNeighbourDistanceLabel() }}
+            </div>
+            <div [matTooltip]="getRingVelocityDiffTooltip()">
+              {{ getRingVelocityDiffDisplay() }}
+            </div>
+          </div>
+          }
         </div>
         }
         <!-- Limits Section (Rings only) -->

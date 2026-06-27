@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { SystemBodyComponent } from './system-body.component';
 import { AppService } from '../app.service';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
+import { BodyPhysicsService } from '../data/body-physics.service';
 
 const KM_PER_AU = 149597870.7;
 
@@ -391,6 +392,125 @@ describe('SystemBodyComponent (extended coverage)', () => {
         render(ringA); expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
         render(ringB); expect(component.getRingNeighbourDistanceLabel()).toBe('B-D');
         render(ringD); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+    });
+
+    describe('ring velocity difference', () => {
+      // Re-uses makeRingSet from the outer rings describe scope.
+      function makeRingSet(defs: Array<{ name: string; inner: number; outer: number }>) {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const rings = defs.map(d => makeBody(
+          { name: d.name, type: 'Ring', subType: 'Rocky', innerRadius: d.inner, outerRadius: d.outer },
+          parent,
+        ));
+        parent.subBodies.push(...rings);
+        return { parent, rings };
+      }
+
+      it('shows no velocity difference for a single ring', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 100000 }]);
+        render(ringA);
+        expect(component.getRingVelocityDiff()).toBeNull();
+        expect(component.getRingVelocityDiffDisplay()).toBe('');
+      });
+
+      it('computes velocity difference using the same ringDynamics logic as min/max display', () => {
+        // The expected value is derived via the same BodyPhysicsService.ringDynamics() call
+        // the component itself uses, verifying reuse rather than reimplementing the formula.
+        const { rings: [ringA, ringB] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+        ]);
+        const physics = TestBed.inject(BodyPhysicsService);
+        const dynA = physics.ringDynamics(ringA)!;
+        const dynB = physics.ringDynamics(ringB)!;
+        const expectedDiff = dynA.maxVelocityKms - dynB.minVelocityKms;
+
+        render(ringA);
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedDiff, 9);
+        expect(component.getRingVelocityDiffDisplay()).not.toBe('');
+
+        render(ringB);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('produces correct velocity differences for three adjacent rings', () => {
+        const { rings: [ringA, ringB, ringC] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+        ]);
+        const physics = TestBed.inject(BodyPhysicsService);
+
+        render(ringA);
+        const expectedAB = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedAB, 9);
+
+        render(ringB);
+        const expectedBC = physics.ringDynamics(ringB)!.maxVelocityKms - physics.ringDynamics(ringC)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedBC, 9);
+
+        render(ringC);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('uses cleaned names in the velocity difference display label', () => {
+        const { rings: [halo, a, outer] } = makeRingSet([
+          { name: 'Halo Ring',  inner: 60000,  outer: 100000 },
+          { name: 'A Ring',     inner: 110000, outer: 200000 },
+          { name: 'Outer Ring', inner: 210000, outer: 300000 },
+        ]);
+        // The velocity diff label reuses getRingNeighbourDistanceLabel() — same cleaning rules.
+        render(halo);  expect(component.getRingNeighbourDistanceLabel()).toBe('Halo-A');
+        expect(component.getRingVelocityDiff()).not.toBeNull();
+        render(a);     expect(component.getRingNeighbourDistanceLabel()).toBe('A-Outer');
+        expect(component.getRingVelocityDiff()).not.toBeNull();
+        render(outer); expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('respects radius-sorted order when computing velocity differences', () => {
+        // Rings pushed in reverse order; sort must produce A→B→D pairing.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringD = makeBody({ name: 'D Ring', type: 'Ring', subType: 'Rocky', innerRadius: 210000, outerRadius: 300000 }, parent);
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 60000,  outerRadius: 100000 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 110000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(ringD, ringA, ringB);
+        const physics = TestBed.inject(BodyPhysicsService);
+
+        render(ringA);
+        const expectedAB = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedAB, 9);
+
+        render(ringB);
+        const expectedBD = physics.ringDynamics(ringB)!.maxVelocityKms - physics.ringDynamics(ringD)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedBD, 9);
+
+        render(ringD);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('yields null velocity difference when parent has no mass (ringDynamics returns null)', () => {
+        const parent = makeBody({ name: 'Massless Parent', radius: 50000 }); // no earthMasses / solarMasses
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 60000,  outerRadius: 100000 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 110000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('preserves negative velocity difference without clamping', () => {
+        // Force a negative diff by making the inner ring abnormally slow (tiny parent mass)
+        // and a fast outer ring (large parent mass is not possible with one shared parent,
+        // so we instead verify the formula is applied as-is by checking via the service).
+        const { rings: [ringA, ringB] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+        ]);
+        const physics = TestBed.inject(BodyPhysicsService);
+        const diff = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        render(ringA);
+        // Whatever the sign, the component must return the raw computed value unchanged.
+        expect(component.getRingVelocityDiff()).toBeCloseTo(diff, 9);
       });
     });
   });

@@ -125,6 +125,9 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingMaxVelocityTooltip = signal('');
   public readonly getRingNeighbourDistance = signal<number | null>(null);
   public readonly getRingNeighbourDistanceLabel = signal('');
+  public readonly getRingVelocityDiff = signal<number | null>(null);
+  public readonly getRingVelocityDiffDisplay = signal('');
+  public readonly getRingVelocityDiffTooltip = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -358,9 +361,12 @@ export class SystemBodyComponent implements OnChanges {
     this.applyRingDynamics(this.physics.ringDynamics(body));
 
     // Distance to the next ring/belt sibling (by innerRadius order).
-    const { distance: neighbourDist, label: neighbourLabel } = this.computeRingNeighbourDistance(body);
+    const { distance: neighbourDist, label: neighbourLabel, velocityDiff } = this.computeRingNeighbourDistance(body);
     this.getRingNeighbourDistance.set(neighbourDist);
     this.getRingNeighbourDistanceLabel.set(neighbourLabel);
+    this.getRingVelocityDiff.set(velocityDiff);
+    this.getRingVelocityDiffDisplay.set(velocityDiff !== null ? this.formatVelocityKms(velocityDiff) : '');
+    this.getRingVelocityDiffTooltip.set(velocityDiff !== null ? `${velocityDiff.toFixed(3)} km/s` : '');
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -1105,23 +1111,28 @@ export class SystemBodyComponent implements OnChanges {
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
   }
 
-  private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string } {
+  private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null } {
     const bd = body.bodyData;
     if ((bd.type !== BODY_TYPE.Ring && bd.type !== BODY_TYPE.Belt) || !body.parent) {
-      return { distance: null, label: '' };
+      return { distance: null, label: '', velocityDiff: null };
     }
     const siblings = body.parent.subBodies
       .filter(s => s.bodyData.name.includes('Ring'))
       .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
     const idx = siblings.indexOf(body);
     if (idx < 0 || idx === siblings.length - 1) {
-      return { distance: null, label: '' };
+      return { distance: null, label: '', velocityDiff: null };
     }
     const next = siblings[idx + 1];
     const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
     const thisLabel = bd.name.replace('Ring', '').trim();
     const nextLabel = next.bodyData.name.replace('Ring', '').trim();
-    return { distance, label: `${thisLabel}-${nextLabel}` };
+    const currentDynamics = this.physics.ringDynamics(body);
+    const nextDynamics = this.physics.ringDynamics(next);
+    const velocityDiff = (currentDynamics !== null && nextDynamics !== null)
+      ? currentDynamics.maxVelocityKms - nextDynamics.minVelocityKms
+      : null;
+    return { distance, label: `${thisLabel}-${nextLabel}`, velocityDiff };
   }
 
   private applyRingDynamics(dynamics: RingDynamics | null): void {
