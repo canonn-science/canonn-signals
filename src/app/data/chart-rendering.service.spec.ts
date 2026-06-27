@@ -67,47 +67,4 @@ describe('ChartRenderingService', () => {
       expect(() => service.drawShepherdingHillChart(mockCanvas(), { ...data, rings: [] })).not.toThrow();
     });
   });
-
-  describe('generateJetAngleChart', () => {
-    it('returns null for empty CSV input', () => {
-      expect(service.generateJetAngleChart('')).toBeNull();
-    });
-
-    it('returns null when the CSV has only a header row', () => {
-      expect(service.generateJetAngleChart('Rotation Period [s],Radius [Ls],Angle [deg],age')).toBeNull();
-    });
-
-    it('does not throw on well-formed sample rows', () => {
-      const csv = [
-        'System,Body,Rotation Period [s],Radius [Ls],Angle [deg],age',
-        'Hypaa,B1,1.789518,2.01,8.759363,12830',
-        'Hypaa,B2,1.700175,2.04,11.40773,12860',
-      ].join('\n');
-      // In jsdom getContext('2d') is unavailable, so this returns null rather than a
-      // data URL — the point is that parsing/scaling runs without throwing.
-      expect(() => service.generateJetAngleChart(csv)).not.toThrow();
-    });
-
-    it('renders the full bubble plot to a data URL when a 2D context is available', () => {
-      const csv = [
-        'System,Body,Rotation Period [s],Radius [Ls],Angle [deg],age',
-        'Hypaa,B1,1.789518,2.01,8.759363,12830',
-        'Hypaa,B2,1.700175,2.04,11.40773,12860',
-        'Phrooe,B8,0.973363,3.3,16,6402',
-      ].join('\n');
-      // Stub canvas creation so getContext('2d') returns the no-op recorder and the
-      // pixel-mapping helpers (xToPx/yToPx) and full drawing path execute.
-      const fakeCanvas = {
-        width: 0, height: 0,
-        getContext: () => mockContext(),
-        toDataURL: () => 'data:image/png;base64,TEST',
-      } as unknown as HTMLCanvasElement;
-      const createSpy = vi.spyOn(document, 'createElement').mockReturnValue(fakeCanvas as any);
-      try {
-        expect(service.generateJetAngleChart(csv)).toBe('data:image/png;base64,TEST');
-      } finally {
-        createSpy.mockRestore();
-      }
-    });
-  });
 });

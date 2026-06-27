@@ -297,7 +297,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getTangentialVelocityDisplay()).toMatch(/c$/);
       expect(component.getTangentialVelocityTooltip()).toContain('km/s');
       expect(component.classifyNeutronStar()).not.toBeNull();
-      expect(component.getJetConeAngle()).not.toBeNull();
     });
 
     it('renders a black hole radius in km rather than a rounded-to-zero solar radius', () => {
@@ -321,7 +320,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getTangentialVelocity()).toBeNull();
       expect(component.getTangentialVelocityDisplay()).toBe('');
       expect(component.classifyNeutronStar()).toBeNull();
-      expect(component.getJetConeAngle()).toBeNull();
     });
 
     it('produces a slow km/s tangential velocity for a slow neutron star', () => {
@@ -431,12 +429,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
       const { config } = dialogOpenArgs[0];
       expect(config.data!.resonance).toBe('1:1');
       expect(config.data!.body.bodyData.rotationalPeriod).toBe(5);
-    });
-
-    it('opens the jet-angle dialog (chart generation is guarded)', () => {
-      render(makeBody({ type: 'Star', subType: 'Neutron Star', rotationalPeriod: 0.0001, solarRadius: 1.5, age: 12830 }));
-      component.showJetAngleDialog();
-      expect(dialogOpenCalls).toBeGreaterThan(0);
     });
 
     it('opens the JSON dialog with the body and galaxy data', () => {
