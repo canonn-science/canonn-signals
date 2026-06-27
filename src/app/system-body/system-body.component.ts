@@ -10,7 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
-import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
+import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, SPEED_OF_LIGHT } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
@@ -1064,9 +1064,8 @@ export class SystemBodyComponent implements OnChanges {
     const velocityKms = this.getTangentialVelocity();
     if (velocityKms === null) return '';
 
-    const speedOfLight = 299792458; // m/s
     const velocityMs = velocityKms * 1000;
-    const fractionOfC = velocityMs / speedOfLight;
+    const fractionOfC = velocityMs / SPEED_OF_LIGHT;
 
     if (fractionOfC >= 0.01) {
       return `${fractionOfC.toFixed(3)}c`;
@@ -1115,8 +1114,7 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   private formatVelocityKms(velocityKms: number): string {
-    const speedOfLight = 299792.458; // km/s
-    const fractionOfC = velocityKms / speedOfLight;
+    const fractionOfC = velocityKms / (SPEED_OF_LIGHT / 1000);
     if (fractionOfC >= 0.01) {
       return `${fractionOfC.toFixed(3)}c`;
     }

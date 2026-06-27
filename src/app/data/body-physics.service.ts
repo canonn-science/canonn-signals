@@ -12,7 +12,7 @@ const EARTH_MASSES_PER_SOLAR_MASS = 332950;
 
 /** Newtonian gravitational constant (m³ kg⁻¹ s⁻²) and speed of light (m/s). */
 export const GRAVITATIONAL_CONSTANT = 6.6743e-11;
-const SPEED_OF_LIGHT = 299792458;
+export const SPEED_OF_LIGHT = 299792458;
 
 /**
  * Degenerate-matter stability limits (solar masses). The Chandrasekhar limit caps a
@@ -290,6 +290,7 @@ export class BodyPhysicsService {
    */
   ringDynamics(body: SystemBody): RingDynamics | null {
     const bd = body.bodyData;
+    if (bd.type !== BODY_TYPE.Ring && bd.type !== BODY_TYPE.Belt) { return null; }
     const outer = bd.outerRadius ?? 0;
     const inner = bd.innerRadius ?? 0;
     if (outer <= 0 || !body.parent) { return null; }
