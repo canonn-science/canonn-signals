@@ -218,7 +218,7 @@ describe('BodyPhysicsService', () => {
 
       // Independent reference values calculated outside this test from:
       // G = 6.6743e-11 m^3/(kg·s^2), M = 5.972e24 kg, nominal radius = 3000 km
-      // (from 3/8 of an 8000 km ring width), then Kepler's Third Law.
+      // (measured from the inner edge: 0 + (8000 - 0) * 3/8), then Kepler's Third Law.
       // period ≈ 0.0189272 days, vmax ≈ 30.738 km/s
       expect(result.orbitalPeriodDays).toBeCloseTo(0.0189272, 7);
       expect(result.maxVelocityKms).toBeCloseTo(30.738, 3);
