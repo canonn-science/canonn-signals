@@ -1143,7 +1143,7 @@ export class SystemBodyComponent implements OnChanges {
 
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
     const bd = body.bodyData;
-    if ((bd.type !== BODY_TYPE.Ring && bd.type !== BODY_TYPE.Belt) || !body.parent) {
+    if (bd.type !== BODY_TYPE.Ring || !body.parent) {
       return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
     }
     const siblings = body.parent.subBodies
