@@ -49,16 +49,25 @@ function labelOf(body: HistogramBodyInput): string {
 
 /**
  * Builds a "histogram of bodies": a count of each body sub-type in a system, grouped by
- * kind so stars and planets read as distinct bands. Synthetic barycentres (which are not
- * real bodies but orbital reference points) are excluded so the totals match what a CMDR
- * would scan in-game. The raw API body list already omits belts/rings, so passing
- * `system.bodies` yields one bar per stellar/planetary sub-type.
+ * kind so stars and planets read as distinct bands. Belts, rings and synthetic barycentres
+ * are excluded (the same way the system-completeness count excludes them) so the totals
+ * match what a CMDR would scan in-game. Passing `system.bodies` yields one bar per
+ * stellar/planetary sub-type.
  */
 export function buildBodyHistogram(bodies: readonly HistogramBodyInput[]): BodyHistogram {
   const byLabel = new Map<string, HistogramBar>();
 
   for (const body of bodies) {
-    if (body.type === BODY_TYPE.Barycentre) continue;
+    // Skip non-bodies the same way the system-completeness count does: belts, rings,
+    // and synthetic barycentres are orbital features/reference points, not scannable
+    // bodies, so the histogram total stays consistent with "N bodies known".
+    if (
+      body.type === BODY_TYPE.Belt ||
+      body.type === BODY_TYPE.Ring ||
+      body.type === BODY_TYPE.Barycentre
+    ) {
+      continue;
+    }
     const label = labelOf(body);
     const existing = byLabel.get(label);
     if (existing) {

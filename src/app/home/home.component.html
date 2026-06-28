@@ -320,11 +320,13 @@
                                       ? 'System completeness unknown (' + completeness.known + ' bodies known, total unknown)'
                                       : 'System completeness ' + completeness.percent + '% (' + completeness.known + ' of ' + completeness.total + ' bodies known)'">
       <div class="system-completeness-header">
-        <span class="system-completeness-label">System Completeness</span>
-        <button type="button" class="histogram-button" (click)="showBodyHistogram()"
-          title="Show a histogram of body types in this system" aria-label="Show histogram of body types">
-          <fa-icon [icon]="faChartColumn" aria-hidden="true"></fa-icon>
-        </button>
+        <span class="system-completeness-label-group">
+          <span class="system-completeness-label">System Completeness</span>
+          <button type="button" class="histogram-button" (click)="showBodyHistogram()"
+            title="Show a histogram of body types in this system" aria-label="Show histogram of body types">
+            <fa-icon [icon]="faChartColumn" aria-hidden="true"></fa-icon>
+          </button>
+        </span>
         <span class="system-completeness-count">{{ completeness.known }} / {{ completeness.total ?? '?' }} bodies</span>
         <span class="system-completeness-value">{{ completeness.percent === null ? '?' : completeness.percent }}%</span>
       </div>

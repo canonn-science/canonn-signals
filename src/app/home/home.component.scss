@@ -68,10 +68,18 @@
     opacity: 0.85;
 }
 
-/* Opens the body-type histogram; sits just right of the label, before the counts. */
+/* Label + histogram button form the left group, so the count stays centered
+   under the header's `space-between` distribution. */
+.system-completeness-label-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Opens the body-type histogram; sits just right of the label. */
 .histogram-button {
-    margin-right: auto;
-    margin-left: 8px;
+    display: inline-flex;
+    align-items: center;
     padding: 2px 6px;
     background: transparent;
     border: none;

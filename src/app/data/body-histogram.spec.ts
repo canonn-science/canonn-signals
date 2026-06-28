@@ -38,9 +38,11 @@ describe('buildBodyHistogram', () => {
     expect(result.bars[result.bars.length - 1].kind).toBe('Other');
   });
 
-  it('excludes synthetic barycentres', () => {
+  it('excludes synthetic barycentres, belts and rings (matching the completeness count)', () => {
     const result = buildBodyHistogram([
       { type: 'Barycentre', subType: '' },
+      { type: 'Belt', subType: 'Metal Rich' },
+      { type: 'Ring', subType: 'Rocky' },
       { type: 'Star', subType: 'G Star' },
     ]);
 

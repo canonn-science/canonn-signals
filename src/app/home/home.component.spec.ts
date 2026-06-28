@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 
 import { HomeComponent } from './home.component';
 import { AppService } from '../app.service';
@@ -243,6 +244,32 @@ describe('HomeComponent', () => {
     it('returns an empty string for a missing date', () => {
       expect(component.formatUpdated('')).toBe('');
       expect(component.formatUpdated(null)).toBe('');
+    });
+  });
+
+  describe('showBodyHistogram', () => {
+    it('does nothing when no system is loaded', () => {
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open');
+      component.data.set(null);
+
+      component.showBodyHistogram();
+
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('opens the histogram dialog with the system name and bodies', () => {
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open').mockReturnValue({} as never);
+      const bodies = [{ type: 'Star', subType: 'M Star' }];
+      component.data.set({ system: { name: 'Sol', bodies } } as never);
+
+      component.showBodyHistogram();
+
+      expect(open).toHaveBeenCalledTimes(1);
+      const [, config] = open.mock.calls[0];
+      expect(config?.data).toEqual({ systemName: 'Sol', bodies });
+      expect(config?.autoFocus).toBe('first-heading');
     });
   });
 });

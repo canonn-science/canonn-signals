@@ -1,4 +1,5 @@
 <app-dialog-shell [heading]="title">
+  <div class="histogram-dialog">
   @let chart = histogram();
   @if (chart.bars.length) {
     <div class="histogram" role="img"
@@ -18,4 +19,5 @@
   } @else {
     <p class="histogram-empty">No bodies to chart for this system.</p>
   }
+  </div>
 </app-dialog-shell>

@@ -390,6 +390,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       maxWidth: '95vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
+      autoFocus: 'first-heading',
       data: { systemName: data.system.name, bodies: data.system.bodies },
     });
   }
