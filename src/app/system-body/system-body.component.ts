@@ -32,10 +32,17 @@ import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 import { ConvertIconComponent } from '../dialogs/unit-conversion-dialog/convert-icon.component';
 import {
+  dynamicAreaUnitLabel,
+  dynamicDistanceUnitLabel,
+  dynamicLengthUnitLabel,
+  dynamicMassUnitLabel,
   formatDynamicArea,
   formatDynamicDistanceLs,
   formatDynamicLength,
   formatDynamicMass,
+  formatLengthInUnit,
+  InlineLengthUnit,
+  pickInlineLengthUnit,
   KM_PER_AU,
   KM_PER_LIGHT_SECOND,
   KM_PER_SOLAR_RADIUS,
@@ -671,6 +678,53 @@ export class SystemBodyComponent implements OnChanges {
   public formatDistanceLs(ls: number): string { return formatDynamicDistanceLs(ls); }
   public formatMass(kg: number): string { return formatDynamicMass(kg); }
   public formatArea(km2: number): string { return formatDynamicArea(km2); }
+
+  // --- Conversion-dialog "shown in UI" unit labels (which dialog row to accent). ---
+  public lengthUnitLabel(km: number | null | undefined): string {
+    return km == null ? '' : dynamicLengthUnitLabel(km);
+  }
+  public distanceUnitLabel(km: number | null | undefined): string {
+    return km == null ? '' : dynamicDistanceUnitLabel(km);
+  }
+  public massUnitLabel(kg: number | null | undefined): string {
+    return kg == null ? '' : dynamicMassUnitLabel(kg);
+  }
+  public areaUnitLabel(km2: number | null | undefined): string {
+    return km2 == null ? '' : dynamicAreaUnitLabel(km2);
+  }
+  /** Dialog-row label for the inline duration unit chosen by {@link formatPeriodDays}. */
+  public durationUnitLabel(days: number | null | undefined): string {
+    if (days == null || !Number.isFinite(days)) { return ''; }
+    return this.periodParts(days).label;
+  }
+  /** Dialog-row label for the inline velocity unit chosen by {@link formatVelocityKms}. */
+  public velocityUnitLabel(kms: number | null | undefined): string {
+    if (kms == null || !Number.isFinite(kms)) { return ''; }
+    return this.isRelativistic(kms) ? 'c (fraction of light)' : 'km/s';
+  }
+  /** Native (journal/API) mass unit for this body, by which field carries it. */
+  public massSourceUnit(): string {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) { return 'Solar Masses'; }
+    if (bd.earthMasses != null) { return 'Earth Masses'; }
+    if (bd.mass != null) { return 'Megatonnes'; }
+    return '';
+  }
+
+  // --- Shared orbit-distance unit: semi-major axis, apoapsis and periapsis (#5). ---
+  /**
+   * One length unit shared by the semi-major-axis/apoapsis/periapsis trio, chosen from the
+   * semi-major axis (the orbit's representative scale; apoapsis ≤ 2a and periapsis ≥ 0 stay
+   * the same order of magnitude). Falls back to apoapsis then periapsis when absent.
+   */
+  public orbitDistanceUnit(): InlineLengthUnit {
+    const rep = this.getSemiMajorAxisKm() ?? (this.getApoapsis() || this.getPeriapsis() || 0);
+    return pickInlineLengthUnit(rep);
+  }
+  public formatOrbitDistance(km: number | null | undefined): string {
+    return km == null ? '' : formatLengthInUnit(km, this.orbitDistanceUnit());
+  }
+  public orbitDistanceUnitLabel(): string { return this.orbitDistanceUnit().label; }
 
   /** This body's mass in kilograms from whichever source field it carries, or null. */
   public getMassKg(): number | null {
@@ -1420,34 +1474,45 @@ export class SystemBodyComponent implements OnChanges {
     }
   }
 
+  /** True when a velocity is fast enough to read as a fraction of c rather than km/s. */
+  private isRelativistic(velocityKms: number): boolean {
+    return velocityKms / (SPEED_OF_LIGHT / 1000) >= 0.01;
+  }
+
   private formatVelocityKms(velocityKms: number): string {
-    const fractionOfC = velocityKms / (SPEED_OF_LIGHT / 1000);
-    if (fractionOfC >= 0.01) {
-      return `${fractionOfC.toFixed(3)}c`;
+    if (this.isRelativistic(velocityKms)) {
+      return `${(velocityKms / (SPEED_OF_LIGHT / 1000)).toFixed(3)}c`;
     }
     return `${velocityKms.toFixed(3)} km/s`;
   }
 
-  private formatPeriodDays(days: number): string {
+  /**
+   * The unit a period reads in at this magnitude: numeric value, inline abbreviation, and
+   * the matching conversion-dialog row label ('' for ms/s/decades/centuries, which have no
+   * dialog row). Single source for both {@link formatPeriodDays} and {@link durationUnitLabel}.
+   */
+  private periodParts(days: number): { value: number; unit: string; label: string } {
     const absDays = Math.abs(days);
     const seconds = absDays * 86400;
     const minutes = seconds / 60;
     const hours = minutes / 60;
     const weeks = absDays / 7;
     const years = absDays / 365.25;
-    const decades = years / 10;
-    const centuries = years / 100;
-    const sign = days < 0 ? '-' : '';
 
-    if (seconds < 1) return `${sign}${(seconds * 1000).toFixed(2)} ms`;
-    if (seconds < 60) return `${sign}${seconds.toFixed(2)} s`;
-    if (minutes < 60) return `${sign}${minutes.toFixed(2)} min`;
-    if (hours < 24) return `${sign}${hours.toFixed(2)} h`;
-    if (absDays < 7) return `${sign}${absDays.toFixed(2)} days`;
-    if (weeks < 52) return `${sign}${weeks.toFixed(2)} weeks`;
-    if (years < 10) return `${sign}${years.toFixed(2)} years`;
-    if (decades < 10) return `${sign}${decades.toFixed(2)} decades`;
-    return `${sign}${centuries.toFixed(2)} centuries`;
+    if (seconds < 1) return { value: seconds * 1000, unit: 'ms', label: '' };
+    if (seconds < 60) return { value: seconds, unit: 's', label: '' };
+    if (minutes < 60) return { value: minutes, unit: 'min', label: 'Minutes' };
+    if (hours < 24) return { value: hours, unit: 'h', label: 'Hours' };
+    if (absDays < 7) return { value: absDays, unit: 'days', label: 'Days' };
+    if (weeks < 52) return { value: weeks, unit: 'weeks', label: 'Weeks' };
+    if (years < 10) return { value: years, unit: 'years', label: 'Years' };
+    if (years / 10 < 10) return { value: years / 10, unit: 'decades', label: '' };
+    return { value: years / 100, unit: 'centuries', label: '' };
+  }
+
+  private formatPeriodDays(days: number): string {
+    const { value, unit } = this.periodParts(days);
+    return `${days < 0 ? '-' : ''}${value.toFixed(2)} ${unit}`;
   }
 
   public getRotationalPeriodDisplay(): string {

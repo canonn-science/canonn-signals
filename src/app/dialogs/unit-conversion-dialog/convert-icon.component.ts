@@ -33,6 +33,10 @@ export class ConvertIconComponent {
   readonly value = input.required<number | null | undefined>();
   /** Dialog heading / what the value represents. */
   readonly label = input.required<string>();
+  /** Conversion-row label for the unit shown inline in the UI; that row is accented in the dialog. */
+  readonly uiUnit = input<string | null | undefined>();
+  /** Conversion-row label for the unit the value natively arrives in (journal/API); badged in the dialog. */
+  readonly sourceUnit = input<string | null | undefined>();
 
   protected open(event: Event): void {
     event.stopPropagation();
@@ -42,7 +46,13 @@ export class ConvertIconComponent {
       width: '600px',
       maxWidth: '95vw',
       autoFocus: 'first-heading',
-      data: { title: this.label(), kind: this.kind(), baseValue },
+      data: {
+        title: this.label(),
+        kind: this.kind(),
+        baseValue,
+        uiUnit: this.uiUnit() ?? null,
+        sourceUnit: this.sourceUnit() ?? null,
+      },
     });
   }
 }

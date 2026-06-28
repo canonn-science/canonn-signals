@@ -10,8 +10,13 @@
       </thead>
       <tbody>
         @for (row of rows; track row.unit; let i = $index) {
-          <tr>
-            <th scope="row">{{ row.unit }}</th>
+          <tr [class.ui-unit]="row.unit === uiUnit">
+            <th scope="row">
+              {{ row.unit }}
+              @if (row.unit === sourceUnit) {
+                <span class="unit-tag source" matTooltip="The unit this value arrives in from the journal / API">from journal</span>
+              }
+            </th>
             <td class="value clickable"
                 matTooltip="Click to copy"
                 [attr.aria-label]="'Copy value in ' + row.unit"

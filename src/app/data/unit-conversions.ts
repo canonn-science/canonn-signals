@@ -164,12 +164,49 @@ function fixed2(value: number): string {
  */
 export function formatDynamicLength(km: number): string {
   if (!Number.isFinite(km)) { return '—'; }
+  return formatLengthInUnit(km, pickInlineLengthUnit(km));
+}
+
+/** An inline length unit: abbreviation shown inline, matching dialog-row label, and km multiplier. */
+export interface InlineLengthUnit {
+  /** Inline abbreviation (e.g. "km", "ls"). */
+  unit: string;
+  /** Matching conversion-dialog row label (e.g. "Light seconds"). */
+  label: string;
+  /** Multiplier turning a km value into this unit. */
+  perKm: number;
+}
+
+/**
+ * Picks the inline length unit (m / km / ls / ly) suiting a representative magnitude, using
+ * the same thresholds as {@link formatDynamicLength}. AU is intentionally skipped inline.
+ * Exposed so a group of related lengths (e.g. semi-major axis, apoapsis, periapsis) can be
+ * shown in one shared unit chosen from the group's representative value.
+ */
+export function pickInlineLengthUnit(km: number): InlineLengthUnit {
   const abs = Math.abs(km);
-  if (abs === 0) { return '0.00 km'; }
-  if (abs < 1) { return `${fixed2(km * M_PER_KM)} m`; }
-  if (abs < 1e6) { return `${fixed2(km)} km`; }
-  if (abs < 0.1 * KM_PER_LIGHT_YEAR) { return `${fixed2(km / KM_PER_LIGHT_SECOND)} ls`; }
-  return `${fixed2(km / KM_PER_LIGHT_YEAR)} ly`;
+  if (!Number.isFinite(km) || abs === 0) { return { unit: 'km', label: 'km', perKm: 1 }; }
+  if (abs < 1) { return { unit: 'm', label: 'm', perKm: M_PER_KM }; }
+  if (abs < 1e6) { return { unit: 'km', label: 'km', perKm: 1 }; }
+  if (abs < 0.1 * KM_PER_LIGHT_YEAR) { return { unit: 'ls', label: 'Light seconds', perKm: 1 / KM_PER_LIGHT_SECOND }; }
+  return { unit: 'ly', label: 'Light Years', perKm: 1 / KM_PER_LIGHT_YEAR };
+}
+
+/** Formats a km value in a pre-chosen length unit (for a group sharing one unit). */
+export function formatLengthInUnit(km: number, choice: InlineLengthUnit): string {
+  if (!Number.isFinite(km)) { return '—'; }
+  return `${fixed2(km * choice.perKm)} ${choice.unit}`;
+}
+
+/** Dialog-row label for the inline length unit chosen at this magnitude. */
+export function dynamicLengthUnitLabel(km: number): string {
+  return Number.isFinite(km) ? pickInlineLengthUnit(km).label : '';
+}
+
+/** Dialog-row label for the inline distance-to-arrival unit chosen at this magnitude (km base). */
+export function dynamicDistanceUnitLabel(km: number): string {
+  if (!Number.isFinite(km)) { return ''; }
+  return Math.abs(km) < 0.1 * KM_PER_LIGHT_YEAR ? 'Light seconds' : 'Light Years';
 }
 
 /**
@@ -183,21 +220,50 @@ export function formatDynamicDistanceLs(ls: number): string {
   return `${fixed2((ls * KM_PER_LIGHT_SECOND) / KM_PER_LIGHT_YEAR)} ly`;
 }
 
+/** Inline mass unit: abbreviation shown inline, matching dialog-row label, and kg multiplier. */
+interface InlineMassUnit { unit: string; label: string; perKg: number; }
+
 /**
- * Inline mass display (kg base), choosing Megatonnes / Earth masses / Solar masses by
- * magnitude so a small ring reads in Earth masses rather than a huge Mt count.
+ * Picks the inline mass unit (Mt / Earth masses / Solar masses) by magnitude, so a small
+ * ring reads in Earth masses rather than a huge Mt count. Single source for both the inline
+ * display ({@link formatDynamicMass}) and the dialog accent label ({@link dynamicMassUnitLabel}).
  */
-export function formatDynamicMass(kg: number): string {
-  if (!Number.isFinite(kg)) { return '—'; }
+function pickInlineMassUnit(kg: number): InlineMassUnit {
   const abs = Math.abs(kg);
-  if (abs < 1e-3 * KG_PER_EARTH_MASS) { return `${fixed2(kg / KG_PER_MEGATONNE)} Mt`; }
-  if (abs < 0.1 * KG_PER_SOLAR_MASS) { return `${fixed2(kg / KG_PER_EARTH_MASS)} Earth masses`; }
-  return `${fixed2(kg / KG_PER_SOLAR_MASS)} Solar masses`;
+  if (abs < 1e-3 * KG_PER_EARTH_MASS) { return { unit: 'Mt', label: 'Megatonnes', perKg: 1 / KG_PER_MEGATONNE }; }
+  if (abs < 0.1 * KG_PER_SOLAR_MASS) { return { unit: 'Earth masses', label: 'Earth Masses', perKg: 1 / KG_PER_EARTH_MASS }; }
+  return { unit: 'Solar masses', label: 'Solar Masses', perKg: 1 / KG_PER_SOLAR_MASS };
 }
 
-/** Inline area display (km² base), choosing km² / ls² by magnitude. */
+/** Inline mass display (kg base). */
+export function formatDynamicMass(kg: number): string {
+  if (!Number.isFinite(kg)) { return '—'; }
+  const u = pickInlineMassUnit(kg);
+  return `${fixed2(kg * u.perKg)} ${u.unit}`;
+}
+
+/** Dialog-row label for the inline mass unit chosen at this magnitude. */
+export function dynamicMassUnitLabel(kg: number): string {
+  return Number.isFinite(kg) ? pickInlineMassUnit(kg).label : '';
+}
+
+/** Inline area unit: abbreviation shown inline, matching dialog-row label, and km² multiplier. */
+interface InlineAreaUnit { unit: string; label: string; perKm2: number; }
+
+/** Picks the inline area unit (km² / ls²) by magnitude. Single source for display and label. */
+function pickInlineAreaUnit(km2: number): InlineAreaUnit {
+  if (Math.abs(km2) < KM2_PER_LS2) { return { unit: 'km²', label: 'km²', perKm2: 1 }; }
+  return { unit: 'ls²', label: 'Ls²', perKm2: 1 / KM2_PER_LS2 };
+}
+
+/** Inline area display (km² base). */
 export function formatDynamicArea(km2: number): string {
   if (!Number.isFinite(km2)) { return '—'; }
-  if (Math.abs(km2) < KM2_PER_LS2) { return `${fixed2(km2)} km²`; }
-  return `${fixed2(km2 / KM2_PER_LS2)} ls²`;
+  const u = pickInlineAreaUnit(km2);
+  return `${fixed2(km2 * u.perKm2)} ${u.unit}`;
+}
+
+/** Dialog-row label for the inline area unit chosen at this magnitude. */
+export function dynamicAreaUnitLabel(km2: number): string {
+  return Number.isFinite(km2) ? pickInlineAreaUnit(km2).label : '';
 }

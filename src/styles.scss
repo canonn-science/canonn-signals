@@ -211,8 +211,13 @@ hr {
   cursor: pointer;
 }
 
-/* Small "⇄" affordance after an attribute value that opens its unit-conversion dialog. */
+/* Small "⇄" affordance after an attribute value that opens its unit-conversion dialog.
+   A fixed-width box so the icons line up in a column and values without one can reserve
+   the exact same gutter (see .body-data-entry gutter rule in system-body.component.scss). */
 .convert-icon {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
   margin-left: 6px;
   font-size: 0.8em;
   vertical-align: middle;

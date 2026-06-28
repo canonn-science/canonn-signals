@@ -1,10 +1,16 @@
 import {
   buildConversions,
   buildMassComparisons,
+  dynamicAreaUnitLabel,
+  dynamicDistanceUnitLabel,
+  dynamicLengthUnitLabel,
+  dynamicMassUnitLabel,
   formatDynamicArea,
   formatDynamicDistanceLs,
   formatDynamicLength,
   formatDynamicMass,
+  formatLengthInUnit,
+  pickInlineLengthUnit,
   KM_PER_AU,
   KM_PER_LIGHT_SECOND,
   KM_PER_LIGHT_YEAR,
@@ -132,5 +138,54 @@ describe('dynamic inline formatters', () => {
   it('formats area across the km² / ls² ladder', () => {
     expect(formatDynamicArea(1000)).toBe('1,000.00 km²');
     expect(formatDynamicArea(2 * KM_PER_LIGHT_SECOND * KM_PER_LIGHT_SECOND)).toBe('2.00 ls²');
+  });
+});
+
+describe('inline unit dialog-row labels', () => {
+  it('labels length by magnitude, matching the conversion-row names', () => {
+    expect(dynamicLengthUnitLabel(0)).toBe('km');
+    expect(dynamicLengthUnitLabel(0.5)).toBe('m');
+    expect(dynamicLengthUnitLabel(5000)).toBe('km');
+    expect(dynamicLengthUnitLabel(2e6)).toBe('Light seconds');
+    expect(dynamicLengthUnitLabel(2 * KM_PER_LIGHT_YEAR)).toBe('Light Years');
+    expect(dynamicLengthUnitLabel(NaN)).toBe('');
+  });
+
+  it('labels distance-to-arrival in light seconds until Hutton-scale spans', () => {
+    expect(dynamicDistanceUnitLabel(2e6)).toBe('Light seconds');
+    expect(dynamicDistanceUnitLabel(2 * KM_PER_LIGHT_YEAR)).toBe('Light Years');
+    expect(dynamicDistanceUnitLabel(NaN)).toBe('');
+  });
+
+  it('labels mass across the Mt / Earth / Solar ladder', () => {
+    expect(dynamicMassUnitLabel(1e-5 * KG_PER_EARTH_MASS)).toBe('Megatonnes');
+    expect(dynamicMassUnitLabel(0.67 * KG_PER_EARTH_MASS)).toBe('Earth Masses');
+    expect(dynamicMassUnitLabel(5.25 * KG_PER_SOLAR_MASS)).toBe('Solar Masses');
+    expect(dynamicMassUnitLabel(NaN)).toBe('');
+  });
+
+  it('labels area across the km² / ls² ladder', () => {
+    expect(dynamicAreaUnitLabel(1000)).toBe('km²');
+    expect(dynamicAreaUnitLabel(2 * KM_PER_LIGHT_SECOND * KM_PER_LIGHT_SECOND)).toBe('Ls²');
+    expect(dynamicAreaUnitLabel(NaN)).toBe('');
+  });
+});
+
+describe('shared length unit (semi-major / apoapsis / periapsis group)', () => {
+  it('picks one unit from a representative value and formats every member in it', () => {
+    // Semi-major axis ~2e6 km lands in light-seconds; apoapsis and periapsis follow suit.
+    const choice = pickInlineLengthUnit(2e6);
+    expect(choice.unit).toBe('ls');
+    expect(choice.label).toBe('Light seconds');
+    expect(formatLengthInUnit(2e6, choice)).toBe(formatDynamicLength(2e6));
+    // A smaller member of the same group still renders in the shared (ls) unit, not km.
+    expect(formatLengthInUnit(1.5e6, choice)).toMatch(/ ls$/);
+    expect(formatLengthInUnit(NaN, choice)).toBe('—');
+  });
+
+  it('matches formatDynamicLength when each value picks its own unit', () => {
+    for (const km of [0.5, 5000, 2e6, 2 * KM_PER_LIGHT_YEAR]) {
+      expect(formatLengthInUnit(km, pickInlineLengthUnit(km))).toBe(formatDynamicLength(km));
+    }
   });
 });

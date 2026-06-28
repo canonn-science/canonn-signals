@@ -23,6 +23,45 @@
     font-weight: 600
 }
 
+/* The values are right-aligned, so right-align their column header to match. */
+.unit-conversion-dialog .conversion-table thead th:last-child {
+    text-align: right
+}
+
+/* Row whose unit is the one shown inline in the UI. */
+.unit-conversion-dialog .conversion-table tbody tr.ui-unit {
+    background: var(--color-surface-3)
+}
+
+.unit-conversion-dialog .conversion-table tbody tr.ui-unit > th[scope="row"] {
+    box-shadow: inset 3px 0 0 0 var(--color-accent)
+}
+
+/* Small chips marking the UI / source units on a unit row. */
+.unit-conversion-dialog .conversion-table .unit-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.72em;
+    font-weight: 600;
+    line-height: 1.4;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.03em
+}
+
+.unit-conversion-dialog .conversion-table .unit-tag.ui {
+    background: var(--color-accent);
+    color: var(--color-black)
+}
+
+.unit-conversion-dialog .conversion-table .unit-tag.source {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-surface-5)
+}
+
 .unit-conversion-dialog .conversion-table tbody th {
     white-space: nowrap;
     font-weight: 600

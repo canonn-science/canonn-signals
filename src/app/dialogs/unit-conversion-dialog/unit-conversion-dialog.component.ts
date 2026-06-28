@@ -19,6 +19,10 @@ export interface UnitConversionDialogData {
   kind: QuantityKind;
   /** The value, already expressed in the kind's base unit. */
   baseValue: number;
+  /** Conversion-row label for the unit shown inline in the UI (accented), or null. */
+  uiUnit?: string | null;
+  /** Conversion-row label for the unit the value natively arrives in (badged), or null. */
+  sourceUnit?: string | null;
 }
 
 /**
@@ -39,6 +43,10 @@ export class UnitConversionDialogComponent {
 
   protected readonly title = this.data.title;
   protected readonly rows: ConversionRow[] = buildConversions(this.data.kind, this.data.baseValue);
+  /** Conversion-row label shown inline in the UI (accented row), if any. */
+  protected readonly uiUnit = this.data.uiUnit ?? null;
+  /** Conversion-row label the value natively arrives in (source badge), if any. */
+  protected readonly sourceUnit = this.data.sourceUnit ?? null;
   protected readonly comparisons: MassComparison[] =
     this.data.kind === 'mass' ? buildMassComparisons(this.data.baseValue) : [];
 

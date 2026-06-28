@@ -19,10 +19,18 @@ describe('ConvertIconComponent', () => {
     fixture = TestBed.createComponent(ConvertIconComponent);
   });
 
-  function render(kind: string, value: number | null | undefined, label: string): ConvertIconComponent {
+  function render(
+    kind: string,
+    value: number | null | undefined,
+    label: string,
+    uiUnit?: string,
+    sourceUnit?: string,
+  ): ConvertIconComponent {
     fixture.componentRef.setInput('kind', kind);
     fixture.componentRef.setInput('value', value);
     fixture.componentRef.setInput('label', label);
+    if (uiUnit !== undefined) { fixture.componentRef.setInput('uiUnit', uiUnit); }
+    if (sourceUnit !== undefined) { fixture.componentRef.setInput('sourceUnit', sourceUnit); }
     fixture.detectChanges();
     return fixture.componentInstance;
   }
@@ -36,7 +44,18 @@ describe('ConvertIconComponent', () => {
     expect(stop).toHaveBeenCalled();
     expect(opened).toHaveLength(1);
     expect(opened[0].component).toBe(UnitConversionDialogComponent);
-    expect(opened[0].config.data).toEqual({ title: 'Radius', kind: 'length', baseValue: 6371 });
+    expect(opened[0].config.data).toEqual({
+      title: 'Radius', kind: 'length', baseValue: 6371, uiUnit: null, sourceUnit: null,
+    });
+  });
+
+  it('passes the UI and source unit labels through to the dialog', () => {
+    render('mass', 2.88e30, 'Mass', 'Solar Masses', 'Earth Masses');
+    fixture.nativeElement.querySelector('fa-icon').dispatchEvent(new MouseEvent('click'));
+
+    expect(opened[0].config.data).toEqual({
+      title: 'Mass', kind: 'mass', baseValue: 2.88e30, uiUnit: 'Solar Masses', sourceUnit: 'Earth Masses',
+    });
   });
 
   it('does not open for a missing or non-finite value', () => {

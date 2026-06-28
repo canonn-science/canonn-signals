@@ -198,7 +198,7 @@
                 Orbital period
               </div>
               <div [matTooltip]="body().bodyData.orbitalPeriod + ' days'">
-                {{ getOrbitalPeriodDisplay() }}<app-convert-icon [kind]="'duration'" [value]="body().bodyData.orbitalPeriod" label="Orbital period" />
+                {{ getOrbitalPeriodDisplay() }}<app-convert-icon [kind]="'duration'" [value]="body().bodyData.orbitalPeriod" label="Orbital period" [uiUnit]="durationUnitLabel(body().bodyData.orbitalPeriod)" sourceUnit="Days" />
               </div>
             </div>
             }
@@ -208,7 +208,7 @@
                 Semi-major axis
               </div>
               <div [matTooltip]="body().bodyData.semiMajorAxis + ' au'">
-                {{ (body().bodyData.semiMajorAxis! * 149597870.7) | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="getSemiMajorAxisKm()" label="Semi-major axis" />
+                {{ formatOrbitDistance(getSemiMajorAxisKm()) }}<app-convert-icon [kind]="'length'" [value]="getSemiMajorAxisKm()" label="Semi-major axis" [uiUnit]="orbitDistanceUnitLabel()" sourceUnit="AU" />
               </div>
             </div>
             }
@@ -230,7 +230,7 @@
                 Apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="getApoapsis() + ' km'">
-                {{ getApoapsis() | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="getApoapsis()" label="Apoapsis" />
+                {{ formatOrbitDistance(getApoapsis()) }}<app-convert-icon [kind]="'length'" [value]="getApoapsis()" label="Apoapsis" [uiUnit]="orbitDistanceUnitLabel()" />
               </div>
             </div>
             }
@@ -251,7 +251,7 @@
                 Periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
               <div [matTooltip]="getPeriapsis() + ' km'">
-                {{ getPeriapsis() | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="getPeriapsis()" label="Periapsis" />
+                {{ formatOrbitDistance(getPeriapsis()) }}<app-convert-icon [kind]="'length'" [value]="getPeriapsis()" label="Periapsis" [uiUnit]="orbitDistanceUnitLabel()" />
               </div>
             </div>
             }
@@ -303,7 +303,7 @@
                 Tangential velocity
               </div>
               <div [matTooltip]="getTangentialVelocityTooltip()">
-                {{ getTangentialVelocityDisplay() }}<app-convert-icon [kind]="'velocity'" [value]="getTangentialVelocity()" label="Tangential velocity" />
+                {{ getTangentialVelocityDisplay() }}<app-convert-icon [kind]="'velocity'" [value]="getTangentialVelocity()" label="Tangential velocity" [uiUnit]="velocityUnitLabel(getTangentialVelocity())" />
               </div>
             </div>
             }
@@ -321,7 +321,7 @@
               </div>
               <div
                    [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">
-                {{ formatLength(rocheLimits.rigid) }}<app-convert-icon [kind]="'length'" [value]="rocheLimits.rigid" label="Roche limit (rigid)" />
+                {{ formatLength(rocheLimits.rigid) }}<app-convert-icon [kind]="'length'" [value]="rocheLimits.rigid" label="Roche limit (rigid)" [uiUnit]="lengthUnitLabel(rocheLimits.rigid)" />
                 @if (rocheLimits.periapsis < rocheLimits.rigid)
                   {
                   <span
@@ -339,7 +339,7 @@
               </div>
               <div
                    [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">
-                {{ formatLength(rocheLimits.fluid) }}<app-convert-icon [kind]="'length'" [value]="rocheLimits.fluid" label="Roche limit (fluid)" />
+                {{ formatLength(rocheLimits.fluid) }}<app-convert-icon [kind]="'length'" [value]="rocheLimits.fluid" label="Roche limit (fluid)" [uiUnit]="lengthUnitLabel(rocheLimits.fluid)" />
                 @if (rocheLimits.apoapsis < rocheLimits.fluid)
                   {
                   <span
@@ -362,7 +362,7 @@
               Hill sphere radius<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
-              {{ formatLength(hillData.hillRadius) }}<app-convert-icon [kind]="'length'" [value]="hillData.hillRadius" label="Hill sphere radius" />
+              {{ formatLength(hillData.hillRadius) }}<app-convert-icon [kind]="'length'" [value]="hillData.hillRadius" label="Hill sphere radius" [uiUnit]="lengthUnitLabel(hillData.hillRadius)" />
             </div>
           </div>
           @if (hillData.withinRings || hillData.isFirstOutside) {
@@ -395,7 +395,7 @@
               Radius
             </div>
             <div [matTooltip]="body().bodyData.radius + ' km'">
-              {{ body().bodyData.radius | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="body().bodyData.radius" label="Radius" />
+              {{ body().bodyData.radius | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="body().bodyData.radius" label="Radius" uiUnit="km" sourceUnit="km" />
             </div>
           </div>
           }
@@ -405,7 +405,7 @@
               Radius
             </div>
             <div [matTooltip]="starRadiusKm + ' km'">
-              {{ starRadiusKm | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="starRadiusKm" label="Radius" />
+              {{ starRadiusKm | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="starRadiusKm" label="Radius" uiUnit="km" />
             </div>
           </div>
           } @else if (body().bodyData.solarRadius) {
@@ -414,7 +414,7 @@
               Radius
             </div>
             <div [matTooltip]="body().bodyData.solarRadius!.toString() + ' R☉'">
-              {{ body().bodyData.solarRadius | number:'0.2-2' }} R☉<app-convert-icon [kind]="'length'" [value]="getSolarRadiusKm()" label="Radius" />
+              {{ body().bodyData.solarRadius | number:'0.2-2' }} R☉<app-convert-icon [kind]="'length'" [value]="getSolarRadiusKm()" label="Radius" uiUnit="Solar Radii" sourceUnit="Solar Radii" />
             </div>
           </div>
           }
@@ -425,7 +425,7 @@
             </div>
             <div [matTooltip]="'Event-horizon radius r_s = 2GM/c² = ' + (schwarzschildRadius | number:'0.2-4') + ' km'"
                  matTooltipClass="multiline-tooltip">
-              {{ schwarzschildRadius | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="schwarzschildRadius" label="Schwarzschild radius" />
+              {{ schwarzschildRadius | number:'0.2-2' }} km<app-convert-icon [kind]="'length'" [value]="schwarzschildRadius" label="Schwarzschild radius" uiUnit="km" />
             </div>
           </div>
           }
@@ -435,7 +435,7 @@
               Mass
             </div>
             <div>
-              <span [matTooltip]="getMassTooltip()">{{ formatMass(massKg) }}</span><app-convert-icon [kind]="'mass'" [value]="massKg" label="Mass" />
+              <span [matTooltip]="getMassTooltip()">{{ formatMass(massKg) }}</span><app-convert-icon [kind]="'mass'" [value]="massKg" label="Mass" [uiUnit]="massUnitLabel(massKg)" [sourceUnit]="massSourceUnit()" />
               @if (getMassStabilityAlert(); as massAlert) {
               <span [class.status-danger]="massAlert.severity === 'danger'"
                 [class.status-warning]="massAlert.severity === 'warning'" [matTooltip]="massAlert.message"
@@ -460,7 +460,7 @@
               Density
             </div>
             <div [matTooltip]="density.tooltip">
-              {{ density.value | number:'0.2-2' }} {{ density.unit }}<app-convert-icon [kind]="'density'" [value]="density.densityKgM3" label="Density" />
+              {{ density.value | number:'0.2-2' }} {{ density.unit }}<app-convert-icon [kind]="'density'" [value]="density.densityKgM3" label="Density" [uiUnit]="density.unit" />
             </div>
           </div>
           }
@@ -508,7 +508,7 @@
               Inner radius
             </div>
             <div [matTooltip]="body().bodyData.innerRadius + ' km'">
-              {{ formatLength(body().bodyData.innerRadius!) }}<app-convert-icon [kind]="'length'" [value]="body().bodyData.innerRadius" label="Inner radius" />
+              {{ formatLength(body().bodyData.innerRadius!) }}<app-convert-icon [kind]="'length'" [value]="body().bodyData.innerRadius" label="Inner radius" [uiUnit]="lengthUnitLabel(body().bodyData.innerRadius)" sourceUnit="km" />
             </div>
           </div>
           }
@@ -518,7 +518,7 @@
               Outer radius
             </div>
             <div [matTooltip]="body().bodyData.outerRadius + ' km'">
-              {{ formatLength(body().bodyData.outerRadius!) }}<app-convert-icon [kind]="'length'" [value]="body().bodyData.outerRadius" label="Outer radius" />
+              {{ formatLength(body().bodyData.outerRadius!) }}<app-convert-icon [kind]="'length'" [value]="body().bodyData.outerRadius" label="Outer radius" [uiUnit]="lengthUnitLabel(body().bodyData.outerRadius)" sourceUnit="km" />
             </div>
           </div>
           }
@@ -528,7 +528,7 @@
               Ring width
             </div>
             <div [matTooltip]="getRingWidth() + ' km'">
-              {{ formatLength(getRingWidth()) }}<app-convert-icon [kind]="'length'" [value]="getRingWidth()" label="Ring width" />
+              {{ formatLength(getRingWidth()) }}<app-convert-icon [kind]="'length'" [value]="getRingWidth()" label="Ring width" [uiUnit]="lengthUnitLabel(getRingWidth())" />
             </div>
           </div>
           }
@@ -538,7 +538,7 @@
               Ring area
             </div>
             <div [matTooltip]="getRingArea() + ' km²'">
-              {{ formatArea(getRingArea()) }}<app-convert-icon [kind]="'area'" [value]="getRingArea()" label="Ring area" />
+              {{ formatArea(getRingArea()) }}<app-convert-icon [kind]="'area'" [value]="getRingArea()" label="Ring area" [uiUnit]="areaUnitLabel(getRingArea())" />
             </div>
           </div>
           }
@@ -565,7 +565,7 @@
               Orbital period
             </div>
             <div [matTooltip]="getRingOrbitalPeriodTooltip()">
-              {{ getRingOrbitalPeriodDisplay() }}
+              {{ getRingOrbitalPeriodDisplay() }}<app-convert-icon [kind]="'duration'" [value]="getRingOrbitalPeriod()" label="Orbital period" [uiUnit]="durationUnitLabel(getRingOrbitalPeriod())" />
             </div>
           </div>
           }
@@ -575,7 +575,7 @@
               Min velocity
             </div>
             <div [matTooltip]="getRingMinVelocityTooltip()">
-              {{ getRingMinVelocityDisplay() }}
+              {{ getRingMinVelocityDisplay() }}<app-convert-icon [kind]="'velocity'" [value]="getRingMinVelocity()" label="Min velocity" [uiUnit]="velocityUnitLabel(getRingMinVelocity())" />
             </div>
           </div>
           }
@@ -585,7 +585,7 @@
               Max velocity
             </div>
             <div [matTooltip]="getRingMaxVelocityTooltip()">
-              {{ getRingMaxVelocityDisplay() }}
+              {{ getRingMaxVelocityDisplay() }}<app-convert-icon [kind]="'velocity'" [value]="getRingMaxVelocity()" label="Max velocity" [uiUnit]="velocityUnitLabel(getRingMaxVelocity())" />
             </div>
           </div>
           }
@@ -595,7 +595,7 @@
               Distance {{ getRingNeighbourDistanceLabel() }}
             </div>
             <div [matTooltip]="getRingNeighbourDistance() + ' km'">
-              {{ getRingNeighbourDistance() | number:'0.0-0' }} km
+              {{ getRingNeighbourDistance() | number:'0.0-0' }} km<app-convert-icon [kind]="'length'" [value]="getRingNeighbourDistance()" [label]="'Distance ' + getRingNeighbourDistanceLabel()" uiUnit="km" />
             </div>
           </div>
           }
@@ -605,7 +605,7 @@
               Velocity Difference {{ getRingNeighbourDistanceLabel() }}
             </div>
             <div [matTooltip]="getRingVelocityDiffTooltip()">
-              {{ getRingVelocityDiffDisplay() }}
+              {{ getRingVelocityDiffDisplay() }}<app-convert-icon [kind]="'velocity'" [value]="getRingVelocityDiff()" [label]="'Velocity Difference ' + getRingNeighbourDistanceLabel()" [uiUnit]="velocityUnitLabel(getRingVelocityDiff())" />
             </div>
           </div>
           }
@@ -623,7 +623,7 @@
                 [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="'Rigid body Roche limit: ' + calculateRigidRocheLimit()! + ' km'">
-              {{ formatLength(calculateRigidRocheLimit()!) }}<app-convert-icon [kind]="'length'" [value]="calculateRigidRocheLimit()" label="Roche limit (rigid)" />
+              {{ formatLength(calculateRigidRocheLimit()!) }}<app-convert-icon [kind]="'length'" [value]="calculateRigidRocheLimit()" label="Roche limit (rigid)" [uiUnit]="lengthUnitLabel(calculateRigidRocheLimit())" />
             </div>
           </div>
           }
@@ -634,7 +634,7 @@
                 [icon]="faInfo"></fa-icon>
             </div>
             <div [matTooltip]="'Fluid body Roche limit: ' + calculateFluidRocheLimit()! + ' km'">
-              {{ formatLength(calculateFluidRocheLimit()!) }}<app-convert-icon [kind]="'length'" [value]="calculateFluidRocheLimit()" label="Roche limit (fluid)" />
+              {{ formatLength(calculateFluidRocheLimit()!) }}<app-convert-icon [kind]="'length'" [value]="calculateFluidRocheLimit()" label="Roche limit (fluid)" [uiUnit]="lengthUnitLabel(calculateFluidRocheLimit())" />
             </div>
           </div>
           }
@@ -674,7 +674,7 @@
             </div>
             <div [matTooltip]="cachedSurfacePressureTooltip() || ''"
                  matTooltipClass="multiline-tooltip">
-              {{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres<app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" />
+              {{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres<app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="atm" />
             </div>
           </div>
           }
@@ -700,7 +700,7 @@
               Rotational period
             </div>
             <div [matTooltip]="body().bodyData.rotationalPeriod + ' days'">
-              {{ getRotationalPeriodDisplay() }}<app-convert-icon [kind]="'duration'" [value]="body().bodyData.rotationalPeriod" label="Rotational period" />
+              {{ getRotationalPeriodDisplay() }}<app-convert-icon [kind]="'duration'" [value]="body().bodyData.rotationalPeriod" label="Rotational period" [uiUnit]="durationUnitLabel(body().bodyData.rotationalPeriod)" sourceUnit="Days" />
             </div>
           </div>
           }
@@ -711,7 +711,7 @@
               Distance to arrival
             </div>
             <div [matTooltip]="body().bodyData.distanceToArrival + ' ls'">
-              {{ formatDistanceLs(body().bodyData.distanceToArrival!) }}<app-convert-icon [kind]="'length'" [value]="getDistanceToArrivalKm()" label="Distance to arrival" />
+              {{ formatDistanceLs(body().bodyData.distanceToArrival!) }}<app-convert-icon [kind]="'length'" [value]="getDistanceToArrivalKm()" label="Distance to arrival" [uiUnit]="distanceUnitLabel(getDistanceToArrivalKm())" sourceUnit="Light seconds" />
             </div>
           </div>
           }
