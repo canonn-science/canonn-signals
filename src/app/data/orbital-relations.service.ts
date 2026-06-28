@@ -25,6 +25,8 @@ export interface CollisionWindow {
   start: Date;
   end: Date;
   days: number;
+  /** Centre-to-centre separation (km) at closest approach within the window — the deepest point of contact. */
+  minSeparationKm: number;
 }
 
 /** Result of collision-candidate analysis for a body relative to a crossing-orbit sibling. */
@@ -37,6 +39,8 @@ export interface CollisionStatus {
   synodicPeriodDays: number | null;
   /** Next contact window (when the bodies are within combined radii), or null when timing data is missing. */
   nextCollision: CollisionWindow | null;
+  /** Sum of the two bodies' radii (km) — the contact threshold; null when not a candidate. */
+  combinedRadiiKm: number | null;
 }
 
 /** Milliseconds per day, used to convert orbital periods (days) to wall-clock time. */
@@ -46,8 +50,15 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const KM_PER_AU = 149597870.7;
 /** Radians per degree, for the 3D Keplerian position maths. */
 const DEG_TO_RAD = Math.PI / 180;
-/** Step (degrees of mean anomaly) for the coarse orbit-curve sampling in the proximity test. */
-const ORBIT_SAMPLE_STEP_DEG = 1;
+/**
+ * Coarse orbit-curve sampling step (degrees of mean anomaly) for the proximity test is
+ * adaptive: a fixed step that resolves a wide pair would step right over the narrow close-
+ * approach valley of two tightly-nested orbits and report a wildly inflated minimum. We scale
+ * the step so adjacent samples sit ~one contact-distance apart in arc length, clamped between
+ * these bounds (fine for nested pairs, coarse — the historical 1° — for well-separated ones).
+ */
+const ORBIT_MIN_STEP_DEG = 0.05;
+const ORBIT_MAX_STEP_DEG = 1;
 /** How many of the closest coarse cells to refine from (covers multiple close-approach basins). */
 const ORBIT_REFINE_TOPK = 6;
 /** Half-grid size (per axis) for each zoom pass refining the orbit-to-orbit minimum. */
@@ -331,16 +342,27 @@ export class OrbitalRelationsService {
    * apart — so the pair is not a collision candidate at all.
    *
    * Two near-circular orbits a few km apart approach within a sliver around their mutual
-   * node, far narrower than a uniform sweep can resolve, so a coarse grid alone reports a
-   * wildly inflated minimum. We therefore locate the closest sampled pair on a coarse grid,
-   * then iteratively zoom the (mean-anomaly-A, mean-anomaly-B) window around it to converge
-   * on the true minimum.
+   * node, far narrower than a uniform sweep can resolve, so a fixed coarse grid alone reports
+   * a wildly inflated minimum. We defend against that two ways: the coarse step is scaled to
+   * the geometry (`contactKm` is the resolution we care about, so adjacent samples sit ~one
+   * contact-distance apart in arc length), and we additionally seed the refinement on the
+   * orbits' mutual line of nodes — where a relative tilt brings near-coplanar orbits closest.
+   * We then refine from each seed and take the overall minimum.
    */
-  private minOrbitDistanceKm(a: CanonnBiostatsBody, b: CanonnBiostatsBody): number {
+  private minOrbitDistanceKm(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number): number {
+    // Resolve the close-approach valley: step so the arc between samples on the larger orbit
+    // is roughly the contact distance. clamp keeps it cheap for wide pairs (1°, as before) and
+    // fine enough for tightly-nested ones without an unbounded grid.
+    const aMaxKm = Math.max(a.semiMajorAxis!, b.semiMajorAxis!) * KM_PER_AU;
+    const stepDeg = Math.min(
+      Math.max((contactKm / aMaxKm) * (180 / Math.PI), ORBIT_MIN_STEP_DEG),
+      ORBIT_MAX_STEP_DEG,
+    );
+
     // Positions are computed once per sampled angle (per axis) and reused across the cross
     // product, so an N×N grid costs 2N state-vector evaluations, not N².
     const coarse: number[] = [];
-    for (let deg = 0; deg < 360; deg += ORBIT_SAMPLE_STEP_DEG) { coarse.push(deg); }
+    for (let deg = 0; deg < 360; deg += stepDeg) { coarse.push(deg); }
     const posA = coarse.map(d => this.orbitalStateVector(a, d));
     const posB = coarse.map(d => this.orbitalStateVector(b, d));
 
@@ -363,20 +385,67 @@ export class OrbitalRelationsService {
       }
     }
 
+    // Refinement seeds: the K closest grid cells, plus the two ends of the mutual line of
+    // nodes (the line where the orbital planes intersect). For near-coplanar nested orbits the
+    // true minimum sits on that line — the grid can step over it, but the node seed cannot.
+    const seeds: [number, number][] = topK.map(cell => [coarse[cell.i], coarse[cell.j]]);
+    for (const seed of this.lineOfNodeSeeds(posA, posB, coarse)) { seeds.push(seed); }
+
     let best = Infinity;
-    for (const cell of topK) {
-      best = Math.min(best, this.refineOrbitMinimum(a, b, coarse[cell.i], coarse[cell.j]));
+    for (const [startA, startB] of seeds) {
+      best = Math.min(best, this.refineOrbitMinimum(a, b, startA, startB, stepDeg));
     }
     return best;
   }
 
   /**
+   * Mean-anomaly seeds at the two ends of the orbits' mutual line of nodes (the intersection
+   * of the two orbital planes), one (mean-anomaly-A, mean-anomaly-B) pair per end. For
+   * near-coplanar nested orbits the closest 3D approach lies on this line, where the relative
+   * tilt's vertical separation vanishes — a valley a uniform grid can step over. Returns []
+   * for effectively coplanar orbits: their planes are parallel, there is no distinct node
+   * line, and without a vertical valley the coarse grid already resolves the minimum.
+   */
+  private lineOfNodeSeeds(posA: Vec3[], posB: Vec3[], coarse: number[]): [number, number][] {
+    // Two position vectors from the focus span each orbital plane; their cross product is the
+    // plane normal. Use samples ~90° apart so they are well separated.
+    const quarter = Math.floor(coarse.length / 4);
+    const normalA = this.cross(posA[0], posA[quarter]);
+    const normalB = this.cross(posB[0], posB[quarter]);
+    const nodeLine = this.cross(normalA, normalB);
+    if (this.norm(nodeLine) <= 1e-6 * this.norm(normalA) * this.norm(normalB)) { return []; }
+
+    const seeds: [number, number][] = [];
+    for (const sign of [1, -1]) {
+      const dir: Vec3 = { x: sign * nodeLine.x, y: sign * nodeLine.y, z: sign * nodeLine.z };
+      seeds.push([this.mostAligned(posA, coarse, dir), this.mostAligned(posB, coarse, dir)]);
+    }
+    return seeds;
+  }
+
+  /** Mean anomaly of the sampled position whose direction (from the focus) best aligns with `dir`. */
+  private mostAligned(pos: Vec3[], coarse: number[], dir: Vec3): number {
+    let bestCos = -Infinity, bestIndex = 0;
+    for (let i = 0; i < pos.length; i++) {
+      const cos = this.dot(pos[i], dir) / this.norm(pos[i]);
+      if (cos > bestCos) { bestCos = cos; bestIndex = i; }
+    }
+    return coarse[bestIndex];
+  }
+
+  private cross(p: Vec3, q: Vec3): Vec3 {
+    return { x: p.y * q.z - p.z * q.y, y: p.z * q.x - p.x * q.z, z: p.x * q.y - p.y * q.x };
+  }
+  private dot(p: Vec3, q: Vec3): number { return p.x * q.x + p.y * q.y + p.z * q.z; }
+  private norm(p: Vec3): number { return Math.sqrt(this.dot(p, p)); }
+
+  /**
    * Refines the orbit-to-orbit minimum distance starting from a coarse (mean-anomaly-A,
    * mean-anomaly-B) cell, by repeatedly sampling a shrinking window around the running best.
    */
-  private refineOrbitMinimum(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startA: number, startB: number): number {
+  private refineOrbitMinimum(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startA: number, startB: number, stepDeg: number): number {
     let aDeg = startA, bDeg = startB, best = Infinity;
-    let half = ORBIT_SAMPLE_STEP_DEG;
+    let half = stepDeg;
     for (let iter = 0; iter < ORBIT_REFINE_ITERATIONS; iter++) {
       const degsA: number[] = [], degsB: number[] = [];
       for (let k = -ORBIT_REFINE_GRID; k <= ORBIT_REFINE_GRID; k++) {
@@ -504,7 +573,7 @@ export class OrbitalRelationsService {
         }
         const endMs = elo;
 
-        return { start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY };
+        return { start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: bestSep };
       }
     }
     return null;
@@ -525,13 +594,13 @@ export class OrbitalRelationsService {
    */
   detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
     const none: CollisionStatus = {
-      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null,
+      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, combinedRadiiKm: null,
     };
     const bd = body.bodyData;
     const range = this.orbitalRadialRange(bd);
     if (!body.parent || !bd.orbitalPeriod || !range) { return none; }
 
-    let best: { partner: SystemBody; synodic: number; event: CollisionWindow | null } | null = null;
+    let best: { partner: SystemBody; synodic: number; event: CollisionWindow | null; contactKm: number } | null = null;
     for (const sibling of body.parent.subBodies) {
       if (sibling === body) { continue; }
       const sd = sibling.bodyData;
@@ -548,14 +617,14 @@ export class OrbitalRelationsService {
 
       // Exact 3D candidacy: do the orbit curves themselves come within contact distance? A
       // relative tilt can keep radially-overlapping orbits permanently apart.
-      if (this.minOrbitDistanceKm(bd, sd) > contactKm) { continue; }
+      if (this.minOrbitDistanceKm(bd, sd, contactKm) > contactKm) { continue; }
 
       const synodic = 1 / Math.abs(1 / bd.orbitalPeriod - 1 / sd.orbitalPeriod);
       const event = this.nextContact(bd, sd, contactKm, synodic, now);
       // Prefer the partner with the soonest predicted collision; keep any geometric
       // candidate as a fallback when timing data is unavailable for an earlier one.
       if (!best || (event && (!best.event || event.days < best.event.days))) {
-        best = { partner: sibling, synodic, event };
+        best = { partner: sibling, synodic, event, contactKm };
       }
     }
 
@@ -565,6 +634,7 @@ export class OrbitalRelationsService {
       partnerName: best.partner.bodyData.name,
       synodicPeriodDays: best.synodic,
       nextCollision: best.event,
+      combinedRadiiKm: best.contactKm,
     };
   }
 }
