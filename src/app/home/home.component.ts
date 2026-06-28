@@ -11,6 +11,7 @@ import { MatButton } from '@angular/material/button';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { SystemBodyComponent } from '../system-body/system-body.component';
 import { RegionMapComponent } from '../region-map/region-map.component';
+import { CanonnLogoComponent } from '../canonn-logo/canonn-logo.component';
 import { DecimalPipe } from '@angular/common';
 import { BODY_TYPE } from '../data/body-types';
 import { logger } from '../data/logger';
@@ -23,7 +24,7 @@ import { findNearestNebulae, NearestNebula } from '../data/nebulae';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, DecimalPipe]
+  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe]
 })
 export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);

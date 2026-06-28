@@ -27,8 +27,7 @@
     }
   </div>
   <div>
-    <img alt="" [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
-      style="width: 200px; height: 200px;" />
+    <app-canonn-logo [animating]="searching" style="display: block; width: 200px; height: 200px;"></app-canonn-logo>
   </div>
 </div>
 @if (data(); as data) {
