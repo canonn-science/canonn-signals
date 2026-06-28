@@ -92,13 +92,13 @@
         rosetteStatus }}</span>
       }
       @if (collisionStatus?.isCandidate) {
-      <span class="badge badge-red"
+      <span class="badge badge-red clickable"
             [matTooltip]="collisionStatus!.nextCollision
-              ? ('Collision candidate: collides with ' + collisionStatus!.partnerName
-                 + ' on ' + (collisionStatus!.nextCollision!.start | date:'yyyy-MM-dd HH:mm:ss')
-                 + ' until ' + (collisionStatus!.nextCollision!.end | date:'HH:mm:ss')
-                 + ' (synodic period ' + (collisionStatus!.synodicPeriodDays | number:'1.0-0') + ' days)')
-              : ('Collision candidate: crossing orbit with ' + collisionStatus!.partnerName)">Collision</span>
+              ? ('Collides with ' + collisionStatus!.partnerName
+                 + ' in ' + formatCollisionCountdown(collisionStatus!.nextCollision!.days)
+                 + ' — click for details')
+              : ('Crossing orbit with ' + collisionStatus!.partnerName + ' — click for details')"
+            (click)="showCollisionDialog()">Collision</span>
       }
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"

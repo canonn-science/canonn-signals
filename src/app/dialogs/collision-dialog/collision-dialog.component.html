@@ -1,0 +1,67 @@
+<app-dialog-shell [heading]="heading">
+  <div class="collision-dialog">
+    <div class="values">
+      <ul>
+        <li><strong>Bodies:</strong> {{ data.bodyName }}
+          @if (data.partnerName) { &amp; {{ data.partnerName }} }
+        </li>
+        @if (data.synodicPeriodDays !== null) {
+        <li><strong>Synodic period:</strong>
+          {{ data.synodicPeriodDays | number:'1.0-0' }} days
+          @if (synodicPeriodYears !== null && synodicPeriodYears >= 1) {
+          ({{ synodicPeriodYears | number:'1.1-1' }} years)
+          }
+          <span class="hint">— the interval between successive close approaches</span>
+        </li>
+        }
+
+        @if (data.nextCollision; as c) {
+        <li><strong>Next collision in:</strong>
+          {{ c.days | number:'1.0-0' }} days
+          @if (yearsUntil !== null && yearsUntil >= 1) { ({{ yearsUntil | number:'1.1-1' }} years) }
+        </li>
+        <li><strong>Contact starts:</strong><br>
+          <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.start | date:'zzzz' }} (your time)</span></span><br>
+          <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
+        </li>
+        <li><strong>Contact ends:</strong><br>
+          <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.end | date:'zzzz' }} (your time)</span></span><br>
+          <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
+        </li>
+        @if (durationMinutes !== null) {
+        <li><strong>Duration:</strong> {{ durationMinutes | number:'1.0-1' }} minutes</li>
+        }
+        <li><strong>Closest approach:</strong> {{ c.minSeparationKm | number:'1.0-0' }} km centre-to-centre</li>
+        @if (data.combinedRadiiKm !== null) {
+        <li><strong>Combined radii (contact threshold):</strong> {{ data.combinedRadiiKm | number:'1.0-0' }} km</li>
+        }
+        @if (overlapPercent !== null) {
+        <li><strong>Overlap:</strong> {{ overlapPercent | number:'1.0-1' }}%
+          @if (overlapLabel) { <span class="hint">— {{ overlapLabel }}</span> }
+        </li>
+        }
+        } @else {
+        <li><strong>Status:</strong> crossing-orbit candidate
+          <span class="hint">— the orbits pass within the combined radii, but a contact date can't be
+            computed without the bodies' mean-anomaly (phase) data.</span>
+        </li>
+        }
+      </ul>
+    </div>
+
+    <div class="explanation">
+      <p><strong>What does this mean?</strong></p>
+      <p>
+        These aren't real physics events. The stellar forge is programmed to prevent collisions, but a few
+        slip through. When two objects are on a collision course, they simply pass straight through each
+        other and carry on in their orbits. It's not supported by the engine — what happens is the two
+        bodies intersect and create a non-game experience of meshes. Any permanent change (a real explosion
+        or new asteroid field) only happens when Frontier manually writes it into a server update.
+      </p>
+      <p>
+        Overlap is the depth of the intersection at closest approach, as a percentage of the bodies'
+        combined radii: 0% means the surfaces merely graze, 100% means the centres pass through one another.
+      </p>
+    </div>
+  </div>
+</app-dialog-shell>

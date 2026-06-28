@@ -341,6 +341,11 @@ describe('OrbitalRelationsService', () => {
       expect(r.nextCollision).not.toBeNull();
       // Within a day of the independently computed 3D contact time.
       expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2026-10-18');
+      // Enriched fields for the collision dialog: combined radii (the contact threshold) and the
+      // closest-approach separation, which must sit at or inside that threshold (it IS a contact).
+      expect(r.combinedRadiiKm).toBeCloseTo(2780.05725 + 2715.17175, 3);
+      expect(r.nextCollision!.minSeparationKm).toBeGreaterThan(0);
+      expect(r.nextCollision!.minSeparationKm).toBeLessThanOrEqual(r.combinedRadiiKm!);
     });
 
     it('skips off-node near-miss conjunctions and dates the first true 3D contact', () => {
@@ -407,6 +412,30 @@ describe('OrbitalRelationsService', () => {
       expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2028-08-10');
     });
 
+    it('flags the real Dryooe Flyou PS-U f2-1857 1 b / c pair (tightly-nested, sub-degree valley)', () => {
+      // Two moons on near-coplanar orbits nested only ~4255 km apart radially (semiMajorAxis
+      // 2,935,367 vs 2,939,622 km). Their true closest 3D approach is ~722 km — well inside the
+      // 3459.8 km radii sum — but it lives in a valley < 0.1° wide. The historical fixed-1°
+      // grid stepped over it and reported ~7798 km, wrongly rejecting the pair (isCandidate
+      // false). The adaptive step + line-of-nodes seed must now find it. Brute-force 3D contact
+      // (synodic ≈ 1309 d, so contacts are sparse): 2033-06-15.
+      const [b1] = makeFamily([
+        { name: '1 b', orbitalPeriod: 2.84128111821759, semiMajorAxis: 0.0196217139777391,
+          orbitalEccentricity: 0.001403, orbitalInclination: -0.148447, argOfPeriapsis: 46.239216,
+          ascendingNode: -83.383117, meanAnomaly: 170.83725, radius: 1751.312875,
+          timestamps: { meanAnomaly: '2023-04-07T20:50:43Z' } as any },
+        { name: '1 c', orbitalPeriod: 2.84746178873843, semiMajorAxis: 0.0196501568743971,
+          orbitalEccentricity: 0.000402, orbitalInclination: 0.117054, argOfPeriapsis: 209.510865,
+          ascendingNode: -94.95314, meanAnomaly: 322.88133, radius: 1708.5065,
+          timestamps: { meanAnomaly: '2023-04-07T20:50:43Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(b1, now);
+      expect(r.isCandidate).toBe(true);
+      expect(r.partnerName).toBe('1 c');
+      expect(r.nextCollision).not.toBeNull();
+      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2033-06-15');
+    });
+
     it('reports the contact window (start/end) for the real Braireau AA-A h761 1 b / c pair', () => {
       // A collision is an interval, not an instant. An independent brute-force 3D Kepler
       // propagation (combined radii 6509.6 km) puts the contact window on 2028-06-19:
@@ -441,7 +470,10 @@ describe('OrbitalRelationsService', () => {
         { orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.1, radius: 60000 },
         { orbitalPeriod: 11, semiMajorAxis: 1, orbitalEccentricity: 1.5, radius: 60000 },
       ]);
-      expect(service.detectCollisionStatus(a, now).isCandidate).toBe(false);
+      const r = service.detectCollisionStatus(a, now);
+      expect(r.isCandidate).toBe(false);
+      // A non-candidate carries no contact threshold.
+      expect(r.combinedRadiiKm).toBeNull();
     });
 
     it('still flags a geometric candidate when timing data is missing (no date)', () => {
@@ -453,6 +485,8 @@ describe('OrbitalRelationsService', () => {
       expect(r.isCandidate).toBe(true);
       expect(r.synodicPeriodDays).toBeCloseTo(110, 6);
       expect(r.nextCollision).toBeNull();
+      // Combined radii is known even without a contact date (geometry alone).
+      expect(r.combinedRadiiKm).toBeCloseTo(120000, 6);
     });
   });
 });

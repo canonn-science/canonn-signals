@@ -26,6 +26,7 @@ import { HillLimitDialogComponent } from '../dialogs/hill-limit-dialog/hill-limi
 import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-limit-dialog.component';
 import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
 import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
+import { CollisionDialogComponent, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
 import { JetAngleDialogComponent } from '../dialogs/jet-angle-dialog/jet-angle-dialog.component';
 import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
 import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
@@ -967,6 +968,37 @@ export class SystemBodyComponent implements OnChanges {
         degreesToEvent
       } satisfies ApoPeriDialogData,
     });
+  }
+
+  /** Opens the collision dialog with this body's collision-candidate details. */
+  public showCollisionDialog(): void {
+    const status = this.collisionStatus;
+    if (!status?.isCandidate) { return; }
+    this.dialog.open(CollisionDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        bodyName: this.body().bodyData.name,
+        partnerName: status.partnerName,
+        synodicPeriodDays: status.synodicPeriodDays,
+        nextCollision: status.nextCollision,
+        combinedRadiiKm: status.combinedRadiiKm,
+      } satisfies CollisionDialogData,
+    });
+  }
+
+  /**
+   * Human-readable time-until for the collision badge tooltip: days, with years in parentheses
+   * once the wait reaches a year. Negative means contact is already in progress.
+   */
+  public formatCollisionCountdown(days: number): string {
+    if (days < 0) { return 'in progress now'; }
+    if (days < 1) { return 'less than a day'; }
+    const dayLabel = `${Math.round(days).toLocaleString()} days`;
+    return days >= 365.25 ? `${dayLabel} (${(days / 365.25).toFixed(1)} years)` : dayLabel;
   }
 
   public showShepherdingHillLimitChart(): void {

@@ -283,6 +283,40 @@ describe('SystemBodyComponent (extended coverage)', () => {
     });
   });
 
+  describe('collision dialog', () => {
+    it('opens the collision dialog with this body name and the candidate details', () => {
+      render(makeBody({ name: 'X 1 b' }));
+      component.collisionStatus = {
+        isCandidate: true, partnerName: 'X 1 c', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 170, minSeparationKm: 1000,
+        },
+      };
+      component.showCollisionDialog();
+      expect(lastDialogData().bodyName).toBe('X 1 b');
+      expect(lastDialogData().partnerName).toBe('X 1 c');
+      expect(lastDialogData().combinedRadiiKm).toBe(5000);
+      expect(lastDialogData().nextCollision.minSeparationKm).toBe(1000);
+    });
+
+    it('does nothing when the body is not a collision candidate', () => {
+      render(makeBody({}));
+      component.collisionStatus = null;
+      const before = dialogOpenCalls;
+      component.showCollisionDialog();
+      expect(dialogOpenCalls).toBe(before);
+    });
+
+    it('formats the badge countdown in days, adding years past a year, and flags in-progress', () => {
+      render(makeBody({}));
+      expect(component.formatCollisionCountdown(-1)).toBe('in progress now');
+      expect(component.formatCollisionCountdown(0.5)).toBe('less than a day');
+      expect(component.formatCollisionCountdown(45)).toBe('45 days');
+      expect(component.formatCollisionCountdown(800)).toContain('years');
+    });
+  });
+
   describe('stellar physics display helpers', () => {
     it('computes spin resonance, tooltip and tangential velocity for a neutron star', () => {
       render(makeBody({
