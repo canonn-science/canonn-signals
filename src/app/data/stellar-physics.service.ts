@@ -17,7 +17,10 @@ export class StellarPhysicsService {
   spinResonance(rotationalPeriod: number | null | undefined, orbitalPeriod: number | null | undefined): string {
     if (!rotationalPeriod || !orbitalPeriod) { return 'none'; }
 
-    const rotationsPerOrbit = orbitalPeriod / rotationalPeriod;
+    // Elite stores retrograde rotation as a negative rotationalPeriod; resonance is a
+    // ratio of magnitudes, so a retrograde tidally-locked body is still 1:1. Use the
+    // absolute periods (matching the solar-day code in SystemBodyComponent).
+    const rotationsPerOrbit = Math.abs(orbitalPeriod) / Math.abs(rotationalPeriod);
     const maxDenominator = 5;
     const tolerance = 0.01;
 

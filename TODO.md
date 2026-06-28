@@ -17,17 +17,6 @@ pre-dates this branch.
   near-zero, but the constant is wrong as named. Confirm the data source's unit for `mass`
   before changing.
 
-- **`spinResonance` silently fails for retrograde rotators** —
-  [stellar-physics.service.ts:29](src/app/data/stellar-physics.service.ts#L29).
-  Elite stores retrograde rotation as a negative `rotationalPeriod`, so
-  `rotationsPerOrbit = orbitalPeriod / rotationalPeriod`
-  ([:32](src/app/data/stellar-physics.service.ts#L32)) goes negative while every
-  `candidate = num / denom` ([:38](src/app/data/stellar-physics.service.ts#L38)) is strictly
-  positive — no match is ever found and the result is `'none'`, so a retrograde tidally-locked
-  (1:1) body is missed. The adjacent solar-day code at
-  [system-body.component.ts:1303-1306](src/app/system-body/system-body.component.ts#L1303-L1306)
-  already `Math.abs`-es both periods, so the two disagree. Fix: take `Math.abs` of both periods.
-
 - **`tangentialVelocityKms` returns a negative velocity for retrograde spinners** —
   [stellar-physics.service.ts:49](src/app/data/stellar-physics.service.ts#L49).
   Same root cause: a negative `rotationalPeriod` divides a positive circumference
