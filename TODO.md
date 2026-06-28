@@ -28,12 +28,6 @@ pre-dates this branch.
   [system-body.component.ts:1303-1306](src/app/system-body/system-body.component.ts#L1303-L1306)
   already `Math.abs`-es both periods, so the two disagree. Fix: take `Math.abs` of both periods.
 
-- **`tangentialVelocityKms` returns a negative velocity for retrograde spinners** —
-  [stellar-physics.service.ts:49](src/app/data/stellar-physics.service.ts#L49).
-  Same root cause: a negative `rotationalPeriod` divides a positive circumference
-  ([:52](src/app/data/stellar-physics.service.ts#L52)) to a negative km/s, which renders as
-  e.g. "-12 km/s" or a negative fraction of c. Fix: use the magnitude of the period.
-
 - **`classifyNeutronStar` mislabels retrograde neutron stars as "Millisecond Pulsar"** —
   [stellar-physics.service.ts:104](src/app/data/stellar-physics.service.ts#L104).
   Same root cause: `period = rotationalPeriodDays * SECONDS_PER_DAY`

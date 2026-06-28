@@ -33,9 +33,14 @@ export class StellarPhysicsService {
     return 'none';
   }
 
-  /** Equatorial surface (tangential) velocity in km/s for a given rotation period (days) and radius (km). */
+  /**
+   * Equatorial surface (tangential) velocity in km/s for a given rotation period (days)
+   * and radius (km). Speed is a magnitude, so the period's sign (Elite stores retrograde
+   * rotation as a negative `rotationalPeriod`) is ignored — a retrograde spinner has the
+   * same surface speed as a prograde one.
+   */
   tangentialVelocityKms(rotationalPeriodDays: number, radiusKm: number): number {
-    const rotationalPeriodSeconds = rotationalPeriodDays * SECONDS_PER_DAY;
+    const rotationalPeriodSeconds = Math.abs(rotationalPeriodDays) * SECONDS_PER_DAY;
     const circumferenceM = 2 * Math.PI * radiusKm * 1000;
     return circumferenceM / rotationalPeriodSeconds / 1000;
   }
