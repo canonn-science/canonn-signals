@@ -59,14 +59,18 @@ const KM_PER_AU = 149597870.7;
 /** Radians per degree, for the 3D Keplerian position maths. */
 const DEG_TO_RAD = Math.PI / 180;
 /**
- * Coarse orbit-curve sampling step (degrees of mean anomaly) for the proximity test is
- * adaptive: a fixed step that resolves a wide pair would step right over the narrow close-
- * approach valley of two tightly-nested orbits and report a wildly inflated minimum. We scale
- * the step so adjacent samples sit ~one contact-distance apart in arc length, clamped between
- * these bounds (fine for nested pairs, coarse — the historical 1° — for well-separated ones).
+ * Number of evenly-spaced mean-anomaly samples per orbit for the coarse proximity scan.
+ * The coarse grid only has to resolve the *basins* of the orbit-to-orbit distance surface
+ * (which are far wider than the contact width), not the contact arc itself: the narrow
+ * close-approach valley of two tightly-nested, tilted orbits is caught separately by the
+ * line-of-nodes seeds, and every seed is then zoomed to sub-km precision by
+ * {@link OrbitalRelationsService.refineOrbitMinimum}. So we cap the grid at a fixed sample
+ * count (0.5° spacing — four times finer than the historical 1° that missed valleys, and
+ * the node seeds now cover those valleys regardless) instead of scaling the step down to the
+ * contact arc. The old adaptive step bottomed out at 0.05° for any orbit beyond ~0.1 AU,
+ * driving the O(N²) coarse double-loop to 7200² ≈ 52M iterations (~200 ms) per sibling pair.
  */
-const ORBIT_MIN_STEP_DEG = 0.05;
-const ORBIT_MAX_STEP_DEG = 1;
+const ORBIT_COARSE_SAMPLES = 720;
 /** How many of the closest coarse cells to refine from (covers multiple close-approach basins). */
 const ORBIT_REFINE_TOPK = 6;
 /** Half-grid size (per axis) for each zoom pass refining the orbit-to-orbit minimum. */
@@ -352,22 +356,21 @@ export class OrbitalRelationsService {
    * apart — so the pair is not a collision candidate at all.
    *
    * Two near-circular orbits a few km apart approach within a sliver around their mutual
-   * node, far narrower than a uniform sweep can resolve, so a fixed coarse grid alone reports
-   * a wildly inflated minimum. We defend against that two ways: the coarse step is scaled to
-   * the geometry (`contactKm` is the resolution we care about, so adjacent samples sit ~one
-   * contact-distance apart in arc length), and we additionally seed the refinement on the
-   * orbits' mutual line of nodes — where a relative tilt brings near-coplanar orbits closest.
-   * We then refine from each seed and take the overall minimum.
+   * node, far narrower than a uniform sweep can resolve, so the closest *coarse* sample alone
+   * reports a wildly inflated minimum. We defend against that two ways that don't depend on
+   * grid fineness: we keep the K closest coarse cells (multiple basins), and we additionally
+   * seed the refinement on the orbits' mutual line of nodes — where a relative tilt brings
+   * near-coplanar orbits closest. Every seed is then zoomed to sub-km precision, so the coarse
+   * grid only needs to land each true minimum in *some* seed's catchment, not resolve it. That
+   * lets the grid stay a fixed, bounded size ({@link ORBIT_COARSE_SAMPLES}) instead of an
+   * adaptive step that exploded the O(N²) double-loop for distant orbits.
    */
-  private minOrbitDistanceKm(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number): number {
-    // Resolve the close-approach valley: step so the arc between samples on the larger orbit
-    // is roughly the contact distance. clamp keeps it cheap for wide pairs (1°, as before) and
-    // fine enough for tightly-nested ones without an unbounded grid.
-    const aMaxKm = Math.max(a.semiMajorAxis!, b.semiMajorAxis!) * KM_PER_AU;
-    const stepDeg = Math.min(
-      Math.max((contactKm / aMaxKm) * (180 / Math.PI), ORBIT_MIN_STEP_DEG),
-      ORBIT_MAX_STEP_DEG,
-    );
+  private minOrbitDistanceKm(a: CanonnBiostatsBody, b: CanonnBiostatsBody): number {
+    // Fixed coarse grid: its job is to seed the refinement into the right basin, not to
+    // resolve the contact arc, so its cost is bounded regardless of orbital scale. The
+    // refinement window below is the coarse spacing, so each ±window covers the gap to the
+    // neighbouring sample and the zoom can reach any minimum between two coarse cells.
+    const stepDeg = 360 / ORBIT_COARSE_SAMPLES;
 
     // Positions are computed once per sampled angle (per axis) and reused across the cross
     // product, so an N×N grid costs 2N state-vector evaluations, not N².
@@ -650,7 +653,7 @@ export class OrbitalRelationsService {
 
       // Exact 3D candidacy: do the orbit curves themselves come within contact distance? A
       // relative tilt can keep radially-overlapping orbits permanently apart.
-      if (this.minOrbitDistanceKm(bd, sd, contactKm) > contactKm) { continue; }
+      if (this.minOrbitDistanceKm(bd, sd) > contactKm) { continue; }
 
       const synodic = 1 / Math.abs(1 / bd.orbitalPeriod - 1 / sd.orbitalPeriod);
       // Fetch the first contact only for partner selection; the winning partner gets the full 10.
@@ -691,7 +694,7 @@ export class OrbitalRelationsService {
           const contactKm = (md.radius ?? 0) + (sd.radius ?? 0);
           const radialGapAu = Math.max(mRange.peri, sRange.peri) - Math.min(mRange.apo, sRange.apo);
           if (radialGapAu > contactKm / KM_PER_AU) { continue; }
-          if (this.minOrbitDistanceKm(md, sd, contactKm) > contactKm) { continue; }
+          if (this.minOrbitDistanceKm(md, sd) > contactKm) { continue; }
           groupMembers.add(sibling.bodyData.name);
           changed = true;
           break;
