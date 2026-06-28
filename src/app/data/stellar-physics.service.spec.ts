@@ -46,6 +46,14 @@ describe('StellarPhysicsService', () => {
       const v2 = service.tangentialVelocityKms(2, 100000);
       expect(v2).toBeCloseTo(v1 / 2, 9);
     });
+
+    it('returns a positive speed for a retrograde (negative period) spinner', () => {
+      // Elite stores retrograde rotation as a negative period; speed is a magnitude.
+      const prograde = service.tangentialVelocityKms(1, 100000);
+      const retrograde = service.tangentialVelocityKms(-1, 100000);
+      expect(retrograde).toBeGreaterThan(0);
+      expect(retrograde).toBeCloseTo(prograde, 9);
+    });
   });
 
   describe('radiusKm', () => {

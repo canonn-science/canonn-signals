@@ -7,11 +7,6 @@ pre-dates this branch.
 
 ## Physics / source
 
-- **`tangentialVelocityKms` returns a negative velocity for retrograde spinners** —
-  [stellar-physics.service.ts:49](src/app/data/stellar-physics.service.ts#L49).
-  Same root cause: a negative `rotationalPeriod` divides a positive circumference
-  ([:52](src/app/data/stellar-physics.service.ts#L52)) to a negative km/s, which renders as
-  e.g. "-12 km/s" or a negative fraction of c. Fix: use the magnitude of the period.
 
 - **`rocheExcess` compares against the semi-major axis, not periapsis** —
   [body-physics.service.ts:354](src/app/data/body-physics.service.ts#L354).
