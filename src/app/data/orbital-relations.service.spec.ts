@@ -590,5 +590,42 @@ describe('OrbitalRelationsService', () => {
       expect(r.nextCollision!.minSeparationKm).toBeGreaterThan(0);
       expect(r.nextCollision!.minSeparationKm).toBeLessThanOrEqual(r.combinedRadiiKm!);
     });
+
+    it('reports a collision in progress when now falls inside an active contact window', () => {
+      // Eoch Flyuae YK-K c10-56 — the 1 a / 1 b / 1 c trio. By 2026-10-28T15:16:05Z the
+      // synodic march has reached the ~17th contact; the ~78-min window is centred at
+      // ~15:14 UTC so now sits inside it. All three moons have crossing orbits with each
+      // other, forming a three-body collision cluster.
+      const nowHere = Date.parse('2026-10-28T15:16:05Z');
+      const [a] = makeFamily([
+        { name: '1 a', orbitalPeriod: 0.157127550081019, semiMajorAxis: 0.000251518168059788,
+          orbitalEccentricity: 3.3e-05, orbitalInclination: 0.013618,
+          argOfPeriapsis: 237.157193, ascendingNode: 113.296374,
+          meanAnomaly: 332.120793, radius: 622.7360625,
+          timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+        { name: '1 b', orbitalPeriod: 0.153610475914352, semiMajorAxis: 0.000247750778161951,
+          orbitalEccentricity: 0.000216, orbitalInclination: 0.00413,
+          argOfPeriapsis: 200.490883, ascendingNode: 41.825083,
+          meanAnomaly: 33.450288, radius: 450.6381875,
+          timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+        { name: '1 c', orbitalPeriod: 0.154680379282407, semiMajorAxis: 0.000248899845368514,
+          orbitalEccentricity: 0.001125, orbitalInclination: 0.061853,
+          argOfPeriapsis: 12.874691, ascendingNode: 95.932804,
+          meanAnomaly: 161.468548, radius: 800.657125,
+          timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(a, nowHere);
+      expect(r.isCandidate).toBe(true);
+      // 1 c has the smaller minimum separation from 1 a → it becomes the primary partner.
+      expect(r.partnerName).toBe('1 c');
+      expect(r.nextCollision).not.toBeNull();
+      // days < 0: the contact window started before now — it is currently in progress.
+      expect(r.nextCollision!.days).toBeLessThan(0);
+      // The window straddles now: start is in the past, end is in the future.
+      expect(r.nextCollision!.start.getTime()).toBeLessThan(nowHere);
+      expect(r.nextCollision!.end.getTime()).toBeGreaterThan(nowHere);
+      // All three moons have geometrically crossing orbits → 1 b is a simultaneous partner.
+      expect(r.simultaneousPartners).toContain('1 b');
+    });
   });
 });

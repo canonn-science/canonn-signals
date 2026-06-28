@@ -18,9 +18,14 @@
         }
 
         @if (data.nextCollision; as c) {
-        <li><strong>Next collision in:</strong>
-          {{ c.days | number:'1.0-0' }} days
-          @if (yearsUntil !== null && yearsUntil >= 1) { ({{ yearsUntil | number:'1.1-1' }} years) }
+        <li>
+          @if (c.days < 0) {
+            <strong>Status:</strong> <span class="hint">Collision in progress now</span>
+          } @else {
+            <strong>Next collision in:</strong>
+            {{ c.days | number:'1.0-0' }} days
+            @if (yearsUntil !== null && yearsUntil >= 1) { ({{ yearsUntil | number:'1.1-1' }} years) }
+          }
         </li>
         <li><strong>Contact starts:</strong><br>
           <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.start | date:'zzzz' }}
@@ -72,8 +77,12 @@
             <td class="num">{{ i + 1 }}</td>
             <td class="date">{{ w.start | date:'yyyy-MM-dd HH:mm':'UTC' }} UTC</td>
             <td class="num">
-              {{ w.days | number:'1.0-0' }}
-              @if (yearsUntilFor(w) >= 1) {<span class="hint">({{ yearsUntilFor(w) | number:'1.1-1' }} yr)</span>}
+              @if (w.days < 0) {
+                <span class="hint">In progress</span>
+              } @else {
+                {{ w.days | number:'1.0-0' }}
+                @if (yearsUntilFor(w) >= 1) {<span class="hint">({{ yearsUntilFor(w) | number:'1.1-1' }} yr)</span>}
+              }
             </td>
             <td>{{ formatDuration(w) }}</td>
             <td class="num">
