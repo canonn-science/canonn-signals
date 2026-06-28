@@ -1,6 +1,6 @@
 import { estimateTempRange, isTempSafe, lookupTempDelta } from '../data/temperature-estimation';
 import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
-import { SystemBody, EdGalaxyData } from '../home/home.component';
+import { SystemBody, EdGalaxyData, CanonnBiostatsBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
@@ -10,7 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
-import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert } from '../data/body-physics.service';
+import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
@@ -29,6 +29,25 @@ import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-d
 import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
 import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
+
+/** Rings below this surface density (kg/km²) are considered invisible. */
+const INVISIBLE_RING_MAX_DENSITY = 0.1;
+/** Rings wider than this (km) are considered invisible when density is also low. */
+const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
+
+/**
+ * Maximum gap between adjacent rings (km) for the Racing Rings badge.
+ * Set so that both ring edges are likely to be simultaneously visible when
+ * flying nearby. The value is intentionally generous and may be tightened
+ * once in-game observations are collected.
+ */
+const RACING_RINGS_MAX_GAP_KM = 50;
+/**
+ * Minimum outer-to-inner velocity difference (km/s) for the Racing Rings badge.
+ * Chosen as a speed differential large enough to be noticeable in-game;
+ * may be adjusted after in-game observations.
+ */
+const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
 
 @Component({
   selector: 'app-system-body',
@@ -112,6 +131,22 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingArea = signal(0);
   public readonly getRingDensity = signal(0);
   public readonly isRingNotVisible = signal(false);
+  public readonly getRingOrbitalPeriod = signal<number | null>(null);
+  public readonly getRingOrbitalPeriodDisplay = signal('');
+  public readonly getRingOrbitalPeriodTooltip = signal('');
+  public readonly getRingMinVelocity = signal<number | null>(null);
+  public readonly getRingMinVelocityDisplay = signal('');
+  public readonly getRingMinVelocityTooltip = signal('');
+  public readonly getRingMaxVelocity = signal<number | null>(null);
+  public readonly getRingMaxVelocityDisplay = signal('');
+  public readonly getRingMaxVelocityTooltip = signal('');
+  public readonly getRingNeighbourDistance = signal<number | null>(null);
+  public readonly getRingNeighbourDistanceLabel = signal('');
+  public readonly getRingVelocityDiff = signal<number | null>(null);
+  public readonly getRingVelocityDiffDisplay = signal('');
+  public readonly getRingVelocityDiffTooltip = signal('');
+  public readonly isRacingRings = signal(false);
+  public readonly racingRingsTooltip = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -338,7 +373,38 @@ export class SystemBodyComponent implements OnChanges {
     this.getRingArea.set(Math.PI * (outer * outer - inner * inner));
     this.getRingDensity.set(this.getRingArea() > 0 ? (bd.mass ?? 0) / this.getRingArea() : 0);
     this.isRingNotVisible.set(bd.type === BODY_TYPE.Ring
-      && this.getRingDensity() < 0.1 && this.getRingWidth() > 1000000);
+      && this.isLowDensityWideRing(this.getRingWidth(), this.getRingDensity()));
+
+    // Ring dynamics: orbital period and max velocity (Kepler math lives in the service).
+    this.applyRingDynamics(this.physics.ringDynamics(body));
+
+    // Distance to the next ring/belt sibling (by innerRadius order).
+    const { distance: neighbourDist, label: neighbourLabel, velocityDiff, eitherRingInvisible } = this.computeRingNeighbourDistance(body);
+    // Suppress gap/velocity display when either ring in the pair is invisible — the values
+    // are physically real but the invisible ring cannot be observed in-game.
+    const displayDist = eitherRingInvisible ? null : neighbourDist;
+    const displayVelocityDiff = eitherRingInvisible ? null : velocityDiff;
+    this.getRingNeighbourDistance.set(displayDist);
+    this.getRingNeighbourDistanceLabel.set(displayDist !== null ? neighbourLabel : '');
+    this.getRingVelocityDiff.set(displayVelocityDiff);
+    this.getRingVelocityDiffDisplay.set(displayVelocityDiff !== null ? this.formatVelocityKms(displayVelocityDiff) : '');
+    this.getRingVelocityDiffTooltip.set(displayVelocityDiff !== null ? `${displayVelocityDiff.toFixed(3)} km/s` : '');
+
+    // Racing Rings badge: gap between adjacent rings below threshold AND speed
+    // differential above threshold, and neither ring in the pair is invisible.
+    const racingRings = neighbourDist !== null && velocityDiff !== null
+      && neighbourDist < RACING_RINGS_MAX_GAP_KM && velocityDiff > RACING_RINGS_MIN_SPEED_DIFF_KMS && !eitherRingInvisible;
+    this.isRacingRings.set(racingRings);
+    if (racingRings) {
+      const dashIdx = neighbourLabel.indexOf('-');
+      const innerLabel = dashIdx >= 0 ? neighbourLabel.slice(0, dashIdx) : neighbourLabel;
+      const outerLabel = dashIdx >= 0 ? neighbourLabel.slice(dashIdx + 1) : '';
+      this.racingRingsTooltip.set(
+        `Ring ${innerLabel} and Ring ${outerLabel} pass within ${neighbourDist!.toFixed(0)} km with a speed differential of ${velocityDiff!.toFixed(1)} km/s`,
+      );
+    } else {
+      this.racingRingsTooltip.set('');
+    }
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -790,7 +856,7 @@ export class SystemBodyComponent implements OnChanges {
     const width = this.getRingWidth();
     const area = this.getRingArea();
     const density = this.getRingDensity();
-    const isInvisible = density < 0.1 && width > 1000000;
+    const isInvisible = this.isLowDensityWideRing(width, density);
 
     const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
@@ -1052,9 +1118,8 @@ export class SystemBodyComponent implements OnChanges {
     const velocityKms = this.getTangentialVelocity();
     if (velocityKms === null) return '';
 
-    const speedOfLight = 299792458; // m/s
     const velocityMs = velocityKms * 1000;
-    const fractionOfC = velocityMs / speedOfLight;
+    const fractionOfC = velocityMs / SPEED_OF_LIGHT;
 
     if (fractionOfC >= 0.01) {
       return `${fractionOfC.toFixed(3)}c`;
@@ -1082,6 +1147,78 @@ export class SystemBodyComponent implements OnChanges {
     if (!this.isBlackHoleOrNeutronStar()) { return null; }
     const bd = this.body().bodyData;
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+  }
+
+  private isInvisibleRing(bd: CanonnBiostatsBody): boolean {
+    if (bd.type !== BODY_TYPE.Ring) { return false; }
+    const outer = bd.outerRadius ?? 0;
+    const inner = bd.innerRadius ?? 0;
+    const width = outer - inner;
+    const area = Math.PI * (outer * outer - inner * inner);
+    const density = area > 0 ? (bd.mass ?? 0) / area : 0;
+    return this.isLowDensityWideRing(width, density);
+  }
+
+  /** Shared invisibility heuristic used for ring stats, badges, and dialog explanations. */
+  private isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
+    return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
+  }
+
+  private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
+    const bd = body.bodyData;
+    if (bd.type !== BODY_TYPE.Ring || !body.parent) {
+      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
+    }
+    const siblings = body.parent.subBodies
+      .filter(s => s.bodyData.name.includes('Ring'))
+      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+    const idx = siblings.indexOf(body);
+    if (idx < 0 || idx === siblings.length - 1) {
+      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
+    }
+    const next = siblings[idx + 1];
+    const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
+    const thisLabel = bd.name.replace('Ring', '').trim();
+    const nextLabel = next.bodyData.name.replace('Ring', '').trim();
+    const currentDynamics = this.physics.ringDynamics(body);
+    const nextDynamics = this.physics.ringDynamics(next);
+    const velocityDiff = (currentDynamics !== null && nextDynamics !== null)
+      ? currentDynamics.maxVelocityKms - nextDynamics.minVelocityKms
+      : null;
+    const eitherRingInvisible = this.isInvisibleRing(bd) || this.isInvisibleRing(next.bodyData);
+    return { distance, label: `${thisLabel}-${nextLabel}`, velocityDiff, eitherRingInvisible };
+  }
+
+  private applyRingDynamics(dynamics: RingDynamics | null): void {
+    if (dynamics) {
+      this.getRingOrbitalPeriod.set(dynamics.orbitalPeriodDays);
+      this.getRingOrbitalPeriodDisplay.set(this.formatPeriodDays(dynamics.orbitalPeriodDays));
+      this.getRingOrbitalPeriodTooltip.set(`${dynamics.orbitalPeriodDays.toFixed(6)} days`);
+      this.getRingMinVelocity.set(dynamics.minVelocityKms);
+      this.getRingMinVelocityDisplay.set(this.formatVelocityKms(dynamics.minVelocityKms));
+      this.getRingMinVelocityTooltip.set(`${dynamics.minVelocityKms.toFixed(3)} km/s`);
+      this.getRingMaxVelocity.set(dynamics.maxVelocityKms);
+      this.getRingMaxVelocityDisplay.set(this.formatVelocityKms(dynamics.maxVelocityKms));
+      this.getRingMaxVelocityTooltip.set(`${dynamics.maxVelocityKms.toFixed(3)} km/s`);
+    } else {
+      this.getRingOrbitalPeriod.set(null);
+      this.getRingOrbitalPeriodDisplay.set('');
+      this.getRingOrbitalPeriodTooltip.set('');
+      this.getRingMinVelocity.set(null);
+      this.getRingMinVelocityDisplay.set('');
+      this.getRingMinVelocityTooltip.set('');
+      this.getRingMaxVelocity.set(null);
+      this.getRingMaxVelocityDisplay.set('');
+      this.getRingMaxVelocityTooltip.set('');
+    }
+  }
+
+  private formatVelocityKms(velocityKms: number): string {
+    const fractionOfC = velocityKms / (SPEED_OF_LIGHT / 1000);
+    if (fractionOfC >= 0.01) {
+      return `${fractionOfC.toFixed(3)}c`;
+    }
+    return `${velocityKms.toFixed(3)} km/s`;
   }
 
   private formatPeriodDays(days: number): string {

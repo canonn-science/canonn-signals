@@ -11,8 +11,8 @@ const KG_PER_MEGATONNE = 1e12;
 const EARTH_MASSES_PER_SOLAR_MASS = 332950;
 
 /** Newtonian gravitational constant (m³ kg⁻¹ s⁻²) and speed of light (m/s). */
-const GRAVITATIONAL_CONSTANT = 6.6743e-11;
-const SPEED_OF_LIGHT = 299792458;
+export const GRAVITATIONAL_CONSTANT = 6.6743e-11;
+export const SPEED_OF_LIGHT = 299792458;
 
 /**
  * Degenerate-matter stability limits (solar masses). The Chandrasekhar limit caps a
@@ -73,6 +73,16 @@ export interface RocheLimitCurves {
   densityRange: number[];
   rigidLimits: number[];
   fluidLimits: number[];
+}
+
+/** Orbital period and tangential velocity range for a ring or belt. */
+export interface RingDynamics {
+  /** Orbital period in days, derived from Kepler's third law at the nominal radius. */
+  orbitalPeriodDays: number;
+  /** Tangential velocity (km/s) at the inner radius using the nominal orbital period. */
+  minVelocityKms: number;
+  /** Tangential velocity (km/s) at the outer radius using the nominal orbital period. */
+  maxVelocityKms: number;
 }
 
 /**
@@ -137,6 +147,12 @@ export class BodyPhysicsService {
     if (parent.earthMasses) { return parent.earthMasses; }
     if (parent.solarMasses) { return parent.solarMasses * EARTH_MASSES_PER_SOLAR_MASS; }
     return null;
+  }
+
+  /** Parent mass in kg, or null when unknown. */
+  public parentMassKg(parent: CanonnBiostatsBody): number | null {
+    const earthMasses = this.parentMassEarthMasses(parent);
+    return earthMasses !== null ? earthMasses * KG_PER_EARTH_MASS : null;
   }
 
   /** Density of a planet or star, formatted with an appropriate unit. */
@@ -257,6 +273,53 @@ export class BodyPhysicsService {
       currentDistance,
       periapsis: currentDistance * (1 - eccentricity),
       apoapsis: currentDistance * (1 + eccentricity),
+    };
+  }
+
+  /**
+   * Orbital period and max tangential velocity for a ring or belt.
+   *
+   * **Note: Elite Dangerous ring physics differ from real-world orbital mechanics.**
+   *
+   * In real rings (e.g. Saturn's), each particle follows its own Keplerian orbit, so
+   * inner particles move faster than outer ones. Elite Dangerous instead treats the
+   * entire ring as a rigid body: every part shares a single rotational period, meaning
+   * the outer edge moves faster than the inner edge — the opposite of Keplerian shear.
+   *
+   * To recover that single period we apply Kepler's third law at a "nominal radius":
+   *   `nominalRadius = innerRadius + (outerRadius − innerRadius) × 3/8`
+   *
+   * The 3/8 factor was arrived at through observational data gathered by the Canonn
+   * Research Group. Earlier candidates included Euler's number e (≈ 0.368) and 1/φ²
+   * (≈ 0.382, where φ is the golden ratio); 3/8 = 0.375 sits between them and
+   * currently gives the closest fit to in-game measurements.
+   *
+   * This remains an approximation for several reasons:
+   *  - The game journals store ring radii to 4 significant figures, limiting precision.
+   *  - Data collection is ongoing; edge cases may yet refine or challenge the factor.
+   *
+   * The maximum velocity is the tangential speed at the outer edge using the period
+   * derived from the nominal radius.
+   *
+   * @param body  The Ring or Belt SystemBody.
+   * @returns     Dynamics values, or null when parent mass or radii are unavailable.
+   */
+  ringDynamics(body: SystemBody): RingDynamics | null {
+    const bd = body.bodyData;
+    if (bd.type !== BODY_TYPE.Ring && bd.type !== BODY_TYPE.Belt) { return null; }
+    const outer = bd.outerRadius ?? 0;
+    const inner = bd.innerRadius ?? 0;
+    if (outer <= 0 || !body.parent) { return null; }
+    const parentMassKg = this.parentMassKg(body.parent.bodyData);
+    if (parentMassKg === null || parentMassKg <= 0) { return null; }
+    const nominalRadiusM = (inner + (outer - inner) * (3 / 8)) * 1000;
+    const innerRadiusM = inner * 1000;
+    const outerRadiusM = outer * 1000;
+    const periodS = 2 * Math.PI * Math.sqrt(nominalRadiusM ** 3 / (GRAVITATIONAL_CONSTANT * parentMassKg));
+    return {
+      orbitalPeriodDays: periodS / 86400,
+      minVelocityKms: (2 * Math.PI * innerRadiusM / periodS) / 1000,
+      maxVelocityKms: (2 * Math.PI * outerRadiusM / periodS) / 1000,
     };
   }
 

@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { SystemBodyComponent } from './system-body.component';
 import { AppService } from '../app.service';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
+import { BodyPhysicsService } from '../data/body-physics.service';
 
 const KM_PER_AU = 149597870.7;
 
@@ -194,6 +195,35 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.isRingNotVisible()).toBe(true);
     });
 
+    it('ring with density exactly 0.1 is NOT invisible (threshold is strictly < 0.1)', () => {
+      // width > 1 000 000 km but density == 0.1 exactly → condition is density < 0.1, so false.
+      const parent = ringParent();
+      // area = π*(1100000² − 60000²) ≈ 3.789e12 km²; mass chosen so density = 0.1 exactly.
+      const area = Math.PI * (1100000 ** 2 - 60000 ** 2);
+      const mass = 0.1 * area;
+      const ring = makeBody({
+        name: 'Star A A Ring', type: 'Ring', subType: 'Icy',
+        innerRadius: 60000, outerRadius: 1100000, mass,
+      }, parent);
+      render(ring);
+      expect(component.getRingDensity()).toBeCloseTo(0.1, 9);
+      expect(component.getRingWidth()).toBeGreaterThan(1_000_000);
+      expect(component.isRingNotVisible()).toBe(false);
+    });
+
+    it('ring with width exactly 1 000 000 km is NOT invisible (threshold is strictly > 1 000 000)', () => {
+      // density < 0.1 but width == 1 000 000 exactly → condition is width > 1 000 000, so false.
+      const parent = ringParent();
+      const ring = makeBody({
+        name: 'Star A A Ring', type: 'Ring', subType: 'Icy',
+        innerRadius: 60000, outerRadius: 1060000, mass: 1, // width = 1 000 000 km exactly
+      }, parent);
+      render(ring);
+      expect(component.getRingWidth()).toBe(1_000_000);
+      expect(component.getRingDensity()).toBeLessThan(0.1);
+      expect(component.isRingNotVisible()).toBe(false);
+    });
+
     it('returns ring resource and signal info from the ring signals', () => {
       const parent = ringParent();
       const ring = makeBody({
@@ -229,6 +259,455 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(ring);
       component.showInvisibleRingExplanation();
       expect(lastDialogData().isInvisible).toBe(true);
+    });
+
+    it('formats ring max velocity in c and period in sub-day units for an extreme neutron-star ring', () => {
+      // Flyae Flyuae AA-A h35 AB 10 A Ring: neutron star parent (0.894531 M☉),
+      // ring inner = 35.856 km, outer = 149 250 km (API layer converts from metres).
+      // v_max ≈ 3 880 km/s ≈ 0.013c → above the 0.01c display threshold.
+      // period ≈ 241 s ≈ 4.03 min → displayed in minutes, not days.
+      const parent = makeBody({ name: 'Neutron Star', subType: 'Neutron Star', solarMasses: 0.894531, solarRadius: 1.5e-5 });
+      const ring = makeBody({
+        name: 'Neutron Star A Ring', type: 'Ring', subType: 'Metallic',
+        innerRadius: 35.856, outerRadius: 149250, mass: 699750000000,
+      }, parent);
+      render(ring);
+      expect(component.getRingMaxVelocityDisplay()).toMatch(/c$/);
+      expect(component.getRingMaxVelocityDisplay()).not.toMatch(/km\/s/);
+      expect(component.getRingMinVelocityDisplay()).toMatch(/km\/s$/);
+      expect(component.getRingOrbitalPeriodDisplay()).toMatch(/min$/);
+    });
+
+    it('formats ring max velocity in km/s and period in days for a typical ring', () => {
+      // Lightweight parent (100 M⊕) with a wide ring: v_max ≈ 25 km/s < 0.01c,
+      // period ≈ 1.44 days.
+      const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 25000 });
+      const ring = makeBody({
+        name: 'Gas Giant A Ring', type: 'Ring', subType: 'Rocky',
+        innerRadius: 100000, outerRadius: 500000, mass: 1e12,
+      }, parent);
+      render(ring);
+      expect(component.getRingMaxVelocityDisplay()).toMatch(/km\/s$/);
+      expect(component.getRingMaxVelocityDisplay()).not.toMatch(/c$/);
+      expect(component.getRingMinVelocityDisplay()).toMatch(/km\/s$/);
+      expect(component.getRingOrbitalPeriodDisplay()).toMatch(/days$/);
+    });
+
+    describe('ring neighbour distance', () => {
+      function makeRingSet(defs: Array<{ name: string; inner: number; outer: number }>) {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const rings = defs.map(d => makeBody(
+          { name: d.name, type: 'Ring', subType: 'Rocky', innerRadius: d.inner, outerRadius: d.outer },
+          parent,
+        ));
+        parent.subBodies.push(...rings);
+        return { parent, rings };
+      }
+
+      it('shows no distance for a single ring (no outward neighbour)', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 100000 }]);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+        expect(component.getRingNeighbourDistanceLabel()).toBe('');
+      });
+
+      it('returns null neighbour distance for a Belt body (Belts are excluded from ring-gap calculations)', () => {
+        // Belts are diffuse clusters; inter-ring spacing and speed comparisons are meaningless for them.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const belt = makeBody({ name: 'A Belt', type: 'Belt', subType: 'Rocky', innerRadius: 60000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(belt);
+        render(belt);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+        expect(component.getRingNeighbourDistanceLabel()).toBe('');
+      });
+
+      it('shows Distance A-B on A Ring and no distance on B Ring', () => {
+        const { rings: [ringA, ringB] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+        ]);
+
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(10000); // 110000 − 100000
+        expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+
+        render(ringB);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+        expect(component.getRingNeighbourDistanceLabel()).toBe('');
+      });
+
+      it('shows Distance A-B on A, Distance B-C on B, and no distance on C', () => {
+        const { rings: [ringA, ringB, ringC] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+        ]);
+
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(10000); // 110000 − 100000
+        expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+
+        render(ringB);
+        expect(component.getRingNeighbourDistance()).toBe(10000); // 210000 − 200000
+        expect(component.getRingNeighbourDistanceLabel()).toBe('B-C');
+
+        render(ringC);
+        expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('shows 0 km when rings are touching (innerB === outerA)', () => {
+        const { rings: [ringA] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 100000 },
+          { name: 'B Ring', inner: 100000, outer: 200000 },
+        ]);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(0);
+      });
+
+      it('shows a negative distance when rings overlap', () => {
+        const { rings: [ringA] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 110000 },
+          { name: 'B Ring', inner: 100000, outer: 200000 },
+        ]);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(-10000); // 100000 − 110000
+      });
+
+      it('shows no distance for a non-ring body', () => {
+        render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
+        expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('supports four rings — each shows distance to the next, outermost shows none', () => {
+        const { rings: [a, b, c, d] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+          { name: 'D Ring', inner: 310000, outer: 400000 },
+        ]);
+        render(a); expect(component.getRingNeighbourDistance()).toBe(10000);  expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+        render(b); expect(component.getRingNeighbourDistance()).toBe(10000);  expect(component.getRingNeighbourDistanceLabel()).toBe('B-C');
+        render(c); expect(component.getRingNeighbourDistance()).toBe(10000);  expect(component.getRingNeighbourDistanceLabel()).toBe('C-D');
+        render(d); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('supports five rings — each shows distance to the next, outermost shows none', () => {
+        const { rings: [a, b, c, d, e] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+          { name: 'D Ring', inner: 310000, outer: 400000 },
+          { name: 'E Ring', inner: 410000, outer: 500000 },
+        ]);
+        render(a); expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+        render(b); expect(component.getRingNeighbourDistanceLabel()).toBe('B-C');
+        render(c); expect(component.getRingNeighbourDistanceLabel()).toBe('C-D');
+        render(d); expect(component.getRingNeighbourDistanceLabel()).toBe('D-E');
+        render(e); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('strips "Ring" from labels for mixed-name rings (Sol-style)', () => {
+        // Halo Ring → "Halo", A Ring → "A", D Ring → "D", Outer Ring → "Outer"
+        const { rings: [halo, a, d, outer] } = makeRingSet([
+          { name: 'Halo Ring',  inner: 60000,  outer: 100000 },
+          { name: 'A Ring',     inner: 110000, outer: 200000 },
+          { name: 'D Ring',     inner: 210000, outer: 300000 },
+          { name: 'Outer Ring', inner: 310000, outer: 400000 },
+        ]);
+        render(halo);  expect(component.getRingNeighbourDistanceLabel()).toBe('Halo-A');
+        render(a);     expect(component.getRingNeighbourDistanceLabel()).toBe('A-D');
+        render(d);     expect(component.getRingNeighbourDistanceLabel()).toBe('D-Outer');
+        render(outer); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+
+      it('sorts rings by innerRadius, not by input order or name', () => {
+        // D is pushed first, then A, then B — correct order must come from the sort.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringD = makeBody({ name: 'D Ring', type: 'Ring', subType: 'Rocky', innerRadius: 210000, outerRadius: 300000 }, parent);
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 60000,  outerRadius: 100000 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 110000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(ringD, ringA, ringB);
+
+        render(ringA); expect(component.getRingNeighbourDistanceLabel()).toBe('A-B');
+        render(ringB); expect(component.getRingNeighbourDistanceLabel()).toBe('B-D');
+        render(ringD); expect(component.getRingNeighbourDistance()).toBeNull();
+      });
+    });
+
+    describe('ring velocity difference', () => {
+      // Re-uses makeRingSet from the outer rings describe scope.
+      function makeRingSet(defs: Array<{ name: string; inner: number; outer: number }>) {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const rings = defs.map(d => makeBody(
+          { name: d.name, type: 'Ring', subType: 'Rocky', innerRadius: d.inner, outerRadius: d.outer },
+          parent,
+        ));
+        parent.subBodies.push(...rings);
+        return { parent, rings };
+      }
+
+      it('shows no velocity difference for a single ring', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 100000 }]);
+        render(ringA);
+        expect(component.getRingVelocityDiff()).toBeNull();
+        expect(component.getRingVelocityDiffDisplay()).toBe('');
+      });
+
+      it('computes velocity difference using the same ringDynamics logic as min/max display', () => {
+        // The expected value is derived via the same BodyPhysicsService.ringDynamics() call
+        // the component itself uses, verifying reuse rather than reimplementing the formula.
+        const { rings: [ringA, ringB] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+        ]);
+        const physics = TestBed.inject(BodyPhysicsService);
+        const dynA = physics.ringDynamics(ringA)!;
+        const dynB = physics.ringDynamics(ringB)!;
+        const expectedDiff = dynA.maxVelocityKms - dynB.minVelocityKms;
+
+        render(ringA);
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedDiff, 9);
+        expect(component.getRingVelocityDiffDisplay()).not.toBe('');
+
+        render(ringB);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('produces correct velocity differences for three adjacent rings', () => {
+        const { rings: [ringA, ringB, ringC] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+          { name: 'C Ring', inner: 210000, outer: 300000 },
+        ]);
+        const physics = TestBed.inject(BodyPhysicsService);
+
+        render(ringA);
+        const expectedAB = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedAB, 9);
+
+        render(ringB);
+        const expectedBC = physics.ringDynamics(ringB)!.maxVelocityKms - physics.ringDynamics(ringC)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedBC, 9);
+
+        render(ringC);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('uses cleaned names in the velocity difference display label', () => {
+        const { rings: [halo, a, outer] } = makeRingSet([
+          { name: 'Halo Ring',  inner: 60000,  outer: 100000 },
+          { name: 'A Ring',     inner: 110000, outer: 200000 },
+          { name: 'Outer Ring', inner: 210000, outer: 300000 },
+        ]);
+        // The velocity diff label reuses getRingNeighbourDistanceLabel() — same cleaning rules.
+        render(halo);  expect(component.getRingNeighbourDistanceLabel()).toBe('Halo-A');
+        expect(component.getRingVelocityDiff()).not.toBeNull();
+        render(a);     expect(component.getRingNeighbourDistanceLabel()).toBe('A-Outer');
+        expect(component.getRingVelocityDiff()).not.toBeNull();
+        render(outer); expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('respects radius-sorted order when computing velocity differences', () => {
+        // Rings pushed in reverse order; sort must produce A→B→D pairing.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringD = makeBody({ name: 'D Ring', type: 'Ring', subType: 'Rocky', innerRadius: 210000, outerRadius: 300000 }, parent);
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 60000,  outerRadius: 100000 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 110000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(ringD, ringA, ringB);
+        const physics = TestBed.inject(BodyPhysicsService);
+
+        render(ringA);
+        const expectedAB = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedAB, 9);
+
+        render(ringB);
+        const expectedBD = physics.ringDynamics(ringB)!.maxVelocityKms - physics.ringDynamics(ringD)!.minVelocityKms;
+        expect(component.getRingVelocityDiff()).toBeCloseTo(expectedBD, 9);
+
+        render(ringD);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('yields null velocity difference when parent has no mass (ringDynamics returns null)', () => {
+        const parent = makeBody({ name: 'Massless Parent', radius: 50000 }); // no earthMasses / solarMasses
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 60000,  outerRadius: 100000 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 110000, outerRadius: 200000 }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        expect(component.getRingVelocityDiff()).toBeNull();
+      });
+
+      it('preserves negative velocity difference without clamping', () => {
+        // Force a negative diff by making the inner ring abnormally slow (tiny parent mass)
+        // and a fast outer ring (large parent mass is not possible with one shared parent,
+        // so we instead verify the formula is applied as-is by checking via the service).
+        const { rings: [ringA, ringB] } = makeRingSet([
+          { name: 'A Ring', inner: 60000,  outer: 100000 },
+          { name: 'B Ring', inner: 110000, outer: 200000 },
+        ]);
+        const physics = TestBed.inject(BodyPhysicsService);
+        const diff = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        render(ringA);
+        // Whatever the sign, the component must return the raw computed value unchanged.
+        expect(component.getRingVelocityDiff()).toBeCloseTo(diff, 9);
+      });
+    });
+
+    describe('Racing Rings badge', () => {
+      // earthMasses=100, rings at 50 000–50 049 and 50 050–100 000 km:
+      // gap = 1 km (<50), velocityDiff ≈ 10.7 km/s (>5) → badge ON.
+      // earthMasses=100, rings at 500 000–500 049 and 500 050–1 000 000 km:
+      // gap = 1 km (<50), velocityDiff ≈ 3.4 km/s (≤5) → badge OFF (velocity condition).
+
+      function makeRingSet(parentMass: number, defs: Array<{ name: string; inner: number; outer: number }>) {
+        const parent = makeBody({ name: 'Star', earthMasses: parentMass, radius: 50000 });
+        const rings = defs.map(d => makeBody(
+          { name: d.name, type: 'Ring', subType: 'Rocky', innerRadius: d.inner, outerRadius: d.outer },
+          parent,
+        ));
+        parent.subBodies.push(...rings);
+        return { parent, rings };
+      }
+
+      it('shows the badge when gap < 50 km and velocity difference > 5 km/s', () => {
+        const { rings: [ringA, ringB] } = makeRingSet(100, [
+          { name: 'A Ring', inner: 50000, outer: 50049 },
+          { name: 'B Ring', inner: 50050, outer: 100000 },
+        ]);
+        // Verify conditions via the physics service to confirm badge reuses the same formulas.
+        const physics = TestBed.inject(BodyPhysicsService);
+        const gap = 50050 - 50049;
+        const diff = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        expect(gap).toBeLessThan(50);
+        expect(diff).toBeGreaterThan(5);
+
+        render(ringA);
+        expect(component.isRacingRings()).toBe(true);
+        expect(component.racingRingsTooltip()).toContain('Ring A and Ring B');
+        expect(component.racingRingsTooltip()).toContain('km/s');
+
+        render(ringB); // outermost — no badge
+        expect(component.isRacingRings()).toBe(false);
+      });
+
+      it('does not show the badge when gap is exactly 50 km', () => {
+        const { rings: [ringA] } = makeRingSet(100, [
+          { name: 'A Ring', inner: 50000, outer: 50049 },
+          { name: 'B Ring', inner: 50099, outer: 100000 }, // gap = 50 km exactly
+        ]);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBe(50);
+        expect(component.isRacingRings()).toBe(false);
+      });
+
+      it('does not show the badge when gap is > 50 km', () => {
+        const { rings: [ringA] } = makeRingSet(100, [
+          { name: 'A Ring', inner: 50000, outer: 50049 },
+          { name: 'B Ring', inner: 50549, outer: 100000 }, // gap = 500 km
+        ]);
+        render(ringA);
+        expect(component.isRacingRings()).toBe(false);
+      });
+
+      it('does not show the badge when velocity difference is ≤ 5 km/s', () => {
+        // Wide, distant rings around a 100-M⊕ parent give velocity diff ≈ 3.4 km/s.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 500000, outerRadius: 500049 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 500050, outerRadius: 1000000 }, parent);
+        parent.subBodies.push(ringA, ringB);
+        const physics = TestBed.inject(BodyPhysicsService);
+        const diff = physics.ringDynamics(ringA)!.maxVelocityKms - physics.ringDynamics(ringB)!.minVelocityKms;
+        expect(diff).toBeLessThanOrEqual(5);
+        render(ringA);
+        expect(component.isRacingRings()).toBe(false);
+      });
+
+
+
+      it('only marks qualifying adjacent pairs in a three-ring set', () => {
+        // A–B: gap=1 km, vel diff ≈10.7 km/s → badge ON.
+        // B–C: gap=500 km → badge OFF regardless of velocity.
+        const { rings: [ringA, ringB, ringC] } = makeRingSet(100, [
+          { name: 'A Ring', inner: 50000,  outer: 50049 },
+          { name: 'B Ring', inner: 50050,  outer: 100000 },  // gap A-B = 1 km; wide so vel diff is large
+          { name: 'C Ring', inner: 100500, outer: 200000 },  // gap B-C = 500 km
+        ]);
+        render(ringA); expect(component.isRacingRings()).toBe(true);
+        render(ringB); expect(component.isRacingRings()).toBe(false); // gap to C is 500 km
+        render(ringC); expect(component.isRacingRings()).toBe(false); // outermost
+      });
+
+      it('formats tooltip with cleaned mixed names ("Halo Ring" → "Halo")', () => {
+        const { rings: [halo] } = makeRingSet(100, [
+          { name: 'Halo Ring', inner: 50000, outer: 50049 },
+          { name: 'A Ring',    inner: 50050, outer: 100000 },
+        ]);
+        render(halo);
+        expect(component.isRacingRings()).toBe(true);
+        expect(component.racingRingsTooltip()).toContain('Ring Halo and Ring A');
+      });
+
+      it('evaluates badge using radius-sorted order, not input order', () => {
+        // B pushed first (outer), A pushed second (inner) — sort must yield A→B pairing.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky', innerRadius: 50050, outerRadius: 100000 }, parent);
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky', innerRadius: 50000, outerRadius: 50049 }, parent);
+        parent.subBodies.push(ringB, ringA);
+        render(ringA);
+        expect(component.isRacingRings()).toBe(true);
+        expect(component.racingRingsTooltip()).toContain('Ring A and Ring B');
+      });
+
+      it('tooltip gap value matches the existing getRingNeighbourDistance signal', () => {
+        const { rings: [ringA] } = makeRingSet(100, [
+          { name: 'A Ring', inner: 50000, outer: 50049 },
+          { name: 'B Ring', inner: 50050, outer: 100000 },
+        ]);
+        render(ringA);
+        const gap = component.getRingNeighbourDistance()!;
+        expect(component.racingRingsTooltip()).toContain(`within ${gap.toFixed(0)} km`);
+      });
+
+      it('tooltip speed value matches the existing getRingVelocityDiff signal', () => {
+        const { rings: [ringA] } = makeRingSet(100, [
+          { name: 'A Ring', inner: 50000, outer: 50049 },
+          { name: 'B Ring', inner: 50050, outer: 100000 },
+        ]);
+        render(ringA);
+        const diff = component.getRingVelocityDiff()!;
+        expect(component.racingRingsTooltip()).toContain(`${diff.toFixed(1)} km/s`);
+      });
+
+      it('does not show the badge when the outer ring is invisible (wide + low mass)', () => {
+        // Ring B: width = 1 100 000 km > 1 000 000 and mass = 1 Mt → density ≈ 2.6e-13 Mt/km² < 0.1
+        // → invisible. Gap A-B = 1 km, vel diff ≈ 27 km/s, so badge WOULD fire without the guard.
+        // Distance and velocity signals are also suppressed (null) when either ring is invisible.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 50000, outerRadius: 50049, mass: 1e15 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 50050, outerRadius: 1100050, mass: 1 }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBeNull();    // suppressed: B is invisible
+        expect(component.getRingVelocityDiff()).toBeNull();         // suppressed: B is invisible
+        expect(component.isRacingRings()).toBe(false);               // invisible guard fires
+      });
+
+      it('does not show the badge when the inner ring is invisible (wide + low mass)', () => {
+        // Ring A: width = 1 050 000 km > 1 000 000 and mass = 1 Mt → invisible.
+        // Distance and velocity signals are also suppressed (null) when either ring is invisible.
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 50000, outerRadius: 1100000, mass: 1 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 1100001, outerRadius: 2000000, mass: 1e15 }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        expect(component.getRingNeighbourDistance()).toBeNull();    // suppressed: A is invisible
+        expect(component.getRingVelocityDiff()).toBeNull();         // suppressed: A is invisible
+        expect(component.isRacingRings()).toBe(false);               // invisible guard fires
+      });
     });
   });
 
