@@ -262,8 +262,9 @@
 .system-body .body-data-entry .info-icon {
     margin-left: 6px;
     font-size: 0.85em;
-    /* Vertically centre the icon against the label text sitting to its left. */
-    vertical-align: middle;
+    /* Sit the icon on the text baseline — vertical-align: middle looked off
+       against the label text here. */
+    vertical-align: baseline;
     color: var(--color-text);
     cursor: pointer
 }
