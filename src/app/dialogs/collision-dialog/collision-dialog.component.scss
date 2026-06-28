@@ -1,4 +1,11 @@
 .collision-dialog {
+    .summary {
+        margin: 0 0 16px;
+        line-height: 1.6;
+        font-style: italic;
+        opacity: 0.9;
+    }
+
     .values ul {
         list-style: none;
         padding-left: 0;

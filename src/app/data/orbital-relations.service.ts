@@ -43,6 +43,12 @@ export interface CollisionStatus {
   upcomingCollisions: CollisionWindow[];
   /** Sum of the two bodies' radii (km) — the contact threshold; null when not a candidate. */
   combinedRadiiKm: number | null;
+  /**
+   * Names of additional siblings (beyond the primary partner) that are also on crossing orbits
+   * with any member of this collision group, forming a multi-body collision cluster.
+   * Empty for simple pairs.
+   */
+  simultaneousPartners: string[];
 }
 
 /** Milliseconds per day, used to convert orbital periods (days) to wall-clock time. */
@@ -607,7 +613,7 @@ export class OrbitalRelationsService {
    */
   detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
     const none: CollisionStatus = {
-      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null,
+      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [],
     };
     const bd = body.bodyData;
     const range = this.orbitalRadialRange(bd);
@@ -647,6 +653,39 @@ export class OrbitalRelationsService {
 
     // Expand the winning partner to the full upcoming-collisions list.
     const upcoming = this.nextContacts(bd, best.partner.bodyData, best.contactKm, best.synodic, now, 10);
+
+    // Identify additional siblings that are part of the same crossing-orbit group, making
+    // this a multi-body cluster. Grow the group transitively: if A crosses B and B crosses C,
+    // C is in the group even if A doesn’t directly cross C.
+    const groupMembers = new Set<string>([bd.name, best.partner.bodyData.name]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const sibling of body.parent.subBodies) {
+        if (groupMembers.has(sibling.bodyData.name)) { continue; }
+        const sd = sibling.bodyData;
+        const sRange = this.orbitalRadialRange(sd);
+        if (!sd.orbitalPeriod || !sRange) { continue; }
+        for (const memberName of groupMembers) {
+          const member = memberName === bd.name
+            ? body
+            : body.parent!.subBodies.find(s => s.bodyData.name === memberName);
+          if (!member) { continue; }
+          const md = member.bodyData;
+          const mRange = this.orbitalRadialRange(md);
+          if (!mRange || !md.orbitalPeriod || md.orbitalPeriod === sd.orbitalPeriod) { continue; }
+          const contactKm = (md.radius ?? 0) + (sd.radius ?? 0);
+          const radialGapAu = Math.max(mRange.peri, sRange.peri) - Math.min(mRange.apo, sRange.apo);
+          if (radialGapAu > contactKm / KM_PER_AU) { continue; }
+          if (this.minOrbitDistanceKm(md, sd, contactKm) > contactKm) { continue; }
+          groupMembers.add(sibling.bodyData.name);
+          changed = true;
+          break;
+        }
+      }
+    }
+    const simultaneousPartners = [...groupMembers].filter(n => n !== bd.name && n !== best!.partner.bodyData.name);
+
     return {
       isCandidate: true,
       partnerName: best.partner.bodyData.name,
@@ -654,6 +693,7 @@ export class OrbitalRelationsService {
       nextCollision: upcoming[0] ?? null,
       upcomingCollisions: upcoming,
       combinedRadiiKm: best.contactKm,
+      simultaneousPartners,
     };
   }
 }

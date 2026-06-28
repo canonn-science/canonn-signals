@@ -310,7 +310,8 @@
                                     @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
                                       <app-system-body [body]="body"
                                         [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
-                                      [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"></app-system-body>
+                                      [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"
+                                      [systemPopulation]="data.system.population"></app-system-body>
                                     }
                                   </div>
                                 }

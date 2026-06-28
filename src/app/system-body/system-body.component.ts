@@ -26,7 +26,7 @@ import { HillLimitDialogComponent } from '../dialogs/hill-limit-dialog/hill-limi
 import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-limit-dialog.component';
 import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
 import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
-import { CollisionDialogComponent, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
+import { CollisionDialogComponent, CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
 import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
 import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
@@ -83,6 +83,7 @@ export class SystemBodyComponent implements OnChanges {
   readonly isLast = input<boolean>(false);
   readonly forceExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
+  readonly systemPopulation = input<number>(0);
   readonly childComponents = viewChildren(SystemBodyComponent);
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
@@ -1050,6 +1051,13 @@ export class SystemBodyComponent implements OnChanges {
         nextCollision: status.nextCollision,
         upcomingCollisions: status.upcomingCollisions,
         combinedRadiiKm: status.combinedRadiiKm,
+        bodyInfo: this.buildCollisionBodyInfo(this.body()),
+        partnerInfo: this.buildCollisionBodyInfo(
+          this.body().parent?.subBodies.find(s => s.bodyData.name === status.partnerName) ?? null
+        ),
+        systemPopulation: this.systemPopulation(),
+        systemName: this.edGalaxyData()?.Name ?? '',
+        simultaneousPartners: status.simultaneousPartners,
       } satisfies CollisionDialogData,
     });
   }
@@ -1063,6 +1071,19 @@ export class SystemBodyComponent implements OnChanges {
     if (days < 1) { return 'less than a day'; }
     const dayLabel = `${Math.round(days).toLocaleString()} days`;
     return days >= 365.25 ? `${dayLabel} (${(days / 365.25).toFixed(1)} years)` : dayLabel;
+  }
+
+  /** Extracts the key descriptive facts from a SystemBody for the collision dialog summary. */
+  private buildCollisionBodyInfo(body: SystemBody | null): CollisionBodyInfo | null {
+    if (!body) { return null; }
+    const bd = body.bodyData;
+    return {
+      subType: bd.subType || bd.type || 'body',
+      atmosphereType: bd.atmosphereType ?? null,
+      orbitalPeriodDays: bd.orbitalPeriod ?? 0,
+      moonCount: body.subBodies.length,
+      hasRings: !!(bd.rings?.length),
+    };
   }
 
   public showShepherdingHillLimitChart(): void {

@@ -976,7 +976,8 @@
 <div class="child-bodies">
   @for (body of body().subBodies; track $index; let isLast = $last) {
   <app-system-body [body]="body" [isLast]="isLast" [forceExpanded]="forceExpanded() || isAnchorBody"
-    [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxyData()"></app-system-body>
+    [anchorBodyId]="anchorBodyId()" [systemPopulation]="systemPopulation()"
+    [edGalaxyData]="edGalaxyData()"></app-system-body>
   }
 </div>
 </div>
