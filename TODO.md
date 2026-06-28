@@ -24,15 +24,6 @@ pre-dates this branch.
   ([:52](src/app/data/stellar-physics.service.ts#L52)) to a negative km/s, which renders as
   e.g. "-12 km/s" or a negative fraction of c. Fix: use the magnitude of the period.
 
-- **`classifyNeutronStar` mislabels retrograde neutron stars as "Millisecond Pulsar"** —
-  [stellar-physics.service.ts:104](src/app/data/stellar-physics.service.ts#L104).
-  Same root cause: `period = rotationalPeriodDays * SECONDS_PER_DAY`
-  ([:115](src/app/data/stellar-physics.service.ts#L115)) has no `Math.abs`, so a negative
-  period satisfies the first branch `period < 0.01`
-  ([:118](src/app/data/stellar-physics.service.ts#L118)) — any retrograde neutron star,
-  however slowly it spins, is labelled "Millisecond Pulsar" (or "Hyper-Massive Millisecond
-  Pulsar"). Fix: take `Math.abs` of the period.
-
 - **`rocheExcess` compares against the semi-major axis, not periapsis** —
   [body-physics.service.ts:354](src/app/data/body-physics.service.ts#L354).
   A Roche breach is set by closest approach (periapsis), but `semiMajorAxisM`

@@ -25,6 +25,13 @@ describe('StellarPhysicsService', () => {
     it('returns none for a non-simple ratio', () => {
       expect(service.spinResonance(1, 7.13)).toBe('none');
     });
+
+    it('detects resonance for retrograde rotators (negative rotationalPeriod)', () => {
+      // Elite stores retrograde rotation as a negative period; a retrograde
+      // tidally-locked body must still classify as 1:1, not silently 'none'.
+      expect(service.spinResonance(-10, 10)).toBe('1:1');
+      expect(service.spinResonance(-2, 3)).toBe('3:2');
+    });
   });
 
   describe('tangentialVelocityKms', () => {
@@ -86,6 +93,15 @@ describe('StellarPhysicsService', () => {
 
     it('classifies a multi-hour rotator as an anomalous slow-rotator', () => {
       expect(service.classifyNeutronStar(1.5, 7200 / SEC, 8)).toBe('Anomalous Slow-Rotator');
+    });
+
+    it('classifies retrograde (negative period) rotators by magnitude', () => {
+      // Elite stores retrograde rotation as a negative period; the sign must not
+      // collapse a slow rotator into the sub-10ms "Millisecond Pulsar" branch.
+      expect(service.classifyNeutronStar(1.5, -7200 / SEC, 8)).toBe('Anomalous Slow-Rotator');
+      expect(service.classifyNeutronStar(1.5, -10 / SEC, 8)).toBe('Slow-Period Pulsar');
+      // A genuinely fast retrograde spinner still classifies as a millisecond pulsar.
+      expect(service.classifyNeutronStar(1.5, -0.005 / SEC, 8)).toBe('Millisecond Pulsar');
     });
   });
 });
