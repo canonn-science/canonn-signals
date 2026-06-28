@@ -2,6 +2,18 @@
 
 Guidance for AI agents (and humans) working in this repo. Read this before making changes.
 
+## Repository & contributions
+- **The canonical repo is [`canonn-science/canonn-signals`](https://github.com/canonn-science/canonn-signals).**
+  All commits, branches and pull requests **must** target `canonn-science/canonn-signals` — **never** any
+  fork or other remote. In particular, this clone also has an `upstream` remote pointing at
+  `Elfener99/canonn-signals` (the original author's fork); **do not** push or open PRs against it, or any
+  other repo. When in doubt, `git remote -v` and confirm you're targeting `origin` (`canonn-science`).
+- **Branch + PR, don't push to `main`.** Cut a feature branch and open a PR against
+  `canonn-science/canonn-signals`'s `main`. Push to `main` only when explicitly asked.
+- **Deployment is automatic:** merging to `main` triggers `.github/workflows/main.yml`, which runs
+  `pnpm test` + `pnpm run build` and deploys `dist/` to GitHub Pages at **signals.canonn.tech**. A red
+  build blocks the deploy, so keep test + build green (see *Verifying changes*).
+
 ## What this is
 **Canonn Signals** — an Angular single-page app that displays Elite Dangerous star-system
 data (bodies, signals, biology/geology, orbital mechanics, region map). It fetches from
@@ -22,16 +34,19 @@ body tree. No backend in this repo.
 - `npm start` → `prestart` (runs `generate-credits`, see below) then `ng serve` (binds `0.0.0.0`, port 4200; reachable from the dev-container host).
 - `npm run build` → `prebuild` (runs `generate-credits`) then `ng build`. **Output goes to `dist/`** (the builder's `outputPath.browser` is `""`, so there's no `dist/browser/` subdir).
 - `npm run generate-credits` → `scripts/generate-credits.js` parses the `# Credits` section of `readme.md` and writes `src/app/data/credits.generated.ts` (an HTML snippet imported by the Credits panel). Runs automatically before `start`/`build`.
-- `npm test` → `ng test` (Vitest). For CI/one-shot: `ng test --watch=false`. No browser/Chrome needed.
+- `npm run generate-nebulae` → `scripts/generate-nebulae.js` regenerates `src/assets/nebulae.json` (the catalogue behind the "Nearest Nebulae" panel). **Not** wired into `start`/`build` — run it by hand when the source data changes.
+- `npm test` → `ng test` (Vitest). For CI/one-shot: `ng test --watch=false`. No browser/Chrome needed. **Do NOT pass `--browsers=…` (or any Karma-era browser flag)** — the Vitest builder rejects it (`The "browsers" option requires @vitest/browser-*`). Run `ng test --watch=false` plain; jsdom is the runtime.
 - `npm run watch` → dev build in watch mode.
 - `npm run e2e` → `playwright test` (Playwright). End-to-end/functional + responsive + cross-browser checks in `e2e/` (desktop/tablet/mobile × Chromium/Firefox). It boots the dev server itself; deterministic specs stub the APIs with saved payloads in `e2e/fixtures/` (helpers in `e2e/support/`). **Playwright is for functional/UI correctness only — we do NOT use it for stress/load/performance testing.** This sandbox's single dev server can deadlock under heavy parallelism; cap workers (`npx playwright test --workers=6`) if needed.
 
 ## Architecture
 - `src/app/app.component.*` — shell (router outlet, background image via async pipe).
-- `src/app/home/home.component.*` — search + system overview; **large** (~1110 lines), holds search/region-map/markers logic.
-- `src/app/system-body/system-body.component.*` — recursive body renderer; still **large (~1390 lines)** but the heavy pure logic (orbital relations, physics, neutron-star classification, canvas charts, temperature lookup) has been extracted into `data/` services. Still the most complex component — **treat with care; prefer extracting more pure logic into a `data/` service over adding to it.**
+- `src/app/home/home.component.*` — search + system overview; **large** (~1150 lines), holds search/region-map/markers logic and the Nearest-Nebulae panel.
+- `src/app/system-body/system-body.component.*` — recursive body renderer; still **large (~1430 lines)** but the heavy pure logic (orbital relations, physics, neutron-star classification, canvas charts, temperature lookup) has been extracted into `data/` services. Still the most complex component — **treat with care; prefer extracting more pure logic into a `data/` service over adding to it.**
+- `src/app/region-map/region-map.component.*` — interactive SVG galaxy region map: highlights the current system's region and overlays system / known-system / DSSA / Gnosis markers.
+- `src/app/dialogs/*` — the standalone dialog components (each in its own folder): `roche-limit`, `hill-limit`, `apo-peri`, `orbital-diagram`, `hr-diagram`, `white-dwarf-types`, `on-foot-safety`, `tidal-lock`, `invisible-ring`, `json` (raw-data viewer + copy), plus the shared `dialog-shell`. Open them via `MatDialog` — each opener `await import()`s its dialog so it ships as a lazy chunk, not in the initial bundle.
 - `src/app/app.service.ts` — shared state (BehaviorSubjects) + HTTP; use its `resilientGet()` (timeout + retry) for new API calls.
-- `src/app/data/*.ts` — pure data/lookup tables + pure functions (e.g. `temperature-estimation.ts` with `estimateTempRange`/`lookupTempDelta`, `body-images.ts`, `mining-resources.ts`) **and** the pure injectable services that back the body renderer:
+- `src/app/data/*.ts` — pure data/lookup tables + pure functions (e.g. `temperature-estimation.ts` with `estimateTempRange`/`lookupTempDelta`, `body-images.ts`, `mining-resources.ts`, `materials.ts`, `body-types.ts`, `genus.ts`, `nebulae.ts`, `white-dwarf.ts`, `stellar-reference.ts`, `hr-diagram.ts`, `orbital-diagrams.ts`, `html-entities.ts`, `json-bigint.ts`) **and** the pure injectable services that back the body renderer:
   - `body-physics.service.ts` — densities, Roche limits, Hill spheres, ring-shepherding.
   - `stellar-physics.service.ts` — spin resonance, tangential velocity, jet-cone angle, neutron-star classification.
   - `orbital-relations.service.ts` — Trojan/Lagrange (L1–L5) and rosette detection from co-orbital siblings.
@@ -105,7 +120,7 @@ idioms; don't reintroduce the older patterns.
 
 ## Verifying changes
 Build + test must stay green: `npm run build` (rc=0; only pre-existing budget warnings are acceptable)
-and `ng test --watch=false` (currently 314/314 across 21 spec files). The **Vitest** suite needs no browser — jsdom
+and `ng test --watch=false` (currently 533/533 across 36 spec files). The **Vitest** suite needs no browser — jsdom
 covers it (note: jsdom has no real `<canvas>`, so chart-rendering tests assert "doesn't throw" rather than pixels).
 The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox) and run separately from the unit-test lane.
 
@@ -124,9 +139,9 @@ The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox)
 
 ## Backlog
 Remaining opportunities:
-- **`home.component.ts` (~1110 lines)** mixes search, body-tree building and SIMBAD/PG-name
+- **`home.component.ts` (~1150 lines)** mixes search, body-tree building and SIMBAD/PG-name
   formatting — extract the body-tree builder and name formatting into `data/` helpers/services.
-- **`system-body.component.ts` (~1390 lines)** — its derived values are computed in `ngOnChanges`
+- **`system-body.component.ts` (~1430 lines)** — its derived values are computed in `ngOnChanges`
   and pushed into writable signals (`getX.set(computeX())`); migrate these to true `computed()`
   signals where their inputs allow, and extract any further pure logic into `data/` services.
 - Convert remaining BehaviorSubject state in `app.service.ts` to signals where it simplifies consumers.

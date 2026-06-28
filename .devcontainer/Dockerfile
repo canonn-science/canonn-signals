@@ -21,7 +21,7 @@ RUN apt-get update \
 # Install the Playwright browsers (Chromium + Firefox) and their system
 # dependencies for end-to-end tests. Keep the version in sync with the
 # `@playwright/test` dependency in package.json.
-ARG PLAYWRIGHT_VERSION=1.60.0
+ARG PLAYWRIGHT_VERSION=1.61.0
 RUN npx --yes playwright@${PLAYWRIGHT_VERSION} install --with-deps chromium firefox
 
 # Go! (And keep going.)
