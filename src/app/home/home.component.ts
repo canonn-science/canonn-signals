@@ -1012,7 +1012,8 @@ export interface CanonnBiostats {
     // powerState
     // powers
     // primaryEconomy
-    region: {
+    // Absent for some systems (e.g. uninhabited deep-space systems served by Spansh), so optional.
+    region?: {
       name: string;
       region: number;
     };

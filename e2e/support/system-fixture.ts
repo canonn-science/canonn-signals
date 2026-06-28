@@ -64,6 +64,12 @@ export interface FixtureOptions {
   systemName: string;
   /** The system's id64 (returned by the stubbed typeahead). */
   id64: number;
+  /**
+   * ISO timestamp to pin "now" to. Defaults to `2026-06-14T00:00:00Z`. Override when a test
+   * asserts day-counts/dates that were captured at a different reference time (e.g. collision
+   * windows months out, whose "days until" only line up from a specific now).
+   */
+  fixedTime?: string;
 }
 
 /**
@@ -93,7 +99,7 @@ export async function loadFixtureSystem(page: Page, opts: FixtureOptions): Promi
   // but pinning also guards the far-future rollover once real time passes an apsis).
   // setFixedTime pins Date.now()/new Date() but keeps timers running, so the app's
   // setTimeout-driven logic (marker scaling, etc.) still works.
-  await page.clock.setFixedTime(new Date('2026-06-14T00:00:00Z'));
+  await page.clock.setFixedTime(new Date(opts.fixedTime ?? '2026-06-14T00:00:00Z'));
 
   await page.goto('/');
   await page.getByRole('combobox').fill(opts.systemName);

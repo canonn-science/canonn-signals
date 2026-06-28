@@ -1040,6 +1040,20 @@ export class SystemBodyComponent implements OnChanges {
   public showCollisionDialog(): void {
     const status = this.collisionStatus;
     if (!status?.isCandidate) { return; }
+    const siblings = this.body().parent?.subBodies ?? [];
+
+    // Descriptive info for every collision candidate: each crossing partner from the upcoming
+    // windows, the primary partner, and any simultaneous-cluster member — so the dialog can
+    // enumerate all involved bodies, not just the primary pair.
+    const partnerNames = new Set<string>();
+    for (const w of status.upcomingCollisions) { if (w.partnerName) { partnerNames.add(w.partnerName); } }
+    if (status.partnerName) { partnerNames.add(status.partnerName); }
+    for (const n of status.simultaneousPartners) { partnerNames.add(n); }
+    const partnerInfos = [...partnerNames].map(name => ({
+      name,
+      info: this.buildCollisionBodyInfo(siblings.find(s => s.bodyData.name === name) ?? null),
+    }));
+
     this.dialog.open(CollisionDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -1055,8 +1069,9 @@ export class SystemBodyComponent implements OnChanges {
         combinedRadiiKm: status.combinedRadiiKm,
         bodyInfo: this.buildCollisionBodyInfo(this.body()),
         partnerInfo: this.buildCollisionBodyInfo(
-          this.body().parent?.subBodies.find(s => s.bodyData.name === status.partnerName) ?? null
+          siblings.find(s => s.bodyData.name === status.partnerName) ?? null
         ),
+        partnerInfos,
         systemPopulation: this.systemPopulation(),
         systemName: this.edGalaxyData()?.Name ?? '',
         simultaneousPartners: status.simultaneousPartners,

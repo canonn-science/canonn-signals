@@ -1,0 +1,1494 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "absoluteMagnitude": 8.376114, 
+        "age": 1840, 
+        "axialTilt": 0.0, 
+        "belts": [
+          {
+            "innerRadius": 801660000.0, 
+            "mass": 98757000000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 A Belt", 
+            "outerRadius": 2057100000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "bodyId": 0, 
+        "distanceToArrival": 0.0, 
+        "id64": 15463257612378, 
+        "luminosity": "Va", 
+        "mainStar": true, 
+        "name": "Eoch Flyuae YK-K c10-56", 
+        "rotationalPeriod": 2.51640478831019, 
+        "rotationalPeriodTidallyLocked": false, 
+        "solarMasses": 0.472656, 
+        "solarRadius": 0.575134228612509, 
+        "spectralClass": "M1", 
+        "stations": [], 
+        "subType": "M (Red dwarf) Star", 
+        "surfaceTemperature": 3368.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-23T11:53:52Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-23 11:53:52+00"
+      }, 
+      {
+        "argOfPeriapsis": 347.910906, 
+        "ascendingNode": 125.685637, 
+        "bodyId": 5, 
+        "id64": 180159448352432218, 
+        "meanAnomaly": 139.970609, 
+        "name": "Eoch Flyuae YK-K c10-56 barycentre 5", 
+        "orbitalEccentricity": 6e-06, 
+        "orbitalInclination": -0.004621, 
+        "orbitalPeriod": 1.32951243884259, 
+        "semiMajorAxis": 0.0185188091537789, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-23T11:53:53Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-23 11:53:53+00"
+      }, 
+      {
+        "argOfPeriapsis": 52.228841, 
+        "ascendingNode": 156.755936, 
+        "atmosphereComposition": {
+          "Helium": 29.718277, 
+          "Hydrogen": 70.281738
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -2.223283, 
+        "bodyId": 6, 
+        "distanceToArrival": 9.241025, 
+        "earthMasses": 28.623463, 
+        "gravity": 1.92208004486591, 
+        "id64": 216188245371396186, 
+        "isLandable": false, 
+        "meanAnomaly": 57.496016, 
+        "name": "Eoch Flyuae YK-K c10-56 1", 
+        "orbitalEccentricity": 0.197156, 
+        "orbitalInclination": -5.511762, 
+        "orbitalPeriod": 0.278850230902778, 
+        "parents": [
+          {
+            "Null": 5
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 24601.522, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 36926000.0, 
+            "mass": 14780000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 1 A Ring", 
+            "outerRadius": 36930000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "innerRadius": 36930000.0, 
+            "mass": 298840000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 1 B Ring", 
+            "outerRadius": 36935000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 0.556479123148148, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.63669123576637e-06, 
+        "stations": [], 
+        "subType": "Class IV gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 826.045044, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-23T11:53:53Z", 
+          "meanAnomaly": "2026-06-23T11:53:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-23 11:53:53+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 237.157193, 
+        "ascendingNode": 113.296374, 
+        "atmosphereType": null, 
+        "axialTilt": -1.729856, 
+        "bodyId": 9, 
+        "distanceToArrival": 9.350555, 
+        "earthMasses": 0.000691, 
+        "gravity": 0.0724332619557459, 
+        "id64": 324274636428288090, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.503803, 
+          "Carbon": 15.998566, 
+          "Chromium": 8.709219, 
+          "Iron": 19.365301, 
+          "Nickel": 14.6471, 
+          "Niobium": 1.323515, 
+          "Phosphorus": 10.242557, 
+          "Selenium": 2.977668, 
+          "Sulphur": 19.025608, 
+          "Tellurium": 1.451213, 
+          "Vanadium": 4.755444
+        }, 
+        "meanAnomaly": 332.120793, 
+        "name": "Eoch Flyuae YK-K c10-56 1 a", 
+        "orbitalEccentricity": 3.3e-05, 
+        "orbitalInclination": 0.013618, 
+        "orbitalPeriod": 0.157127550081019, 
+        "parents": [
+          {
+            "Planet": 6
+          }, 
+          {
+            "Null": 5
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 622.7360625, 
+        "rotationalPeriod": -1.24575988782407, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000251518168059788, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-01-22 00:33:02+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.881, 
+          "Rock": 91.119
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 840.063477, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-23T11:53:53Z", 
+          "meanAnomaly": "2026-06-23T11:53:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-23 11:53:53+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 200.490883, 
+        "ascendingNode": 41.825083, 
+        "atmosphereComposition": {
+          "Oxygen": 2.999999, 
+          "Silicates": 5.0, 
+          "Sulphur dioxide": 90.0
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.08625, 
+        "bodyId": 10, 
+        "distanceToArrival": 9.146358, 
+        "earthMasses": 0.000261, 
+        "gravity": 0.0521524421331702, 
+        "id64": 360303433447252058, 
+        "isLandable": false, 
+        "meanAnomaly": 33.450288, 
+        "name": "Eoch Flyuae YK-K c10-56 1 b", 
+        "orbitalEccentricity": 0.000216, 
+        "orbitalInclination": -0.00413, 
+        "orbitalPeriod": 0.153610475914352, 
+        "parents": [
+          {
+            "Planet": 6
+          }, 
+          {
+            "Null": 5
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 450.6381875, 
+        "rotationalPeriod": 1.89127718238426, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000247750778161951, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.8295, 
+          "Rock": 91.1705
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 839.99823, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-23T11:53:53Z", 
+          "meanAnomaly": "2026-06-23T11:53:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-23 11:53:53+00", 
+        "volcanismType": "Major Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 12.874691, 
+        "ascendingNode": 95.932804, 
+        "atmosphereType": null, 
+        "axialTilt": 0.072024, 
+        "bodyId": 11, 
+        "distanceToArrival": 9.333178, 
+        "earthMasses": 0.001476, 
+        "gravity": 0.0935663301723259, 
+        "id64": 396332230466216026, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 16.145247, 
+          "Germanium": 5.654466, 
+          "Iron": 19.522676, 
+          "Manganese": 8.062666, 
+          "Molybdenum": 1.274819, 
+          "Nickel": 14.766132, 
+          "Niobium": 1.334271, 
+          "Phosphorus": 10.336465, 
+          "Selenium": 3.004969, 
+          "Sulphur": 19.200043, 
+          "Technetium": 0.698247
+        }, 
+        "meanAnomaly": 161.468548, 
+        "name": "Eoch Flyuae YK-K c10-56 1 c", 
+        "orbitalEccentricity": 0.001125, 
+        "orbitalInclination": 0.061853, 
+        "orbitalPeriod": 0.154680379282407, 
+        "parents": [
+          {
+            "Planet": 6
+          }, 
+          {
+            "Null": 5
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 800.657125, 
+        "rotationalPeriod": 4.83592220770833, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000248899845368514, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.8295, 
+          "Rock": 91.1705
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 839.880859, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-23T11:53:53Z", 
+          "meanAnomaly": "2026-06-23T11:53:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-23 11:53:53+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 232.228816, 
+        "ascendingNode": 156.755936, 
+        "atmosphereType": null, 
+        "axialTilt": -0.480687, 
+        "bodyId": 12, 
+        "distanceToArrival": 9.242136, 
+        "earthMasses": 0.442188, 
+        "gravity": 0.795529927602733, 
+        "id64": 432361027485179994, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.628216, 
+          "Carbon": 12.595892, 
+          "Chromium": 9.429751, 
+          "Iron": 20.967434, 
+          "Manganese": 8.659337, 
+          "Molybdenum": 1.369161, 
+          "Nickel": 15.858889, 
+          "Phosphorus": 8.064107, 
+          "Sulphur": 14.979124, 
+          "Technetium": 0.74992, 
+          "Zinc": 5.698164
+        }, 
+        "meanAnomaly": 57.496016, 
+        "name": "Eoch Flyuae YK-K c10-56 2", 
+        "orbitalEccentricity": 0.197156, 
+        "orbitalInclination": -5.511762, 
+        "orbitalPeriod": 0.278850230902778, 
+        "parents": [
+          {
+            "Null": 5
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 4752.9345, 
+        "rotationalPeriod": 98.9994499499884, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000364930926435626, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.6251, 
+          "Rock": 67.3749
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 839.695068, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-23T11:53:53Z", 
+          "meanAnomaly": "2026-06-23T11:53:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-23 11:53:53+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 305.368807, 
+        "ascendingNode": -120.95887, 
+        "atmosphereType": null, 
+        "axialTilt": -0.294817, 
+        "bodyId": 13, 
+        "distanceToArrival": 14.672634, 
+        "earthMasses": 0.859682, 
+        "gravity": 1.03178566330172, 
+        "id64": 468389824504143962, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.005451, 
+          "Arsenic": 2.126269, 
+          "Carbon": 13.575518, 
+          "Chromium": 10.163136, 
+          "Iron": 22.598146, 
+          "Mercury": 0.986824, 
+          "Molybdenum": 1.475646, 
+          "Nickel": 17.092291, 
+          "Phosphorus": 8.69128, 
+          "Sulphur": 16.144102, 
+          "Zinc": 6.14133
+        }, 
+        "meanAnomaly": 160.770633, 
+        "name": "Eoch Flyuae YK-K c10-56 3", 
+        "orbitalEccentricity": 1e-06, 
+        "orbitalInclination": -0.000127, 
+        "orbitalPeriod": 2.65997330899306, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 5819.1655, 
+        "rotationalPeriod": 2.51806993645833, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0294037682854565, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-01-22 00:37:48+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.6233, 
+          "Rock": 67.371
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 658.000488, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-23T11:53:52Z", 
+          "meanAnomaly": "2026-06-23T11:53:52Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-23 11:53:52+00", 
+        "volcanismType": "Minor Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 26.758431, 
+        "ascendingNode": 21.453252, 
+        "bodyId": 15, 
+        "id64": 540447418542071898, 
+        "meanAnomaly": 84.040685, 
+        "name": "Eoch Flyuae YK-K c10-56 barycentre 15", 
+        "orbitalEccentricity": 0.002025, 
+        "orbitalInclination": 0.002668, 
+        "orbitalPeriod": 1474.23417203956, 
+        "semiMajorAxis": 1.98394254320919, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-05-27T11:36:33Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-05-27 11:36:33+00"
+      }, 
+      {
+        "argOfPeriapsis": 304.689538, 
+        "ascendingNode": -68.347715, 
+        "atmosphereComposition": {
+          "Helium": 29.718277, 
+          "Hydrogen": 70.281738
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.155701, 
+        "bodyId": 16, 
+        "distanceToArrival": 987.342163, 
+        "earthMasses": 1497.867065, 
+        "gravity": 10.9488927296829, 
+        "id64": 576476215561035866, 
+        "isLandable": false, 
+        "meanAnomaly": 99.061116, 
+        "name": "Eoch Flyuae YK-K c10-56 4", 
+        "orbitalEccentricity": 0.003242, 
+        "orbitalInclination": 9.100617, 
+        "orbitalPeriod": 292.80076700228, 
+        "parents": [
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 74565.536, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 612505012579999834, 
+            "innerRadius": 146580000.0, 
+            "mass": 2222700000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 4 A Ring", 
+            "outerRadius": 398320000.0, 
+            "signals": {
+              "signals": {
+                "Painite": 1
+              }, 
+              "updateTime": "2026-01-22 00:40:54+00"
+            }, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 1880500000.0, 
+            "mass": 138740000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 4 B Ring", 
+            "outerRadius": 4738600000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 1.67545172111111, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00651525723952686, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 356.96936, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:45Z", 
+          "meanAnomaly": "2026-05-27T11:36:45Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:45+00"
+      }, 
+      {
+        "argOfPeriapsis": 26.159413, 
+        "ascendingNode": 85.334191, 
+        "atmosphereType": null, 
+        "axialTilt": -0.338433, 
+        "bodyId": 18, 
+        "distanceToArrival": 985.615026, 
+        "earthMasses": 0.005795, 
+        "gravity": 0.0965497093912511, 
+        "id64": 648533809598963802, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 1.629811, 
+          "Carbon": 22.280815, 
+          "Chromium": 5.662129, 
+          "Iron": 12.589973, 
+          "Manganese": 5.19953, 
+          "Mercury": 0.549783, 
+          "Nickel": 9.522529, 
+          "Niobium": 0.860458, 
+          "Phosphorus": 14.26456, 
+          "Sulphur": 26.496502, 
+          "Tellurium": 0.943898
+        }, 
+        "meanAnomaly": 283.4197, 
+        "name": "Eoch Flyuae YK-K c10-56 4 a", 
+        "orbitalEccentricity": 3e-05, 
+        "orbitalInclination": 0.026071, 
+        "orbitalPeriod": 1.40857848304398, 
+        "parents": [
+          {
+            "Planet": 16
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1561.823375, 
+        "rotationalPeriod": 1.40862647072917, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00405967902008109, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-05-27 11:36:49+00"
+        }, 
+        "solidComposition": {
+          "Ice": 78.491, 
+          "Metal": 1.9054, 
+          "Rock": 19.6036
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 124.764145, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:49Z", 
+          "meanAnomaly": "2026-05-27T11:36:49Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:49+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 140.484403, 
+        "ascendingNode": -9.353893, 
+        "atmosphereType": null, 
+        "axialTilt": 0.021312, 
+        "bodyId": 19, 
+        "distanceToArrival": 988.892251, 
+        "earthMasses": 0.034887, 
+        "gravity": 0.177109003772815, 
+        "id64": 684562606617927770, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.964754, 
+          "Carbon": 22.946634, 
+          "Iron": 12.423663, 
+          "Nickel": 9.396738, 
+          "Niobium": 0.849091, 
+          "Phosphorus": 14.690826, 
+          "Selenium": 4.270849, 
+          "Sulphur": 27.2883, 
+          "Vanadium": 3.050819, 
+          "Yttrium": 0.742051, 
+          "Zinc": 3.376286
+        }, 
+        "meanAnomaly": 154.748166, 
+        "name": "Eoch Flyuae YK-K c10-56 4 b", 
+        "orbitalEccentricity": 1e-06, 
+        "orbitalInclination": -0.003725, 
+        "orbitalPeriod": 3.07994218612268, 
+        "parents": [
+          {
+            "Planet": 16
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 2829.413, 
+        "rotationalPeriod": 3.08004723386574, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00683910719149555, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-05-27 11:36:52+00"
+        }, 
+        "solidComposition": {
+          "Ice": 81.3559, 
+          "Metal": 1.6516, 
+          "Rock": 16.9925
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 112.102303, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:52Z", 
+          "meanAnomaly": "2026-05-27T11:36:52Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:52+00", 
+        "volcanismType": "Minor Carbon Dioxide Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 124.689543, 
+        "ascendingNode": -68.347715, 
+        "bodyId": 21, 
+        "id64": 756620200655855706, 
+        "meanAnomaly": 99.06094, 
+        "name": "Eoch Flyuae YK-K c10-56 barycentre 21", 
+        "orbitalEccentricity": 0.003242, 
+        "orbitalInclination": 9.100617, 
+        "orbitalPeriod": 292.80076700228, 
+        "semiMajorAxis": 0.138147607663771, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-05-27T11:36:33Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-05-27 11:36:33+00"
+      }, 
+      {
+        "argOfPeriapsis": 338.16716, 
+        "ascendingNode": 86.550255, 
+        "atmosphereComposition": {
+          "Helium": 29.718267, 
+          "Hydrogen": 70.281723
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.157058, 
+        "bodyId": 22, 
+        "distanceToArrival": 1045.220619, 
+        "earthMasses": 40.397766, 
+        "gravity": 0.873847965738758, 
+        "id64": 792648997674819674, 
+        "isLandable": false, 
+        "meanAnomaly": 125.820876, 
+        "name": "Eoch Flyuae YK-K c10-56 5", 
+        "orbitalEccentricity": 0.044357, 
+        "orbitalInclination": 1.318425, 
+        "orbitalPeriod": 180.208662317859, 
+        "parents": [
+          {
+            "Null": 21
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 43345.836, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 828677794693783642, 
+            "innerRadius": 72568000.0, 
+            "mass": 282480000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 5 A Ring", 
+            "outerRadius": 119450000.0, 
+            "signals": {
+              "signals": {
+                "Grandidierite": 1
+              }, 
+              "updateTime": "2026-01-22 00:51:16+00"
+            }, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 275.430238903819, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0159421055199827, 
+        "stations": [], 
+        "subType": "Class I gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 90.282349, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:37Z", 
+          "meanAnomaly": "2026-05-27T11:36:37Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:37+00"
+      }, 
+      {
+        "argOfPeriapsis": 150.646239, 
+        "ascendingNode": 133.019799, 
+        "atmosphereType": null, 
+        "axialTilt": 0.460962, 
+        "bodyId": 24, 
+        "distanceToArrival": 1044.739927, 
+        "earthMasses": 0.002536, 
+        "gravity": 0.0714426430100948, 
+        "id64": 864706591712747610, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 22.71344, 
+          "Iron": 12.043974, 
+          "Manganese": 4.974039, 
+          "Nickel": 9.109556, 
+          "Phosphorus": 14.541533, 
+          "Selenium": 4.227448, 
+          "Sulphur": 27.010986, 
+          "Tin": 0.72522, 
+          "Tungsten": 0.661335, 
+          "Yttrium": 0.719372, 
+          "Zinc": 3.273101
+        }, 
+        "meanAnomaly": 290.620007, 
+        "name": "Eoch Flyuae YK-K c10-56 5 a", 
+        "orbitalEccentricity": 6e-06, 
+        "orbitalInclination": -0.000126, 
+        "orbitalPeriod": 1.04853624685185, 
+        "parents": [
+          {
+            "Planet": 22
+          }, 
+          {
+            "Null": 21
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1201.121, 
+        "rotationalPeriod": 1.04861676636574, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00100000072121293, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-05-27 11:37:14+00"
+        }, 
+        "solidComposition": {
+          "Ice": 82.604, 
+          "Metal": 1.536, 
+          "Rock": 15.8601
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 79.773689, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:37:14Z", 
+          "meanAnomaly": "2026-05-27T11:37:14Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:37:14+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 185.006858, 
+        "ascendingNode": 58.457393, 
+        "atmosphereType": null, 
+        "axialTilt": -0.331841, 
+        "bodyId": 25, 
+        "distanceToArrival": 1045.76108, 
+        "earthMasses": 0.000992, 
+        "gravity": 0.0520074436626899, 
+        "id64": 900735388731711578, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.727735, 
+          "Carbon": 22.406635, 
+          "Chromium": 5.34341, 
+          "Iron": 11.881288, 
+          "Manganese": 4.906851, 
+          "Nickel": 8.986508, 
+          "Niobium": 0.812023, 
+          "Phosphorus": 14.345113, 
+          "Sulphur": 26.646132, 
+          "Tin": 0.715424, 
+          "Zinc": 3.228889
+        }, 
+        "meanAnomaly": 41.018295, 
+        "name": "Eoch Flyuae YK-K c10-56 5 b", 
+        "orbitalEccentricity": 0.000359, 
+        "orbitalInclination": 0.071549, 
+        "orbitalPeriod": 1.9686377296875, 
+        "parents": [
+          {
+            "Planet": 22
+          }, 
+          {
+            "Null": 21
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 880.6756875, 
+        "rotationalPeriod": 1.96878882875, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00152190857083594, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-05-27 11:37:11+00"
+        }, 
+        "solidComposition": {
+          "Ice": 82.604, 
+          "Metal": 1.536, 
+          "Rock": 15.8601
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 79.60141, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:37:12Z", 
+          "meanAnomaly": "2026-05-27T11:37:12Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:37:12+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 55.938102, 
+        "ascendingNode": 159.436194, 
+        "atmosphereType": null, 
+        "axialTilt": 2.956093, 
+        "bodyId": 26, 
+        "distanceToArrival": 1046.501403, 
+        "earthMasses": 0.001599, 
+        "gravity": 0.0611544814928113, 
+        "id64": 936764185750675546, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 22.699881, 
+          "Chromium": 5.431849, 
+          "Iron": 12.077937, 
+          "Mercury": 0.527424, 
+          "Nickel": 9.135244, 
+          "Phosphorus": 14.532854, 
+          "Ruthenium": 0.74589, 
+          "Selenium": 4.224924, 
+          "Sulphur": 26.99486, 
+          "Tungsten": 0.6632, 
+          "Vanadium": 2.965921
+        }, 
+        "meanAnomaly": 35.467772, 
+        "name": "Eoch Flyuae YK-K c10-56 5 c", 
+        "orbitalEccentricity": 0.000608, 
+        "orbitalInclination": 1.527327, 
+        "orbitalPeriod": 4.84107834873843, 
+        "parents": [
+          {
+            "Planet": 22
+          }, 
+          {
+            "Null": 21
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1030.877125, 
+        "rotationalPeriod": -4.8414499996875, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00277272072064501, 
+        "solidComposition": {
+          "Ice": 82.4383, 
+          "Metal": 1.5571, 
+          "Rock": 16.0046
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 79.410355, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:37:10Z", 
+          "meanAnomaly": "2026-05-27T11:37:10Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:37:10+00"
+      }, 
+      {
+        "argOfPeriapsis": 158.167165, 
+        "ascendingNode": 86.550255, 
+        "atmosphereComposition": {
+          "Helium": 29.718277, 
+          "Hydrogen": 70.281738
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.282312, 
+        "bodyId": 27, 
+        "distanceToArrival": 1039.62413, 
+        "earthMasses": 30.240898, 
+        "gravity": 0.795480371163455, 
+        "id64": 972792982769639514, 
+        "isLandable": false, 
+        "meanAnomaly": 125.820783, 
+        "name": "Eoch Flyuae YK-K c10-56 6", 
+        "orbitalEccentricity": 0.044357, 
+        "orbitalInclination": 1.318425, 
+        "orbitalPeriod": 180.208662317859, 
+        "parents": [
+          {
+            "Null": 21
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 39306.94, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1008821779788603482, 
+            "innerRadius": 64856000.0, 
+            "mass": 239420000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 6 A Ring", 
+            "outerRadius": 120590000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 238.291887919931, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0212985722873464, 
+        "stations": [], 
+        "subType": "Class I gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 89.422478, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:33Z", 
+          "meanAnomaly": "2026-05-27T11:36:33Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:33+00"
+      }, 
+      {
+        "argOfPeriapsis": 31.290172, 
+        "ascendingNode": 128.622984, 
+        "atmosphereType": null, 
+        "axialTilt": 2.216574, 
+        "bodyId": 29, 
+        "distanceToArrival": 1040.15693, 
+        "earthMasses": 0.000887, 
+        "gravity": 0.0502912205567452, 
+        "id64": 1044850576807567450, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.948683, 
+          "Carbon": 22.641716, 
+          "Iron": 12.216717, 
+          "Manganese": 5.045379, 
+          "Nickel": 9.240212, 
+          "Niobium": 0.834947, 
+          "Phosphorus": 14.495614, 
+          "Selenium": 4.214098, 
+          "Sulphur": 26.92569, 
+          "Technetium": 0.436943, 
+          "Vanadium": 3.000001
+        }, 
+        "meanAnomaly": 185.868524, 
+        "name": "Eoch Flyuae YK-K c10-56 6 a", 
+        "orbitalEccentricity": 2.6e-05, 
+        "orbitalInclination": 0.062362, 
+        "orbitalPeriod": 1.3596076794213, 
+        "parents": [
+          {
+            "Planet": 27
+          }, 
+          {
+            "Null": 21
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 846.825875, 
+        "rotationalPeriod": -1.21198743936343, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00107965629103411, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-05-27 11:37:04+00"
+        }, 
+        "solidComposition": {
+          "Ice": 81.7434, 
+          "Metal": 1.6464, 
+          "Rock": 16.6103
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 79.516708, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:37:05Z", 
+          "meanAnomaly": "2026-05-27T11:37:05Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:37:05+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 297.942622, 
+        "ascendingNode": 167.085029, 
+        "atmosphereType": null, 
+        "axialTilt": 0.392348, 
+        "bodyId": 30, 
+        "distanceToArrival": 1040.235404, 
+        "earthMasses": 0.000307, 
+        "gravity": 0.0350223309880697, 
+        "id64": 1080879373826531418, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.94559, 
+          "Carbon": 22.964092, 
+          "Germanium": 3.526862, 
+          "Iron": 12.176885, 
+          "Nickel": 9.210085, 
+          "Phosphorus": 14.702005, 
+          "Selenium": 4.274099, 
+          "Sulphur": 27.309063, 
+          "Tellurium": 0.913464, 
+          "Tungsten": 0.668633, 
+          "Zinc": 3.309221
+        }, 
+        "meanAnomaly": 146.696446, 
+        "name": "Eoch Flyuae YK-K c10-56 6 b", 
+        "orbitalEccentricity": 6.6e-05, 
+        "orbitalInclination": 0.244379, 
+        "orbitalPeriod": 1.82024782730324, 
+        "parents": [
+          {
+            "Planet": 27
+          }, 
+          {
+            "Null": 21
+          }, 
+          {
+            "Null": 15
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 596.5953125, 
+        "rotationalPeriod": 1.65941387019676, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.001311485402065, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-05-27 11:37:02+00"
+        }, 
+        "solidComposition": {
+          "Ice": 82.6039, 
+          "Metal": 1.536, 
+          "Rock": 15.8601
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 79.456825, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:37:02Z", 
+          "meanAnomaly": "2026-05-27T11:37:02Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:37:02+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 25.759181, 
+        "ascendingNode": 59.159352, 
+        "atmosphereComposition": {
+          "Helium": 29.718267, 
+          "Hydrogen": 70.281723
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.338008, 
+        "bodyId": 31, 
+        "distanceToArrival": 1395.548113, 
+        "earthMasses": 492.461884, 
+        "gravity": 3.52931722239217, 
+        "id64": 1116908170845495386, 
+        "isLandable": false, 
+        "meanAnomaly": 329.483797, 
+        "name": "Eoch Flyuae YK-K c10-56 7", 
+        "orbitalEccentricity": 0.003389, 
+        "orbitalInclination": 0.000965, 
+        "orbitalPeriod": 2478.19701002704, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 75305.648, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1152936967864459354, 
+            "innerRadius": 124420000.0, 
+            "mass": 217090000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 7 A Ring", 
+            "outerRadius": 149640000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 1188965764883423322, 
+            "innerRadius": 149740000.0, 
+            "mass": 1669900000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 7 B Ring", 
+            "outerRadius": 274920000.0, 
+            "signals": {
+              "signals": {
+                "LowTemperatureDiamond": 1
+              }, 
+              "updateTime": "2026-01-22 01:06:15+00"
+            }, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 1.85213972488426, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 2.8048440572893, 
+        "stations": [], 
+        "subType": "Class I gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 134.011139, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:05Z", 
+          "meanAnomaly": "2026-05-27T11:36:05Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:05+00"
+      }, 
+      {
+        "argOfPeriapsis": 237.90306, 
+        "ascendingNode": 166.943999, 
+        "atmosphereComposition": {
+          "Methane": 99.989281
+        }, 
+        "atmosphereType": "Thick Methane", 
+        "axialTilt": -0.130465, 
+        "bodyId": 34, 
+        "distanceToArrival": 1392.719892, 
+        "earthMasses": 0.002659, 
+        "gravity": 0.072600693382278, 
+        "id64": 1224994561902387290, 
+        "isLandable": false, 
+        "meanAnomaly": 201.682528, 
+        "name": "Eoch Flyuae YK-K c10-56 7 a", 
+        "orbitalEccentricity": 0.001005, 
+        "orbitalInclination": 7.7e-05, 
+        "orbitalPeriod": 4.17122575972222, 
+        "parents": [
+          {
+            "Planet": 31
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1220.056875, 
+        "rotationalPeriod": 4.17133004806713, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00577799621732551, 
+        "solidComposition": {
+          "Ice": 82.604, 
+          "Metal": 1.536, 
+          "Rock": 15.8601
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 23.3014754502837, 
+        "surfaceTemperature": 196.339584, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:10Z", 
+          "meanAnomaly": "2026-05-27T11:36:10Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:10+00"
+      }, 
+      {
+        "argOfPeriapsis": 327.172738, 
+        "ascendingNode": -137.619579, 
+        "atmosphereComposition": {
+          "Methane": 100.0
+        }, 
+        "atmosphereType": "Methane", 
+        "axialTilt": -1.424464, 
+        "bodyId": 35, 
+        "distanceToArrival": 1387.541948, 
+        "earthMasses": 0.004972, 
+        "gravity": 0.0900630162129091, 
+        "id64": 1261023358921351258, 
+        "isLandable": false, 
+        "meanAnomaly": 356.857694, 
+        "name": "Eoch Flyuae YK-K c10-56 7 b", 
+        "orbitalEccentricity": 0.001766, 
+        "orbitalInclination": 0.090789, 
+        "orbitalPeriod": 21.0838040543982, 
+        "parents": [
+          {
+            "Planet": 31
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1497.87175, 
+        "rotationalPeriod": 21.0843318119676, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0170176962063899, 
+        "solidComposition": {
+          "Ice": 82.0836, 
+          "Metal": 1.5897, 
+          "Rock": 16.3268
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.385462388976067, 
+        "surfaceTemperature": 112.376198, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:12Z", 
+          "meanAnomaly": "2026-05-27T11:36:12Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:12+00"
+      }, 
+      {
+        "argOfPeriapsis": 179.458876, 
+        "ascendingNode": 118.432577, 
+        "atmosphereComposition": {
+          "Methane": 100.0
+        }, 
+        "atmosphereType": "Methane", 
+        "axialTilt": -0.233012, 
+        "bodyId": 36, 
+        "distanceToArrival": 1374.285891, 
+        "earthMasses": 0.00828, 
+        "gravity": 0.106968185989599, 
+        "id64": 1297052155940315226, 
+        "isLandable": false, 
+        "meanAnomaly": 74.150838, 
+        "name": "Eoch Flyuae YK-K c10-56 7 c", 
+        "orbitalEccentricity": 0.012241, 
+        "orbitalInclination": 0.060761, 
+        "orbitalPeriod": 89.3709843081481, 
+        "parents": [
+          {
+            "Planet": 31
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1773.72275, 
+        "rotationalPeriod": 89.3732250712384, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0445723785800414, 
+        "solidComposition": {
+          "Ice": 82.6039, 
+          "Metal": 1.536, 
+          "Rock": 15.8601
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.547195942817666, 
+        "surfaceTemperature": 112.27684, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:21Z", 
+          "meanAnomaly": "2026-05-27T11:36:21Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:21+00"
+      }, 
+      {
+        "argOfPeriapsis": 294.678157, 
+        "ascendingNode": -20.853759, 
+        "atmosphereComposition": {
+          "Helium": 89.334976, 
+          "Hydrogen": 8.427828, 
+          "Neon": 2.237205
+        }, 
+        "atmosphereType": "Thick Helium", 
+        "axialTilt": -0.031325, 
+        "bodyId": 38, 
+        "distanceToArrival": 1942.545088, 
+        "earthMasses": 37.30843, 
+        "gravity": 3.74515590904456, 
+        "id64": 1369109749978243162, 
+        "isLandable": false, 
+        "meanAnomaly": 141.477213, 
+        "name": "Eoch Flyuae YK-K c10-56 8", 
+        "orbitalEccentricity": 0.002006, 
+        "orbitalInclination": -0.059674, 
+        "orbitalPeriod": 4042.49980217881, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 20121.258, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1405138546997207130, 
+            "innerRadius": 33200000.0, 
+            "mass": 31383000000.0, 
+            "name": "Eoch Flyuae YK-K c10-56 8 A Ring", 
+            "outerRadius": 122150000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 1.95794755144676, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 3.88673356215461, 
+        "solidComposition": {
+          "Ice": 66.854, 
+          "Metal": 10.7699, 
+          "Rock": 21.7458
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 7.08531334813718, 
+        "surfaceTemperature": 53.359421, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:36:16Z", 
+          "meanAnomaly": "2026-05-27T11:36:16Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:36:16+00", 
+        "volcanismType": "Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 23.652064, 
+        "ascendingNode": 169.50795, 
+        "atmosphereComposition": {
+          "Helium": 89.334976, 
+          "Hydrogen": 8.427828, 
+          "Neon": 2.237204
+        }, 
+        "atmosphereType": "Helium", 
+        "axialTilt": -0.121694, 
+        "bodyId": 41, 
+        "distanceToArrival": 2647.988225, 
+        "earthMasses": 9.303535, 
+        "gravity": 1.78139237279494, 
+        "id64": 1477196141035135066, 
+        "isLandable": false, 
+        "meanAnomaly": 215.981353, 
+        "name": "Eoch Flyuae YK-K c10-56 9", 
+        "orbitalEccentricity": 0.002045, 
+        "orbitalInclination": 0.325626, 
+        "orbitalPeriod": 6432.97464207367, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 14569.036, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1513224938054099034, 
+            "innerRadius": 27433000.0, 
+            "mass": 9078300.0, 
+            "name": "Eoch Flyuae YK-K c10-56 9 A Ring", 
+            "outerRadius": 73219000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 1, 
+                "Opal": 1, 
+                "Tritium": 1
+              }, 
+              "updateTime": "2026-01-22 01:21:39+00"
+            }, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 0.581242500115741, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.29776452054964, 
+        "solidComposition": {
+          "Ice": 68.6832, 
+          "Metal": 10.2171, 
+          "Rock": 21.0997
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 1.64687746730817, 
+        "surfaceTemperature": 44.148689, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-05-27T11:37:21Z", 
+          "meanAnomaly": "2026-05-27T11:37:21Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-05-27 11:37:21+00", 
+        "volcanismType": "Water Geysers"
+      }
+    ], 
+    "bodyCount": 23, 
+    "coords": {
+      "x": -8215.5625, 
+      "y": -494.5625, 
+      "z": 17297.96875
+    }, 
+    "date": "2026-06-23 11:53:59+00", 
+    "government": "None", 
+    "id64": 15463257612378, 
+    "name": "Eoch Flyuae YK-K c10-56", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}

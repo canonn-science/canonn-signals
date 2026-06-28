@@ -119,10 +119,12 @@
               <div>{{ edGalaxy.PGName }}</div>
             </div>
             }
+            @if (data.system.region) {
             <div class="system-data-entry">
               <div>Region</div>
               <div>{{ data.system.region.name }}</div>
             </div>
+            }
             <div class="system-data-entry">
               <div>Id64</div>
               <div class="id64-copy" role="button" tabindex="0" (click)="copyId64ToClipboard()"

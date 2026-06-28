@@ -4,9 +4,7 @@
 
     <div class="values">
       <ul>
-        <li><strong>Bodies:</strong> {{ data.bodyName }}
-          @if (collisionPartners.length) { &amp; {{ collisionPartners.join(', ') }} }
-        </li>
+        <li><strong>Bodies:</strong> {{ joinNames(involvedBodyNames) }}</li>
         @if (data.synodicPeriodDays !== null) {
         <li><strong>Synodic period:</strong>
           {{ data.synodicPeriodDays | number:'1.0-0' }} days
@@ -74,9 +72,11 @@
         </thead>
         <tbody>
           @for (w of data.upcomingCollisions; track w.start.getTime() + (w.partnerName ?? ''); let i = $index) {
-          <tr>
+          <tr [class.multi]="isMultiCollision(w)">
             <td class="num">{{ i + 1 }}</td>
-            <td>{{ windowPartner(w) }}</td>
+            <td>{{ windowPartner(w) }}
+              @if (isMultiCollision(w)) { <span class="multi-tag" title="Multiple bodies collide at this time">multi</span> }
+            </td>
             <td class="date">{{ w.start | date:'yyyy-MM-dd HH:mm':'UTC' }} UTC</td>
             <td class="num">
               @if (w.days < 0) {
@@ -94,6 +94,26 @@
           }
         </tbody>
       </table>
+    </div>
+    }
+
+    @if (multiCollisions.length > 0) {
+    <div class="multi-collisions">
+      <h3>Simultaneous collisions</h3>
+      <p class="hint">Conjunctions where {{ data.bodyName }} is in contact with more than one sibling at once.</p>
+      <ul>
+        @for (m of multiCollisions; track m.start.getTime()) {
+        <li>
+          <strong>{{ data.bodyName }}, {{ m.partners.join(', ') }}</strong> —
+          @if (m.days < 0) {
+            <span class="hint">in progress now</span>
+          } @else {
+            around {{ m.start | date:'yyyy-MM-dd HH:mm':'UTC' }} UTC
+            ({{ m.days | number:'1.0-0' }} days)
+          }
+        </li>
+        }
+      </ul>
     </div>
     }
 
