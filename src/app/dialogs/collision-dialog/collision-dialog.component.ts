@@ -2,7 +2,12 @@ import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
-import { CollisionWindow } from '../../data/orbital-relations.service';
+import { CollisionWindow, SimultaneousCollision } from '../../data/orbital-relations.service';
+import {
+  SynodicDiagram,
+  SynodicDiagramInput,
+  synodicDistanceDiagram,
+} from '../../data/collision-diagram';
 
 /** Key descriptive facts about one of the two colliding bodies. */
 export interface CollisionBodyInfo {
@@ -23,19 +28,61 @@ export interface CollisionDialogData {
   upcomingCollisions: CollisionWindow[];
   /** Sum of the two bodies' radii (km) — the contact threshold. */
   combinedRadiiKm: number | null;
-  /** Per-body descriptive info used to build the summary paragraph. */
+  /** Descriptive info for this body, used to build the summary paragraph. */
   bodyInfo: CollisionBodyInfo | null;
+  /** Descriptive info for the primary partner. Retained for the simple-pair path and as a fallback. */
   partnerInfo: CollisionBodyInfo | null;
+  /**
+   * Descriptive info for every collision candidate beyond this body (each crossing partner and
+   * simultaneous-cluster member), so the summary can enumerate all involved bodies — not just the
+   * primary pair. Optional: when absent the prose falls back to {@link partnerInfo} for the pair.
+   */
+  partnerInfos?: { name: string; info: CollisionBodyInfo | null }[];
   /** System population; 0 when uninhabited or unknown. */
   systemPopulation: number;
   /** System name, used to strip the prefix from body names in the description. */
   systemName: string;
   /** Additional sibling names beyond the primary partner that are also in the crossing-orbit group. */
   simultaneousPartners: string[];
+  /**
+   * Timed multi-body pile-ups over the next ~180 days, detected across every crossing partner's
+   * contacts rather than only the (capped) upcoming-collisions rows — so a simultaneous collision
+   * further out than the listed contacts is still surfaced. When omitted, the section falls back
+   * to clustering the visible rows.
+   */
+  simultaneousCollisions?: SimultaneousCollision[];
+  /**
+   * Centre-to-centre distance-over-time samples driving the synodic-period diagram, one
+   * series per directly-colliding partner. Omitted (or null) when the bodies lack the phase
+   * data needed to place them in time, in which case the diagram is hidden.
+   */
+  separationDiagram?: SynodicDiagramInput | null;
+}
+
+/**
+ * A simultaneous multi-body collision: a cluster of overlapping contact windows in which this
+ * body is within contact of two or more siblings at the same time (a three- or four-body pile-up).
+ */
+export interface MultiCollision {
+  /** Short names of the sibling bodies involved (this body is always implicitly present too). */
+  partners: string[];
+  /** Earliest contact start across the cluster. */
+  start: Date;
+  /** Latest contact end across the cluster. */
+  end: Date;
+  /** Days from now until the cluster opens (negative when already in progress). */
+  days: number;
 }
 
 /** Days in a Julian year, used to express long intervals (synodic period, time-to-collision) in years. */
 const DAYS_PER_YEAR = 365.25;
+
+/** Cardinal-number words for small counts (collisions involve at most a handful of bodies). */
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+/** "two", "three"… for small counts, falling back to the digit string for larger ones. */
+function numberWord(n: number): string {
+  return NUMBER_WORDS[n] ?? String(n);
+}
 
 /**
  * Details of a predicted collision between two sibling bodies: when the contact window opens
@@ -54,6 +101,42 @@ export class CollisionDialogComponent {
 
   public readonly heading = this.data.nextCollision ? 'Predicted Collision' : 'Collision Candidate';
 
+  /** The viewer's resolved IANA time zone (e.g. "Europe/Berlin"), for DST-correct local rendering. */
+  private readonly localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  /**
+   * Local wall-clock parts for `d` in the viewer's own time zone. Uses Intl with the resolved
+   * IANA zone, so the offset is the one in effect *on that date* — summer vs winter (DST) is
+   * honoured, rather than today's offset being assumed for a contact months away.
+   */
+  private localParts(d: Date): { date: string; time: string; zone: string } {
+    const parts: Record<string, string> = {};
+    for (const p of new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.localZone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZoneName: 'shortOffset',
+    }).formatToParts(d)) {
+      parts[p.type] = p.value;
+    }
+    return {
+      date: `${parts['year']}-${parts['month']}-${parts['day']}`,
+      time: `${parts['hour']}:${parts['minute']}:${parts['second']}`,
+      zone: parts['timeZoneName'] ?? '',
+    };
+  }
+
+  /** Local date-time "yyyy-MM-dd HH:mm:ss" for `d` in the viewer's zone (DST-aware). */
+  public localDateTime(d: Date): string {
+    const p = this.localParts(d);
+    return `${p.date} ${p.time}`;
+  }
+
+  /** DST-correct UTC-offset label for `d` in the viewer's zone (e.g. "GMT+2" in summer, "GMT+1" in winter). */
+  public localZoneLabel(d: Date): string {
+    return this.localParts(d).zone;
+  }
+
   /** Contact-window duration in minutes (start → end), or null when there is no timed window. */
   public get durationMinutes(): number | null {
     const c = this.data.nextCollision;
@@ -67,8 +150,9 @@ export class CollisionDialogComponent {
    */
   public get overlapPercent(): number | null {
     const c = this.data.nextCollision;
-    if (!c || !this.data.combinedRadiiKm) { return null; }
-    return Math.max(0, (1 - c.minSeparationKm / this.data.combinedRadiiKm) * 100);
+    const combined = c?.combinedRadiiKm ?? this.data.combinedRadiiKm;
+    if (!c || !combined) { return null; }
+    return Math.max(0, (1 - c.minSeparationKm / combined) * 100);
   }
 
   /** Plain-language severity for the overlap, mirroring the Canonn collision-table wording. */
@@ -92,6 +176,154 @@ export class CollisionDialogComponent {
   }
 
   /**
+   * Laid-out distance-over-time (synodic) diagram, or null when there is no plottable data.
+   * Cached because the template reads it several times per change-detection pass and the
+   * input is static for the dialog's lifetime.
+   */
+  private diagramCache: SynodicDiagram | null | undefined;
+  public get diagram(): SynodicDiagram | null {
+    if (this.diagramCache === undefined) {
+      this.diagramCache = this.data.separationDiagram ? synodicDistanceDiagram(this.data.separationDiagram) : null;
+    }
+    return this.diagramCache;
+  }
+
+  /** Body name with the system-name prefix stripped (e.g. "Foo System 1 a" → "1 a"). */
+  public shortName(name: string | null | undefined): string {
+    if (!name) { return ''; }
+    const prefix = this.data.systemName + ' ';
+    return name.startsWith(prefix) ? name.slice(prefix.length) : name;
+  }
+
+  /**
+   * Distinct sibling names this body actually collides with, drawn from the upcoming-collisions
+   * list (so a multi-body cluster lists every partner). Falls back to the primary partner when
+   * there are no timed windows. Used for the "Bodies" summary line.
+   */
+  public get collisionPartners(): string[] {
+    const names = new Set<string>();
+    for (const w of this.data.upcomingCollisions) {
+      if (w.partnerName) { names.add(w.partnerName); }
+    }
+    if (names.size === 0 && this.data.partnerName) { names.add(this.data.partnerName); }
+    return [...names];
+  }
+
+  /** Short partner name for a contact window (the sibling it is a collision with). */
+  public windowPartner(w: CollisionWindow): string {
+    return this.shortName(w.partnerName ?? this.data.partnerName);
+  }
+
+  /**
+   * Every body involved in the collision, this one first: drawn from the upcoming windows, the
+   * primary partner, and the simultaneous-cluster members (deduplicated, full names). This is the
+   * single source of truth for both the "Bodies" line and the prose, so they never disagree.
+   */
+  public get involvedBodyNames(): string[] {
+    const names = new Set<string>([this.data.bodyName]);
+    for (const w of this.data.upcomingCollisions) {
+      if (w.partnerName) { names.add(w.partnerName); }
+    }
+    if (this.data.partnerName) { names.add(this.data.partnerName); }
+    for (const n of this.data.simultaneousPartners) { names.add(n); }
+    return [...names];
+  }
+
+  /** Descriptive info for a body by full name, from bodyInfo / partnerInfos / partnerInfo. Null when unknown. */
+  private infoFor(name: string): CollisionBodyInfo | null {
+    if (name === this.data.bodyName) { return this.data.bodyInfo; }
+    const match = this.data.partnerInfos?.find(p => p.name === name);
+    if (match) { return match.info; }
+    if (name === this.data.partnerName) { return this.data.partnerInfo; }
+    return null;
+  }
+
+  /** The involved bodies paired with their short name and descriptive info, for the prose builder. */
+  private get involvedBodies(): { name: string; short: string; info: CollisionBodyInfo | null }[] {
+    return this.involvedBodyNames.map(name => ({ name, short: this.shortName(name), info: this.infoFor(name) }));
+  }
+
+  /** Joins names as "A", "A & B", or "A, B & C" using the given conjunction ("&" or "and"). */
+  public joinNames(names: string[], conjunction = '&'): string {
+    const list = names.filter(Boolean);
+    if (list.length <= 1) { return list[0] ?? ''; }
+    if (list.length === 2) { return `${list[0]} ${conjunction} ${list[1]}`; }
+    return `${list.slice(0, -1).join(', ')} ${conjunction} ${list[list.length - 1]}`;
+  }
+
+  /**
+   * Groups the upcoming contact windows by time overlap. When two windows with *different*
+   * partners overlap, this body is touching both siblings at once — a simultaneous multi-body
+   * collision. Cached because both {@link multiCollisions} and {@link isMultiCollision} read it.
+   */
+  private clusterCache: { multi: MultiCollision[]; flagged: Set<CollisionWindow> } | null = null;
+  private get clusters(): { multi: MultiCollision[]; flagged: Set<CollisionWindow> } {
+    if (this.clusterCache) { return this.clusterCache; }
+    const windows = [...this.data.upcomingCollisions].sort((a, b) => a.start.getTime() - b.start.getTime());
+    const multi: MultiCollision[] = [];
+    const flagged = new Set<CollisionWindow>();
+    let group: CollisionWindow[] = [];
+    let maxEnd = -Infinity;
+
+    const flush = (): void => {
+      const partners = new Set(group.map(w => w.partnerName ?? this.data.partnerName ?? ''));
+      // Two or more distinct partners overlapping in time = a genuine multi-body pile-up.
+      if (partners.size >= 2) {
+        group.forEach(w => flagged.add(w));
+        multi.push({
+          partners: [...partners].map(n => this.shortName(n)).sort(),
+          start: new Date(Math.min(...group.map(w => w.start.getTime()))),
+          end: new Date(Math.max(...group.map(w => w.end.getTime()))),
+          days: Math.min(...group.map(w => w.days)),
+        });
+      }
+      group = [];
+    };
+
+    for (const w of windows) {
+      if (group.length === 0 || w.start.getTime() <= maxEnd) {
+        group.push(w);
+        maxEnd = Math.max(maxEnd, w.end.getTime());
+      } else {
+        flush();
+        group = [w];
+        maxEnd = w.end.getTime();
+      }
+    }
+    flush();
+    this.clusterCache = { multi, flagged };
+    return this.clusterCache;
+  }
+
+  /** Simultaneous multi-body collisions among the upcoming windows (empty for simple pairs). */
+  public get multiCollisions(): MultiCollision[] {
+    return this.clusters.multi;
+  }
+
+  /**
+   * Multi-body pile-ups to list in the "Simultaneous collisions" section. Prefers the
+   * service-computed 180-day scan (which sees clusters beyond the capped contact rows); falls
+   * back to clustering the visible rows when that scan wasn't supplied (e.g. in unit tests).
+   */
+  public get sectionMultiCollisions(): MultiCollision[] {
+    const scanned = this.data.simultaneousCollisions;
+    if (scanned && scanned.length > 0) {
+      return scanned.map(s => ({
+        partners: s.partnerNames.map(n => this.shortName(n)).sort(),
+        start: s.start,
+        end: s.end,
+        days: s.days,
+      }));
+    }
+    return this.multiCollisions;
+  }
+
+  /** True when this contact window coincides with another partner's — part of a multi-body collision. */
+  public isMultiCollision(w: CollisionWindow): boolean {
+    return this.clusters.flagged.has(w);
+  }
+
+  /**
    * Prose summary of the collision pair: population, body types, atmospheres, moons/rings,
    * period difference, synodic interval, and a rough collision-frequency hint.
    */
@@ -109,12 +341,6 @@ export class CollisionDialogComponent {
       return [...words.slice(0, -1), plural].join(' ');
     };
 
-    /** Body name with the system-name prefix stripped (e.g. "Foo System 1 a" → "1 a"). */
-    const shortName = (name: string): string => {
-      const prefix = d.systemName + ' ';
-      return name.startsWith(prefix) ? name.slice(prefix.length) : name;
-    };
-
     /** Atmosphere description, or empty string when there is none. */
     const atmoStr = (info: CollisionBodyInfo | null): string => {
       const a = info?.atmosphereType;
@@ -129,53 +355,54 @@ export class CollisionDialogComponent {
       parts.push('This uninhabited system');
     }
 
-    // Body types and atmospheres.
-    const bi = d.bodyInfo, pi = d.partnerInfo;
+    // Body types and atmospheres across every involved body — not just the primary pair.
+    const involved = this.involvedBodies;
+    const shorts = involved.map(b => b.short);
+    const allKnown = involved.length >= 2 && involved.every(b => b.info);
+    const sameType = allKnown && involved.every(b => b.info!.subType === involved[0].info!.subType);
 
-    if (bi && pi && bi.subType === pi.subType) {
-      // Both the same type: "contains two Rocky bodies"
-      parts[0] += ` contains two ${pluralise(bi.subType)}`;
-      const atmoA = atmoStr(bi), atmoB = atmoStr(pi);
-      if (atmoA && atmoA === atmoB) {
-        parts[0] += ` with ${atmoA}s`;           // "with carbon dioxide atmospheres"
-      } else if (atmoA && atmoB) {
-        parts[0] += `, one with ${atmoA} and one with ${atmoB}`;
-      } else if (atmoA) {
-        parts[0] += `, one with ${atmoA}`;
+    if (sameType) {
+      // All the same type: "contains three Rocky bodies (1 a, 1 b and 1 c)".
+      parts[0] += ` contains ${numberWord(involved.length)} ${pluralise(involved[0].info!.subType)}` +
+        ` (${this.joinNames(shorts, 'and')})`;
+      const atmos = involved.map(b => atmoStr(b.info));
+      if (atmos.every(a => a && a === atmos[0])) {
+        parts[0] += ` with ${atmos[0]}s`;               // "with carbon dioxide atmospheres"
       }
-    } else if (bi && pi) {
-      // Different types: list each separately.
-      const aA = atmoStr(bi), aB = atmoStr(pi);
-      parts[0] += ` contains a ${bi.subType} (${shortName(d.bodyName)})`;
-      if (aA) { parts[0] += ` with ${aA}`; }
-      parts[0] += ` and a ${pi.subType} (${shortName(d.partnerName ?? '')})`;
-      if (aB) { parts[0] += ` with ${aB}`; }
+    } else if (allKnown) {
+      // Mixed types: list each body with its type, name and atmosphere.
+      const items = involved.map(b => {
+        const a = atmoStr(b.info);
+        return `a ${b.info!.subType} (${b.short})` + (a ? ` with ${a}` : '');
+      });
+      parts[0] += ` contains ${this.joinNames(items, 'and')}`;
     } else {
-      parts[0] += ` contains two bodies`;
-    }
-
-    if (d.partnerName) {
-      parts[0] += ` (${shortName(d.bodyName)} and ${shortName(d.partnerName)})`;
+      // Some types unknown: still enumerate the bodies by name.
+      parts[0] += ` contains ${numberWord(involved.length)} bodies (${this.joinNames(shorts, 'and')})`;
     }
     parts[0] += '.';
 
-    // Orbital periods and how close they are.
-    if (bi && pi) {
-      const pA = bi.orbitalPeriodDays, pB = pi.orbitalPeriodDays;
+    // Orbital periods. For a pair, quantify how close they are; for more, just list them.
+    const withPeriods = involved.filter(b => b.info?.orbitalPeriodDays);
+    if (withPeriods.length === 2) {
+      const pA = withPeriods[0].info!.orbitalPeriodDays, pB = withPeriods[1].info!.orbitalPeriodDays;
       const diffMin = Math.abs(pA - pB) * 24 * 60;
       const diffPct = (Math.abs(pA - pB) / Math.min(pA, pB)) * 100;
       parts.push(
         `They orbit with periods of ${pA.toFixed(2)} and ${pB.toFixed(2)} days` +
         ` (differ by ${diffMin.toFixed(0)} minutes, ${diffPct.toFixed(1)}%).`
       );
+    } else if (withPeriods.length > 2) {
+      const periodStrs = withPeriods.map(b => b.info!.orbitalPeriodDays.toFixed(2));
+      parts.push(`They orbit with periods of ${this.joinNames(periodStrs, 'and')} days.`);
     }
 
-    // Moons and rings — only mention when present.
+    // Moons and rings across all involved bodies — only mention when present.
     const features: string[] = [];
-    if (bi?.moonCount) { features.push(`${shortName(d.bodyName)} has ${bi.moonCount} moon${bi.moonCount > 1 ? 's' : ''}`); }
-    if (bi?.hasRings) { features.push(`${shortName(d.bodyName)} has rings`); }
-    if (pi?.moonCount && d.partnerName) { features.push(`${shortName(d.partnerName)} has ${pi.moonCount} moon${pi.moonCount > 1 ? 's' : ''}`); }
-    if (pi?.hasRings && d.partnerName) { features.push(`${shortName(d.partnerName)} has rings`); }
+    for (const b of involved) {
+      if (b.info?.moonCount) { features.push(`${b.short} has ${b.info.moonCount} moon${b.info.moonCount > 1 ? 's' : ''}`); }
+      if (b.info?.hasRings) { features.push(`${b.short} has rings`); }
+    }
     if (features.length > 0) { parts.push(features.join('; ') + '.'); }
 
     // Synodic period and collision frequency.
@@ -199,13 +426,9 @@ export class CollisionDialogComponent {
       parts.push(`${n} collisions are predicted over the next ${spanStr}.`);
     }
 
-    // Multi-body group.
-    if (d.simultaneousPartners.length > 0 && d.partnerName) {
-      const allNames = [shortName(d.bodyName), shortName(d.partnerName), ...d.simultaneousPartners.map(n => shortName(n))];
-      const listed = allNames.length === 2
-        ? allNames.join(' and ')
-        : allNames.slice(0, -1).join(', ') + ', and ' + allNames[allNames.length - 1];
-      parts.push(`${listed} all have crossing orbits with each other and may collide simultaneously during the same conjunction.`);
+    // Multi-body group: name every body that shares crossing orbits.
+    if (d.simultaneousPartners.length > 0) {
+      parts.push(`${this.joinNames(shorts, 'and')} all have crossing orbits with each other and may collide simultaneously during the same conjunction.`);
     }
 
     return parts.join(' ');
@@ -231,8 +454,10 @@ export class CollisionDialogComponent {
 
   /** Overlap percentage for a given contact window (0% = grazing, 100% = dead-on). */
   public overlapPercentFor(w: CollisionWindow): number | null {
-    if (!this.data.combinedRadiiKm) { return null; }
-    return Math.max(0, (1 - w.minSeparationKm / this.data.combinedRadiiKm) * 100);
+    // Use the window's own pair radii (partners differ in size); fall back to the status-level value.
+    const combined = w.combinedRadiiKm ?? this.data.combinedRadiiKm;
+    if (!combined) { return null; }
+    return Math.max(0, (1 - w.minSeparationKm / combined) * 100);
   }
 
   /** Years until the start of a contact window (for display alongside day counts). */

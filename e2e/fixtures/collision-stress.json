@@ -1,0 +1,163 @@
+{
+ "system": {
+  "name": "Collision Stress Test",
+  "id64": 1234567890123,
+  "region": "Inner Orion Spur",
+  "bodyCount": 6,
+  "coords": {
+   "x": 0.0,
+   "y": 0.0,
+   "z": 0.0
+  },
+  "date": "2026-06-01 00:00:00+00",
+  "stations": [],
+  "bodies": [
+   {
+    "bodyId": 0,
+    "name": "Collision Stress Test A",
+    "type": "Star",
+    "subType": "G (White-Yellow) Star",
+    "mainStar": true,
+    "id64": 1234567890123,
+    "distanceToArrival": 0.0,
+    "solarMasses": 1.0,
+    "solarRadius": 1.0,
+    "surfaceTemperature": 5800.0,
+    "age": 4600,
+    "rotationalPeriod": 25.0,
+    "absoluteMagnitude": 4.83,
+    "luminosity": "V"
+   },
+   {
+    "bodyId": 1,
+    "name": "Collision Stress Test 1",
+    "type": "Planet",
+    "subType": "High metal content body",
+    "id64": 1234567890124,
+    "isLandable": false,
+    "distanceToArrival": 500.0,
+    "radius": 6000.0,
+    "gravity": 9.8,
+    "earthMasses": 1.0,
+    "surfaceTemperature": 300.0,
+    "rotationalPeriod": 1.0,
+    "axialTilt": 0.0,
+    "semiMajorAxis": 1.0,
+    "orbitalPeriod": 100.0,
+    "orbitalEccentricity": 0.05,
+    "argOfPeriapsis": 30.0,
+    "ascendingNode": 0.0,
+    "orbitalInclination": 0.5,
+    "parents": [
+     {
+      "Star": 0
+     }
+    ]
+   },
+   {
+    "bodyId": 2,
+    "name": "Collision Stress Test 2",
+    "type": "Planet",
+    "subType": "High metal content body",
+    "id64": 1234567890125,
+    "isLandable": false,
+    "distanceToArrival": 501.0,
+    "radius": 6000.0,
+    "gravity": 9.8,
+    "earthMasses": 1.0,
+    "surfaceTemperature": 300.0,
+    "rotationalPeriod": 1.0,
+    "axialTilt": 0.0,
+    "semiMajorAxis": 1.0,
+    "orbitalPeriod": 101.7,
+    "orbitalEccentricity": 0.05,
+    "argOfPeriapsis": 30.0,
+    "ascendingNode": 0.0,
+    "orbitalInclination": 0.5,
+    "parents": [
+     {
+      "Star": 0
+     }
+    ]
+   },
+   {
+    "bodyId": 3,
+    "name": "Collision Stress Test 3",
+    "type": "Planet",
+    "subType": "High metal content body",
+    "id64": 1234567890126,
+    "isLandable": false,
+    "distanceToArrival": 502.0,
+    "radius": 6000.0,
+    "gravity": 9.8,
+    "earthMasses": 1.0,
+    "surfaceTemperature": 300.0,
+    "rotationalPeriod": 1.0,
+    "axialTilt": 0.0,
+    "semiMajorAxis": 1.0,
+    "orbitalPeriod": 99.1,
+    "orbitalEccentricity": 0.05,
+    "argOfPeriapsis": 30.0,
+    "ascendingNode": 0.0,
+    "orbitalInclination": 0.5,
+    "parents": [
+     {
+      "Star": 0
+     }
+    ]
+   },
+   {
+    "bodyId": 4,
+    "name": "Collision Stress Test 4",
+    "type": "Planet",
+    "subType": "High metal content body",
+    "id64": 1234567890127,
+    "isLandable": false,
+    "distanceToArrival": 503.0,
+    "radius": 6000.0,
+    "gravity": 9.8,
+    "earthMasses": 1.0,
+    "surfaceTemperature": 300.0,
+    "rotationalPeriod": 1.0,
+    "axialTilt": 0.0,
+    "semiMajorAxis": 1.0,
+    "orbitalPeriod": 102.3,
+    "orbitalEccentricity": 0.05,
+    "argOfPeriapsis": 30.0,
+    "ascendingNode": 0.0,
+    "orbitalInclination": 0.5,
+    "parents": [
+     {
+      "Star": 0
+     }
+    ]
+   },
+   {
+    "bodyId": 5,
+    "name": "Collision Stress Test 5",
+    "type": "Planet",
+    "subType": "High metal content body",
+    "id64": 1234567890128,
+    "isLandable": false,
+    "distanceToArrival": 504.0,
+    "radius": 6000.0,
+    "gravity": 9.8,
+    "earthMasses": 1.0,
+    "surfaceTemperature": 300.0,
+    "rotationalPeriod": 1.0,
+    "axialTilt": 0.0,
+    "semiMajorAxis": 1.0,
+    "orbitalPeriod": 98.5,
+    "orbitalEccentricity": 0.05,
+    "argOfPeriapsis": 30.0,
+    "ascendingNode": 0.0,
+    "orbitalInclination": 0.5,
+    "parents": [
+     {
+      "Star": 0
+     }
+    ]
+   }
+  ]
+ }
+}

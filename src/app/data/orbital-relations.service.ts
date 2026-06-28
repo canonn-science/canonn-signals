@@ -15,6 +15,14 @@ export interface OrbitalEvent {
   days: number;
 }
 
+/** A single (time, centre-to-centre distance) sample for plotting separation against time. */
+export interface SeparationSample {
+  /** Epoch milliseconds of the sample. */
+  tMs: number;
+  /** Centre-to-centre distance (km) between the two bodies at {@link tMs}. */
+  sepKm: number;
+}
+
 /**
  * The contact *window* of a collision: a collision is an interval, not an instant. `start`
  * is when the bodies' separation first drops below the sum of their radii and `end` is when
@@ -27,19 +35,36 @@ export interface CollisionWindow {
   days: number;
   /** Centre-to-centre separation (km) at closest approach within the window — the deepest point of contact. */
   minSeparationKm: number;
+  /**
+   * Name of the sibling body this contact is with. Always set by {@link OrbitalRelationsService.detectCollisionStatus}
+   * (a body can have several crossing partners); optional only so hand-built test fixtures may omit it.
+   */
+  partnerName?: string;
+  /**
+   * Sum of the two bodies' radii (km) for *this* pair — the contact threshold used to gauge overlap.
+   * Distinct per partner, so it travels with the window rather than living once on the status.
+   */
+  combinedRadiiKm?: number;
 }
 
 /** Result of collision-candidate analysis for a body relative to a crossing-orbit sibling. */
 export interface CollisionStatus {
   /** True when this body shares its parent with a sibling on a crossing, near-coplanar orbit. */
   isCandidate: boolean;
-  /** Name of the sibling whose orbit crosses this body's, or null when none. */
+  /**
+   * Name of the *primary* partner — the sibling owning the soonest predicted collision (or the
+   * first geometric candidate when no pair has timing data). Null when there is no partner.
+   * A body may collide with several siblings; see {@link upcomingCollisions} for the full set.
+   */
   partnerName: string | null;
-  /** Synodic period (days) between the pair — the interval between successive conjunctions. */
+  /** Synodic period (days) with the primary partner — the interval between successive conjunctions. */
   synodicPeriodDays: number | null;
-  /** Next contact window (when the bodies are within combined radii), or null when timing data is missing. */
+  /** Next contact window (when any pair is within combined radii), or null when timing data is missing. */
   nextCollision: CollisionWindow | null;
-  /** Up to 10 upcoming contact windows in chronological order; empty when timing data is missing. */
+  /**
+   * Up to 10 upcoming contact windows in chronological order, merged across every crossing
+   * partner of this body; empty when timing data is missing. Each window names its own partner.
+   */
   upcomingCollisions: CollisionWindow[];
   /** Sum of the two bodies' radii (km) — the contact threshold; null when not a candidate. */
   combinedRadiiKm: number | null;
@@ -49,6 +74,22 @@ export interface CollisionStatus {
    * Empty for simple pairs.
    */
   simultaneousPartners: string[];
+}
+
+/**
+ * A timed multi-body pile-up: an interval in which a reference body is simultaneously in
+ * contact with two or more siblings. Detected over a fixed time horizon rather than from the
+ * (capped) upcoming-contacts list, so a cluster further out than the listed rows is still found.
+ */
+export interface SimultaneousCollision {
+  /** Full names of the sibling bodies the reference body contacts at once (≥ 2). */
+  partnerNames: string[];
+  /** Earliest contact start across the cluster. */
+  start: Date;
+  /** Latest contact end across the cluster. */
+  end: Date;
+  /** Days from `now` until the cluster opens (slightly negative when already in progress). */
+  days: number;
 }
 
 /** Milliseconds per day, used to convert orbital periods (days) to wall-clock time. */
@@ -79,6 +120,9 @@ const ORBIT_REFINE_GRID = 4;
 const ORBIT_REFINE_ITERATIONS = 10;
 /** Upper bound on conjunctions examined before giving up on finding a collision date. */
 const MAX_CONJUNCTIONS_SCANNED = 300;
+
+/** Cap on how many upcoming contact windows are surfaced (merged across all crossing partners). */
+const MAX_UPCOMING_CONTACTS = 10;
 
 /** Angular tolerance (degrees) for matching a Lagrange geometry. */
 const ANGLE_TOLERANCE_DEG = 1;
@@ -482,6 +526,51 @@ export class OrbitalRelationsService {
   }
 
   /**
+   * Builds a closure giving the centre-to-centre distance (km) between two bodies at any
+   * epoch-ms time, by propagating each body's mean anomaly from its recorded sample and
+   * evaluating its 3D Keplerian position. Returns null when either body lacks the phase
+   * data (mean anomaly + timestamp) needed to place it in time. Shared by the collision
+   * search and the distance-over-time diagram so both measure separation identically.
+   */
+  private separationFunction(a: CanonnBiostatsBody, b: CanonnBiostatsBody): ((tMs: number) => number) | null {
+    if (
+      a.meanAnomaly == null || !a.orbitalPeriod || !a.timestamps?.meanAnomaly ||
+      b.meanAnomaly == null || !b.orbitalPeriod || !b.timestamps?.meanAnomaly
+    ) { return null; }
+
+    const epochA = Date.parse(a.timestamps.meanAnomaly);
+    const epochB = Date.parse(b.timestamps.meanAnomaly);
+    return (tMs: number): number => {
+      const Ma = a.meanAnomaly! + ((tMs - epochA) / MS_PER_DAY / a.orbitalPeriod!) * 360;
+      const Mb = b.meanAnomaly! + ((tMs - epochB) / MS_PER_DAY / b.orbitalPeriod!) * 360;
+      const pa = this.orbitalStateVector(a, Ma);
+      const pb = this.orbitalStateVector(b, Mb);
+      const dx = pa.x - pb.x, dy = pa.y - pb.y, dz = pa.z - pb.z;
+      return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    };
+  }
+
+  /**
+   * Centre-to-centre distance (km) between two bodies sampled at `samples` evenly-spaced
+   * instants over [startMs, endMs] inclusive — the data behind the collision dialog's
+   * distance-over-time (synodic) diagram. The curve dips to a minimum at each conjunction
+   * and is deepest when that conjunction falls on the orbits' mutual node (a collision).
+   * Returns [] when either body lacks the phase data needed to place it in time, or when
+   * the window/sample count is degenerate.
+   */
+  separationSeries(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startMs: number, endMs: number, samples: number): SeparationSample[] {
+    const sep = this.separationFunction(a, b);
+    if (!sep || !(endMs > startMs) || samples < 2) { return []; }
+    const step = (endMs - startMs) / (samples - 1);
+    const out: SeparationSample[] = [];
+    for (let i = 0; i < samples; i++) {
+      const tMs = startMs + i * step;
+      out.push({ tMs, sepKm: sep(tMs) });
+    }
+    return out;
+  }
+
+  /**
    * Finds the time of minimum separation between two bodies within
    * [centerMs − halfWindowMs, centerMs + halfWindowMs] using iterative zoom: 40 samples
    * per pass, window halved and recentred on the running best each pass, until the
@@ -503,23 +592,9 @@ export class OrbitalRelationsService {
    * Not every close approach is a collision — many conjunctions miss the orbits' mutual node
    * — so each synodic event is evaluated individually rather than assumed to collide.
    */
-  private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number): CollisionWindow[] {
-    if (
-      a.meanAnomaly == null || !a.orbitalPeriod || !a.timestamps?.meanAnomaly ||
-      b.meanAnomaly == null || !b.orbitalPeriod || !b.timestamps?.meanAnomaly ||
-      !Number.isFinite(synodicDays)
-    ) { return []; }
-
-    const epochA = Date.parse(a.timestamps!.meanAnomaly!);
-    const epochB = Date.parse(b.timestamps!.meanAnomaly!);
-    const sep = (tMs: number): number => {
-      const Ma = a.meanAnomaly! + ((tMs - epochA) / MS_PER_DAY / a.orbitalPeriod!) * 360;
-      const Mb = b.meanAnomaly! + ((tMs - epochB) / MS_PER_DAY / b.orbitalPeriod!) * 360;
-      const pa = this.orbitalStateVector(a, Ma);
-      const pb = this.orbitalStateVector(b, Mb);
-      const dx = pa.x - pb.x, dy = pa.y - pb.y, dz = pa.z - pb.z;
-      return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    };
+  private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number, horizonMs: number = Infinity): CollisionWindow[] {
+    const sep = this.separationFunction(a, b);
+    if (!sep || !Number.isFinite(synodicDays)) { return []; }
 
     const synodicMs = synodicDays * MS_PER_DAY;
     // 2000 steps keeps the first-pass resolution (≈ synodic/2000 per step) comfortably
@@ -573,6 +648,9 @@ export class OrbitalRelationsService {
 
     for (let k = 0; k < MAX_CONJUNCTIONS_SCANNED && results.length < count; k++) {
       const candidateMs = t0 + k * synodicMs;
+      // Stop once conjunctions march past the caller's time horizon (later ones only recede
+      // further). Used by the simultaneity scan to bound work to the next N days.
+      if (candidateMs - now > horizonMs) { break; }
       const min = zoomMin(candidateMs, synodicMs / 2);
       // Allow min.t to be slightly before now: a contact whose minimum lands at now±ε
       // (e.g. bodies aligned at the reference epoch) must not be discarded. We only skip
@@ -610,7 +688,7 @@ export class OrbitalRelationsService {
       // days will be slightly negative, which CollisionWindow.days documents as intentional.
       if (endMs < now) { continue; }
 
-      results.push({ start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: min.sepKm });
+      results.push({ start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: min.sepKm, partnerName: b.name, combinedRadiiKm: contactKm });
     }
     return results;
   }
@@ -628,15 +706,18 @@ export class OrbitalRelationsService {
    * phase). The two agree for near-coplanar pairs but diverge on inclined pairs, where the 3D
    * model defers the collision to the next conjunction that actually falls on the mutual node.
    */
-  detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
-    const none: CollisionStatus = {
-      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [],
-    };
+  /**
+   * Every sibling under the same parent whose orbit actually crosses this body's within the
+   * combined radius — each a direct collision partner — with the pair's synodic period and
+   * contact threshold. Most bodies have at most one, but three or four siblings can share
+   * crossing orbits. Returns [] when this body itself isn't on a bound, recurring orbit.
+   */
+  private collisionPartners(body: SystemBody): { partner: SystemBody; synodic: number; contactKm: number }[] {
     const bd = body.bodyData;
     const range = this.orbitalRadialRange(bd);
-    if (!body.parent || !bd.orbitalPeriod || !range) { return none; }
+    if (!body.parent || !bd.orbitalPeriod || !range) { return []; }
 
-    let best: { partner: SystemBody; synodic: number; events: CollisionWindow[]; contactKm: number } | null = null;
+    const partners: { partner: SystemBody; synodic: number; contactKm: number }[] = [];
     for (const sibling of body.parent.subBodies) {
       if (sibling === body) { continue; }
       const sd = sibling.bodyData;
@@ -656,25 +737,125 @@ export class OrbitalRelationsService {
       if (this.minOrbitDistanceKm(bd, sd) > contactKm) { continue; }
 
       const synodic = 1 / Math.abs(1 / bd.orbitalPeriod - 1 / sd.orbitalPeriod);
-      // Fetch the first contact only for partner selection; the winning partner gets the full 10.
-      const events = this.nextContacts(bd, sd, contactKm, synodic, now, 1);
-      const first = events[0] ?? null;
-      // Prefer the partner with the soonest predicted collision; keep any geometric
-      // candidate as a fallback when timing data is unavailable for an earlier one.
-      if (!best || (first && (!best.events[0] || first.days < best.events[0].days))) {
-        best = { partner: sibling, synodic, events, contactKm };
+      partners.push({ partner: sibling, synodic, contactKm });
+    }
+    return partners;
+  }
+
+  /**
+   * Every contact window for `body` across all its crossing partners that opens within the next
+   * `horizonDays`, in chronological order — uncapped, unlike {@link detectCollisionStatus}'s
+   * 10-row {@link CollisionStatus.upcomingCollisions}. Each window names its own partner. Lets the
+   * dialog mark *all* collisions inside the distance diagram's window, not just the first ten, so
+   * no in-view collision dip is left without a marker. Empty when the body has no crossing
+   * partners or lacks the phase data to time them.
+   */
+  upcomingContactsWithin(body: SystemBody, horizonDays: number, now: number = Date.now()): CollisionWindow[] {
+    return this.contactWindowsWithin(this.collisionPartners(body), body.bodyData, horizonDays * MS_PER_DAY, now)
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
+  }
+
+  /**
+   * Contact windows opening within `horizonMs` for each given partner, merged (unsorted). The
+   * forward march is bounded both by the horizon and by MAX_CONJUNCTIONS_SCANNED, so tightly
+   * spaced pairs stay cheap.
+   */
+  private contactWindowsWithin(
+    partners: { partner: SystemBody; synodic: number; contactKm: number }[],
+    bodyData: CanonnBiostatsBody,
+    horizonMs: number,
+    now: number,
+  ): CollisionWindow[] {
+    const windows: CollisionWindow[] = [];
+    for (const p of partners) {
+      windows.push(...this.nextContacts(bodyData, p.partner.bodyData, p.contactKm, p.synodic, now, MAX_CONJUNCTIONS_SCANNED, horizonMs)
+        .filter(w => w.start.getTime() <= now + horizonMs));
+    }
+    return windows;
+  }
+
+  /**
+   * Timed multi-body pile-ups for `body` over the next `horizonDays`: intervals in which it is
+   * simultaneously within contact of two or more siblings. Unlike the simultaneity derived from
+   * {@link detectCollisionStatus}'s capped upcoming-contacts list, this scans every direct
+   * partner's contacts across the whole horizon, so a cluster beyond the listed rows is still
+   * found. Empty when the body has fewer than two crossing partners.
+   */
+  simultaneousCollisionsWithin(body: SystemBody, horizonDays: number, now: number = Date.now()): SimultaneousCollision[] {
+    const partners = this.collisionPartners(body);
+    if (partners.length < 2) { return []; }
+    return this.groupSimultaneous(this.contactWindowsWithin(partners, body.bodyData, horizonDays * MS_PER_DAY, now), now);
+  }
+
+  /**
+   * Groups contact windows that overlap in time; a group spanning two or more distinct partners
+   * is a simultaneous multi-body collision. Mirrors the time-overlap clustering the dialog does
+   * on its visible rows, but over the full horizon set.
+   */
+  private groupSimultaneous(windows: CollisionWindow[], now: number): SimultaneousCollision[] {
+    const sorted = [...windows].sort((a, b) => a.start.getTime() - b.start.getTime());
+    const out: SimultaneousCollision[] = [];
+    let group: CollisionWindow[] = [];
+    let maxEnd = -Infinity;
+
+    const flush = (): void => {
+      const partnerNames = new Set(group.map(w => w.partnerName).filter((n): n is string => !!n));
+      if (partnerNames.size >= 2) {
+        out.push({
+          partnerNames: [...partnerNames].sort(),
+          start: new Date(Math.min(...group.map(w => w.start.getTime()))),
+          end: new Date(Math.max(...group.map(w => w.end.getTime()))),
+          days: Math.min(...group.map(w => w.days)),
+        });
+      }
+      group = [];
+    };
+
+    for (const w of sorted) {
+      if (group.length === 0 || w.start.getTime() <= maxEnd) {
+        group.push(w);
+        maxEnd = Math.max(maxEnd, w.end.getTime());
+      } else {
+        flush();
+        group = [w];
+        maxEnd = w.end.getTime();
       }
     }
+    flush();
+    return out;
+  }
 
-    if (!best) { return none; }
+  detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
+    const none: CollisionStatus = {
+      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [],
+    };
+    const bd = body.bodyData;
+    const range = this.orbitalRadialRange(bd);
+    if (!body.parent || !bd.orbitalPeriod || !range) { return none; }
 
-    // Expand the winning partner to the full upcoming-collisions list.
-    const upcoming = this.nextContacts(bd, best.partner.bodyData, best.contactKm, best.synodic, now, 10);
+    const partners = this.collisionPartners(body);
+    if (partners.length === 0) { return none; }
+
+    // Compute each partner's upcoming contact windows, then merge them into one chronological
+    // list so the soonest collisions surface regardless of which sibling they involve. Each
+    // window already carries its partner's name and contact radius (stamped in nextContacts).
+    const merged: CollisionWindow[] = [];
+    for (const p of partners) {
+      merged.push(...this.nextContacts(bd, p.partner.bodyData, p.contactKm, p.synodic, now, MAX_UPCOMING_CONTACTS));
+    }
+    merged.sort((x, y) => x.start.getTime() - y.start.getTime());
+    const upcoming = merged.slice(0, MAX_UPCOMING_CONTACTS);
+
+    // The primary partner owns the soonest collision; fall back to the first geometric
+    // candidate when no pair has usable phase/timing data (so the badge still appears).
+    const primary = (upcoming[0]
+      ? partners.find(p => p.partner.bodyData.name === upcoming[0].partnerName)
+      : null) ?? partners[0];
 
     // Identify additional siblings that are part of the same crossing-orbit group, making
-    // this a multi-body cluster. Grow the group transitively: if A crosses B and B crosses C,
-    // C is in the group even if A doesn’t directly cross C.
-    const groupMembers = new Set<string>([bd.name, best.partner.bodyData.name]);
+    // this a multi-body cluster. Grow the group transitively from every direct partner: if
+    // A crosses B and B crosses C, C is in the group even if A doesn’t directly cross C.
+    const groupMembers = new Set<string>([bd.name, ...partners.map(p => p.partner.bodyData.name)]);
     let changed = true;
     while (changed) {
       changed = false;
@@ -701,15 +882,15 @@ export class OrbitalRelationsService {
         }
       }
     }
-    const simultaneousPartners = [...groupMembers].filter(n => n !== bd.name && n !== best!.partner.bodyData.name);
+    const simultaneousPartners = [...groupMembers].filter(n => n !== bd.name && n !== primary.partner.bodyData.name);
 
     return {
       isCandidate: true,
-      partnerName: best.partner.bodyData.name,
-      synodicPeriodDays: best.synodic,
+      partnerName: primary.partner.bodyData.name,
+      synodicPeriodDays: primary.synodic,
       nextCollision: upcoming[0] ?? null,
       upcomingCollisions: upcoming,
-      combinedRadiiKm: best.contactKm,
+      combinedRadiiKm: primary.contactKm,
       simultaneousPartners,
     };
   }

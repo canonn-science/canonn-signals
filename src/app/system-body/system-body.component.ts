@@ -27,9 +27,21 @@ import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-l
 import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
 import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
 import { CollisionDialogComponent, CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
+import { SynodicDiagramInput } from '../data/collision-diagram';
 import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
 import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
+
+/** Horizon (days) over which simultaneous (multi-body) collisions are scanned for the dialog's section. */
+const SIMULTANEOUS_COLLISION_HORIZON_DAYS = 180;
+/** Width of the collision dialog's distance-over-time diagram, in synodic periods. */
+const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
+/**
+ * Number of separation samples drawn across the diagram window (~100 per synodic period over the
+ * {@link COLLISION_DIAGRAM_SYNODIC_PERIODS}-period span). Enough to render the conjunction dips
+ * smoothly; the exact contact minima are threaded into the curve separately for precise markers.
+ */
+const COLLISION_DIAGRAM_SAMPLES = 1000;
 
 /** Rings below this surface density (kg/km²) are considered invisible. */
 const INVISIBLE_RING_MAX_DENSITY = 0.1;
@@ -1040,6 +1052,21 @@ export class SystemBodyComponent implements OnChanges {
   public showCollisionDialog(): void {
     const status = this.collisionStatus;
     if (!status?.isCandidate) { return; }
+    const siblings = this.body().parent?.subBodies ?? [];
+    const now = Date.now();
+
+    // Descriptive info for every collision candidate: each crossing partner from the upcoming
+    // windows, the primary partner, and any simultaneous-cluster member — so the dialog can
+    // enumerate all involved bodies, not just the primary pair.
+    const partnerNames = new Set<string>();
+    for (const w of status.upcomingCollisions) { if (w.partnerName) { partnerNames.add(w.partnerName); } }
+    if (status.partnerName) { partnerNames.add(status.partnerName); }
+    for (const n of status.simultaneousPartners) { partnerNames.add(n); }
+    const partnerInfos = [...partnerNames].map(name => ({
+      name,
+      info: this.buildCollisionBodyInfo(siblings.find(s => s.bodyData.name === name) ?? null),
+    }));
+
     this.dialog.open(CollisionDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -1055,13 +1082,73 @@ export class SystemBodyComponent implements OnChanges {
         combinedRadiiKm: status.combinedRadiiKm,
         bodyInfo: this.buildCollisionBodyInfo(this.body()),
         partnerInfo: this.buildCollisionBodyInfo(
-          this.body().parent?.subBodies.find(s => s.bodyData.name === status.partnerName) ?? null
+          siblings.find(s => s.bodyData.name === status.partnerName) ?? null
         ),
+        partnerInfos,
         systemPopulation: this.systemPopulation(),
         systemName: this.edGalaxyData()?.Name ?? '',
         simultaneousPartners: status.simultaneousPartners,
+        simultaneousCollisions: this.orbitalRelations.simultaneousCollisionsWithin(this.body(), SIMULTANEOUS_COLLISION_HORIZON_DAYS, now),
+        separationDiagram: this.buildCollisionDistanceDiagram(this.body(), siblings, status, now),
       } satisfies CollisionDialogData,
     });
+  }
+
+  /**
+   * Builds the distance-over-time samples for the collision dialog's synodic-period diagram:
+   * one centre-to-centre separation curve from this body to each sibling it directly collides
+   * with, over a window of ten synodic periods. Every collision falling inside that window is
+   * marked (uncapped — not just the 10 table rows), so no in-view dip is left without a marker.
+   * Returns null when no pair has the phase data needed to place the bodies in time.
+   */
+  private buildCollisionDistanceDiagram(
+    body: SystemBody,
+    siblings: SystemBody[],
+    status: CollisionStatus,
+    now: number,
+  ): SynodicDiagramInput | null {
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+    // Timeline: ten synodic periods — long enough to show the conjunction dips recurring and
+    // which of them deepen into collisions. Without a synodic period there is nothing to scale to.
+    const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
+    if (!(synMs > 0)) { return null; }
+    const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const endMs = now + spanMs;
+
+    // Every contact inside the window — uncapped — grouped by the partner each is with, so dips
+    // beyond the table's 10-row limit are still marked.
+    const windowContacts = this.orbitalRelations.upcomingContactsWithin(body, spanMs / MS_PER_DAY, now);
+
+    // Distinct siblings this body collides with in-window, plus any from the (capped) status list
+    // and the primary partner, so a curve is drawn even when no contact lands inside the window.
+    const partnerNames = new Set<string>();
+    for (const w of windowContacts) { if (w.partnerName) { partnerNames.add(w.partnerName); } }
+    for (const w of status.upcomingCollisions) { if (w.partnerName) { partnerNames.add(w.partnerName); } }
+    if (partnerNames.size === 0 && status.partnerName) { partnerNames.add(status.partnerName); }
+    if (partnerNames.size === 0) { return null; }
+
+    const series: SynodicDiagramInput['series'] = [];
+    for (const name of partnerNames) {
+      const sibling = siblings.find(s => s.bodyData.name === name);
+      if (!sibling) { continue; }
+      const samplesArr = this.orbitalRelations.separationSeries(body.bodyData, sibling.bodyData, now, endMs, COLLISION_DIAGRAM_SAMPLES);
+      if (samplesArr.length === 0) { continue; }
+      // Every contact window already carries this pair's contact threshold (combinedRadiiKm), so
+      // prefer it; fall back to the status-level value, then the bare radius sum, only if absent.
+      const partnerWindows = windowContacts.filter(w => w.partnerName === name);
+      const combinedRadiiKm = partnerWindows[0]?.combinedRadiiKm
+        ?? status.upcomingCollisions.find(w => w.partnerName === name)?.combinedRadiiKm
+        ?? status.combinedRadiiKm
+        ?? ((body.bodyData.radius ?? 0) + (sibling.bodyData.radius ?? 0));
+      const contacts = partnerWindows.map(w => ({
+        tMs: (w.start.getTime() + w.end.getTime()) / 2,
+        sepKm: w.minSeparationKm,
+      }));
+      series.push({ partnerName: name, combinedRadiiKm, samples: samplesArr, contacts });
+    }
+
+    return series.length > 0 ? { startMs: now, endMs, nowMs: now, series } : null;
   }
 
   /**
