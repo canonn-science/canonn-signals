@@ -9,13 +9,24 @@ Canonn Signals is an Angular-based web application designed for Elite Dangerous 
 
 ### System Search & Display
 - **System Search**: Search for any stellar system by name with autocomplete suggestions
-- **Real-time Data**: Fetches data from Spansh API and Galactic Exploration Catalog (GEC)
+- **Real-time Data**: Fetches data from Spansh, the Galactic Exploration Catalog (GEC), Canonn, EDAstro and SIMBAD
 - **System Overview**: Display complete system information including:
   - System allegiance and coordinates
   - Star types and configurations
   - All celestial bodies (stars, planets, moons, rings, belts)
   - Hierarchical body structure with parent-child relationships
   - Barycentre detection and display
+
+#### Galaxy Region Map
+- **Interactive SVG Map**: Shows the galactic region containing the current system
+- **Region Highlighting**: Highlights the system's region by name
+- **Marker Overlays**: Current system, known systems, DSSA fleet carriers and Gnosis position
+- **Click-to-Select**: Pick a system directly from the map
+
+#### Nearest Nebulae
+- **Proximity Panel**: Lists the closest catalogued nebulae to the current system
+- **Distance Display**: Shows light-year distance to each nebula
+- **Quick Navigation**: Clickable links to open each nebula's reference system
 
 ### Body Classification & Visualization
 - **Body Type Detection**: Automatically identifies and displays:
@@ -116,6 +127,13 @@ Organized into five main categories with dedicated sections:
 - **Rosette/Klemperer Detection**: Identifies rare stable orbital arrangements
 - **Visual Badges**: Special indicators for these rare phenomena
 
+#### Orbital Geometry Diagrams
+- **Interactive Diagram Dialogs**: Click an orbital element to open a to-scale diagram explaining it:
+  - **Axial Tilt**: the body's spin axis relative to its orbital plane
+  - **Orbital Inclination**: the orbital plane's tilt, with the body's position marked
+  - **Argument of Periapsis**: the ellipse with the periapsis direction highlighted
+- **Educational Overlays**: Each diagram annotates the relevant angle and reference plane
+
 ### Physical Properties
 
 #### Composition Analysis
@@ -146,6 +164,8 @@ Organized into five main categories with dedicated sections:
   - Red: Dangerous (high gravity and/or thick atmosphere)
 - **Odyssey Compatibility**: Special badge for atmospheric landable worlds (requires Odyssey DLC)
 - **Safety Tooltips**: Hover for gravity and atmosphere warnings
+- **On-Foot Safety Dialog**: Estimates the surface temperature range and compares it to the suit-safe
+  band (≈263–303 K), flagging worlds too hot or cold for on-foot exploration
 
 #### Terraforming
 - **Terraforming State**: Shows current terraforming status
@@ -186,6 +206,17 @@ Organized into five main categories with dedicated sections:
 - **Classification Badge**: Visual indicator with tooltip explanation
 - **Boost Capability**: Information for FSD supercharging
 
+#### White Dwarf Subtypes
+- **Spectral-Type Reference**: Badge showing the white-dwarf subtype code (DA, DB, DC, DO, DQ, DZ, DX, etc.)
+- **Subtype Dialog**: Reference table explaining each subtype's atmospheric composition
+- **Compact-Object Sizing**: White-dwarf (and other compact-object) radii shown in kilometres
+
+#### HR Diagram
+- **Hertzsprung–Russell Diagram Dialog**: Plots the star on a temperature-vs-magnitude chart
+  - Main-sequence band with temperature gradient, plus giant / supergiant / white-dwarf regions
+  - Spectral-class ticks and the star's own position marked
+  - **Stellar Age Assessment**: Compares the star's age to its estimated main-sequence lifetime
+
 #### Stellar Properties
 - **Spectral Classification**: Full spectral type display (O, B, A, F, G, K, M, L, T, Y classes)
 - **Luminosity Class**: Roman numeral designation
@@ -216,8 +247,9 @@ Organized into five main categories with dedicated sections:
 
 #### Interactive Elements
 - **Body Dialogs**: Click-through for detailed information
-- **JSON Viewer**: View raw body data with syntax highlighting
-- **Copy JSON**: Right-click to copy body data to clipboard
+- **JSON Viewer**: View raw body data, with a copy-to-clipboard button and a deep link to the
+  EDGalaxyData journal lookup for the body
+- **Copy JSON**: Copy body data to clipboard
 - **Tooltips**: Comprehensive hover information throughout
 - **Material Badges**: Hover to see full material names
 
@@ -253,8 +285,10 @@ Organized into five main categories with dedicated sections:
 #### External APIs
 - **Spansh Integration**: Primary data source for system information
 - **Galactic Exploration Catalog**: Supplementary exploration data
+- **Canonn API**: Codex biology/geology classification and signal data
+- **EDAstro**: Region and exploration data
+- **SIMBAD / EDGalaxyData**: Real-star catalogue cross-reference (via the EDDN lookup API)
 - **EDDN Network**: Community-contributed data
-- **Codex Database**: Biology classification and identification
 
 #### Data Caching
 - **Smart Caching**: Reduces API calls
@@ -276,10 +310,10 @@ Organized into five main categories with dedicated sections:
 ## Technical Features
 
 ### Performance
-- **Angular 16**: Modern framework with optimized change detection
+- **Angular 22**: Modern standalone, zoneless framework with signal-based change detection
 - **Lazy Loading**: Efficient component loading
 - **Debounced Search**: Prevents excessive API calls
-- **Smart Rendering**: Only renders visible/expanded bodies
+- **Smart Rendering**: Only renders visible/expanded bodies (OnPush + signals)
 
 ### Responsive Design
 - **Mobile Friendly**: Adapts to different screen sizes
