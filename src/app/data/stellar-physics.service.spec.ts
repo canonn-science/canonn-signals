@@ -25,6 +25,13 @@ describe('StellarPhysicsService', () => {
     it('returns none for a non-simple ratio', () => {
       expect(service.spinResonance(1, 7.13)).toBe('none');
     });
+
+    it('detects resonance for retrograde rotators (negative rotationalPeriod)', () => {
+      // Elite stores retrograde rotation as a negative period; a retrograde
+      // tidally-locked body must still classify as 1:1, not silently 'none'.
+      expect(service.spinResonance(-10, 10)).toBe('1:1');
+      expect(service.spinResonance(-2, 3)).toBe('3:2');
+    });
   });
 
   describe('tangentialVelocityKms', () => {
