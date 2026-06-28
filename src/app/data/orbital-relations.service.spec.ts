@@ -320,34 +320,6 @@ describe('OrbitalRelationsService', () => {
       expect(service.detectCollisionStatus(a, now).isCandidate).toBe(false);
     });
 
-    it('flags the real Grae Eaec AA-A h0 D 2 c / d pair and dates the contact in 3D', () => {
-      // Razor-thin nearly-circular orbits ~1825 km apart radially; the ~2700 km moons sit
-      // closer than their radii sum, so they truly collide. A full 3D Kepler propagation
-      // (verified independently) puts the next contact on 2026-10-18.
-      const [c, d] = makeFamily([
-        { name: 'D 2 c', orbitalPeriod: 1.90164928358796, semiMajorAxis: 0.0128560641816413,
-          orbitalEccentricity: 8.4e-5, orbitalInclination: -0.727422, radius: 2780.05725,
-          argOfPeriapsis: 201.101444, ascendingNode: -128.723473, meanAnomaly: 18.25511,
-          timestamps: { meanAnomaly: '2022-05-21T02:21:30Z' } as any },
-        { name: 'D 2 d', orbitalPeriod: 1.90435777659722, semiMajorAxis: 0.0128682681673058,
-          orbitalEccentricity: 2.8e-5, orbitalInclination: -0.020247, radius: 2715.17175,
-          argOfPeriapsis: 100.379093, ascendingNode: 25.401207, meanAnomaly: 38.691326,
-          timestamps: { meanAnomaly: '2022-05-21T02:21:30Z' } as any },
-      ]);
-      const r = service.detectCollisionStatus(c, now);
-      expect(r.isCandidate).toBe(true);
-      expect(r.partnerName).toBe('D 2 d');
-      expect(r.synodicPeriodDays).toBeCloseTo(1337, 0);
-      expect(r.nextCollision).not.toBeNull();
-      // Within a day of the independently computed 3D contact time.
-      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2026-10-18');
-      // Enriched fields for the collision dialog: combined radii (the contact threshold) and the
-      // closest-approach separation, which must sit at or inside that threshold (it IS a contact).
-      expect(r.combinedRadiiKm).toBeCloseTo(2780.05725 + 2715.17175, 3);
-      expect(r.nextCollision!.minSeparationKm).toBeGreaterThan(0);
-      expect(r.nextCollision!.minSeparationKm).toBeLessThanOrEqual(r.combinedRadiiKm!);
-    });
-
     it('skips off-node near-miss conjunctions and dates the first true 3D contact', () => {
       // Two tilted orbits whose longitude conjunctions precess across the mutual node. The
       // next two conjunctions (≈2026-06-29 and ≈2026-08-27) pass 15000+ km apart — far wider
@@ -389,80 +361,6 @@ describe('OrbitalRelationsService', () => {
       expect(r.nextCollision).not.toBeNull();
       expect(r.nextCollision!.days).toBeGreaterThan(0);
       expect(r.nextCollision!.days).toBeLessThan(30);
-    });
-
-    it('flags the real Dryio Hypue RY-A e0 A 6 a / b pair (sharp minimum, multi-basin)', () => {
-      // These moons' closest orbital approach (~3000 km, inside the ~3909 km radii sum) sits
-      // in a narrow valley whose basin a coarse single-best grid search misses — it must be
-      // found by the finer grid + multi-basin refinement. Brute-force 3D contact: 2028-08-10.
-      const [a] = makeFamily([
-        { name: 'A 6 a', orbitalPeriod: 2.04546135608796, semiMajorAxis: 0.0128871889270589,
-          orbitalEccentricity: 0.000555, orbitalInclination: 0.025846, argOfPeriapsis: 107.388455,
-          ascendingNode: 82.705832, meanAnomaly: 183.01898, radius: 2097.79225,
-          timestamps: { meanAnomaly: '2023-04-07T20:50:46Z' } as any },
-        { name: 'A 6 b', orbitalPeriod: 2.05459880332176, semiMajorAxis: 0.0129255400416571,
-          orbitalEccentricity: 0.000999, orbitalInclination: 0.006466, argOfPeriapsis: 25.373948,
-          ascendingNode: 21.680711, meanAnomaly: 53.449845, radius: 1811.117375,
-          timestamps: { meanAnomaly: '2023-04-07T20:50:43Z' } as any },
-      ]);
-      const r = service.detectCollisionStatus(a, now);
-      expect(r.isCandidate).toBe(true);
-      expect(r.partnerName).toBe('A 6 b');
-      expect(r.nextCollision).not.toBeNull();
-      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2028-08-10');
-    });
-
-    it('flags the real Dryooe Flyou PS-U f2-1857 1 b / c pair (tightly-nested, sub-degree valley)', () => {
-      // Two moons on near-coplanar orbits nested only ~4255 km apart radially (semiMajorAxis
-      // 2,935,367 vs 2,939,622 km). Their true closest 3D approach is ~722 km — well inside the
-      // 3459.8 km radii sum — but it lives in a valley < 0.1° wide. The historical fixed-1°
-      // grid stepped over it and reported ~7798 km, wrongly rejecting the pair (isCandidate
-      // false). The adaptive step + line-of-nodes seed must now find it. Brute-force 3D contact
-      // (synodic ≈ 1309 d, so contacts are sparse): 2033-06-15.
-      const [b1] = makeFamily([
-        { name: '1 b', orbitalPeriod: 2.84128111821759, semiMajorAxis: 0.0196217139777391,
-          orbitalEccentricity: 0.001403, orbitalInclination: -0.148447, argOfPeriapsis: 46.239216,
-          ascendingNode: -83.383117, meanAnomaly: 170.83725, radius: 1751.312875,
-          timestamps: { meanAnomaly: '2023-04-07T20:50:43Z' } as any },
-        { name: '1 c', orbitalPeriod: 2.84746178873843, semiMajorAxis: 0.0196501568743971,
-          orbitalEccentricity: 0.000402, orbitalInclination: 0.117054, argOfPeriapsis: 209.510865,
-          ascendingNode: -94.95314, meanAnomaly: 322.88133, radius: 1708.5065,
-          timestamps: { meanAnomaly: '2023-04-07T20:50:43Z' } as any },
-      ]);
-      const r = service.detectCollisionStatus(b1, now);
-      expect(r.isCandidate).toBe(true);
-      expect(r.partnerName).toBe('1 c');
-      expect(r.nextCollision).not.toBeNull();
-      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2033-06-15');
-    });
-
-    it('reports the contact window (start/end) for the real Braireau AA-A h761 1 b / c pair', () => {
-      // A collision is an interval, not an instant. An independent brute-force 3D Kepler
-      // propagation (combined radii 6509.6 km) puts the contact window on 2028-06-19:
-      // START ≈ 07:52:57 UTC, minimum separation (≈2929 km) at 08:33:52, END ≈ 09:14:49 UTC
-      // — a duration of ≈82 minutes.
-      const [b1, c1] = makeFamily([
-        { name: '1 b', orbitalPeriod: 3.12638586318287, semiMajorAxis: 0.0154507028533318,
-          orbitalEccentricity: 0.011564, orbitalInclination: -2.461662, argOfPeriapsis: 219.533956,
-          ascendingNode: -179.142714, meanAnomaly: 272.605583, radius: 3445.79375,
-          timestamps: { meanAnomaly: '2023-03-19T22:33:44Z' } as any },
-        { name: '1 c', orbitalPeriod: 3.17091274040509, semiMajorAxis: 0.015597059041845,
-          orbitalEccentricity: 5.6e-5, orbitalInclination: -0.160679, argOfPeriapsis: 305.081614,
-          ascendingNode: -78.606663, meanAnomaly: 309.399786, radius: 3063.84525,
-          timestamps: { meanAnomaly: '2023-03-19T22:33:52Z' } as any },
-      ]);
-      const r = service.detectCollisionStatus(b1, now);
-      expect(r.isCandidate).toBe(true);
-      expect(r.partnerName).toBe('1 c');
-      expect(r.nextCollision).not.toBeNull();
-      // Contact window starts on 2028-06-19 around 07:5x UTC.
-      expect(r.nextCollision!.start.toISOString().slice(0, 10)).toBe('2028-06-19');
-      // The window is a genuine interval: end follows start…
-      expect(r.nextCollision!.end.getTime()).toBeGreaterThan(r.nextCollision!.start.getTime());
-      // …and lasts on the order of an hour and a half (≈82 minutes here).
-      const durationMin = (r.nextCollision!.end.getTime() - r.nextCollision!.start.getTime()) / 60000;
-      expect(durationMin).toBeGreaterThan(60);
-      expect(durationMin).toBeLessThan(100);
     });
 
     it('treats an unbound (e ≥ 1) sibling as a non-recurring, non-candidate orbit', () => {

@@ -23,6 +23,12 @@ describe('CollisionDialogComponent', () => {
       partnerName: 'Test 1 c',
       synodicPeriodDays: 400,
       combinedRadiiKm: 5000,
+      upcomingCollisions: [],
+      bodyInfo: null,
+      partnerInfo: null,
+      systemPopulation: 0,
+      systemName: 'Test',
+      simultaneousPartners: [],
       nextCollision: {
         start: new Date('2026-12-15T14:00:00Z'),
         end: new Date('2026-12-15T15:30:00Z'),
@@ -44,6 +50,7 @@ describe('CollisionDialogComponent', () => {
   it('computes overlap depth and its severity label from separation and combined radii', () => {
     const fixture = setup({
       bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,
+      upcomingCollisions: [], bodyInfo: null, partnerInfo: null, systemPopulation: 0, systemName: '', simultaneousPartners: [],
       nextCollision: { start: new Date(), end: new Date(), days: 1, minSeparationKm: 100 },
     });
     const c = fixture.componentInstance;
@@ -55,6 +62,7 @@ describe('CollisionDialogComponent', () => {
   it('clamps overlap at 0% when the bodies merely graze (separation ≥ combined radii)', () => {
     const fixture = setup({
       bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,
+      upcomingCollisions: [], bodyInfo: null, partnerInfo: null, systemPopulation: 0, systemName: '', simultaneousPartners: [],
       nextCollision: { start: new Date(), end: new Date(), days: 1, minSeparationKm: 1000 },
     });
     expect(fixture.componentInstance.overlapPercent).toBeCloseTo(0, 6);
@@ -63,7 +71,9 @@ describe('CollisionDialogComponent', () => {
 
   it('shows the candidate heading and an explanatory note when timing data is missing', () => {
     const fixture = setup({
-      bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000, nextCollision: null,
+      bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,
+      upcomingCollisions: [], bodyInfo: null, partnerInfo: null, systemPopulation: 0, systemName: '', simultaneousPartners: [],
+      nextCollision: null,
     });
     expect(fixture.componentInstance.heading).toBe('Collision Candidate');
     expect(fixture.componentInstance.overlapPercent).toBeNull();

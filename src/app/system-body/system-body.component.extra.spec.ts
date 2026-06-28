@@ -767,6 +767,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(makeBody({ name: 'X 1 b' }));
       component.collisionStatus = {
         isCandidate: true, partnerName: 'X 1 c', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
         nextCollision: {
           start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
           days: 170, minSeparationKm: 1000,
