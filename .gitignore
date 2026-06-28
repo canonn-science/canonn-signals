@@ -50,3 +50,7 @@ Thumbs.db
 package-lock.json
 .pnpm-store/
 pnpm-lock.yaml
+
+# Python bytecode cache (from the .claude/skills helper scripts)
+__pycache__/
+*.pyc

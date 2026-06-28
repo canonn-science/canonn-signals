@@ -1,0 +1,81 @@
+.collision-dialog {
+    .summary {
+        margin: 0 0 16px;
+        line-height: 1.6;
+        font-style: italic;
+        opacity: 0.9;
+    }
+
+    .values ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0 0 20px;
+    }
+
+    .values ul li {
+        padding: 4px 0;
+        line-height: 1.5;
+    }
+
+    .time {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tz {
+        opacity: 0.7;
+        font-size: 0.9em;
+    }
+
+    .hint {
+        opacity: 0.7;
+        font-style: italic;
+    }
+
+    .explanation {
+        line-height: 1.6;
+    }
+
+    .upcoming-collisions {
+        margin-bottom: 20px;
+
+        h3 {
+            margin: 0 0 10px;
+            font-size: 1em;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+
+            th,
+            td {
+                padding: 5px 10px;
+                text-align: left;
+                border-bottom: 1px solid var(--color-surface-border, rgba(255, 255, 255, 0.12));
+            }
+
+            th {
+                font-weight: 600;
+                opacity: 0.8;
+                white-space: nowrap;
+            }
+
+            td.num {
+                text-align: right;
+                font-variant-numeric: tabular-nums;
+                white-space: nowrap;
+            }
+
+            td.date {
+                font-variant-numeric: tabular-nums;
+                white-space: nowrap;
+            }
+
+            tbody tr:hover {
+                background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
+            }
+        }
+    }
+}

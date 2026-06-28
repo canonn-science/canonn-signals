@@ -409,6 +409,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   });
 
   public ngOnInit(): void {
+    // Apply optional ?t= timestamp override (ISO-8601 or ms since epoch) for debugging.
+    const tParam = this.activatedRoute.snapshot.queryParamMap.get('t');
+    if (tParam) {
+      const ms = Date.parse(tParam);
+      if (Number.isFinite(ms)) { this.appService.setNowOverride(ms); }
+    }
     // Handle the initial deep-link (?system=…) from the route snapshot…
     this.handleSystemParam(this.activatedRoute.snapshot.queryParamMap.get('system') ?? undefined);
     // …and browser back/forward. In-app navigations (from processBodies) are guarded by

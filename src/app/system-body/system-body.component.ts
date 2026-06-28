@@ -12,7 +12,7 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
 import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
-import { OrbitalRelationsService } from '../data/orbital-relations.service';
+import { OrbitalRelationsService, CollisionStatus } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
@@ -26,6 +26,7 @@ import { HillLimitDialogComponent } from '../dialogs/hill-limit-dialog/hill-limi
 import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-limit-dialog.component';
 import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
 import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
+import { CollisionDialogComponent, CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
 import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
 import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
@@ -82,6 +83,7 @@ export class SystemBodyComponent implements OnChanges {
   readonly isLast = input<boolean>(false);
   readonly forceExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
+  readonly systemPopulation = input<number>(0);
   readonly childComponents = viewChildren(SystemBodyComponent);
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
@@ -204,6 +206,15 @@ export class SystemBodyComponent implements OnChanges {
     this.trojanStatus = trojan.lagrangePoint;
     this.trojanHostStatus = trojan.isHost;
     this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
+    // Collision detection runs a costly 3D orbital search, so only redo it when the body
+    // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
+    // the async codex effect, which leave the orbital geometry untouched.
+    if (this.collisionBody !== body) {
+      this.collisionBody = body;
+      const nowOverride = this.appService.nowOverride();
+      this.collisionStatus = this.orbitalRelations.detectCollisionStatus(
+        body, nowOverride ?? Date.now());
+    }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
     this.getRocheExcess.set(this.calculateRocheExcess());
@@ -1025,6 +1036,58 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
+  /** Opens the collision dialog with this body's collision-candidate details. */
+  public showCollisionDialog(): void {
+    const status = this.collisionStatus;
+    if (!status?.isCandidate) { return; }
+    this.dialog.open(CollisionDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        bodyName: this.body().bodyData.name,
+        partnerName: status.partnerName,
+        synodicPeriodDays: status.synodicPeriodDays,
+        nextCollision: status.nextCollision,
+        upcomingCollisions: status.upcomingCollisions,
+        combinedRadiiKm: status.combinedRadiiKm,
+        bodyInfo: this.buildCollisionBodyInfo(this.body()),
+        partnerInfo: this.buildCollisionBodyInfo(
+          this.body().parent?.subBodies.find(s => s.bodyData.name === status.partnerName) ?? null
+        ),
+        systemPopulation: this.systemPopulation(),
+        systemName: this.edGalaxyData()?.Name ?? '',
+        simultaneousPartners: status.simultaneousPartners,
+      } satisfies CollisionDialogData,
+    });
+  }
+
+  /**
+   * Human-readable time-until for the collision badge tooltip: days, with years in parentheses
+   * once the wait reaches a year. Negative means contact is already in progress.
+   */
+  public formatCollisionCountdown(days: number): string {
+    if (days < 0) { return 'in progress now'; }
+    if (days < 1) { return 'less than a day'; }
+    const dayLabel = `${Math.round(days).toLocaleString()} days`;
+    return days >= 365.25 ? `${dayLabel} (${(days / 365.25).toFixed(1)} years)` : dayLabel;
+  }
+
+  /** Extracts the key descriptive facts from a SystemBody for the collision dialog summary. */
+  private buildCollisionBodyInfo(body: SystemBody | null): CollisionBodyInfo | null {
+    if (!body) { return null; }
+    const bd = body.bodyData;
+    return {
+      subType: bd.subType || bd.type || 'body',
+      atmosphereType: bd.atmosphereType ?? null,
+      orbitalPeriodDays: bd.orbitalPeriod ?? 0,
+      moonCount: body.subBodies.length,
+      hasRings: !!(bd.rings?.length),
+    };
+  }
+
   public showShepherdingHillLimitChart(): void {
     const hillData = this.calculateShepherdingHillLimit();
     const body = this.body();
@@ -1321,6 +1384,9 @@ export class SystemBodyComponent implements OnChanges {
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
+  public collisionStatus: CollisionStatus | null = null;
+  /** The body `collisionStatus` was last computed for, to skip recompute on unrelated re-renders. */
+  private collisionBody: SystemBody | null = null;
   public readonly getEstimatedTempRange = signal<{ min: number; max: number } | null>(null);
   public readonly getLandableBadgeClass = signal('badge-gray');
   public readonly getLandableTooltip = signal('');
