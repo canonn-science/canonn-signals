@@ -78,6 +78,14 @@
       <span class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{
         rosetteStatus }}</span>
       }
+      @if (collisionStatus?.isCandidate) {
+      <span class="badge badge-red clickable" [matTooltip]="collisionStatus!.nextCollision
+              ? ('Collides with ' + collisionStatus!.partnerName
+                 + ' in ' + formatCollisionCountdown(collisionStatus!.nextCollision!.days)
+                 + ' — click for details')
+              : ('Crossing orbit with ' + collisionStatus!.partnerName + ' — click for details')"
+        (click)="showCollisionDialog()">{{ (collisionStatus!.nextCollision?.days ?? 0) < 0 ? 'Collision In Progress' : 'Collision' }}</span>
+      }
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"
         [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
@@ -435,9 +443,8 @@
               </span>
               @if (getMassStabilityAlert(); as massAlert) {
               <span [class.status-danger]="massAlert.severity === 'danger'"
-                    [class.status-warning]="massAlert.severity === 'warning'"
-                    [matTooltip]="massAlert.message"
-                    matTooltipClass="multiline-tooltip">⚠</span>
+                [class.status-warning]="massAlert.severity === 'warning'" [matTooltip]="massAlert.message"
+                matTooltipClass="multiline-tooltip">⚠</span>
               }
             </div>
           </div>
@@ -967,7 +974,8 @@
 <div class="child-bodies">
   @for (body of body().subBodies; track $index; let isLast = $last) {
   <app-system-body [body]="body" [isLast]="isLast" [forceExpanded]="forceExpanded() || isAnchorBody"
-    [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxyData()"></app-system-body>
+    [anchorBodyId]="anchorBodyId()" [systemPopulation]="systemPopulation()"
+    [edGalaxyData]="edGalaxyData()"></app-system-body>
   }
 </div>
 </div>

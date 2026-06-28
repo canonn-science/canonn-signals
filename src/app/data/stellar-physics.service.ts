@@ -17,7 +17,10 @@ export class StellarPhysicsService {
   spinResonance(rotationalPeriod: number | null | undefined, orbitalPeriod: number | null | undefined): string {
     if (!rotationalPeriod || !orbitalPeriod) { return 'none'; }
 
-    const rotationsPerOrbit = orbitalPeriod / rotationalPeriod;
+    // Elite stores retrograde rotation as a negative rotationalPeriod; resonance is a
+    // ratio of magnitudes, so a retrograde tidally-locked body is still 1:1. Use the
+    // absolute periods (matching the solar-day code in SystemBodyComponent).
+    const rotationsPerOrbit = Math.abs(orbitalPeriod) / Math.abs(rotationalPeriod);
     const maxDenominator = 5;
     const tolerance = 0.01;
 
@@ -56,6 +59,8 @@ export class StellarPhysicsService {
    * Descriptive classification of a neutron star from its mass, rotation period and
    * absolute magnitude (period in days). Returns null when any required value is
    * missing, so callers can fall back to the generic "Neutron Star" label.
+   * The period is a spin rate, so its sign (Elite stores retrograde rotation as a
+   * negative `rotationalPeriod`) is ignored — only the magnitude classifies the body.
    */
   classifyNeutronStar(
     solarMasses: number | null | undefined,
@@ -68,7 +73,7 @@ export class StellarPhysicsService {
       return null;
     }
 
-    const period = rotationalPeriodDays * SECONDS_PER_DAY; // seconds
+    const period = Math.abs(rotationalPeriodDays) * SECONDS_PER_DAY; // seconds
     const isHighMass = solarMasses > 2.1;
 
     if (period < 0.01) {

@@ -7,35 +7,6 @@ pre-dates this branch.
 
 ## Physics / source
 
-- **`KG_PER_MEGATONNE = 1e12` is 1000× too large** —
-  [body-physics.service.ts:10](src/app/data/body-physics.service.ts#L10).
-  A megatonne is 10⁶ t = 10⁹ kg, so `1e12` is a gigatonne. Used only in the `parent.mass`
-  branch of `primaryDensityKgM3` ([:80](src/app/data/body-physics.service.ts#L80)), which is
-  unreachable for real parents — the `earthMasses` ([:76](src/app/data/body-physics.service.ts#L76))
-  and `solarMasses` ([:82](src/app/data/body-physics.service.ts#L82)) branches are tried first
-  and the bare `mass` field is not populated for real stars/planets. Practical impact is
-  near-zero, but the constant is wrong as named. Confirm the data source's unit for `mass`
-  before changing.
-
-- **`spinResonance` silently fails for retrograde rotators** —
-  [stellar-physics.service.ts:29](src/app/data/stellar-physics.service.ts#L29).
-  Elite stores retrograde rotation as a negative `rotationalPeriod`, so
-  `rotationsPerOrbit = orbitalPeriod / rotationalPeriod`
-  ([:32](src/app/data/stellar-physics.service.ts#L32)) goes negative while every
-  `candidate = num / denom` ([:38](src/app/data/stellar-physics.service.ts#L38)) is strictly
-  positive — no match is ever found and the result is `'none'`, so a retrograde tidally-locked
-  (1:1) body is missed. The adjacent solar-day code at
-  [system-body.component.ts:1303-1306](src/app/system-body/system-body.component.ts#L1303-L1306)
-  already `Math.abs`-es both periods, so the two disagree. Fix: take `Math.abs` of both periods.
-
-- **`classifyNeutronStar` mislabels retrograde neutron stars as "Millisecond Pulsar"** —
-  [stellar-physics.service.ts:104](src/app/data/stellar-physics.service.ts#L104).
-  Same root cause: `period = rotationalPeriodDays * SECONDS_PER_DAY`
-  ([:115](src/app/data/stellar-physics.service.ts#L115)) has no `Math.abs`, so a negative
-  period satisfies the first branch `period < 0.01`
-  ([:118](src/app/data/stellar-physics.service.ts#L118)) — any retrograde neutron star,
-  however slowly it spins, is labelled "Millisecond Pulsar" (or "Hyper-Massive Millisecond
-  Pulsar"). Fix: take `Math.abs` of the period.
 
 - **`rocheExcess` compares against the semi-major axis, not periapsis** —
   [body-physics.service.ts:354](src/app/data/body-physics.service.ts#L354).

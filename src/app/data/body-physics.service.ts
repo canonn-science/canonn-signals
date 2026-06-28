@@ -7,7 +7,6 @@ const KM_PER_AU = 149597870.7;
 const KM_PER_SOLAR_RADIUS = 695700;
 const KG_PER_EARTH_MASS = 5.972e24;
 const KG_PER_SOLAR_MASS = 1.989e30;
-const KG_PER_MEGATONNE = 1e12;
 const EARTH_MASSES_PER_SOLAR_MASS = 332950;
 
 /** Newtonian gravitational constant (m³ kg⁻¹ s⁻²) and speed of light (m/s). */
@@ -112,9 +111,6 @@ export class BodyPhysicsService {
   private primaryDensityKgM3(parent: CanonnBiostatsBody): number | null {
     if (parent.earthMasses && parent.radius) {
       return parent.earthMasses * KG_PER_EARTH_MASS / this.sphereVolumeM3(parent.radius * 1000);
-    }
-    if (parent.mass && parent.radius) {
-      return parent.mass * KG_PER_MEGATONNE / this.sphereVolumeM3(parent.radius * 1000);
     }
     if (parent.solarMasses && parent.solarRadius) {
       return parent.solarMasses * KG_PER_SOLAR_MASS / this.sphereVolumeM3(parent.solarRadius * KM_PER_SOLAR_RADIUS * 1000);
