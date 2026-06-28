@@ -99,7 +99,7 @@ describe('CollisionDialogComponent', () => {
     expect(fixture.componentInstance.description).toContain('5 collisions are predicted over the next 5 years.');
   });
 
-  it('lists every crossing partner and renders a per-partner "With" column for multi-body clusters', () => {
+  it('lists every crossing partner and names both involved bodies per row for multi-body clusters', () => {
     const windows = [
       { start: new Date('2026-07-01T00:00:00Z'), end: new Date('2026-07-01T01:00:00Z'),
         days: 3, minSeparationKm: 200, partnerName: 'Test 1 c', combinedRadiiKm: 1000 },
@@ -124,10 +124,11 @@ describe('CollisionDialogComponent', () => {
     expect(c.windowPartner(windows[1])).toBe('1 d');
     // Overlap uses the window's own combined radii, not the status-level value.
     expect(c.overlapPercentFor(windows[1])).toBeCloseTo((1 - 400 / 800) * 100, 6);
-    // Both partners appear in the rendered table.
+    // Each row names BOTH involved bodies (this body ↔ partner), not just the partner.
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('1 c');
-    expect(el.textContent).toContain('1 d');
+    const bodyCells = [...el.querySelectorAll('.upcoming-collisions td.bodies')].map(td => td.textContent ?? '');
+    expect(bodyCells[0]).toContain('1 b ↔ 1 c');
+    expect(bodyCells[1]).toContain('1 b ↔ 1 d');
   });
 
   it('builds the prose summary for a same-type, inhabited, three-body cluster', () => {
@@ -260,6 +261,85 @@ describe('CollisionDialogComponent', () => {
     }).componentInstance;
     expect(c.multiCollisions).toEqual([]);
     expect(c.isMultiCollision(windows[0])).toBe(false);
+  });
+
+  it('lists simultaneous collisions from the 180-day scan, beyond the visible contact rows', () => {
+    // A single visible contact (no in-table coincidence), but the service-supplied scan found a
+    // pile-up further out — the section must show it, using short names sorted.
+    const lone = { start: new Date('2026-07-01T00:00:00Z'), end: new Date('2026-07-01T01:00:00Z'),
+      days: 3, minSeparationKm: 200, partnerName: 'Test 1 c', combinedRadiiKm: 1000 };
+    const fixture = setup({
+      bodyName: 'Test 1 b', partnerName: 'Test 1 c', synodicPeriodDays: 6, combinedRadiiKm: 1000,
+      upcomingCollisions: [lone], bodyInfo: null, partnerInfo: null, systemPopulation: 0,
+      systemName: 'Test', simultaneousPartners: ['Test 1 a'], nextCollision: lone,
+      simultaneousCollisions: [{
+        partnerNames: ['Test 1 c', 'Test 1 a'],
+        start: new Date('2026-09-15T08:00:00Z'), end: new Date('2026-09-15T10:00:00Z'), days: 79,
+      }],
+    });
+    const c = fixture.componentInstance;
+    // The row-derived clustering sees no coincidence (one lone contact)…
+    expect(c.multiCollisions).toEqual([]);
+    // …but the section prefers the scanned clusters, with short, sorted partner names.
+    expect(c.sectionMultiCollisions.length).toBe(1);
+    expect(c.sectionMultiCollisions[0].partners).toEqual(['1 a', '1 c']);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('Simultaneous collisions');
+    expect(el.textContent).toContain('Test 1 b, 1 a, 1 c');
+    expect(el.textContent).toContain('2026-09-15 08:00 UTC');
+  });
+
+  it('renders local contact times in the viewer zone with a DST-aware offset label', () => {
+    const c = setup({
+      bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,
+      upcomingCollisions: [], bodyInfo: null, partnerInfo: null, systemPopulation: 0, systemName: '', simultaneousPartners: [],
+      nextCollision: { start: new Date('2026-07-15T12:00:00Z'), end: new Date('2026-07-15T13:00:00Z'), days: 1, minSeparationKm: 100 },
+    }).componentInstance;
+    // Local wall-clock string is always "yyyy-MM-dd HH:mm:ss", regardless of the runner's zone.
+    expect(c.localDateTime(new Date('2026-07-15T12:00:00Z'))).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+    // The offset label is non-empty and derived per-date (DST), e.g. "GMT+2"/"GMT+1"/"UTC".
+    const summer = c.localZoneLabel(new Date('2026-07-15T12:00:00Z'));
+    const winter = c.localZoneLabel(new Date('2026-01-15T12:00:00Z'));
+    expect(summer).toBeTruthy();
+    expect(winter).toBeTruthy();
+    // In any DST-observing zone the summer and winter offsets differ; in a fixed zone (e.g. UTC on
+    // CI) they match — both are valid, so we only assert the labels are produced.
+  });
+
+  it('renders the distance-over-time diagram when separation samples are supplied', () => {
+    const start = Date.parse('2026-07-01T00:00:00Z');
+    const samples = Array.from({ length: 11 }, (_, i) => ({
+      tMs: start + i * 86_400_000,
+      sepKm: 1000 + Math.abs(i - 5) * 200_000, // dips to the contact threshold at the midpoint
+    }));
+    const fixture = setup({
+      bodyName: 'Test 1 b', partnerName: 'Test 1 c', synodicPeriodDays: 10, combinedRadiiKm: 1000,
+      upcomingCollisions: [], bodyInfo: null, partnerInfo: null, systemPopulation: 0,
+      systemName: 'Test', simultaneousPartners: [],
+      nextCollision: { start: new Date(start), end: new Date(start + 3_600_000), days: 3, minSeparationKm: 800 },
+      separationDiagram: {
+        startMs: start, endMs: start + 10 * 86_400_000, nowMs: start,
+        series: [{ partnerName: 'Test 1 c', combinedRadiiKm: 1000, samples, contacts: [{ tMs: start + 5 * 86_400_000, sepKm: 1000 }] }],
+      },
+    });
+    const c = fixture.componentInstance;
+    expect(c.diagram).not.toBeNull();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('svg.separation-chart')).not.toBeNull();
+    expect(el.querySelector('polyline.curve')).not.toBeNull();
+    expect(el.textContent).toContain('Distance over time');
+    // Legend pairs this body with the partner (short names).
+    expect(el.querySelector('.legend')?.textContent).toContain('1 b ↔ 1 c');
+  });
+
+  it('omits the distance diagram when no separation samples are supplied', () => {
+    const fixture = setup({
+      bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,
+      upcomingCollisions: [], bodyInfo: null, partnerInfo: null, systemPopulation: 0, systemName: '', simultaneousPartners: [],
+      nextCollision: { start: new Date(), end: new Date(), days: 1, minSeparationKm: 100 },
+    });
+    expect(fixture.componentInstance.diagram).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('svg.separation-chart')).toBeNull();
   });
 
   it('shows the candidate heading and an explanatory note when timing data is missing', () => {

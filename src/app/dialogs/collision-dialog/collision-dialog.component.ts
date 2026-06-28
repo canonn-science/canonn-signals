@@ -2,7 +2,12 @@ import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
-import { CollisionWindow } from '../../data/orbital-relations.service';
+import { CollisionWindow, SimultaneousCollision } from '../../data/orbital-relations.service';
+import {
+  SynodicDiagram,
+  SynodicDiagramInput,
+  synodicDistanceDiagram,
+} from '../../data/collision-diagram';
 
 /** Key descriptive facts about one of the two colliding bodies. */
 export interface CollisionBodyInfo {
@@ -39,6 +44,19 @@ export interface CollisionDialogData {
   systemName: string;
   /** Additional sibling names beyond the primary partner that are also in the crossing-orbit group. */
   simultaneousPartners: string[];
+  /**
+   * Timed multi-body pile-ups over the next ~180 days, detected across every crossing partner's
+   * contacts rather than only the (capped) upcoming-collisions rows — so a simultaneous collision
+   * further out than the listed contacts is still surfaced. When omitted, the section falls back
+   * to clustering the visible rows.
+   */
+  simultaneousCollisions?: SimultaneousCollision[];
+  /**
+   * Centre-to-centre distance-over-time samples driving the synodic-period diagram, one
+   * series per directly-colliding partner. Omitted (or null) when the bodies lack the phase
+   * data needed to place them in time, in which case the diagram is hidden.
+   */
+  separationDiagram?: SynodicDiagramInput | null;
 }
 
 /**
@@ -83,6 +101,42 @@ export class CollisionDialogComponent {
 
   public readonly heading = this.data.nextCollision ? 'Predicted Collision' : 'Collision Candidate';
 
+  /** The viewer's resolved IANA time zone (e.g. "Europe/Berlin"), for DST-correct local rendering. */
+  private readonly localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  /**
+   * Local wall-clock parts for `d` in the viewer's own time zone. Uses Intl with the resolved
+   * IANA zone, so the offset is the one in effect *on that date* — summer vs winter (DST) is
+   * honoured, rather than today's offset being assumed for a contact months away.
+   */
+  private localParts(d: Date): { date: string; time: string; zone: string } {
+    const parts: Record<string, string> = {};
+    for (const p of new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.localZone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZoneName: 'shortOffset',
+    }).formatToParts(d)) {
+      parts[p.type] = p.value;
+    }
+    return {
+      date: `${parts['year']}-${parts['month']}-${parts['day']}`,
+      time: `${parts['hour']}:${parts['minute']}:${parts['second']}`,
+      zone: parts['timeZoneName'] ?? '',
+    };
+  }
+
+  /** Local date-time "yyyy-MM-dd HH:mm:ss" for `d` in the viewer's zone (DST-aware). */
+  public localDateTime(d: Date): string {
+    const p = this.localParts(d);
+    return `${p.date} ${p.time}`;
+  }
+
+  /** DST-correct UTC-offset label for `d` in the viewer's zone (e.g. "GMT+2" in summer, "GMT+1" in winter). */
+  public localZoneLabel(d: Date): string {
+    return this.localParts(d).zone;
+  }
+
   /** Contact-window duration in minutes (start → end), or null when there is no timed window. */
   public get durationMinutes(): number | null {
     const c = this.data.nextCollision;
@@ -119,6 +173,19 @@ export class CollisionDialogComponent {
   /** Synodic period expressed in years (for context alongside the day count). */
   public get synodicPeriodYears(): number | null {
     return this.data.synodicPeriodDays === null ? null : this.data.synodicPeriodDays / DAYS_PER_YEAR;
+  }
+
+  /**
+   * Laid-out distance-over-time (synodic) diagram, or null when there is no plottable data.
+   * Cached because the template reads it several times per change-detection pass and the
+   * input is static for the dialog's lifetime.
+   */
+  private diagramCache: SynodicDiagram | null | undefined;
+  public get diagram(): SynodicDiagram | null {
+    if (this.diagramCache === undefined) {
+      this.diagramCache = this.data.separationDiagram ? synodicDistanceDiagram(this.data.separationDiagram) : null;
+    }
+    return this.diagramCache;
   }
 
   /** Body name with the system-name prefix stripped (e.g. "Foo System 1 a" → "1 a"). */
@@ -231,6 +298,24 @@ export class CollisionDialogComponent {
   /** Simultaneous multi-body collisions among the upcoming windows (empty for simple pairs). */
   public get multiCollisions(): MultiCollision[] {
     return this.clusters.multi;
+  }
+
+  /**
+   * Multi-body pile-ups to list in the "Simultaneous collisions" section. Prefers the
+   * service-computed 180-day scan (which sees clusters beyond the capped contact rows); falls
+   * back to clustering the visible rows when that scan wasn't supplied (e.g. in unit tests).
+   */
+  public get sectionMultiCollisions(): MultiCollision[] {
+    const scanned = this.data.simultaneousCollisions;
+    if (scanned && scanned.length > 0) {
+      return scanned.map(s => ({
+        partners: s.partnerNames.map(n => this.shortName(n)).sort(),
+        start: s.start,
+        end: s.end,
+        days: s.days,
+      }));
+    }
+    return this.multiCollisions;
   }
 
   /** True when this contact window coincides with another partner's — part of a multi-body collision. */

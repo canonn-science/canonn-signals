@@ -26,12 +26,12 @@
           }
         </li>
         <li><strong>Contact starts:</strong><br>
-          <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.start | date:'zzzz' }}
+          <span class="time">{{ localDateTime(c.start) }} <span class="tz">{{ localZoneLabel(c.start) }}
               (your time)</span></span><br>
           <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
         </li>
         <li><strong>Contact ends:</strong><br>
-          <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.end | date:'zzzz' }} (your
+          <span class="time">{{ localDateTime(c.end) }} <span class="tz">{{ localZoneLabel(c.end) }} (your
               time)</span></span><br>
           <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
         </li>
@@ -56,6 +56,61 @@
       </ul>
     </div>
 
+    @if (diagram; as dg) {
+    <div class="distance-diagram">
+      <h3>Distance over time</h3>
+      <p class="hint">
+        Centre-to-centre separation through the synodic cycle (log scale). The curve dips at each
+        conjunction; a dip below the dashed contact threshold — marked &times; — is a collision.
+      </p>
+      <svg [attr.viewBox]="'0 0 ' + dg.width + ' ' + dg.height" class="separation-chart" role="img"
+        aria-label="Distance between the bodies over time">
+        <!-- Plot frame -->
+        <rect class="plot-frame" [attr.x]="dg.plot.x" [attr.y]="dg.plot.y"
+          [attr.width]="dg.plot.w" [attr.height]="dg.plot.h" />
+
+        <!-- y-axis (distance) gridlines and labels -->
+        @for (t of dg.yTicks; track t.y) {
+        <line class="gridline" [attr.x1]="dg.plot.x" [attr.y1]="t.y"
+          [attr.x2]="dg.plot.x + dg.plot.w" [attr.y2]="t.y" />
+        <text class="axis-label y" [attr.x]="dg.plot.x - 4" [attr.y]="t.y + 3" text-anchor="end">{{ t.label }}</text>
+        }
+
+        <!-- x-axis (time) ticks and date labels -->
+        @for (t of dg.xTicks; track t.tMs) {
+        <line class="tick" [attr.x1]="t.x" [attr.y1]="dg.plot.y + dg.plot.h"
+          [attr.x2]="t.x" [attr.y2]="dg.plot.y + dg.plot.h + 3" />
+        <text class="axis-label x" [attr.x]="t.x" [attr.y]="dg.plot.y + dg.plot.h + 14" [attr.text-anchor]="t.anchor">{{
+          t.tMs | date:'MMM d, y':'UTC' }}</text>
+        }
+
+        <!-- "Now" marker -->
+        @if (dg.nowX !== null) {
+        <line class="now-line" [attr.x1]="dg.nowX" [attr.y1]="dg.plot.y"
+          [attr.x2]="dg.nowX" [attr.y2]="dg.plot.y + dg.plot.h" />
+        <text class="now-label" [attr.x]="dg.nowX" [attr.y]="dg.plot.y - 3" text-anchor="middle">now</text>
+        }
+
+        <!-- One curve per partner: contact threshold, distance polyline, collision markers -->
+        @for (s of dg.series; track s.partnerName) {
+        <line class="threshold" [attr.x1]="dg.plot.x" [attr.y1]="s.thresholdY"
+          [attr.x2]="dg.plot.x + dg.plot.w" [attr.y2]="s.thresholdY" [attr.stroke]="s.color" />
+        <polyline class="curve" [attr.points]="s.points" [attr.stroke]="s.color" />
+        @for (m of s.markers; track $index) {
+        <path class="marker" [attr.transform]="'translate(' + m.cx + ' ' + m.cy + ')'"
+          [attr.stroke]="s.color" d="M -2.6 -2.6 L 2.6 2.6 M -2.6 2.6 L 2.6 -2.6" />
+        }
+        }
+      </svg>
+
+      <ul class="legend">
+        @for (s of dg.series; track s.partnerName) {
+        <li><span class="swatch" [style.background]="s.color"></span>{{ shortName(data.bodyName) }} ↔ {{ shortName(s.partnerName) }}</li>
+        }
+      </ul>
+    </div>
+    }
+
     @if (data.upcomingCollisions.length > 0) {
     <div class="upcoming-collisions">
       <h3>Upcoming collisions</h3>
@@ -63,7 +118,7 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>With</th>
+            <th>Bodies</th>
             <th>Contact start (UTC)</th>
             <th>Days until</th>
             <th>Duration</th>
@@ -74,7 +129,7 @@
           @for (w of data.upcomingCollisions; track w.start.getTime() + (w.partnerName ?? ''); let i = $index) {
           <tr [class.multi]="isMultiCollision(w)">
             <td class="num">{{ i + 1 }}</td>
-            <td>{{ windowPartner(w) }}
+            <td class="bodies">{{ shortName(data.bodyName) }} &harr; {{ windowPartner(w) }}
               @if (isMultiCollision(w)) { <span class="multi-tag" title="Multiple bodies collide at this time">multi</span> }
             </td>
             <td class="date">{{ w.start | date:'yyyy-MM-dd HH:mm':'UTC' }} UTC</td>
@@ -97,12 +152,13 @@
     </div>
     }
 
-    @if (multiCollisions.length > 0) {
+    @if (sectionMultiCollisions.length > 0) {
     <div class="multi-collisions">
       <h3>Simultaneous collisions</h3>
-      <p class="hint">Conjunctions where {{ data.bodyName }} is in contact with more than one sibling at once.</p>
+      <p class="hint">Conjunctions where {{ data.bodyName }} is in contact with more than one sibling at once,
+        including any within the next 180 days beyond the contacts listed above.</p>
       <ul>
-        @for (m of multiCollisions; track m.start.getTime()) {
+        @for (m of sectionMultiCollisions; track m.start.getTime()) {
         <li>
           <strong>{{ data.bodyName }}, {{ m.partners.join(', ') }}</strong> —
           @if (m.days < 0) {

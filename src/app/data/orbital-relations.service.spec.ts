@@ -674,4 +674,107 @@ describe('OrbitalRelationsService', () => {
       expect(r.nextCollision).toBe(r.upcomingCollisions[0]);
     });
   });
+
+  describe('simultaneousCollisionsWithin', () => {
+    const DAY_MS = 86_400_000;
+    // The real Eoch Flyuae YK-K c10-56 moons 1 a / 1 b / 1 c, which all share crossing orbits
+    // with very short (~0.15 day) periods, so conjunctions — and multi-body pile-ups — recur
+    // often within any horizon.
+    const TRIO: Partial<CanonnBiostatsBody>[] = [
+      { name: '1 a', orbitalPeriod: 0.157127550081019, semiMajorAxis: 0.000251518168059788,
+        orbitalEccentricity: 3.3e-05, orbitalInclination: 0.013618,
+        argOfPeriapsis: 237.157193, ascendingNode: 113.296374,
+        meanAnomaly: 332.120793, radius: 622.7360625,
+        timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+      { name: '1 b', orbitalPeriod: 0.153610475914352, semiMajorAxis: 0.000247750778161951,
+        orbitalEccentricity: 0.000216, orbitalInclination: 0.00413,
+        argOfPeriapsis: 200.490883, ascendingNode: 41.825083,
+        meanAnomaly: 33.450288, radius: 450.6381875,
+        timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+      { name: '1 c', orbitalPeriod: 0.154680379282407, semiMajorAxis: 0.000248899845368514,
+        orbitalEccentricity: 0.001125, orbitalInclination: 0.061853,
+        argOfPeriapsis: 12.874691, ascendingNode: 95.932804,
+        meanAnomaly: 161.468548, radius: 800.657125,
+        timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+    ];
+    const now = Date.parse('2026-06-28T00:00:00Z');
+
+    it('finds multi-body pile-ups across the whole horizon, each naming ≥ 2 distinct partners', () => {
+      const [a] = makeFamily(TRIO);
+      const clusters = service.simultaneousCollisionsWithin(a, 180, now);
+      expect(clusters.length).toBeGreaterThan(0);
+      for (const c of clusters) {
+        expect(c.partnerNames.length).toBeGreaterThanOrEqual(2);
+        for (const n of c.partnerNames) { expect(['1 b', '1 c']).toContain(n); }
+        // Within the horizon, and a real interval (end strictly after start, both after now).
+        expect(c.start.getTime()).toBeLessThanOrEqual(now + 180 * DAY_MS);
+        expect(c.end.getTime()).toBeGreaterThan(c.start.getTime());
+        expect(c.end.getTime()).toBeGreaterThan(now);
+      }
+    });
+
+    it('surfaces clusters beyond the 10-row contact cap (longer horizon finds at least as many)', () => {
+      const [a] = makeFamily(TRIO);
+      const near = service.simultaneousCollisionsWithin(a, 20, now);
+      const far = service.simultaneousCollisionsWithin(a, 180, now);
+      // A wider horizon never loses clusters and, for this fast-lapping trio, finds more.
+      expect(far.length).toBeGreaterThanOrEqual(near.length);
+      expect(far.length).toBeGreaterThan(near.length);
+    });
+
+    it('returns [] when the body has fewer than two crossing partners', () => {
+      // A 1 a / 1 b pair: 1 a has a single crossing partner, so no simultaneity is possible.
+      const [a] = makeFamily([TRIO[0], TRIO[1]]);
+      expect(service.simultaneousCollisionsWithin(a, 180, now)).toEqual([]);
+    });
+  });
+
+  describe('separationSeries', () => {
+    const sampleTime = '2026-06-01T00:00:00Z';
+    const start = Date.parse(sampleTime);
+
+    /** A body with the phase data needed to be placed in time. */
+    const body = (over: Partial<CanonnBiostatsBody>): CanonnBiostatsBody => ({
+      bodyId: 1, name: 'b', id64: 0n, subType: '', type: 'Planet',
+      semiMajorAxis: 0.01, orbitalEccentricity: 0, orbitalInclination: 0,
+      ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0,
+      timestamps: { meanAnomaly: sampleTime } as any, ...over,
+    } as CanonnBiostatsBody);
+
+    it('returns evenly-spaced samples spanning the requested window', () => {
+      const a = body({ orbitalPeriod: 10 });
+      const b = body({ orbitalPeriod: 13, semiMajorAxis: 0.012 });
+      const series = service.separationSeries(a, b, start, start + 20 * 86_400_000, 50);
+      expect(series.length).toBe(50);
+      expect(series[0].tMs).toBe(start);
+      expect(series[series.length - 1].tMs).toBe(start + 20 * 86_400_000);
+      // Even spacing (within float tolerance over a multi-million-ms step).
+      const step = series[1].tMs - series[0].tMs;
+      expect(Math.abs((series[2].tMs - series[1].tMs) - step)).toBeLessThan(1);
+      // Real, positive separations that actually vary as the bodies lap each other.
+      for (const s of series) { expect(s.sepKm).toBeGreaterThan(0); expect(Number.isFinite(s.sepKm)).toBe(true); }
+      const seps = series.map(s => s.sepKm);
+      expect(Math.max(...seps)).toBeGreaterThan(Math.min(...seps));
+    });
+
+    it('reports ~zero separation for two bodies sharing identical orbital elements', () => {
+      const a = body({ orbitalPeriod: 10 });
+      const b = body({ orbitalPeriod: 10, name: 'c' });
+      const series = service.separationSeries(a, b, start, start + 5 * 86_400_000, 20);
+      for (const s of series) { expect(s.sepKm).toBeCloseTo(0, 3); }
+    });
+
+    it('returns [] when either body lacks the phase data needed to place it in time', () => {
+      const a = body({ orbitalPeriod: 10 });
+      const noPhase = body({ orbitalPeriod: 13, meanAnomaly: undefined });
+      expect(service.separationSeries(a, noPhase, start, start + 86_400_000, 10)).toEqual([]);
+    });
+
+    it('returns [] for a degenerate window or sample count', () => {
+      const a = body({ orbitalPeriod: 10 });
+      const b = body({ orbitalPeriod: 13 });
+      expect(service.separationSeries(a, b, start, start, 10)).toEqual([]);       // zero-width window
+      expect(service.separationSeries(a, b, start, start + 86_400_000, 1)).toEqual([]); // too few samples
+    });
+  });
 });
