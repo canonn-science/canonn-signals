@@ -149,7 +149,8 @@
             @if (data.system.date) {
             <div class="system-data-entry">
               <div>Info updated</div>
-              <div>{{ formatUpdated(data.system.date) }}</div>
+              <div class="info-updated-value" [matTooltip]="formatUpdatedTooltip(data.system.date)"
+                matTooltipClass="multiline-tooltip">{{ formatUpdated(data.system.date) }}</div>
             </div>
             }
           </div>

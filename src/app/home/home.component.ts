@@ -10,6 +10,7 @@ import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatAutocompleteTrigger, MatAutocomplete, MatOption } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { SystemBodyComponent } from '../system-body/system-body.component';
 import { RegionMapComponent } from '../region-map/region-map.component';
@@ -27,7 +28,7 @@ import { isPermitLockedSystem } from '../data/permit-locked-systems';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe]
+  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe, MatTooltip]
 })
 export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);
@@ -337,6 +338,32 @@ export class HomeComponent implements OnInit, OnDestroy {
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())} `
       + `${pad(instant.getHours())}:${pad(instant.getMinutes())}`;
+  }
+
+  /**
+   * Tooltip companion to {@link formatUpdated}: repeats the update timestamp on two lines,
+   * first as the viewer's local time (with the zone offset that applied on that date, so
+   * DST is honoured) and then as UTC. Both lines carry seconds for precision. Uses the
+   * timestamp's own offset rather than the current clock, so it stays deterministic under
+   * the e2e timezone pin. Returns '' for a missing date and the raw string if unparseable.
+   */
+  formatUpdatedTooltip(date: string | null | undefined): string {
+    if (!date) return '';
+    const iso = date.trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+    const instant = new Date(iso);
+    if (isNaN(instant.getTime())) return date;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const local = `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())} `
+      + `${pad(instant.getHours())}:${pad(instant.getMinutes())}:${pad(instant.getSeconds())}`;
+    const utc = `${instant.getUTCFullYear()}-${pad(instant.getUTCMonth() + 1)}-${pad(instant.getUTCDate())} `
+      + `${pad(instant.getUTCHours())}:${pad(instant.getUTCMinutes())}:${pad(instant.getUTCSeconds())}`;
+    // getTimezoneOffset() is minutes *behind* UTC, so negate to get the conventional
+    // "minutes east of UTC" used in the "UTC±HH:MM" label.
+    const offsetMin = -instant.getTimezoneOffset();
+    const sign = offsetMin >= 0 ? '+' : '-';
+    const absMin = Math.abs(offsetMin);
+    const offset = `UTC${sign}${pad(Math.floor(absMin / 60))}:${pad(absMin % 60)}`;
+    return `${local} local time (${offset})\n${utc} UTC`;
   }
 
   private distance3d(a: { x: number, y: number, z: number }, b: { x: number, y: number, z: number }): number {

@@ -68,6 +68,11 @@
     opacity: 0.85;
 }
 
+/* The "Info updated" value carries a tooltip (local time + UTC); hint it with help cursor. */
+.info-updated-value {
+    cursor: help;
+}
+
 /* Label + histogram button form the left group, so the count stays centered
    under the header's `space-between` distribution. */
 .system-completeness-label-group {

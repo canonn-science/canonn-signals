@@ -247,6 +247,25 @@ describe('HomeComponent', () => {
     });
   });
 
+  describe('formatUpdatedTooltip', () => {
+    it('shows the local time (with offset) on the first line and UTC on the second', () => {
+      const tip = component.formatUpdatedTooltip('2026-06-19 16:46:17+00');
+      const [localLine, utcLine] = tip.split('\n');
+      expect(localLine).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} local time \(UTC[+-]\d{2}:\d{2}\)$/);
+      expect(utcLine).toBe('2026-06-19 16:46:17 UTC');
+    });
+
+    it('reflects the source UTC offset (same instant → same tooltip)', () => {
+      expect(component.formatUpdatedTooltip('2026-06-19 18:46:17+02'))
+        .toBe(component.formatUpdatedTooltip('2026-06-19 16:46:17+00'));
+    });
+
+    it('returns an empty string for a missing date', () => {
+      expect(component.formatUpdatedTooltip('')).toBe('');
+      expect(component.formatUpdatedTooltip(null)).toBe('');
+    });
+  });
+
   describe('showBodyHistogram', () => {
     it('does nothing when no system is loaded', () => {
       const dialog = TestBed.inject(MatDialog);
