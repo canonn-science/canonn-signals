@@ -173,9 +173,9 @@ export class CollisionDialogComponent {
     // Moons and rings — only mention when present.
     const features: string[] = [];
     if (bi?.moonCount) { features.push(`${shortName(d.bodyName)} has ${bi.moonCount} moon${bi.moonCount > 1 ? 's' : ''}`); }
-    if (bi?.hasRings)  { features.push(`${shortName(d.bodyName)} has rings`); }
+    if (bi?.hasRings) { features.push(`${shortName(d.bodyName)} has rings`); }
     if (pi?.moonCount && d.partnerName) { features.push(`${shortName(d.partnerName)} has ${pi.moonCount} moon${pi.moonCount > 1 ? 's' : ''}`); }
-    if (pi?.hasRings  && d.partnerName) { features.push(`${shortName(d.partnerName)} has rings`); }
+    if (pi?.hasRings && d.partnerName) { features.push(`${shortName(d.partnerName)} has rings`); }
     if (features.length > 0) { parts.push(features.join('; ') + '.'); }
 
     // Synodic period and collision frequency.

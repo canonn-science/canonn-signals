@@ -479,49 +479,34 @@ export class OrbitalRelationsService {
   }
 
   /**
-   * Days from `now` until the two bodies' mean longitudes next coincide (conjunction), used
-   * only to anchor the collision search near the once-per-synodic-period close approach.
-   * Null when either body lacks the elements to propagate its position to `now`.
-   */
-  private nextConjunctionDays(a: CanonnBiostatsBody, b: CanonnBiostatsBody, synodicDays: number, now: number): number | null {
-    const lon = (bd: CanonnBiostatsBody): number | null => {
-      if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) { return null; }
-      const M = this.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);
-      if (!Number.isFinite(M)) { return null; }
-      // Angles are negated to match the sign convention used in orbitalStateVector.
-      // Mean longitude = M - Ω - ω (negated Ω and ω relative to the raw ED values).
-      return (((M - (bd.ascendingNode ?? 0) - (bd.argOfPeriapsis ?? 0)) % 360) + 360) % 360;
-    };
-    const lonA = lon(a), lonB = lon(b);
-    if (lonA == null || lonB == null || !Number.isFinite(synodicDays)) { return null; }
-    const aFaster = a.orbitalPeriod! < b.orbitalPeriod!;
-    const lead = aFaster ? lonA : lonB;
-    const lag = aFaster ? lonB : lonA;
-    let gap = (lag - lead) % 360;
-    if (gap < 0) { gap += 360; }
-    return (gap / 360) * synodicDays;
-  }
-
-  /**
-   * Next time the two bodies actually pass within `contactKm` of each other in 3D, or null
-   * if no contact occurs within the search horizon. A longitude conjunction recurs once per
-   * synodic period but is a genuine collision only when it lands near the orbits' mutual
-   * intersection — an off-node conjunction sails past with kilometres of vertical clearance.
-   * So we anchor on each successive conjunction, finely scan a few orbital periods around it
-   * for the true minimum separation (separation oscillates at the orbital period, not just
-   * the synodic one), and report the first anchor whose closest approach is within contact.
+   * Finds the time of minimum separation between two bodies within
+   * [centerMs − halfWindowMs, centerMs + halfWindowMs] using iterative zoom: 40 samples
+   * per pass, window halved and recentred on the running best each pass, until the
+   * half-window is under 500 ms (sub-second precision). This resolves arbitrarily narrow
+   * contact windows regardless of orbital scale.
    */
   /**
-   * Returns up to `count` upcoming contact windows between two bodies, searching consecutive
-   * synodic-period conjunctions for genuine 3D contacts (separation ≤ combinedRadiiKm).
-   * De-duplicates windows so a single prolonged contact episode is only reported once.
+   * Returns up to `count` upcoming contact windows between two bodies.
+   *
+   * Algorithm:
+   *   1. Coarse scan over [now − ½syn, now + 1syn] with 1000 equal steps to locate the
+   *      closest-approach spike (a sharp local minimum in the distance-vs-time curve).
+   *   2. Iteratively refine: centre a ±½syn window on the running best and halve each pass
+   *      until the half-window is under 500 ms (sub-second precision).
+   *   3. Step backward in synodic-period increments until the reference time is before now.
+   *   4. March forward one synodic period at a time; zoom-refine each event to sub-second
+   *      precision and record it as a contact when separation ≤ contactKm.
+   *
+   * Not every close approach is a collision — many conjunctions miss the orbits' mutual node
+   * — so each synodic event is evaluated individually rather than assumed to collide.
    */
   private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number): CollisionWindow[] {
-    const firstDays = this.nextConjunctionDays(a, b, synodicDays, now);
-    if (firstDays == null || !Number.isFinite(synodicDays)) { return []; }
+    if (
+      a.meanAnomaly == null || !a.orbitalPeriod || !a.timestamps?.meanAnomaly ||
+      b.meanAnomaly == null || !b.orbitalPeriod || !b.timestamps?.meanAnomaly ||
+      !Number.isFinite(synodicDays)
+    ) { return []; }
 
-    // Cheap repeated propagation: precompute each body's epoch so we avoid re-parsing the
-    // timestamp string on every one of the many separation evaluations below.
     const epochA = Date.parse(a.timestamps!.meanAnomaly!);
     const epochB = Date.parse(b.timestamps!.meanAnomaly!);
     const sep = (tMs: number): number => {
@@ -533,67 +518,96 @@ export class OrbitalRelationsService {
       return Math.sqrt(dx * dx + dy * dy + dz * dz);
     };
 
-    const windowDays = 2 * Math.max(a.orbitalPeriod!, b.orbitalPeriod!);
-    const stepDays = Math.min(a.orbitalPeriod!, b.orbitalPeriod!) / 40;
-    const stepMs = (30 / 86400) * MS_PER_DAY; // 30-second probe steps for bisection
-    const maxSpanMs = windowDays * MS_PER_DAY;  // ≈ 2 × the longer orbital period
+    const synodicMs = synodicDays * MS_PER_DAY;
+    // 2000 steps keeps the first-pass resolution (≈ synodic/2000 per step) comfortably
+    // below the narrowest expected contact window (~10 h for pairs with ~430-day synodics).
+    const STEPS = 2000;
+
+    /**
+     * Zoom to sub-second precision by repeatedly sampling STEPS points over a ±half window
+     * centred on the running best, halving each pass until half < 500 ms.
+     */
+    const zoomMin = (centerMs: number, halfMs: number): { t: number; sepKm: number } => {
+      let bestT = centerMs;
+      let bestS = Infinity;
+      let half = halfMs;
+      while (half > 500) {
+        const lo = bestT - half;
+        const hi = bestT + half;
+        const step = (hi - lo) / STEPS;
+        bestS = Infinity;
+        for (let t = lo; t <= hi; t += step) {
+          const s = sep(t);
+          if (s < bestS) { bestS = s; bestT = t; }
+        }
+        half /= 2;
+      }
+      return { t: bestT, sepKm: bestS };
+    };
+
+    // Step 1: coarse scan over [now − ½syn, now + 1syn] with 1000 equal steps.
+    const scanLo = now - synodicMs / 2;
+    const scanHi = now + synodicMs;
+    let initBestT = now;
+    let initBestS = Infinity;
+    const initStep = (scanHi - scanLo) / STEPS;
+    for (let t = scanLo; t <= scanHi; t += initStep) {
+      const s = sep(t);
+      if (s < initBestS) { initBestS = s; initBestT = t; }
+    }
+
+    // Step 2: refine the coarse best with ±½syn halving to sub-second precision.
+    const ref = zoomMin(initBestT, synodicMs / 2);
+
+    // Step 3: step backward in synodic-period increments until t < now.
+    let t0 = ref.t;
+    while (t0 >= now) { t0 -= synodicMs; }
+
+    // Step 4: march forward, zoom-refining each synodic event and collecting contacts.
+    const stepMs = (30 / 86400) * MS_PER_DAY; // 30-second probes for window bisection
+    const maxSpanMs = synodicMs / 2;           // bisection walk bound: half a synodic period
     const results: CollisionWindow[] = [];
 
     for (let k = 0; k < MAX_CONJUNCTIONS_SCANNED && results.length < count; k++) {
-      const centerMs = now + (firstDays + k * synodicDays) * MS_PER_DAY;
-      // Skip conjunction windows that fall inside an already-found contact episode.
-      if (results.length > 0 && centerMs < results[results.length - 1].end.getTime()) { continue; }
+      const candidateMs = t0 + k * synodicMs;
+      const min = zoomMin(candidateMs, synodicMs / 2);
+      // Allow min.t to be slightly before now: a contact whose minimum lands at now±ε
+      // (e.g. bodies aligned at the reference epoch) must not be discarded. We only skip
+      // conjunctions whose minimum is older than half a synodic period; contacts whose
+      // window has already ended are filtered below after computing endMs.
+      if (min.t < now - maxSpanMs || !Number.isFinite(min.sepKm)) { continue; }
+      if (min.sepKm > contactKm) { continue; }
 
-      let bestT = -1, bestSep = Infinity;
-      for (let t = centerMs - windowDays * MS_PER_DAY; t <= centerMs + windowDays * MS_PER_DAY; t += stepDays * MS_PER_DAY) {
-        if (t < now) { continue; }
-        const s = sep(t);
-        if (s < bestSep) { bestSep = s; bestT = t; }
-      }
-      if (bestT < now) { continue; }
+      // De-duplicate: skip if this minimum falls inside the last recorded contact window.
+      if (results.length > 0 && min.t <= results[results.length - 1].end.getTime()) { continue; }
 
-      // Refine around the coarse minimum *before* testing contact: the coarse step is too
-      // wide to resolve a narrow separation dip, so a grazing contact whose true minimum
-      // falls between two coarse samples would otherwise be judged against an over-estimated
-      // shoulder value and missed entirely.
-      const fine = stepDays / 20;
-      for (let t = bestT - stepDays * MS_PER_DAY; t <= bestT + stepDays * MS_PER_DAY; t += fine * MS_PER_DAY) {
-        if (t < now) { continue; }
-        const s = sep(t);
-        if (s < bestSep) { bestSep = s; bestT = t; }
-      }
-
-      if (bestSep > contactKm) { continue; }
-
-      // `bestT` is a confirmed in-contact instant (the minimum-separation time). The contact
-      // is an interval, so root-find the two times where sep(t) === contactKm bracketing it:
-      // step outward in small increments until separation rises back above contactKm, then
-      // bisect for precision. Bound the outward walk to ~2 orbital periods either way.
-
-      // START: walk backward to bracket the down-crossing, then bisect.
-      let lo = bestT;
-      let hi = bestT - stepMs;
-      while (bestT - hi <= maxSpanMs && sep(hi) <= contactKm) { lo = hi; hi -= stepMs; }
+      // Root-find the contact window start (backward bisection from min.t).
+      let lo = min.t;
+      let hi = min.t - stepMs;
+      while (min.t - hi <= maxSpanMs && sep(hi) <= contactKm) { lo = hi; hi -= stepMs; }
       for (let i = 0; i < 40; i++) {
         const mid = (hi + lo) / 2;
         if (sep(mid) > contactKm) { hi = mid; } else { lo = mid; }
       }
       const startMs = lo;
-
-      // De-duplicate: skip if this window is part of a contact episode already recorded.
       if (results.length > 0 && startMs <= results[results.length - 1].end.getTime()) { continue; }
 
-      // END: walk forward to bracket the up-crossing, then bisect.
-      let elo = bestT;
-      let ehi = bestT + stepMs;
-      while (ehi - bestT <= maxSpanMs && sep(ehi) <= contactKm) { elo = ehi; ehi += stepMs; }
+      // Root-find the contact window end (forward bisection from min.t).
+      let elo = min.t;
+      let ehi = min.t + stepMs;
+      while (ehi - min.t <= maxSpanMs && sep(ehi) <= contactKm) { elo = ehi; ehi += stepMs; }
       for (let i = 0; i < 40; i++) {
         const mid = (elo + ehi) / 2;
         if (sep(mid) > contactKm) { ehi = mid; } else { elo = mid; }
       }
       const endMs = elo;
 
-      results.push({ start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: bestSep });
+      // Skip contacts whose window ended entirely before now (historical events; days < 0
+      // and the window is over). Contacts in progress (endMs > now, startMs ≤ now) are kept:
+      // days will be slightly negative, which CollisionWindow.days documents as intentional.
+      if (endMs < now) { continue; }
+
+      results.push({ start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: min.sepKm });
     }
     return results;
   }

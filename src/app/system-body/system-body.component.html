@@ -79,13 +79,12 @@
         rosetteStatus }}</span>
       }
       @if (collisionStatus?.isCandidate) {
-      <span class="badge badge-red clickable"
-            [matTooltip]="collisionStatus!.nextCollision
+      <span class="badge badge-red clickable" [matTooltip]="collisionStatus!.nextCollision
               ? ('Collides with ' + collisionStatus!.partnerName
                  + ' in ' + formatCollisionCountdown(collisionStatus!.nextCollision!.days)
                  + ' — click for details')
               : ('Crossing orbit with ' + collisionStatus!.partnerName + ' — click for details')"
-            (click)="showCollisionDialog()">Collision</span>
+        (click)="showCollisionDialog()">Collision</span>
       }
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"
@@ -444,9 +443,8 @@
               </span>
               @if (getMassStabilityAlert(); as massAlert) {
               <span [class.status-danger]="massAlert.severity === 'danger'"
-                    [class.status-warning]="massAlert.severity === 'warning'"
-                    [matTooltip]="massAlert.message"
-                    matTooltipClass="multiline-tooltip">⚠</span>
+                [class.status-warning]="massAlert.severity === 'warning'" [matTooltip]="massAlert.message"
+                matTooltipClass="multiline-tooltip">⚠</span>
               }
             </div>
           </div>

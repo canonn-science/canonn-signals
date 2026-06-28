@@ -23,11 +23,13 @@
           @if (yearsUntil !== null && yearsUntil >= 1) { ({{ yearsUntil | number:'1.1-1' }} years) }
         </li>
         <li><strong>Contact starts:</strong><br>
-          <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.start | date:'zzzz' }} (your time)</span></span><br>
+          <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.start | date:'zzzz' }}
+              (your time)</span></span><br>
           <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
         </li>
         <li><strong>Contact ends:</strong><br>
-          <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.end | date:'zzzz' }} (your time)</span></span><br>
+          <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss' }} <span class="tz">{{ c.end | date:'zzzz' }} (your
+              time)</span></span><br>
           <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
         </li>
         @if (durationMinutes !== null) {
