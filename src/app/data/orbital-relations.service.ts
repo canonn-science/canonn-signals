@@ -489,7 +489,7 @@ export class OrbitalRelationsService {
    * Returns up to `count` upcoming contact windows between two bodies.
    *
    * Algorithm:
-   *   1. Coarse scan over [now − ½syn, now + 1syn] with 1000 equal steps to locate the
+   *   1. Coarse scan over [now − ½syn, now + 1syn] with 2000 equal steps to locate the
    *      closest-approach spike (a sharp local minimum in the distance-vs-time curve).
    *   2. Iteratively refine: centre a ±½syn window on the running best and halve each pass
    *      until the half-window is under 500 ms (sub-second precision).
@@ -545,7 +545,7 @@ export class OrbitalRelationsService {
       return { t: bestT, sepKm: bestS };
     };
 
-    // Step 1: coarse scan over [now − ½syn, now + 1syn] with 1000 equal steps.
+    // Step 1: coarse scan over [now − ½syn, now + 1syn] with STEPS equal steps.
     const scanLo = now - synodicMs / 2;
     const scanHi = now + synodicMs;
     let initBestT = now;

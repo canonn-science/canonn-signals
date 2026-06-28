@@ -69,6 +69,36 @@ describe('CollisionDialogComponent', () => {
     expect(fixture.componentInstance.overlapLabel).toBe('Glancing blow');
   });
 
+  it('expresses the collision-frequency span in days when all contacts fall within a year', () => {
+    // Short-synodic moon pair: 10 contacts spanning ~62 days must not read "0 years".
+    const windows = Array.from({ length: 10 }, (_, i) => ({
+      start: new Date(), end: new Date(), days: (i + 1) * 6.2, minSeparationKm: 100,
+    }));
+    const fixture = setup({
+      bodyName: 'A', partnerName: 'B', synodicPeriodDays: 6.2, combinedRadiiKm: 1000,
+      upcomingCollisions: windows, bodyInfo: null, partnerInfo: null, systemPopulation: 0,
+      systemName: '', simultaneousPartners: [],
+      nextCollision: windows[0],
+    });
+    const desc = fixture.componentInstance.description;
+    expect(desc).toContain('10 collisions are predicted over the next 62 days.');
+    expect(desc).not.toContain('0 years');
+  });
+
+  it('expresses the collision-frequency span in years when contacts span multiple years', () => {
+    const windows = Array.from({ length: 5 }, (_, i) => ({
+      start: new Date(), end: new Date(), days: (i + 1) * 400, minSeparationKm: 100,
+    }));
+    const fixture = setup({
+      bodyName: 'A', partnerName: 'B', synodicPeriodDays: 400, combinedRadiiKm: 1000,
+      upcomingCollisions: windows, bodyInfo: null, partnerInfo: null, systemPopulation: 0,
+      systemName: '', simultaneousPartners: [],
+      nextCollision: windows[0],
+    });
+    // 5 contacts, last at 2000 days ≈ 5.5 years → rounds to "5 years".
+    expect(fixture.componentInstance.description).toContain('5 collisions are predicted over the next 5 years.');
+  });
+
   it('shows the candidate heading and an explanatory note when timing data is missing', () => {
     const fixture = setup({
       bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,

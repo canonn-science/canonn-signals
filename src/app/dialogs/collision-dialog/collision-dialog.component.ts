@@ -187,12 +187,16 @@ export class CollisionDialogComponent {
       parts.push(`The bodies pass each other ${synodicStr}, but only collide when the alignment falls on their mutual orbital node.`);
     }
 
-    // Collision frequency from the upcoming list.
+    // Collision frequency from the upcoming list. Scale the span unit so short-synodic moon
+    // pairs (whose 10 contacts can fall inside a single year) don't read "over the next 0 years".
     if (d.upcomingCollisions.length > 1) {
       const last = d.upcomingCollisions[d.upcomingCollisions.length - 1];
       const spanYears = last.days / DAYS_PER_YEAR;
       const n = d.upcomingCollisions.length;
-      parts.push(`${n} collisions are predicted over the next ${spanYears.toFixed(0)} years.`);
+      const spanStr = spanYears >= 1
+        ? `${spanYears.toFixed(0)} years`
+        : `${last.days.toFixed(0)} days`;
+      parts.push(`${n} collisions are predicted over the next ${spanStr}.`);
     }
 
     // Multi-body group.
