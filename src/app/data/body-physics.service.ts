@@ -753,12 +753,15 @@ export class BodyPhysicsService {
       return null;
     }
 
-    const semiMajorAxisM = body.bodyData.semiMajorAxis * KM_PER_AU * 1000;
+    // A Roche breach is set by closest approach (periapsis), not the mean distance, so an
+    // eccentric body can dip inside the rigid limit even when its semi-major axis is safe.
+    const eccentricity = body.bodyData.orbitalEccentricity || 0;
+    const periapsisM = body.bodyData.semiMajorAxis * KM_PER_AU * 1000 * (1 - eccentricity);
     const rhoParent = parentMassKg / this.sphereVolumeM3(parentRadiusM);
     const rhoSatellite = bodyMassKg / this.sphereVolumeM3(body.bodyData.radius * 1000);
     const rocheLimitM = 1.26 * parentRadiusM * Math.pow(rhoParent / rhoSatellite, 1 / 3);
 
-    return semiMajorAxisM < rocheLimitM ? (rocheLimitM - semiMajorAxisM) / 1000 : null;
+    return periapsisM < rocheLimitM ? (rocheLimitM - periapsisM) / 1000 : null;
   }
 
   /**
