@@ -84,7 +84,7 @@
                  + ' in ' + formatCollisionCountdown(collisionStatus!.nextCollision!.days)
                  + ' — click for details')
               : ('Crossing orbit with ' + collisionStatus!.partnerName + ' — click for details')"
-        (click)="showCollisionDialog()">Collision</span>
+        (click)="showCollisionDialog()">{{ (collisionStatus!.nextCollision?.days ?? 0) < 0 ? 'Collision In Progress' : 'Collision' }}</span>
       }
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"

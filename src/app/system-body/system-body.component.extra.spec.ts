@@ -43,7 +43,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       imports: [SystemBodyComponent],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: AppService, useValue: { codexEntries: signal([]), getBodyDisplayName: (n: string) => `${n}!` } },
+        { provide: AppService, useValue: { codexEntries: signal([]), nowOverride: signal(null), getBodyDisplayName: (n: string) => `${n}!` } },
         { provide: MatDialog, useValue: dialogStub },
       ],
       schemas: [NO_ERRORS_SCHEMA],
@@ -794,6 +794,28 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.formatCollisionCountdown(0.5)).toBe('less than a day');
       expect(component.formatCollisionCountdown(45)).toBe('45 days');
       expect(component.formatCollisionCountdown(800)).toContain('years');
+    });
+
+    it('shows "Collision In Progress" badge text when the contact window straddles now', () => {
+      const nowHere = Date.parse('2026-10-28T15:16:05Z');
+      const body = makeBody({ name: 'Test 1 a' });
+      // Pre-seed the collision cache so ngOnChanges skips detectCollisionStatus and
+      // leaves our in-progress status intact when render() calls detectChanges().
+      (component as any).collisionBody = body;
+      component.collisionStatus = {
+        isCandidate: true, partnerName: '1 c', synodicPeriodDays: 6.8, combinedRadiiKm: 1423,
+        upcomingCollisions: [], simultaneousPartners: ['1 b'],
+        nextCollision: {
+          start: new Date(nowHere - 2 * 60 * 1000),  // 2 min before now
+          end:   new Date(nowHere + 37 * 60 * 1000), // 37 min after now
+          days: -(2 / (24 * 60)),                    // negative → in progress
+          minSeparationKm: 400,
+        },
+      };
+      render(body); // ngOnChanges: body === collisionBody → skips override → renders with pre-set status
+      const badge: HTMLElement = fixture.nativeElement.querySelector('.badge-red');
+      expect(badge).not.toBeNull();
+      expect(badge!.textContent?.trim()).toBe('Collision In Progress');
     });
   });
 
