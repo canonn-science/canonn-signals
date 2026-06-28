@@ -35,7 +35,7 @@ body tree. No backend in this repo.
 - `npm run build` → `prebuild` (runs `generate-credits`) then `ng build`. **Output goes to `dist/`** (the builder's `outputPath.browser` is `""`, so there's no `dist/browser/` subdir).
 - `npm run generate-credits` → `scripts/generate-credits.js` parses the `# Credits` section of `readme.md` and writes `src/app/data/credits.generated.ts` (an HTML snippet imported by the Credits panel). Runs automatically before `start`/`build`.
 - `npm run generate-nebulae` → `scripts/generate-nebulae.js` regenerates `src/assets/nebulae.json` (the catalogue behind the "Nearest Nebulae" panel). **Not** wired into `start`/`build` — run it by hand when the source data changes.
-- `npm test` → `ng test` (Vitest). For CI/one-shot: `ng test --watch=false`. No browser/Chrome needed.
+- `npm test` → `ng test` (Vitest). For CI/one-shot: `ng test --watch=false`. No browser/Chrome needed. **Do NOT pass `--browsers=…` (or any Karma-era browser flag)** — the Vitest builder rejects it (`The "browsers" option requires @vitest/browser-*`). Run `ng test --watch=false` plain; jsdom is the runtime.
 - `npm run watch` → dev build in watch mode.
 - `npm run e2e` → `playwright test` (Playwright). End-to-end/functional + responsive + cross-browser checks in `e2e/` (desktop/tablet/mobile × Chromium/Firefox). It boots the dev server itself; deterministic specs stub the APIs with saved payloads in `e2e/fixtures/` (helpers in `e2e/support/`). **Playwright is for functional/UI correctness only — we do NOT use it for stress/load/performance testing.** This sandbox's single dev server can deadlock under heavy parallelism; cap workers (`npx playwright test --workers=6`) if needed.
 
