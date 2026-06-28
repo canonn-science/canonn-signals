@@ -3,20 +3,12 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { SystemBody, EdGalaxyData } from '../../home/home.component';
+import { formatBodyJson } from './format-body-json';
 
 /** Data passed to the body-JSON dialog when it is opened. */
 export interface JsonDialogData {
   body: SystemBody;
   edGalaxyData: EdGalaxyData | null;
-}
-
-/**
- * Pretty-prints body data as JSON. id64 is a bigint to preserve 64-bit precision;
- * JSON.stringify can't serialize BigInt natively, so it is rendered as its exact decimal
- * string. Shared with the host so the "right-click to copy" shortcut and the dialog agree.
- */
-export function formatBodyJson(bodyData: unknown): string {
-  return JSON.stringify(bodyData, (_key, value) => (typeof value === 'bigint' ? value.toString() : value), 2);
 }
 
 /**

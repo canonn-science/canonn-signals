@@ -238,26 +238,26 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.isRingNotVisible()).toBe(false);
     });
 
-    it('opens the Roche-limit chart dialog for a ring with a massive parent', () => {
+    it('opens the Roche-limit chart dialog for a ring with a massive parent', async () => {
       const parent = makeBody({ name: 'Star A', solarMasses: 1, solarRadius: 1 });
       const ring = makeBody({
         name: 'Star A A Ring', type: 'Ring', subType: 'Rocky',
         innerRadius: 600000, outerRadius: 2000000, mass: 1e9,
       }, parent);
       render(ring);
-      component.showRocheLimitChart();
+      await component.showRocheLimitChart();
       expect(dialogOpenCalls).toBeGreaterThan(0);
       expect(lastDialogData().isBody).toBe(false);
     });
 
-    it('opens the invisible-ring explanation dialog', () => {
+    it('opens the invisible-ring explanation dialog', async () => {
       const parent = ringParent();
       const ring = makeBody({
         name: 'Star A A Ring', type: 'Ring', subType: 'Icy',
         innerRadius: 60000, outerRadius: 5000000, mass: 1,
       }, parent);
       render(ring);
-      component.showInvisibleRingExplanation();
+      await component.showInvisibleRingExplanation();
       expect(lastDialogData().isInvisible).toBe(true);
     });
 
@@ -712,7 +712,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
   });
 
   describe('Roche / shepherding for a moon', () => {
-    it('opens the body Roche-limit chart for a close dense moon', () => {
+    it('opens the body Roche-limit chart for a close dense moon', async () => {
       const parent = makeBody({ name: 'Gas Giant', earthMasses: 300, radius: 70000 });
       const moon = makeBody({
         name: 'Moon', type: 'Planet', earthMasses: 0.05, radius: 1500,
@@ -720,11 +720,11 @@ describe('SystemBodyComponent (extended coverage)', () => {
       }, parent);
       render(moon);
       expect(component.calculateBodyRocheLimits()).not.toBeNull();
-      component.showBodyRocheLimitChart();
+      await component.showBodyRocheLimitChart();
       expect(lastDialogData().isBody).toBe(true);
     });
 
-    it('opens the shepherding Hill-limit chart for a shepherd moon', () => {
+    it('opens the shepherding Hill-limit chart for a shepherd moon', async () => {
       const parent = makeBody({
         name: 'Ringed Giant', earthMasses: 100, radius: 10000,
         rings: [{ name: 'A Ring', innerRadius: 20_000_000, outerRadius: 100_000_000, mass: 1e15, type: 'Icy' } as any],
@@ -736,34 +736,34 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(shepherd);
       expect(component.isShepherdingCandidate()).toBe(true);
       expect(component.isActualShepherd()).toBe(true);
-      component.showShepherdingHillLimitChart();
+      await component.showShepherdingHillLimitChart();
       expect(lastDialogData().shepherdStatus).toBe('shepherd');
     });
   });
 
   describe('apo/peri dialog', () => {
-    it('opens the apoapsis dialog with derived orbital details', () => {
+    it('opens the apoapsis dialog with derived orbital details', async () => {
       render(makeBody({
         semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 45, orbitalPeriod: 200,
         timestamps: { distanceToArrival: '', meanAnomaly: new Date(Date.now() - 5 * 86400000).toISOString() },
       }));
-      component.showApoPeriDialog('apo');
+      await component.showApoPeriDialog('apo');
       expect(lastDialogData().type).toBe('apo');
       expect(lastDialogData().distanceKm).toBeGreaterThan(0);
-      component.showApoPeriDialog('peri');
+      await component.showApoPeriDialog('peri');
       expect(lastDialogData().type).toBe('peri');
     });
 
-    it('does nothing when there is no next-event data', () => {
+    it('does nothing when there is no next-event data', async () => {
       render(makeBody({ orbitalEccentricity: 0 }));
       const before = dialogOpenCalls;
-      component.showApoPeriDialog('apo');
+      await component.showApoPeriDialog('apo');
       expect(dialogOpenCalls).toBe(before);
     });
   });
 
   describe('collision dialog', () => {
-    it('opens the collision dialog with this body name and the candidate details', () => {
+    it('opens the collision dialog with this body name and the candidate details', async () => {
       render(makeBody({ name: 'X 1 b' }));
       component.collisionStatus = {
         isCandidate: true, partnerName: 'X 1 c', synodicPeriodDays: 8, combinedRadiiKm: 5000,
@@ -773,18 +773,18 @@ describe('SystemBodyComponent (extended coverage)', () => {
           days: 170, minSeparationKm: 1000,
         },
       };
-      component.showCollisionDialog();
+      await component.showCollisionDialog();
       expect(lastDialogData().bodyName).toBe('X 1 b');
       expect(lastDialogData().partnerName).toBe('X 1 c');
       expect(lastDialogData().combinedRadiiKm).toBe(5000);
       expect(lastDialogData().nextCollision.minSeparationKm).toBe(1000);
     });
 
-    it('does nothing when the body is not a collision candidate', () => {
+    it('does nothing when the body is not a collision candidate', async () => {
       render(makeBody({}));
       component.collisionStatus = null;
       const before = dialogOpenCalls;
-      component.showCollisionDialog();
+      await component.showCollisionDialog();
       expect(dialogOpenCalls).toBe(before);
     });
 
@@ -951,25 +951,25 @@ describe('SystemBodyComponent (extended coverage)', () => {
   });
 
   describe('dialogs that need no orbital data', () => {
-    it('opens the on-foot safety dialog', () => {
+    it('opens the on-foot safety dialog', async () => {
       render(makeBody({ type: 'Planet', subType: 'Rocky body', isLandable: true, surfaceTemperature: 250, atmosphereType: 'Thin Argon', surfacePressure: 0.01, gravity: 0.5 }));
-      component.showOnFootSafetyDialog();
+      await component.showOnFootSafetyDialog();
       expect(lastDialogData().lookupSource).toContain('Argon');
     });
 
-    it('opens the tidal-lock dialog with the body and computed resonance', () => {
+    it('opens the tidal-lock dialog with the body and computed resonance', async () => {
       const star = makeBody({ type: 'Star', subType: 'M (Red dwarf) Star' });
       render(makeBody({ type: 'Planet', subType: 'Rocky body', rotationalPeriod: 5, orbitalPeriod: 5, rotationalPeriodTidallyLocked: true }, star));
-      component.showTidalLockDialog();
+      await component.showTidalLockDialog();
       expect(dialogOpenCalls).toBe(1);
       const { config } = dialogOpenArgs[0];
       expect(config.data!.resonance).toBe('1:1');
       expect(config.data!.body.bodyData.rotationalPeriod).toBe(5);
     });
 
-    it('opens the JSON dialog with the body and galaxy data', () => {
+    it('opens the JSON dialog with the body and galaxy data', async () => {
       render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
-      component.showBodyJsonDialog();
+      await component.showBodyJsonDialog();
       expect(dialogOpenCalls).toBeGreaterThan(0);
       expect(lastDialogData().body.bodyData.subType).toBe('Rocky body');
     });
@@ -1031,11 +1031,10 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getStellarAgeAssessment()).toBeNull();
     });
 
-    it('opens the H-R diagram dialog for a star', () => {
+    it('opens the H-R diagram dialog for a star', async () => {
       render(makeBody({ type: 'Star', subType: 'B (Blue-White) Star', spectralClass: 'B2', luminosity: 'V', solarMasses: 8, age: 50 }));
       const before = dialogOpenCalls;
-      component.showHrDiagram();
-      vi.runOnlyPendingTimers();
+      await component.showHrDiagram();
       expect(dialogOpenCalls).toBe(before + 1);
     });
   });

@@ -16,20 +16,18 @@ import { OrbitalRelationsService, CollisionStatus } from '../data/orbital-relati
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
-import { WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData } from '../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component';
+import type { WhiteDwarfTypesDialogData } from '../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component';
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
-import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
-import { TidalLockDialogComponent, TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
-import { HrDiagramDialogComponent } from '../dialogs/hr-diagram-dialog/hr-diagram-dialog.component';
-import { HillLimitDialogComponent } from '../dialogs/hill-limit-dialog/hill-limit-dialog.component';
-import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-limit-dialog.component';
-import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
-import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
-import { CollisionDialogComponent, CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
-import { SynodicDiagramInput } from '../data/collision-diagram';
-import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
-import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
+import type { OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
+import type { TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
+import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
+import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
+import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
+import type { SynodicDiagramInput } from '../data/collision-diagram';
+import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
+import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
+import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 
 /** Horizon (days) over which simultaneous (multi-body) collisions are scanned for the dialog's section. */
@@ -535,13 +533,14 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   /** Opens the white-dwarf spectral-type reference modal, highlighting this star's type. */
-  public showWhiteDwarfSpectralDialog(): void {
+  public async showWhiteDwarfSpectralDialog(): Promise<void> {
     const code = this.getWhiteDwarfSpectralCode();
     if (!code) { return; }
-    this.dialog.open<WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData>(WhiteDwarfTypesDialogComponent, {
+    const { WhiteDwarfTypesDialogComponent } = await import('../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component');
+    this.dialog.open(WhiteDwarfTypesDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
-      data: { typeKey: whiteDwarfSpectralTypeKey(code) },
+      data: { typeKey: whiteDwarfSpectralTypeKey(code) } satisfies WhiteDwarfTypesDialogData,
     });
   }
 
@@ -578,7 +577,7 @@ export class SystemBodyComponent implements OnChanges {
    * Axial tilt is stored in radians, so it is converted to degrees here; orbital
    * inclination and argument of periapsis are already in degrees.
    */
-  public showOrbitalDiagram(type: OrbitalDiagramType): void {
+  public async showOrbitalDiagram(type: OrbitalDiagramType): Promise<void> {
     const bodyData = this.body().bodyData;
     let degrees: number | null | undefined;
     switch (type) {
@@ -612,6 +611,7 @@ export class SystemBodyComponent implements OnChanges {
       };
     }
 
+    const { OrbitalDiagramDialogComponent } = await import('../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component');
     this.dialog.open(OrbitalDiagramDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -626,9 +626,10 @@ export class SystemBodyComponent implements OnChanges {
    * Opens the Hertzsprung–Russell diagram modal for this star, plotting it by temperature
    * and absolute magnitude and comparing its age to the lifetime its class implies.
    */
-  public showHrDiagram(): void {
+  public async showHrDiagram(): Promise<void> {
     const body = this.body();
     const bodyData = body.bodyData;
+    const { HrDiagramDialogComponent } = await import('../dialogs/hr-diagram-dialog/hr-diagram-dialog.component');
     this.dialog.open(HrDiagramDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -851,7 +852,8 @@ export class SystemBodyComponent implements OnChanges {
     this.hoveredIndex = index;
   }
 
-  public showBodyJsonDialog(): void {
+  public async showBodyJsonDialog(): Promise<void> {
+    const { JsonDialogComponent } = await import('../dialogs/json-dialog/json-dialog.component');
     this.dialog.open(JsonDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -867,7 +869,7 @@ export class SystemBodyComponent implements OnChanges {
       .catch(() => { /* clipboard unavailable */ });
   }
 
-  public showInvisibleRingExplanation(): void {
+  public async showInvisibleRingExplanation(): Promise<void> {
     const body = this.body();
     if (body.bodyData.type !== BODY_TYPE.Ring) {
       return;
@@ -883,6 +885,7 @@ export class SystemBodyComponent implements OnChanges {
 
     const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
+    const { InvisibleRingDialogComponent } = await import('../dialogs/invisible-ring-dialog/invisible-ring-dialog.component');
     this.dialog.open(InvisibleRingDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -901,7 +904,8 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   /** Opens the Roche-limit chart dialog with the prepared chart data. */
-  private openRocheLimitDialog(data: RocheChartData): void {
+  private async openRocheLimitDialog(data: RocheChartData): Promise<void> {
+    const { RocheLimitDialogComponent } = await import('../dialogs/roche-limit-dialog/roche-limit-dialog.component');
     this.dialog.open(RocheLimitDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -912,7 +916,7 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showRocheLimitChart(): void {
+  public async showRocheLimitChart(): Promise<void> {
     const body = this.body();
     if (!body.parent || body.bodyData.type !== BODY_TYPE.Ring) {
       return;
@@ -937,7 +941,7 @@ export class SystemBodyComponent implements OnChanges {
       density: this.physics.ringSatelliteDensityKgM3(body.bodyData.subType)
     };
 
-    this.openRocheLimitDialog({
+    await this.openRocheLimitDialog({
       parentName: parent.name,
       ringName: body.bodyData.name,
       densityRange,
@@ -949,7 +953,7 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showBodyRocheLimitChart(): void {
+  public async showBodyRocheLimitChart(): Promise<void> {
     const rocheLimits = this.calculateBodyRocheLimits();
     const body = this.body();
     if (!rocheLimits || !body.parent) {
@@ -983,7 +987,7 @@ export class SystemBodyComponent implements OnChanges {
       density: bodyDensity
     };
 
-    this.openRocheLimitDialog({
+    await this.openRocheLimitDialog({
       parentName: parent.name,
       ringName: body.bodyData.name,
       densityRange,
@@ -995,7 +999,7 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showApoPeriDialog(type: 'apo' | 'peri'): void {
+  public async showApoPeriDialog(type: 'apo' | 'peri'): Promise<void> {
     let data: { date: Date, days: number } | null = null;
     let distanceKm: number | undefined = undefined;
     const body = this.body();
@@ -1028,6 +1032,7 @@ export class SystemBodyComponent implements OnChanges {
       degreesToEvent = this.orbitalRelations.degreesToEvent(currentMeanAnomaly, type);
     }
 
+    const { ApoPeriDialogComponent } = await import('../dialogs/apo-peri-dialog/apo-peri-dialog.component');
     this.dialog.open(ApoPeriDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -1049,7 +1054,7 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   /** Opens the collision dialog with this body's collision-candidate details. */
-  public showCollisionDialog(): void {
+  public async showCollisionDialog(): Promise<void> {
     const status = this.collisionStatus;
     if (!status?.isCandidate) { return; }
     const siblings = this.body().parent?.subBodies ?? [];
@@ -1067,6 +1072,7 @@ export class SystemBodyComponent implements OnChanges {
       info: this.buildCollisionBodyInfo(siblings.find(s => s.bodyData.name === name) ?? null),
     }));
 
+    const { CollisionDialogComponent } = await import('../dialogs/collision-dialog/collision-dialog.component');
     this.dialog.open(CollisionDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -1175,7 +1181,7 @@ export class SystemBodyComponent implements OnChanges {
     };
   }
 
-  public showShepherdingHillLimitChart(): void {
+  public async showShepherdingHillLimitChart(): Promise<void> {
     const hillData = this.calculateShepherdingHillLimit();
     const body = this.body();
     if (!hillData || !body.parent) {
@@ -1203,6 +1209,7 @@ export class SystemBodyComponent implements OnChanges {
     // truth in BodyPhysicsService (shared with the isActualShepherd badge).
     const shepherdStatus = this.physics.shepherdStatus(hillData);
 
+    const { HillLimitDialogComponent } = await import('../dialogs/hill-limit-dialog/hill-limit-dialog.component');
     this.dialog.open(HillLimitDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -1527,11 +1534,12 @@ export class SystemBodyComponent implements OnChanges {
     return this.physics.rocheExcess(this.body());
   }
 
-  public showOnFootSafetyDialog(): void {
+  public async showOnFootSafetyDialog(): Promise<void> {
     const bd = this.body().bodyData;
     const surfTemp = bd.surfaceTemperature ?? null;
     const estRange = surfTemp ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure) : null;
     const { delta, source } = lookupTempDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
+    const { OnFootSafetyDialogComponent } = await import('../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component');
     this.dialog.open(OnFootSafetyDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
@@ -1555,7 +1563,8 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showTidalLockDialog(): void {
+  public async showTidalLockDialog(): Promise<void> {
+    const { TidalLockDialogComponent } = await import('../dialogs/tidal-lock-dialog/tidal-lock-dialog.component');
     this.dialog.open(TidalLockDialogComponent, {
       width: '900px',
       maxWidth: '95vw',
