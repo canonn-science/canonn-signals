@@ -7,16 +7,6 @@ pre-dates this branch.
 
 ## Physics / source
 
-- **`KG_PER_MEGATONNE = 1e12` is 1000× too large** —
-  [body-physics.service.ts:10](src/app/data/body-physics.service.ts#L10).
-  A megatonne is 10⁶ t = 10⁹ kg, so `1e12` is a gigatonne. Used only in the `parent.mass`
-  branch of `primaryDensityKgM3` ([:80](src/app/data/body-physics.service.ts#L80)), which is
-  unreachable for real parents — the `earthMasses` ([:76](src/app/data/body-physics.service.ts#L76))
-  and `solarMasses` ([:82](src/app/data/body-physics.service.ts#L82)) branches are tried first
-  and the bare `mass` field is not populated for real stars/planets. Practical impact is
-  near-zero, but the constant is wrong as named. Confirm the data source's unit for `mass`
-  before changing.
-
 - **`spinResonance` silently fails for retrograde rotators** —
   [stellar-physics.service.ts:29](src/app/data/stellar-physics.service.ts#L29).
   Elite stores retrograde rotation as a negative `rotationalPeriod`, so

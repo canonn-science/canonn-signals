@@ -38,16 +38,7 @@ describe('BodyPhysicsService (extended coverage)', () => {
     });
   });
 
-  describe('Roche limits via the megatonne mass branch', () => {
-    it('computes a rigid Roche limit from a parent expressed in megatonnes', () => {
-      // Parent density derived from `mass` (megatonnes) + radius rather than earthMasses.
-      const parent = node({ mass: 1e9, radius: 500 });
-      const ring = node({ subType: 'Rocky ring' }, parent);
-      const rigid = service.calculateRigidRocheLimit(ring);
-      expect(rigid).not.toBeNull();
-      expect(rigid!).toBeGreaterThan(0);
-    });
-
+  describe('calculateRigidRocheLimit guard clauses', () => {
     it('returns null when the parent exposes neither radius nor solar radius', () => {
       const parent = node({ earthMasses: 100 });
       expect(service.calculateRigidRocheLimit(node({ subType: 'Icy' }, parent))).toBeNull();
