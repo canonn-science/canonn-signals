@@ -12,7 +12,7 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
 import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
-import { OrbitalRelationsService, CollisionStatus } from '../data/orbital-relations.service';
+import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
@@ -27,6 +27,7 @@ import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collisio
 import type { SynodicDiagramInput } from '../data/collision-diagram';
 import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
 import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
+import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dialog.component';
 import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 
@@ -1481,6 +1482,42 @@ export class SystemBodyComponent implements OnChanges {
   public collisionStatus: CollisionStatus | null = null;
   /** The body `collisionStatus` was last computed for, to skip recompute on unrelated re-renders. */
   private collisionBody: SystemBody | null = null;
+
+  /**
+   * Opens the Lagrange-points diagram for this body's co-orbital family. Resolves the
+   * configuration from the service, maps every body name to its display name (stripping the
+   * system prefix), and hands it to the dialog. No-op when the body isn't part of a
+   * detectable Trojan/Lagrange configuration.
+   */
+  public async showLagrangeDialog(): Promise<void> {
+    const config = this.orbitalRelations.lagrangeConfiguration(this.body());
+    if (!config) { return; }
+
+    // Map raw names to full display names. The dialog drops the (repeated) system-name
+    // prefix for the cramped diagram itself but keeps the full names in its description.
+    const toDisplay = (occupant: LagrangeOccupant): LagrangeOccupant =>
+      ({ ...occupant, name: this.getBodyDisplayName(occupant.name) });
+    const points = { L1: [], L2: [], L3: [], L4: [], L5: [] } as LagrangeConfiguration['points'];
+    for (const id of ['L1', 'L2', 'L3', 'L4', 'L5'] as const) {
+      points[id] = config.points[id].map(toDisplay);
+    }
+    const displayConfig: LagrangeConfiguration = {
+      primaryName: config.primaryName ? this.getBodyDisplayName(config.primaryName) : null,
+      secondary: config.secondary ? toDisplay(config.secondary) : null,
+      points,
+    };
+    const data: LagrangeDialogData = { config: displayConfig, systemName: this.edGalaxyData()?.Name ?? '' };
+
+    const { LagrangeDialogComponent } = await import('../dialogs/lagrange-dialog/lagrange-dialog.component');
+    this.dialog.open(LagrangeDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data,
+    });
+  }
   public readonly getEstimatedTempRange = signal<{ min: number; max: number } | null>(null);
   public readonly getLandableBadgeClass = signal('badge-gray');
   public readonly getLandableTooltip = signal('');

@@ -1,0 +1,268 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "absoluteMagnitude": 3.149216, 
+        "age": 4390, 
+        "argOfPeriapsis": 288.727276, 
+        "ascendingNode": 74.406421, 
+        "axialTilt": 0.0, 
+        "bodyId": 1, 
+        "distanceToArrival": 0.0, 
+        "id64": 36031831606315395, 
+        "luminosity": "VI", 
+        "mainStar": true, 
+        "meanAnomaly": 347.01986, 
+        "name": "Pro Eurl JF-A d88 A", 
+        "orbitalEccentricity": 0.153106, 
+        "orbitalInclination": 61.329034, 
+        "orbitalPeriod": 54886.044451484, 
+        "parents": [
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 2.6098740494213, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 4.83540897335335, 
+        "solarMasses": 1.34375, 
+        "solarRadius": 1.26947013659238, 
+        "spectralClass": "A9", 
+        "stations": [], 
+        "subType": "A (Blue-White) Star", 
+        "surfaceTemperature": 7551.0, 
+        "timestamps": {
+          "distanceToArrival": "2022-01-11T08:05:16Z", 
+          "meanAnomaly": "2022-01-11T08:05:16Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2022-01-11 08:05:16+00"
+      }, 
+      {
+        "absoluteMagnitude": 10.644608, 
+        "age": 4390, 
+        "argOfPeriapsis": 108.727282, 
+        "ascendingNode": 74.406421, 
+        "axialTilt": 0.0, 
+        "belts": [
+          {
+            "innerRadius": 422980000.0, 
+            "mass": 63144000000000.0, 
+            "name": "Pro Eurl JF-A d88 B A Belt", 
+            "outerRadius": 1479500000.0, 
+            "type": "Metallic"
+          }, 
+          {
+            "innerRadius": 3479200000.0, 
+            "mass": 286260000000000.0, 
+            "name": "Pro Eurl JF-A d88 B B Belt", 
+            "outerRadius": 222670000000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "bodyId": 2, 
+        "distanceToArrival": 13988.649969, 
+        "id64": 72060628625279363, 
+        "luminosity": "Va", 
+        "mainStar": false, 
+        "meanAnomaly": 347.01986, 
+        "name": "Pro Eurl JF-A d88 B", 
+        "orbitalEccentricity": 0.153106, 
+        "orbitalInclination": 61.329034, 
+        "orbitalPeriod": 54886.044451484, 
+        "parents": [
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 1.25403375167824, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 28.0550621216282, 
+        "solarMasses": 0.230469, 
+        "solarRadius": 0.383087137311287, 
+        "spectralClass": "M7", 
+        "stations": [], 
+        "subType": "M (Red dwarf) Star", 
+        "surfaceTemperature": 2448.0, 
+        "timestamps": {
+          "distanceToArrival": "2022-01-11T08:05:16Z", 
+          "meanAnomaly": "2022-01-11T08:05:16Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2022-01-11 08:05:16+00"
+      }, 
+      {
+        "argOfPeriapsis": 256.983124, 
+        "atmosphereComposition": {
+          "Helium": 27.78, 
+          "Hydrogen": 72.22
+        }, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -2.908406, 
+        "bodyId": 30, 
+        "distanceToArrival": 15313.0, 
+        "earthMasses": 374.208435, 
+        "gravity": 2.81090536324833, 
+        "id64": 1080866945156270467, 
+        "isLandable": false, 
+        "name": "Pro Eurl JF-A d88 B 2", 
+        "orbitalEccentricity": 0.00941, 
+        "orbitalInclination": 0.115677, 
+        "orbitalPeriod": 2756.17222222222, 
+        "parents": [
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 73589.896, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 121420000.0, 
+            "mass": 990060000000.0, 
+            "name": "Pro Eurl JF-A d88 B 2 A Ring", 
+            "outerRadius": 263390000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 0.586287887013889, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 2.36276632726164, 
+        "stations": [], 
+        "subType": "Class II gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 153.0, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2018-05-09 15:30:32+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 292.964142, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": 0.044125, 
+        "bodyId": 32, 
+        "distanceToArrival": 15315.0, 
+        "earthMasses": 0.043793, 
+        "gravity": 0.186720456337121, 
+        "id64": 1152924539194198403, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 22.52, 
+          "Chromium": 5.3, 
+          "Iron": 11.78, 
+          "Manganese": 4.87, 
+          "Molybdenum": 0.77, 
+          "Nickel": 8.91, 
+          "Phosphorus": 14.42, 
+          "Ruthenium": 0.73, 
+          "Sulphur": 26.78, 
+          "Tin": 0.73, 
+          "Zinc": 3.2
+        }, 
+        "name": "Pro Eurl JF-A d88 B 2 a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 17.257261, 
+        "orbitalPeriod": 123.859305555556, 
+        "parents": [
+          {
+            "Planet": 30
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 3088.808, 
+        "rotationalPeriod": 123.614571759259, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0505605827449789, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 87.7026, 
+          "Metal": 1.7312, 
+          "Rock": 10.5663
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 97.0, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2018-05-09 15:40:07+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 316.983124, 
+        "atmosphereComposition": {
+          "Argon": 0.78, 
+          "Methane": 20.08, 
+          "Nitrogen": 78.4
+        }, 
+        "atmosphereType": "Thick Methane-rich", 
+        "axialTilt": -0.268303, 
+        "bodyId": 33, 
+        "distanceToArrival": 14726.0, 
+        "earthMasses": 1.309031, 
+        "gravity": 0.747945009393682, 
+        "id64": 1188953336213162371, 
+        "isLandable": false, 
+        "name": "Pro Eurl JF-A d88 B 3", 
+        "orbitalEccentricity": 0.00941, 
+        "orbitalInclination": 0.115677, 
+        "orbitalPeriod": 2756.17222222222, 
+        "parents": [
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 8437.711, 
+        "rotationalPeriod": 0.491864420578704, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 2.36276632726164, 
+        "solidComposition": {
+          "Ice": 68.6542, 
+          "Metal": 10.362, 
+          "Rock": 20.9838
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 2830.70657784357, 
+        "surfaceTemperature": 401.0, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2018-05-09 15:32:57+00", 
+        "volcanismType": "Water Geysers"
+      }
+    ], 
+    "bodyCount": 12, 
+    "coords": {
+      "x": 2147.0, 
+      "y": 65.78125, 
+      "z": 267.40625
+    }, 
+    "date": "2022-01-11 08:05:15+00", 
+    "government": "None", 
+    "id64": 3034587351427, 
+    "name": "Pro Eurl JF-A d88", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "region": {
+      "name": "Inner Orion Spur", 
+      "region": 18
+    }, 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": [], 
+    "timestamps": {}
+  }
+}

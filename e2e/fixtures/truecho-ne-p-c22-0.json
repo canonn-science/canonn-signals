@@ -1,0 +1,1733 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "absoluteMagnitude": 5.361557, 
+        "age": 6592, 
+        "axialTilt": 0.0, 
+        "belts": [
+          {
+            "innerRadius": 1183600000.0, 
+            "mass": 115840000000000.0, 
+            "name": "Truecho NE-P c22-0 A Belt", 
+            "outerRadius": 2297700000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "innerRadius": 7684100000.0, 
+            "mass": 1284900000000000.0, 
+            "name": "Truecho NE-P c22-0 B Belt", 
+            "outerRadius": 122950000000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "bodyId": 0, 
+        "distanceToArrival": 0.0, 
+        "id64": 94590909634, 
+        "luminosity": "Vab", 
+        "mainStar": true, 
+        "name": "Truecho NE-P c22-0", 
+        "rotationalPeriod": 3.56788911306713, 
+        "solarMasses": 0.863281, 
+        "solarRadius": 0.885192787922358, 
+        "spectralClass": "G7", 
+        "stations": [], 
+        "subType": "G (White-Yellow) Star", 
+        "surfaceTemperature": 5434.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:00:07Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-03-01 08:00:07+00"
+      }, 
+      {
+        "argOfPeriapsis": 53.884267, 
+        "ascendingNode": -97.108785, 
+        "atmosphereComposition": {
+          "Silicates": 99.999985
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": -0.009316, 
+        "bodyId": 5, 
+        "distanceToArrival": 7.910102, 
+        "earthMasses": 1.349739, 
+        "gravity": 1.96223156928724, 
+        "id64": 180144079685729474, 
+        "isLandable": false, 
+        "meanAnomaly": 25.674108, 
+        "name": "Truecho NE-P c22-0 1", 
+        "orbitalEccentricity": 1e-06, 
+        "orbitalInclination": -5.5e-05, 
+        "orbitalPeriod": 0.779716932662037, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 5287.3305, 
+        "rotationalPeriod": 0.784501082037037, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0158517669404968, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 100.0, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 8083.02345916605, 
+        "surfaceTemperature": 3053.126953, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:00:08Z", 
+          "meanAnomaly": "2026-03-01T08:00:08Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:00:08+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 283.404834, 
+        "ascendingNode": 58.250066, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 0.667093, 
+          "Silicates": 99.320786
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": 0.369941, 
+        "bodyId": 6, 
+        "distanceToArrival": 14.1624, 
+        "earthMasses": 5.845429, 
+        "gravity": 2.37029978586724, 
+        "id64": 216172876704693442, 
+        "isLandable": false, 
+        "meanAnomaly": 12.326106, 
+        "name": "Truecho NE-P c22-0 2", 
+        "orbitalEccentricity": 1e-06, 
+        "orbitalInclination": -0.0012, 
+        "orbitalPeriod": 1.86796776122685, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 10011.362, 
+        "rotationalPeriod": 1.87942910385417, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0283813213148805, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.1106, 
+          "Rock": 66.8894
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 63006.2829114236, 
+        "surfaceTemperature": 4715.780762, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:00:08Z", 
+          "meanAnomaly": "2026-03-01T08:00:08Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:00:08+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 221.679278, 
+        "ascendingNode": -44.167695, 
+        "atmosphereComposition": {
+          "Helium": 26.493919, 
+          "Hydrogen": 73.448204
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.011384, 
+        "bodyId": 18, 
+        "distanceToArrival": 651.390934, 
+        "earthMasses": 272.968903, 
+        "gravity": 2.21527154073621, 
+        "id64": 648518440932261058, 
+        "isLandable": false, 
+        "meanAnomaly": 188.281501, 
+        "name": "Truecho NE-P c22-0 3", 
+        "orbitalEccentricity": 0.000606, 
+        "orbitalInclination": -0.97573, 
+        "orbitalPeriod": 582.150866587951, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 70766.824, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 137240000.0, 
+            "mass": 1010400000000.0, 
+            "name": "Truecho NE-P c22-0 3 A Ring", 
+            "outerRadius": 225830000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 0.585401793240741, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.30459809889173, 
+        "stations": [], 
+        "subType": "Gas giant with water-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 222.94429, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:00:59Z", 
+          "meanAnomaly": "2026-03-01T08:00:59Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:00:59+00"
+      }, 
+      {
+        "argOfPeriapsis": 131.971986, 
+        "ascendingNode": 123.106046, 
+        "atmosphereComposition": {
+          "Oxygen": 2.999999, 
+          "Silicates": 5.0, 
+          "Sulphur dioxide": 90.0
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.057233, 
+        "bodyId": 20, 
+        "distanceToArrival": 650.899112, 
+        "earthMasses": 0.003781, 
+        "gravity": 0.128894157234628, 
+        "id64": 720576034970188994, 
+        "isLandable": false, 
+        "meanAnomaly": 195.434717, 
+        "name": "Truecho NE-P c22-0 3 a", 
+        "orbitalEccentricity": 0.001021, 
+        "orbitalInclination": 0.021974, 
+        "orbitalPeriod": 1.71890516799769, 
+        "parents": [
+          {
+            "Planet": 18
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1091.816125, 
+        "rotationalPeriod": 1.71893807980324, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00262833796801155, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0083, 
+          "Rock": 90.9917
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 202.634857, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:02Z", 
+          "meanAnomaly": "2026-03-01T08:01:02Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:02+00", 
+        "volcanismType": "Major Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 149.552077, 
+        "ascendingNode": 48.5563, 
+        "atmosphereType": null, 
+        "axialTilt": 0.181431, 
+        "bodyId": 21, 
+        "distanceToArrival": 646.133128, 
+        "earthMasses": 0.002452, 
+        "gravity": 0.111240644437647, 
+        "id64": 756604831989152962, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.511564, 
+          "Cadmium": 1.520143, 
+          "Carbon": 15.968937, 
+          "Chromium": 8.803851, 
+          "Iron": 19.575718, 
+          "Nickel": 14.806254, 
+          "Niobium": 1.337896, 
+          "Phosphorus": 10.223586, 
+          "Sulphur": 18.99037, 
+          "Tellurium": 1.454562, 
+          "Vanadium": 4.807116
+        }, 
+        "meanAnomaly": 187.006747, 
+        "name": "Truecho NE-P c22-0 3 b", 
+        "orbitalEccentricity": 0.010268, 
+        "orbitalInclination": 0.56745, 
+        "orbitalPeriod": 14.8612805814699, 
+        "parents": [
+          {
+            "Planet": 18
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 946.498875, 
+        "rotationalPeriod": 14.8615645569792, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.011071779322023, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0083, 
+          "Rock": 90.9917
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 198.070114, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:01Z", 
+          "meanAnomaly": "2026-03-01T08:01:01Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:01+00"
+      }, 
+      {
+        "argOfPeriapsis": 272.416122, 
+        "ascendingNode": 33.456285, 
+        "atmosphereType": null, 
+        "axialTilt": -0.03538, 
+        "bodyId": 22, 
+        "distanceToArrival": 652.971413, 
+        "earthMasses": 0.00223, 
+        "gravity": 0.107718772305496, 
+        "id64": 792633629008116930, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.437658, 
+          "Cadmium": 1.475412, 
+          "Carbon": 15.499035, 
+          "Chromium": 8.544789, 
+          "Iron": 18.999681, 
+          "Manganese": 7.846675, 
+          "Nickel": 14.370565, 
+          "Niobium": 1.298527, 
+          "Phosphorus": 9.922748, 
+          "Ruthenium": 1.173352, 
+          "Sulphur": 18.431561
+        }, 
+        "meanAnomaly": 210.979277, 
+        "name": "Truecho NE-P c22-0 3 c", 
+        "orbitalEccentricity": 0.001357, 
+        "orbitalInclination": 18.319923, 
+        "orbitalPeriod": 24.3563494748495, 
+        "parents": [
+          {
+            "Planet": 18
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 917.3399375, 
+        "rotationalPeriod": 24.3568186746528, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0153905734215144, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0083, 
+          "Rock": 90.9917
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 197.41156, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:05Z", 
+          "meanAnomaly": "2026-03-01T08:01:05Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:05+00"
+      }, 
+      {
+        "argOfPeriapsis": 18.268789, 
+        "ascendingNode": -39.02267, 
+        "atmosphereComposition": {
+          "Helium": 26.488102, 
+          "Hydrogen": 73.432083, 
+          "Oxygen": 0.079826
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.301133, 
+        "bodyId": 26, 
+        "distanceToArrival": 882.300237, 
+        "earthMasses": 252.641479, 
+        "gravity": 2.0895767309065, 
+        "id64": 936748817083972802, 
+        "isLandable": false, 
+        "meanAnomaly": 95.941872, 
+        "name": "Truecho NE-P c22-0 4", 
+        "orbitalEccentricity": 0.004298, 
+        "orbitalInclination": 0.014521, 
+        "orbitalPeriod": 917.880802794734, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 70098.672, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 131810000.0, 
+            "mass": 49914000000.0, 
+            "name": "Truecho NE-P c22-0 4 A Ring", 
+            "outerRadius": 137710000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "innerRadius": 137810000.0, 
+            "mass": 924770000000.0, 
+            "name": "Truecho NE-P c22-0 4 B Ring", 
+            "outerRadius": 220080000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 0.720369648472222, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.76730111901972, 
+        "stations": [], 
+        "subType": "Gas giant with water-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 193.144119, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:00:45Z", 
+          "meanAnomaly": "2026-03-01T08:00:45Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:00:45+00"
+      }, 
+      {
+        "argOfPeriapsis": 334.486798, 
+        "ascendingNode": 74.485658, 
+        "atmosphereType": null, 
+        "axialTilt": 0.169982, 
+        "bodyId": 29, 
+        "distanceToArrival": 883.216388, 
+        "earthMasses": 0.00286, 
+        "gravity": 0.117208422555318, 
+        "id64": 1044835208140864706, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.465757, 
+          "Carbon": 15.677688, 
+          "Chromium": 8.643281, 
+          "Iron": 19.218685, 
+          "Manganese": 7.93712, 
+          "Mercury": 0.839248, 
+          "Nickel": 14.536208, 
+          "Niobium": 1.313495, 
+          "Phosphorus": 10.037125, 
+          "Sulphur": 18.644016, 
+          "Technetium": 0.687375
+        }, 
+        "meanAnomaly": 113.436472, 
+        "name": "Truecho NE-P c22-0 4 a", 
+        "orbitalEccentricity": 0.000616, 
+        "orbitalInclination": -0.002423, 
+        "orbitalPeriod": 1.43347294241898, 
+        "parents": [
+          {
+            "Planet": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 995.7813125, 
+        "rotationalPeriod": 1.4335547350463, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00226941759416301, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:33+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0083, 
+          "Rock": 90.9917
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 175.103348, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:34Z", 
+          "meanAnomaly": "2026-03-01T08:01:34Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:34+00", 
+        "volcanismType": "Minor Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 177.742501, 
+        "ascendingNode": -78.68812, 
+        "bodyId": 30, 
+        "id64": 1080864005159828674, 
+        "meanAnomaly": 172.746084, 
+        "name": "Truecho NE-P c22-0 barycentre 30", 
+        "orbitalEccentricity": 0.000916, 
+        "orbitalInclination": -0.405405, 
+        "orbitalPeriod": 2.42868141719907, 
+        "semiMajorAxis": 0.00322528801790912, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-01T08:01:35Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-01 08:01:35+00"
+      }, 
+      {
+        "argOfPeriapsis": 285.228737, 
+        "ascendingNode": -120.674416, 
+        "atmosphereType": null, 
+        "axialTilt": -0.02341, 
+        "bodyId": 31, 
+        "distanceToArrival": 883.715999, 
+        "earthMasses": 0.003896, 
+        "gravity": 0.130226266952177, 
+        "id64": 1116892802178792642, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.980479, 
+          "Chromium": 8.810213, 
+          "Germanium": 5.620087, 
+          "Iron": 19.589867, 
+          "Nickel": 14.816955, 
+          "Niobium": 1.338863, 
+          "Phosphorus": 10.230978, 
+          "Sulphur": 19.004101, 
+          "Tin": 1.163586, 
+          "Yttrium": 1.170079, 
+          "Zirconium": 2.274787
+        }, 
+        "meanAnomaly": 87.728775, 
+        "name": "Truecho NE-P c22-0 4 b", 
+        "orbitalEccentricity": 0.147853, 
+        "orbitalInclination": -0.338572, 
+        "orbitalPeriod": 0.389306157546296, 
+        "parents": [
+          {
+            "Null": 30
+          }, 
+          {
+            "Planet": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1102.72475, 
+        "rotationalPeriod": 0.580495130185185, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 1.30022912780469e-05, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:35+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0083, 
+          "Rock": 90.9917
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 173.708817, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:35Z", 
+          "meanAnomaly": "2026-03-01T08:01:35Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:35+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 105.228743, 
+        "ascendingNode": -120.674416, 
+        "atmosphereType": null, 
+        "axialTilt": -1.410871, 
+        "bodyId": 32, 
+        "distanceToArrival": 883.7195, 
+        "earthMasses": 0.003185, 
+        "gravity": 0.121879677781177, 
+        "id64": 1152921599197756610, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.437978, 
+          "Carbon": 14.96166, 
+          "Chromium": 8.327996, 
+          "Germanium": 5.261784, 
+          "Iron": 18.517635, 
+          "Manganese": 7.647594, 
+          "Nickel": 14.005963, 
+          "Phosphorus": 9.578712, 
+          "Sulphur": 17.792515, 
+          "Tellurium": 1.362813, 
+          "Tin": 1.105358
+        }, 
+        "meanAnomaly": 87.74534, 
+        "name": "Truecho NE-P c22-0 4 c", 
+        "orbitalEccentricity": 0.147853, 
+        "orbitalInclination": -0.338572, 
+        "orbitalPeriod": 0.389306157546296, 
+        "parents": [
+          {
+            "Null": 30
+          }, 
+          {
+            "Planet": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1030.5503125, 
+        "rotationalPeriod": 0.524828088159722, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 1.59068079916127e-05, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:37+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.4965, 
+          "Rock": 90.5035
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 173.708817, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:37Z", 
+          "meanAnomaly": "2026-03-01T08:01:37Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:37+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 135.948543, 
+        "ascendingNode": -149.937713, 
+        "atmosphereType": null, 
+        "axialTilt": -0.514644, 
+        "bodyId": 33, 
+        "distanceToArrival": 880.157107, 
+        "earthMasses": 0.006854, 
+        "gravity": 0.158111349036403, 
+        "id64": 1188950396216720578, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.437282, 
+          "Carbon": 15.039528, 
+          "Chromium": 8.32396, 
+          "Germanium": 5.289169, 
+          "Iron": 18.508663, 
+          "Manganese": 7.643889, 
+          "Nickel": 13.999178, 
+          "Phosphorus": 9.628564, 
+          "Ruthenium": 1.143028, 
+          "Sulphur": 17.885115, 
+          "Tin": 1.101627
+        }, 
+        "meanAnomaly": 249.375089, 
+        "name": "Truecho NE-P c22-0 4 d", 
+        "orbitalEccentricity": 0.000167, 
+        "orbitalInclination": -0.282766, 
+        "orbitalPeriod": 4.1556069972338, 
+        "parents": [
+          {
+            "Planet": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1327.2985, 
+        "rotationalPeriod": 4.15584436115741, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00461400169952214, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.2059, 
+          "Rock": 90.7941
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 172.519058, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:29Z", 
+          "meanAnomaly": "2026-03-01T08:01:29Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:29+00"
+      }, 
+      {
+        "argOfPeriapsis": 269.632195, 
+        "ascendingNode": -46.982959, 
+        "atmosphereType": null, 
+        "axialTilt": 0.197556, 
+        "bodyId": 34, 
+        "distanceToArrival": 880.161039, 
+        "earthMasses": 0.000232, 
+        "gravity": 0.048764351993474, 
+        "id64": 1224979193235684546, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.731233, 
+          "Carbon": 17.365629, 
+          "Chromium": 8.291901, 
+          "Iron": 18.437376, 
+          "Nickel": 13.945257, 
+          "Niobium": 1.260096, 
+          "Phosphorus": 11.117775, 
+          "Sulphur": 20.651331, 
+          "Technetium": 0.659431, 
+          "Tungsten": 1.012397, 
+          "Vanadium": 4.527578
+        }, 
+        "meanAnomaly": 207.729809, 
+        "name": "Truecho NE-P c22-0 4 d a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": -26.127041, 
+        "orbitalPeriod": 0.431715476296296, 
+        "parents": [
+          {
+            "Planet": 33
+          }, 
+          {
+            "Planet": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 439.5130625, 
+        "rotationalPeriod": 0.438954667731482, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 3.09783860417005e-05, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:31+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 3.1655, 
+          "Rock": 96.8345
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 172.519058, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:31Z", 
+          "meanAnomaly": "2026-03-01T08:01:31Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:31+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 187.82929, 
+        "ascendingNode": 84.188826, 
+        "bodyId": 35, 
+        "id64": 1261007990254648514, 
+        "meanAnomaly": 102.344336, 
+        "name": "Truecho NE-P c22-0 barycentre 35", 
+        "orbitalEccentricity": 0.002856, 
+        "orbitalInclination": 1.404531, 
+        "orbitalPeriod": 8.491596345, 
+        "semiMajorAxis": 0.00742986615906708, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-01T08:01:24Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-01 08:01:24+00"
+      }, 
+      {
+        "argOfPeriapsis": 69.34395, 
+        "ascendingNode": -100.090675, 
+        "atmosphereType": null, 
+        "axialTilt": -1.697308, 
+        "bodyId": 36, 
+        "distanceToArrival": 882.041686, 
+        "earthMasses": 0.006669, 
+        "gravity": 0.156664525339044, 
+        "id64": 1297036787273612482, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.513404, 
+          "Carbon": 15.824127, 
+          "Iron": 19.488937, 
+          "Manganese": 8.048732, 
+          "Mercury": 0.85105, 
+          "Nickel": 14.740615, 
+          "Phosphorus": 10.130877, 
+          "Polonium": 0.50192, 
+          "Sulphur": 18.818165, 
+          "Vanadium": 4.785805, 
+          "Zinc": 5.296363
+        }, 
+        "meanAnomaly": 36.381441, 
+        "name": "Truecho NE-P c22-0 4 e", 
+        "orbitalEccentricity": 0.132424, 
+        "orbitalInclination": 0.159769, 
+        "orbitalPeriod": 0.719075098078704, 
+        "parents": [
+          {
+            "Null": 35
+          }, 
+          {
+            "Planet": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1315.284125, 
+        "rotationalPeriod": -1.27125645980324, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.55203014305403e-05, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:25+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.2442, 
+          "Rock": 90.7558
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 171.232864, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:26Z", 
+          "meanAnomaly": "2026-03-01T08:01:26Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:26+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 249.343945, 
+        "ascendingNode": -100.090675, 
+        "atmosphereType": null, 
+        "axialTilt": 0.021322, 
+        "bodyId": 37, 
+        "distanceToArrival": 882.034224, 
+        "earthMasses": 0.003137, 
+        "gravity": 0.120963699398389, 
+        "id64": 1333065584292576450, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.487785, 
+          "Carbon": 15.629022, 
+          "Chromium": 8.616451, 
+          "Germanium": 5.496485, 
+          "Iron": 19.159027, 
+          "Nickel": 14.491087, 
+          "Phosphorus": 10.005968, 
+          "Sulphur": 18.586143, 
+          "Technetium": 0.685241, 
+          "Tin": 1.137995, 
+          "Vanadium": 4.70479
+        }, 
+        "meanAnomaly": 36.373723, 
+        "name": "Truecho NE-P c22-0 4 f", 
+        "orbitalEccentricity": 0.132424, 
+        "orbitalInclination": 0.159769, 
+        "orbitalPeriod": 0.719075098078704, 
+        "parents": [
+          {
+            "Null": 35
+          }, 
+          {
+            "Planet": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1026.71025, 
+        "rotationalPeriod": 0.871974664201389, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 3.29882227092488e-05, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:24+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0083, 
+          "Rock": 90.9917
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 171.232864, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:24Z", 
+          "meanAnomaly": "2026-03-01T08:01:24Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:24+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 192.434207, 
+        "ascendingNode": -37.664856, 
+        "atmosphereComposition": {
+          "Helium": 26.509264, 
+          "Hydrogen": 73.490746
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.415211, 
+        "bodyId": 40, 
+        "distanceToArrival": 1654.764056, 
+        "earthMasses": 28.671562, 
+        "gravity": 0.701475068828388, 
+        "id64": 1441151975349468354, 
+        "isLandable": false, 
+        "meanAnomaly": 235.613607, 
+        "name": "Truecho NE-P c22-0 5", 
+        "orbitalEccentricity": 0.000778, 
+        "orbitalInclination": 0.160264, 
+        "orbitalPeriod": 2357.65861968199, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 40757.372, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 67250000.0, 
+            "mass": 1567800000.0, 
+            "name": "Truecho NE-P c22-0 5 A Ring", 
+            "outerRadius": 72689000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "innerRadius": 72789000.0, 
+            "mass": 16064000000.0, 
+            "name": "Truecho NE-P c22-0 5 B Ring", 
+            "outerRadius": 113470000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.5130758418287, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 3.3146703196936, 
+        "stations": [], 
+        "subType": "Class I gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 121.086746, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:00:41Z", 
+          "meanAnomaly": "2026-03-01T08:00:41Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:00:41+00"
+      }, 
+      {
+        "argOfPeriapsis": 152.369154, 
+        "ascendingNode": 167.928305, 
+        "atmosphereType": null, 
+        "axialTilt": 0.176287, 
+        "bodyId": 43, 
+        "distanceToArrival": 1654.578959, 
+        "earthMasses": 0.000284, 
+        "gravity": 0.0385973284388702, 
+        "id64": 1549238366406360258, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 21.307066, 
+          "Germanium": 4.382949, 
+          "Iron": 15.277595, 
+          "Molybdenum": 0.997618, 
+          "Nickel": 11.55533, 
+          "Phosphorus": 13.641149, 
+          "Sulphur": 25.338512, 
+          "Tellurium": 1.135193, 
+          "Tungsten": 0.838893, 
+          "Vanadium": 3.751645, 
+          "Zirconium": 1.774043
+        }, 
+        "meanAnomaly": 303.728238, 
+        "name": "Truecho NE-P c22-0 5 a", 
+        "orbitalEccentricity": 0.000141, 
+        "orbitalInclination": 0.002513, 
+        "orbitalPeriod": 1.50503866650463, 
+        "parents": [
+          {
+            "Planet": 40
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 547.0986875, 
+        "rotationalPeriod": 1.41446690387731, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00113503361912894, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-03-01 08:01:13+00"
+        }, 
+        "solidComposition": {
+          "Ice": 57.8559, 
+          "Metal": 3.7965, 
+          "Rock": 38.3476
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 108.198135, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:13Z", 
+          "meanAnomaly": "2026-03-01T08:01:13Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:13+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 147.837805, 
+        "ascendingNode": 176.114293, 
+        "atmosphereType": null, 
+        "axialTilt": -0.334257, 
+        "bodyId": 44, 
+        "distanceToArrival": 1654.107703, 
+        "earthMasses": 0.000276, 
+        "gravity": 0.0382144386662588, 
+        "id64": 1585267163425324226, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.105861, 
+          "Carbon": 19.861053, 
+          "Chromium": 6.404549, 
+          "Iron": 14.240774, 
+          "Manganese": 5.881294, 
+          "Nickel": 10.771124, 
+          "Phosphorus": 12.715387, 
+          "Sulphur": 23.618906, 
+          "Tellurium": 1.058152, 
+          "Tin": 0.845864, 
+          "Vanadium": 3.497038
+        }, 
+        "meanAnomaly": 338.11915, 
+        "name": "Truecho NE-P c22-0 5 b", 
+        "orbitalEccentricity": 8e-06, 
+        "orbitalInclination": -0.096665, 
+        "orbitalPeriod": 2.99028458971065, 
+        "parents": [
+          {
+            "Planet": 40
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 541.734125, 
+        "rotationalPeriod": 2.87680216875, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00179384683976719, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-03-01 08:01:14+00"
+        }, 
+        "solidComposition": {
+          "Ice": 57.8559, 
+          "Metal": 3.7965, 
+          "Rock": 38.3476
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 108.082314, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:14Z", 
+          "meanAnomaly": "2026-03-01T08:01:14Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:14+00", 
+        "volcanismType": "Minor Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 148.366957, 
+        "ascendingNode": 72.299916, 
+        "atmosphereType": null, 
+        "axialTilt": -0.051393, 
+        "bodyId": 45, 
+        "distanceToArrival": 1654.522108, 
+        "earthMasses": 0.000205, 
+        "gravity": 0.0345712246354645, 
+        "id64": 1621295960444288194, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.130733, 
+          "Carbon": 20.307756, 
+          "Germanium": 4.177387, 
+          "Iron": 14.56107, 
+          "Manganese": 6.013573, 
+          "Nickel": 11.013382, 
+          "Niobium": 0.995172, 
+          "Phosphorus": 13.001375, 
+          "Selenium": 3.779699, 
+          "Sulphur": 24.150129, 
+          "Yttrium": 0.869715
+        }, 
+        "meanAnomaly": 354.176285, 
+        "name": "Truecho NE-P c22-0 5 c", 
+        "orbitalEccentricity": 0.00017, 
+        "orbitalInclination": 0.070871, 
+        "orbitalPeriod": 6.75489242981481, 
+        "parents": [
+          {
+            "Planet": 40
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 490.62171875, 
+        "rotationalPeriod": 6.60763181570602, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00308832196563314, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 57.8559, 
+          "Metal": 3.7965, 
+          "Rock": 38.3476
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 107.977295, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:16Z", 
+          "meanAnomaly": "2026-03-01T08:01:16Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:16+00"
+      }, 
+      {
+        "argOfPeriapsis": 149.501595, 
+        "ascendingNode": -88.600394, 
+        "atmosphereType": null, 
+        "axialTilt": -2.903719, 
+        "bodyId": 46, 
+        "distanceToArrival": 1653.546066, 
+        "earthMasses": 0.001832, 
+        "gravity": 0.0724932191291934, 
+        "id64": 1657324757463252162, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.153829, 
+          "Carbon": 20.633123, 
+          "Chromium": 6.682357, 
+          "Germanium": 4.258387, 
+          "Iron": 14.858492, 
+          "Nickel": 11.23834, 
+          "Phosphorus": 13.20968, 
+          "Sulphur": 24.537056, 
+          "Tungsten": 0.81588, 
+          "Yttrium": 0.88748, 
+          "Zirconium": 1.725377
+        }, 
+        "meanAnomaly": 54.362805, 
+        "name": "Truecho NE-P c22-0 5 d", 
+        "orbitalEccentricity": 0.004157, 
+        "orbitalInclination": 0.267997, 
+        "orbitalPeriod": 14.3416363883912, 
+        "parents": [
+          {
+            "Planet": 40
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1013.425125, 
+        "rotationalPeriod": -14.1554565362847, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0051016353546552, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 57.4759, 
+          "Metal": 3.8524, 
+          "Rock": 38.6717
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 107.903549, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:12Z", 
+          "meanAnomaly": "2026-03-01T08:01:12Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:12+00"
+      }, 
+      {
+        "argOfPeriapsis": 80.845336, 
+        "ascendingNode": 129.416307, 
+        "atmosphereType": null, 
+        "axialTilt": 3.082347, 
+        "bodyId": 47, 
+        "distanceToArrival": 1655.778305, 
+        "earthMasses": 0.000781, 
+        "gravity": 0.054695829509534, 
+        "id64": 1693353554482216130, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 20.740032, 
+          "Germanium": 4.325901, 
+          "Iron": 15.141336, 
+          "Molybdenum": 0.98872, 
+          "Nickel": 11.452271, 
+          "Niobium": 1.03483, 
+          "Phosphorus": 13.278125, 
+          "Sulphur": 24.664194, 
+          "Technetium": 0.541544, 
+          "Vanadium": 3.718185, 
+          "Zinc": 4.114848
+        }, 
+        "meanAnomaly": 11.37534, 
+        "name": "Truecho NE-P c22-0 5 e", 
+        "orbitalEccentricity": 0.00881, 
+        "orbitalInclination": 0.000904, 
+        "orbitalPeriod": 22.7744566897569, 
+        "parents": [
+          {
+            "Planet": 40
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 761.5945625, 
+        "rotationalPeriod": -22.5604912394792, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00694398815664157, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 56.2541, 
+          "Metal": 4.0323, 
+          "Rock": 39.7136
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 107.866852, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:17Z", 
+          "meanAnomaly": "2026-03-01T08:01:17Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:17+00"
+      }, 
+      {
+        "argOfPeriapsis": 145.126859, 
+        "ascendingNode": -41.078421, 
+        "atmosphereType": null, 
+        "axialTilt": -0.042916, 
+        "bodyId": 48, 
+        "distanceToArrival": 1652.505068, 
+        "earthMasses": 0.000474, 
+        "gravity": 0.045827062302437, 
+        "id64": 1729382351501180098, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.88517, 
+          "Carbon": 20.348215, 
+          "Chromium": 6.561643, 
+          "Iron": 14.590078, 
+          "Manganese": 6.025554, 
+          "Mercury": 0.637125, 
+          "Nickel": 11.035323, 
+          "Niobium": 0.997154, 
+          "Phosphorus": 13.027278, 
+          "Sulphur": 24.198242, 
+          "Zirconium": 1.694209
+        }, 
+        "meanAnomaly": 215.716507, 
+        "name": "Truecho NE-P c22-0 5 f", 
+        "orbitalEccentricity": 0.000925, 
+        "orbitalInclination": -1.042983, 
+        "orbitalPeriod": 35.3116204065278, 
+        "parents": [
+          {
+            "Planet": 40
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 648.1381875, 
+        "rotationalPeriod": 35.0725442509606, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00930226594671851, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 57.8559, 
+          "Metal": 3.7965, 
+          "Rock": 38.3476
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 107.836983, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:18Z", 
+          "meanAnomaly": "2026-03-01T08:01:18Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:18+00"
+      }, 
+      {
+        "argOfPeriapsis": 55.239595, 
+        "ascendingNode": 57.140393, 
+        "atmosphereComposition": {
+          "Helium": 26.509262, 
+          "Hydrogen": 73.490746
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 1.910221, 
+        "bodyId": 50, 
+        "distanceToArrival": 2799.836806, 
+        "earthMasses": 2957.534668, 
+        "gravity": 25.4192023044764, 
+        "id64": 1801439945539108034, 
+        "isLandable": false, 
+        "meanAnomaly": 311.627298, 
+        "name": "Truecho NE-P c22-0 6", 
+        "orbitalEccentricity": 0.001362, 
+        "orbitalInclination": -0.875237, 
+        "orbitalPeriod": 5199.37670065297, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 68765.496, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1837468742558072002, 
+            "innerRadius": 114760000.0, 
+            "mass": 341560000000.0, 
+            "name": "Truecho NE-P c22-0 6 A Ring", 
+            "outerRadius": 175840000.0, 
+            "signals": {
+              "signals": {
+                "Platinum": 1
+              }, 
+              "updateTime": "2026-03-01 08:12:51+00"
+            }, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "id64": 1873497539577035970, 
+            "innerRadius": 175940000.0, 
+            "mass": 4210700000000.0, 
+            "name": "Truecho NE-P c22-0 6 B Ring", 
+            "outerRadius": 499710000.0, 
+            "signals": {
+              "signals": {
+                "Monazite": 6, 
+                "Painite": 2, 
+                "Platinum": 1, 
+                "Rhodplumsite": 5, 
+                "Serendibite": 3
+              }, 
+              "updateTime": "2026-03-01 08:12:50+00"
+            }, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 0.55999028849537, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.61591537457029, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 748.97522, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:13:19Z", 
+          "meanAnomaly": "2026-03-01T08:13:19Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:13:19+00"
+      }, 
+      {
+        "argOfPeriapsis": 151.775672, 
+        "ascendingNode": 10.257875, 
+        "atmosphereType": null, 
+        "axialTilt": 0.103599, 
+        "bodyId": 53, 
+        "distanceToArrival": 2801.543415, 
+        "earthMasses": 0.003713, 
+        "gravity": 0.0995806056898134, 
+        "id64": 1909526336595999938, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 19.323729, 
+          "Iron": 15.752256, 
+          "Manganese": 6.505521, 
+          "Molybdenum": 1.028613, 
+          "Nickel": 11.914347, 
+          "Niobium": 1.076583, 
+          "Phosphorus": 12.371384, 
+          "Selenium": 3.596551, 
+          "Sulphur": 22.979916, 
+          "Tellurium": 1.170223, 
+          "Zinc": 4.280873
+        }, 
+        "meanAnomaly": 214.225424, 
+        "name": "Truecho NE-P c22-0 6 a", 
+        "orbitalEccentricity": 0.000484, 
+        "orbitalInclination": -0.000102, 
+        "orbitalPeriod": 1.65108004929398, 
+        "parents": [
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1231.05075, 
+        "rotationalPeriod": 1.6511381890162, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00566198775128375, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:48+00"
+        }, 
+        "solidComposition": {
+          "Ice": 42.836, 
+          "Metal": 5.1554, 
+          "Rock": 52.0086
+        }, 
+        "stations": [], 
+        "subType": "Rocky Ice world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 188.044174, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:48Z", 
+          "meanAnomaly": "2026-03-01T08:01:48Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:48+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 1.425816, 
+        "ascendingNode": -138.895059, 
+        "atmosphereType": null, 
+        "axialTilt": -0.082931, 
+        "bodyId": 54, 
+        "distanceToArrival": 2802.441833, 
+        "earthMasses": 0.003305, 
+        "gravity": 0.0957078617314163, 
+        "id64": 1945555133614963906, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.94904, 
+          "Cadmium": 1.214985, 
+          "Carbon": 19.193417, 
+          "Chromium": 7.036539, 
+          "Germanium": 4.487731, 
+          "Iron": 15.646029, 
+          "Mercury": 0.683236, 
+          "Nickel": 11.834, 
+          "Phosphorus": 12.287955, 
+          "Sulphur": 22.824945, 
+          "Vanadium": 3.84212
+        }, 
+        "meanAnomaly": 223.480651, 
+        "name": "Truecho NE-P c22-0 6 b", 
+        "orbitalEccentricity": 0.000737, 
+        "orbitalInclination": -0.006197, 
+        "orbitalPeriod": 2.68128210747685, 
+        "parents": [
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1184.6425, 
+        "rotationalPeriod": 2.68137625767361, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00782261376589337, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-03-01 08:01:46+00"
+        }, 
+        "solidComposition": {
+          "Ice": 42.836, 
+          "Metal": 5.1554, 
+          "Rock": 52.0086
+        }, 
+        "stations": [], 
+        "subType": "Rocky Ice world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 172.323288, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:46Z", 
+          "meanAnomaly": "2026-03-01T08:01:46Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:46+00", 
+        "volcanismType": "Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 217.821293, 
+        "ascendingNode": 104.883784, 
+        "atmosphereType": null, 
+        "axialTilt": -0.014564, 
+        "bodyId": 55, 
+        "distanceToArrival": 2799.857862, 
+        "earthMasses": 0.003803, 
+        "gravity": 0.100395023962476, 
+        "id64": 1981583930633927874, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.124658, 
+          "Carbon": 20.318865, 
+          "Iron": 16.563467, 
+          "Molybdenum": 1.081585, 
+          "Nickel": 12.527913, 
+          "Niobium": 1.132025, 
+          "Phosphorus": 13.008486, 
+          "Selenium": 3.781767, 
+          "Sulphur": 24.163338, 
+          "Tellurium": 1.230487, 
+          "Vanadium": 4.067411
+        }, 
+        "meanAnomaly": 253.570214, 
+        "name": "Truecho NE-P c22-0 6 c", 
+        "orbitalEccentricity": 8e-06, 
+        "orbitalInclination": -0.001832, 
+        "orbitalPeriod": 4.19850578462963, 
+        "parents": [
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1240.794625, 
+        "rotationalPeriod": 4.19865378340278, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0105484028504229, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 42.836, 
+          "Metal": 5.1554, 
+          "Rock": 52.0086
+        }, 
+        "stations": [], 
+        "subType": "Rocky Ice world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 159.880096, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:44Z", 
+          "meanAnomaly": "2026-03-01T08:01:44Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:44+00"
+      }, 
+      {
+        "argOfPeriapsis": 352.463214, 
+        "ascendingNode": -93.73588, 
+        "atmosphereComposition": {
+          "Argon": 12.485979, 
+          "Nitrogen": 87.51403
+        }, 
+        "atmosphereType": "Argon-rich", 
+        "axialTilt": 0.212456, 
+        "bodyId": 57, 
+        "distanceToArrival": 2737.474191, 
+        "earthMasses": 0.111589, 
+        "gravity": 0.260061384725196, 
+        "id64": 2053641524671855810, 
+        "isLandable": false, 
+        "meanAnomaly": 75.016568, 
+        "name": "Truecho NE-P c22-0 6 d", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": -83.717895, 
+        "orbitalPeriod": 271.222354085359, 
+        "parents": [
+          {
+            "Planet": 50
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 4175.998, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 6890400.0, 
+            "mass": 1897.8, 
+            "name": "Truecho NE-P c22-0 6 d A Ring", 
+            "outerRadius": 17525000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 2.6904132709838, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.16982717822404, 
+        "solidComposition": {
+          "Ice": 87.8546, 
+          "Metal": 1.7063, 
+          "Rock": 10.4391
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.275502694764372, 
+        "surfaceTemperature": 103.457077, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:01:42Z", 
+          "meanAnomaly": "2026-03-01T08:01:42Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:01:42+00"
+      }, 
+      {
+        "argOfPeriapsis": 355.23958, 
+        "ascendingNode": 57.140393, 
+        "atmosphereComposition": {
+          "Ammonia": 33.215481, 
+          "Methane": 33.215481, 
+          "Nitrogen": 33.215481
+        }, 
+        "atmosphereType": "Hot thick Methane-rich", 
+        "axialTilt": -0.048386, 
+        "bodyId": 68, 
+        "distanceToArrival": 2799.836798, 
+        "earthMasses": 14.027763, 
+        "gravity": 2.19709788926277, 
+        "id64": 2449958291880459458, 
+        "isLandable": false, 
+        "meanAnomaly": 311.627451, 
+        "name": "Truecho NE-P c22-0 7", 
+        "orbitalEccentricity": 0.001362, 
+        "orbitalInclination": -0.875237, 
+        "orbitalPeriod": 5199.37670065297, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 16108.538, 
+        "rotationalPeriod": 1.29684679043981, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.61591537457029, 
+        "solidComposition": {
+          "Ice": 68.4058, 
+          "Metal": 10.461, 
+          "Rock": 21.1332
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 57552.660528004, 
+        "surfaceTemperature": 547.880981, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-01T08:16:30Z", 
+          "meanAnomaly": "2026-03-01T08:16:30Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-01 08:16:30+00", 
+        "volcanismType": "Water Geysers"
+      }
+    ], 
+    "bodyCount": 28, 
+    "coords": {
+      "x": 6399.65625, 
+      "y": 1158.59375, 
+      "z": 53657.6875
+    }, 
+    "date": "2026-03-01 08:02:09+00", 
+    "government": "None", 
+    "id64": 94590909634, 
+    "name": "Truecho NE-P c22-0", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "region": {
+      "name": "Formorian Frontier", 
+      "region": 24
+    }, 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}

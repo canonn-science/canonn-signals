@@ -1,0 +1,2400 @@
+{
+  "system": {
+    "allegiance": "Independent", 
+    "bodies": [
+      {
+        "absoluteMagnitude": 4.09024, 
+        "age": 350, 
+        "axialTilt": 0.0, 
+        "bodyId": 0, 
+        "distanceToArrival": 0.0, 
+        "id64": 594592926107, 
+        "luminosity": "Vb", 
+        "mainStar": true, 
+        "name": "Pipe (stem) Sector DL-Y d17", 
+        "rotationalPeriod": 5.45933544724537, 
+        "rotationalPeriodTidallyLocked": false, 
+        "solarMasses": 1.167969, 
+        "solarRadius": 1.17910756578001, 
+        "spectralClass": "F7", 
+        "stations": [], 
+        "subType": "F (White) Star", 
+        "surfaceTemperature": 6309.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-09T04:16:52Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-20 13:39:23+00"
+      }, 
+      {
+        "argOfPeriapsis": 184.44918, 
+        "ascendingNode": -59.420293, 
+        "atmosphereType": null, 
+        "axialTilt": 0.132454, 
+        "bodyId": 1, 
+        "distanceToArrival": 35.571579, 
+        "earthMasses": 0.747352, 
+        "gravity": 0.840861323544407, 
+        "id64": 36029391611890075, 
+        "isLandable": true, 
+        "materials": {
+          "Iron": 35.021702, 
+          "Manganese": 14.463607, 
+          "Mercury": 1.52934, 
+          "Molybdenum": 2.286897, 
+          "Nickel": 26.488949, 
+          "Vanadium": 8.600111, 
+          "Yttrium": 2.091805, 
+          "Zinc": 9.517588
+        }, 
+        "meanAnomaly": 180.989846, 
+        "name": "Pipe (stem) Sector DL-Y d17 1", 
+        "orbitalEccentricity": 2.1e-05, 
+        "orbitalInclination": 0.001838, 
+        "orbitalPeriod": 6.33506269918981, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 6010.175, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 72058188630854043, 
+            "innerRadius": 10590000.0, 
+            "mass": 5296900000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 1 A Ring", 
+            "outerRadius": 14774000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 6.4316404615625, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0712835719061062, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-04-20 16:54:44+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 90.0932, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 1110.645142, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-20T13:39:30Z", 
+          "meanAnomaly": "2026-06-20T13:39:30Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-20 13:39:30+00", 
+        "volcanismType": "Major Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 95.312022, 
+        "ascendingNode": 83.003242, 
+        "atmosphereType": null, 
+        "axialTilt": 0.064125, 
+        "bodyId": 4, 
+        "distanceToArrival": 63.787871, 
+        "earthMasses": 4.759674, 
+        "gravity": 1.72926736004894, 
+        "id64": 144115782668781979, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.686906, 
+          "Carbon": 12.854026, 
+          "Chromium": 9.769653, 
+          "Iron": 21.723221, 
+          "Nickel": 16.430532, 
+          "Niobium": 1.484666, 
+          "Phosphorus": 8.229368, 
+          "Sulphur": 15.2861, 
+          "Vanadium": 5.334467, 
+          "Yttrium": 1.297502, 
+          "Zinc": 5.903558
+        }, 
+        "meanAnomaly": 135.340819, 
+        "name": "Pipe (stem) Sector DL-Y d17 2", 
+        "orbitalEccentricity": 0.000334, 
+        "orbitalInclination": 0.026354, 
+        "orbitalPeriod": 15.2076511747338, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 10576.552, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 180144579687745947, 
+            "innerRadius": 20365000.0, 
+            "mass": 2109600000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 2 A Ring", 
+            "outerRadius": 24062000.0, 
+            "signals": {
+              "signals": {
+                "Platinum": 1
+              }, 
+              "updateTime": "2025-03-22 22:13:36+00"
+            }, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "id64": 216173376706709915, 
+            "innerRadius": 24162000.0, 
+            "mass": 36609000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 2 B Ring", 
+            "outerRadius": 58560000.0, 
+            "signals": {
+              "signals": {
+                "Monazite": 2, 
+                "Painite": 8, 
+                "Platinum": 6, 
+                "Rhodplumsite": 4, 
+                "Serendibite": 3
+              }, 
+              "updateTime": "2025-03-22 22:13:44+00"
+            }, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 15.4394897293056, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.127799823117554, 
+        "signals": {
+          "genuses": [], 
+          "geology": [
+            "Silicate Vapour Fumarole", 
+            "Silicate Vapour Gas Vent"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:52:20+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0849, 
+          "Metal": 31.7355, 
+          "Rock": 63.5918
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 829.478088, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:52:20Z", 
+          "meanAnomaly": "2026-04-20T16:52:20Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:52:20+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 245.088388, 
+        "ascendingNode": 50.754364, 
+        "atmosphereType": null, 
+        "axialTilt": 1.680643, 
+        "bodyId": 7, 
+        "distanceToArrival": 101.247857, 
+        "earthMasses": 12.829909, 
+        "gravity": 3.51192454369328, 
+        "id64": 252202173725673883, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.98272, 
+          "Cadmium": 1.730912, 
+          "Carbon": 13.166603, 
+          "Germanium": 4.646997, 
+          "Iron": 22.2899, 
+          "Manganese": 9.2055, 
+          "Mercury": 0.973363, 
+          "Nickel": 16.859146, 
+          "Phosphorus": 8.429485, 
+          "Sulphur": 15.65782, 
+          "Zinc": 6.05756
+        }, 
+        "meanAnomaly": 231.415728, 
+        "name": "Pipe (stem) Sector DL-Y d17 3", 
+        "orbitalEccentricity": 0.000147, 
+        "orbitalInclination": 0.000123, 
+        "orbitalPeriod": 30.4178672808218, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 12185.008, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 288230970744637851, 
+            "innerRadius": 38312000.0, 
+            "mass": 109090000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 3 A Ring", 
+            "outerRadius": 95228000.0, 
+            "signals": {
+              "signals": {
+                "Monazite": 2, 
+                "Platinum": 1, 
+                "Rhodplumsite": 2, 
+                "Serendibite": 1
+              }, 
+              "updateTime": "2025-03-22 22:18:31+00"
+            }, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": -30.8815848739005, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.202881002037814, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:52:00+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.2972, 
+          "Rock": 66.7028
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 658.338623, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:52:01Z", 
+          "meanAnomaly": "2026-04-20T16:52:01Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:52:01+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 14.375612, 
+        "ascendingNode": 89.666836, 
+        "atmosphereType": null, 
+        "axialTilt": 0.242857, 
+        "bodyId": 9, 
+        "distanceToArrival": 101.48853, 
+        "earthMasses": 0.000958, 
+        "gravity": 0.0809551340878964, 
+        "id64": 324259767763601819, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.898676, 
+          "Chromium": 8.775134, 
+          "Iron": 19.511868, 
+          "Nickel": 14.757958, 
+          "Niobium": 1.333532, 
+          "Phosphorus": 10.178605, 
+          "Ruthenium": 1.204982, 
+          "Selenium": 2.959077, 
+          "Sulphur": 18.90682, 
+          "Tin": 1.17076, 
+          "Zinc": 5.302595
+        }, 
+        "meanAnomaly": 213.343487, 
+        "name": "Pipe (stem) Sector DL-Y d17 3 a", 
+        "orbitalEccentricity": 4.5e-05, 
+        "orbitalInclination": 0.006184, 
+        "orbitalPeriod": 3.97505473207176, 
+        "parents": [
+          {
+            "Planet": 7
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 693.616375, 
+        "rotationalPeriod": 3.97527248494213, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00165878146960724, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 658.338623, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:52:06Z", 
+          "meanAnomaly": "2026-04-20T16:52:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:52:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 98.707056, 
+        "ascendingNode": 44.391691, 
+        "atmosphereType": null, 
+        "axialTilt": -0.257932, 
+        "bodyId": 11, 
+        "distanceToArrival": 131.038598, 
+        "earthMasses": 1.799747, 
+        "gravity": 1.35718211481595, 
+        "id64": 396317361801529755, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.645345, 
+          "Carbon": 12.520127, 
+          "Chromium": 9.528953, 
+          "Iron": 21.188013, 
+          "Manganese": 8.750434, 
+          "Mercury": 0.925246, 
+          "Nickel": 16.025724, 
+          "Phosphorus": 8.0156, 
+          "Ruthenium": 1.308495, 
+          "Sulphur": 14.889023, 
+          "Vanadium": 5.203038
+        }, 
+        "meanAnomaly": 90.089546, 
+        "name": "Pipe (stem) Sector DL-Y d17 4", 
+        "orbitalEccentricity": 9.8e-05, 
+        "orbitalInclination": -0.00085, 
+        "orbitalPeriod": 44.7928201821065, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 7341.3055, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 432346158820493723, 
+            "innerRadius": 14549000.0, 
+            "mass": 1061100000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 4 A Ring", 
+            "outerRadius": 16938000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 468374955839457691, 
+            "innerRadius": 17038000.0, 
+            "mass": 21251000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 4 B Ring", 
+            "outerRadius": 42346000.0, 
+            "signals": {
+              "signals": {
+                "Painite": 1
+              }, 
+              "updateTime": "2025-03-22 22:23:55+00"
+            }, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 45.4756820655556, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.262599841256186, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:52:15+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0124, 
+          "Metal": 33.0623, 
+          "Rock": 66.2671
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 578.659119, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:52:15Z", 
+          "meanAnomaly": "2026-04-20T16:52:15Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:52:15+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 326.211054, 
+        "ascendingNode": -26.329819, 
+        "bodyId": 21, 
+        "id64": 756605331991169435, 
+        "meanAnomaly": 194.9509, 
+        "name": "Pipe (stem) Sector DL-Y d17 barycentre 21", 
+        "orbitalEccentricity": 0.000973, 
+        "orbitalInclination": 0.043373, 
+        "orbitalPeriod": 75.0902991879861, 
+        "semiMajorAxis": 0.370576650373889, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-04-20T16:55:56Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-04-20 16:55:56+00"
+      }, 
+      {
+        "argOfPeriapsis": 48.654504, 
+        "ascendingNode": -159.923299, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 95.806847, 
+          "Nitrogen": 3.191737, 
+          "Sulphur dioxide": 0.958068
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide", 
+        "axialTilt": 0.513899, 
+        "bodyId": 22, 
+        "distanceToArrival": 184.627378, 
+        "earthMasses": 6.717751, 
+        "gravity": 2.53724839400428, 
+        "id64": 792634129010133403, 
+        "isLandable": false, 
+        "meanAnomaly": 228.412345, 
+        "name": "Pipe (stem) Sector DL-Y d17 5", 
+        "orbitalEccentricity": 0.045125, 
+        "orbitalInclination": -6.970556, 
+        "orbitalPeriod": 50.7146126970139, 
+        "parents": [
+          {
+            "Null": 21
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 10373.303, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 828662926029097371, 
+            "innerRadius": 54925000.0, 
+            "mass": 134470000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 5 A Ring", 
+            "outerRadius": 88827000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 3, 
+                "Benitoite": 1, 
+                "Monazite": 3, 
+                "Musgravite": 5, 
+                "Serendibite": 4
+              }, 
+              "updateTime": "2025-03-22 22:29:01+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.06847765728009, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00116549075114866, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.361, 
+          "Rock": 66.639
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 907.277532691833, 
+        "surfaceTemperature": 1846.257568, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:56:07Z", 
+          "meanAnomaly": "2026-04-20T16:56:07Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:56:07+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 21.306427, 
+        "ascendingNode": 111.956834, 
+        "bodyId": 24, 
+        "id64": 864691723048061339, 
+        "meanAnomaly": 150.499626, 
+        "name": "Pipe (stem) Sector DL-Y d17 barycentre 24", 
+        "orbitalEccentricity": 0.000393, 
+        "orbitalInclination": 1.913925, 
+        "orbitalPeriod": 3.9225652537963, 
+        "semiMajorAxis": 0.00132532072951554, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-04-20T16:56:02Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-04-20 16:56:02+00"
+      }, 
+      {
+        "argOfPeriapsis": 287.938038, 
+        "ascendingNode": -8.381315, 
+        "atmosphereType": null, 
+        "axialTilt": -0.491022, 
+        "bodyId": 25, 
+        "distanceToArrival": 184.865327, 
+        "earthMasses": 0.000882, 
+        "gravity": 0.0787062302437035, 
+        "id64": 900720520067025307, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.614455, 
+          "Carbon": 16.564093, 
+          "Iron": 20.328508, 
+          "Manganese": 8.395466, 
+          "Nickel": 15.375632, 
+          "Niobium": 1.389345, 
+          "Phosphorus": 10.604616, 
+          "Selenium": 3.082925, 
+          "Sulphur": 19.698137, 
+          "Technetium": 0.727069, 
+          "Tin": 1.21976
+        }, 
+        "meanAnomaly": 273.550145, 
+        "name": "Pipe (stem) Sector DL-Y d17 5 a", 
+        "orbitalEccentricity": 0.047447, 
+        "orbitalInclination": 3.896579, 
+        "orbitalPeriod": 0.386992441840278, 
+        "parents": [
+          {
+            "Null": 24
+          }, 
+          {
+            "Planet": 22
+          }, 
+          {
+            "Null": 21
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 674.710375, 
+        "rotationalPeriod": 0.554252821701389, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 8.75906267999441e-06, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:56:03+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 487.114441, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:56:04Z", 
+          "meanAnomaly": "2026-04-20T16:56:04Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:56:04+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 107.938043, 
+        "ascendingNode": -8.381315, 
+        "atmosphereType": null, 
+        "axialTilt": -0.157214, 
+        "bodyId": 26, 
+        "distanceToArrival": 184.870642, 
+        "earthMasses": 0.000839, 
+        "gravity": 0.0773906393392475, 
+        "id64": 936749317085989275, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.271423, 
+          "Arsenic": 2.688732, 
+          "Carbon": 17.034676, 
+          "Germanium": 6.012187, 
+          "Iron": 20.906036, 
+          "Nickel": 15.81245, 
+          "Niobium": 1.428816, 
+          "Phosphorus": 10.905891, 
+          "Sulphur": 20.257757, 
+          "Tin": 1.254413, 
+          "Zirconium": 2.427622
+        }, 
+        "meanAnomaly": 273.529544, 
+        "name": "Pipe (stem) Sector DL-Y d17 5 b", 
+        "orbitalEccentricity": 0.047447, 
+        "orbitalInclination": 3.896579, 
+        "orbitalPeriod": 0.386992441840278, 
+        "parents": [
+          {
+            "Null": 24
+          }, 
+          {
+            "Planet": 22
+          }, 
+          {
+            "Null": 21
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 663.6396875, 
+        "rotationalPeriod": 0.180194333356481, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 9.20764700751854e-06, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:56:01+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 487.114441, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:56:02Z", 
+          "meanAnomaly": "2026-04-20T16:56:02Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:56:02+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 228.654478, 
+        "ascendingNode": -159.923299, 
+        "atmosphereType": null, 
+        "axialTilt": -0.182649, 
+        "bodyId": 27, 
+        "distanceToArrival": 187.724504, 
+        "earthMasses": 1.196757, 
+        "gravity": 1.18418089120016, 
+        "id64": 972778114104953243, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.988569, 
+          "Cadmium": 1.740976, 
+          "Carbon": 13.244963, 
+          "Germanium": 4.674653, 
+          "Iron": 22.419508, 
+          "Manganese": 9.259027, 
+          "Mercury": 0.979023, 
+          "Nickel": 16.957176, 
+          "Phosphorus": 8.479652, 
+          "Sulphur": 15.751004, 
+          "Vanadium": 5.505451
+        }, 
+        "meanAnomaly": 228.411407, 
+        "name": "Pipe (stem) Sector DL-Y d17 6", 
+        "orbitalEccentricity": 0.045125, 
+        "orbitalInclination": -6.970556, 
+        "orbitalPeriod": 50.7146126970139, 
+        "parents": [
+          {
+            "Null": 21
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 6408.856, 
+        "rotationalPeriod": 75.5799436529398, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00654508715919812, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:55:56+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.2839, 
+          "Rock": 66.7161
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 487.114441, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:56Z", 
+          "meanAnomaly": "2026-04-20T16:55:56Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:56+00", 
+        "volcanismType": "Minor Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 289.084058, 
+        "ascendingNode": 139.017227, 
+        "bodyId": 28, 
+        "id64": 1008806911123917211, 
+        "meanAnomaly": 193.536624, 
+        "name": "Pipe (stem) Sector DL-Y d17 barycentre 28", 
+        "orbitalEccentricity": 0.000909, 
+        "orbitalInclination": 0.070111, 
+        "orbitalPeriod": 1515.72493767296, 
+        "semiMajorAxis": 2.74727686481283, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-04-20T16:52:53Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-04-20 16:52:53+00"
+      }, 
+      {
+        "argOfPeriapsis": 238.27033, 
+        "ascendingNode": -173.937252, 
+        "atmosphereComposition": {
+          "Helium": 27.750433, 
+          "Hydrogen": 72.249573
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.755191, 
+        "bodyId": 29, 
+        "distanceToArrival": 1372.092972, 
+        "earthMasses": 1717.265259, 
+        "gravity": 12.7916906291424, 
+        "id64": 1044835708142881179, 
+        "isLandable": false, 
+        "meanAnomaly": 29.761585, 
+        "name": "Pipe (stem) Sector DL-Y d17 7", 
+        "orbitalEccentricity": 0.01499, 
+        "orbitalInclination": -8.245811, 
+        "orbitalPeriod": 113.53145525963, 
+        "parents": [
+          {
+            "Null": 28
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 73865.456, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1080864505161845147, 
+            "innerRadius": 146220000.0, 
+            "mass": 4747100000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 7 A Ring", 
+            "outerRadius": 416890000.0, 
+            "signals": {
+              "signals": {
+                "Musgravite": 1
+              }, 
+              "updateTime": "2025-03-22 22:38:02+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 0.509422251527778, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 6.87926679094303e-05, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 507.687012, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:53:02Z", 
+          "meanAnomaly": "2026-04-20T16:53:02Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:53:02+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 208.123514, 
+        "ascendingNode": -167.666466, 
+        "atmosphereComposition": {
+          "Water": 100.0
+        }, 
+        "atmosphereType": "Hot thick Water", 
+        "axialTilt": 0.271999, 
+        "bodyId": 31, 
+        "distanceToArrival": 1370.681037, 
+        "earthMasses": 0.004308, 
+        "gravity": 0.13481084939329, 
+        "id64": 1116893302180809115, 
+        "isLandable": false, 
+        "meanAnomaly": 108.483884, 
+        "name": "Pipe (stem) Sector DL-Y d17 7 a", 
+        "orbitalEccentricity": 0.004719, 
+        "orbitalInclination": 0.525727, 
+        "orbitalPeriod": 1.14384065209491, 
+        "parents": [
+          {
+            "Planet": 29
+          }, 
+          {
+            "Null": 28
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1139.6695, 
+        "rotationalPeriod": 1.14384650239583, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00369823366032488, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 62.2788452997779, 
+        "surfaceTemperature": 917.390503, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:54:34Z", 
+          "meanAnomaly": "2026-04-20T16:54:34Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:54:34+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 141.742749, 
+        "ascendingNode": 153.085088, 
+        "atmosphereType": null, 
+        "axialTilt": 0.076701, 
+        "bodyId": 32, 
+        "distanceToArrival": 1373.632429, 
+        "earthMasses": 0.009237, 
+        "gravity": 0.17505312531865, 
+        "id64": 1152922099199773083, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.647881, 
+          "Germanium": 5.522734, 
+          "Iron": 19.204075, 
+          "Manganese": 7.931087, 
+          "Mercury": 0.83861, 
+          "Nickel": 14.525157, 
+          "Phosphorus": 10.018042, 
+          "Sulphur": 18.608572, 
+          "Tellurium": 1.430399, 
+          "Tungsten": 1.054497, 
+          "Zinc": 5.218949
+        }, 
+        "meanAnomaly": 258.467387, 
+        "name": "Pipe (stem) Sector DL-Y d17 7 b", 
+        "orbitalEccentricity": 0.010207, 
+        "orbitalInclination": 2.206636, 
+        "orbitalPeriod": 6.44631642434028, 
+        "parents": [
+          {
+            "Planet": 29
+          }, 
+          {
+            "Null": 28
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1464.395375, 
+        "rotationalPeriod": 6.4463495924537, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0117118383276684, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ]
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 222.227173, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:54:37Z", 
+          "meanAnomaly": "2026-04-20T16:54:37Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:54:37+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 58.270335, 
+        "ascendingNode": -173.937252, 
+        "atmosphereComposition": {
+          "Argon": 0.66455, 
+          "Nitrogen": 99.335449
+        }, 
+        "atmosphereType": "Thin Argon-rich", 
+        "axialTilt": -0.247625, 
+        "bodyId": 33, 
+        "distanceToArrival": 1398.977801, 
+        "earthMasses": 1.490987, 
+        "gravity": 1.29649199551341, 
+        "id64": 1188950896218737051, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 13.360222, 
+          "Iron": 22.614603, 
+          "Manganese": 9.3396, 
+          "Nickel": 17.104738, 
+          "Niobium": 1.545587, 
+          "Phosphorus": 8.553443, 
+          "Sulphur": 15.888069, 
+          "Tin": 1.47117, 
+          "Yttrium": 1.350743, 
+          "Zinc": 6.145802, 
+          "Zirconium": 2.626021
+        }, 
+        "meanAnomaly": 29.76122, 
+        "name": "Pipe (stem) Sector DL-Y d17 8", 
+        "orbitalEccentricity": 0.01499, 
+        "orbitalInclination": -8.245811, 
+        "orbitalPeriod": 113.53145525963, 
+        "parents": [
+          {
+            "Null": 28
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 6836.5745, 
+        "rotationalPeriod": 0.664110165729167, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0792337414273568, 
+        "signals": {
+          "genuses": [], 
+          "guesses": [
+            "Bark Mounds", 
+            "Rubeum Bioluminescent Anemone", 
+            "Roseum Brain Tree", 
+            "Ostrinum Brain Tree"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:52:52+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.2839, 
+          "Rock": 66.7161
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0830379406464347, 
+        "surfaceTemperature": 196.908173, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:52:53Z", 
+          "meanAnomaly": "2026-04-20T16:52:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:52:53+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 135.846247, 
+        "ascendingNode": -148.301524, 
+        "bodyId": 34, 
+        "id64": 1224979693237701019, 
+        "meanAnomaly": 271.037909, 
+        "name": "Pipe (stem) Sector DL-Y d17 barycentre 34", 
+        "orbitalEccentricity": 0.008643, 
+        "orbitalInclination": 1.524535, 
+        "orbitalPeriod": 2239.87114926179, 
+        "semiMajorAxis": 3.56427210739919, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-04-20T16:51:31Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-04-20 16:51:31+00"
+      }, 
+      {
+        "argOfPeriapsis": 79.352786, 
+        "ascendingNode": 51.708142, 
+        "atmosphereComposition": {
+          "Helium": 27.750433, 
+          "Hydrogen": 72.249573
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.433082, 
+        "bodyId": 35, 
+        "distanceToArrival": 1778.518344, 
+        "earthMasses": 1786.80481, 
+        "gravity": 13.6461833384317, 
+        "id64": 1261008490256664987, 
+        "isLandable": false, 
+        "meanAnomaly": 41.666589, 
+        "name": "Pipe (stem) Sector DL-Y d17 9", 
+        "orbitalEccentricity": 0.066595, 
+        "orbitalInclination": 8.237966, 
+        "orbitalPeriod": 163.45804626191, 
+        "parents": [
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 72949.048, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1297037287275628955, 
+            "innerRadius": 126690000.0, 
+            "mass": 297700000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 9 A Ring", 
+            "outerRadius": 181310000.0, 
+            "signals": {
+              "signals": {
+                "Monazite": 1
+              }, 
+              "updateTime": "2021-11-23 19:08:45+00"
+            }, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 1333066084294592923, 
+            "innerRadius": 181410000.0, 
+            "mass": 2576000000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 9 B Ring", 
+            "outerRadius": 422440000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 7, 
+                "Benitoite": 4, 
+                "Monazite": 6, 
+                "Musgravite": 4, 
+                "Serendibite": 4
+              }, 
+              "updateTime": "2021-11-23 19:08:45+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.70195177986111, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000159476795898306, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 503.259979, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:51:31Z", 
+          "meanAnomaly": "2026-04-20T16:51:31Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:51:31+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 258.310535, 
+        "ascendingNode": 34.952281, 
+        "atmosphereComposition": {
+          "Oxygen": 2.999999, 
+          "Silicates": 5.0, 
+          "Sulphur dioxide": 90.0
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 1.011528, 
+        "bodyId": 38, 
+        "distanceToArrival": 1778.468196, 
+        "earthMasses": 0.007346, 
+        "gravity": 0.161944937289691, 
+        "id64": 1369094881313556891, 
+        "isLandable": false, 
+        "meanAnomaly": 238.66763, 
+        "name": "Pipe (stem) Sector DL-Y d17 9 a", 
+        "orbitalEccentricity": 9.5e-05, 
+        "orbitalInclination": -1.357349, 
+        "orbitalPeriod": 1.69560768538194, 
+        "parents": [
+          {
+            "Planet": 35
+          }, 
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1357.736375, 
+        "rotationalPeriod": 1.69562403916667, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00487209185132148, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.244, 
+          "Rock": 90.756
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 227.231018, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:51:40Z", 
+          "meanAnomaly": "2026-04-20T16:51:40Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:51:40+00", 
+        "volcanismType": "Major Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 248.454299, 
+        "ascendingNode": 14.570026, 
+        "atmosphereType": null, 
+        "axialTilt": -0.067289, 
+        "bodyId": 39, 
+        "distanceToArrival": 1774.631796, 
+        "earthMasses": 0.010059, 
+        "gravity": 0.180269195472622, 
+        "id64": 1405123678332520859, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.567986, 
+          "Germanium": 5.494536, 
+          "Iron": 19.106024, 
+          "Manganese": 7.890593, 
+          "Molybdenum": 1.247612, 
+          "Nickel": 14.450995, 
+          "Phosphorus": 9.966892, 
+          "Sulphur": 18.513561, 
+          "Tellurium": 1.423096, 
+          "Tin": 1.146408, 
+          "Zinc": 5.192302
+        }, 
+        "meanAnomaly": 93.473567, 
+        "name": "Pipe (stem) Sector DL-Y d17 9 b", 
+        "orbitalEccentricity": 0.010417, 
+        "orbitalInclination": -0.267026, 
+        "orbitalPeriod": 4.41653302145833, 
+        "parents": [
+          {
+            "Planet": 35
+          }, 
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1505.94325, 
+        "rotationalPeriod": 4.4165757600463, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00922329783223085, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ]
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 208.062576, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:51:54Z", 
+          "meanAnomaly": "2026-04-20T16:51:54Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:51:54+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 10.973344, 
+        "ascendingNode": 71.494339, 
+        "atmosphereType": null, 
+        "axialTilt": -2.957158, 
+        "bodyId": 40, 
+        "distanceToArrival": 1773.348127, 
+        "earthMasses": 0.008576, 
+        "gravity": 0.170863566840012, 
+        "id64": 1441152475351484827, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.048308, 
+          "Chromium": 8.348125, 
+          "Iron": 18.562393, 
+          "Manganese": 7.666079, 
+          "Nickel": 14.039818, 
+          "Niobium": 1.268641, 
+          "Phosphorus": 9.634186, 
+          "Sulphur": 17.895555, 
+          "Tellurium": 1.375591, 
+          "Tin": 1.116735, 
+          "Zinc": 5.044564
+        }, 
+        "meanAnomaly": 339.677613, 
+        "name": "Pipe (stem) Sector DL-Y d17 9 c", 
+        "orbitalEccentricity": 0.000424, 
+        "orbitalInclination": 0.385196, 
+        "orbitalPeriod": 8.74768632153935, 
+        "parents": [
+          {
+            "Planet": 35
+          }, 
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1428.24775, 
+        "rotationalPeriod": -8.74777161920139, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0145465735835384, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.3307, 
+          "Rock": 90.6693
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 197.673782, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:51:44Z", 
+          "meanAnomaly": "2026-04-20T16:51:44Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:51:44+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 346.765924, 
+        "ascendingNode": -60.296866, 
+        "atmosphereType": null, 
+        "axialTilt": -0.435697, 
+        "bodyId": 41, 
+        "distanceToArrival": 1773.338055, 
+        "earthMasses": 0.000376, 
+        "gravity": 0.0574004282655246, 
+        "id64": 1477181272370448795, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.328879, 
+          "Carbon": 16.108046, 
+          "Chromium": 7.696153, 
+          "Germanium": 5.685144, 
+          "Iron": 17.112709, 
+          "Manganese": 7.067374, 
+          "Molybdenum": 1.11745, 
+          "Nickel": 12.943336, 
+          "Phosphorus": 10.312648, 
+          "Sulphur": 19.155802, 
+          "Tellurium": 1.472464
+        }, 
+        "meanAnomaly": 281.554274, 
+        "name": "Pipe (stem) Sector DL-Y d17 9 c a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 5.857946, 
+        "orbitalPeriod": 0.938494337928241, 
+        "parents": [
+          {
+            "Planet": 40
+          }, 
+          {
+            "Planet": 35
+          }, 
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 516.23628125, 
+        "rotationalPeriod": 0.958868045277778, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 5.62000871009523e-05, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:51:46+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 3.1896, 
+          "Rock": 96.8104
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 197.673782, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:51:46Z", 
+          "meanAnomaly": "2026-04-20T16:51:46Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:51:46+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 284.150493, 
+        "ascendingNode": 22.149214, 
+        "atmosphereType": null, 
+        "axialTilt": 0.26447, 
+        "bodyId": 42, 
+        "distanceToArrival": 1777.208579, 
+        "earthMasses": 0.005603, 
+        "gravity": 0.147471805852962, 
+        "id64": 1513210069389412763, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.507147, 
+          "Carbon": 15.814331, 
+          "Chromium": 8.72858, 
+          "Iron": 19.408352, 
+          "Molybdenum": 1.267354, 
+          "Nickel": 14.679665, 
+          "Phosphorus": 10.124606, 
+          "Selenium": 2.943378, 
+          "Sulphur": 18.806515, 
+          "Tellurium": 1.445615, 
+          "Zinc": 5.274464
+        }, 
+        "meanAnomaly": 241.45129, 
+        "name": "Pipe (stem) Sector DL-Y d17 9 d", 
+        "orbitalEccentricity": 0.002028, 
+        "orbitalInclination": -13.132339, 
+        "orbitalPeriod": 15.9656242639931, 
+        "parents": [
+          {
+            "Planet": 35
+          }, 
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1242.631625, 
+        "rotationalPeriod": 15.9657780466319, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0217248021643432, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 190.295029, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:51:50Z", 
+          "meanAnomaly": "2026-04-20T16:51:50Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:51:50+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 259.352781, 
+        "ascendingNode": 51.708142, 
+        "atmosphereComposition": {
+          "Argon": 1.526467, 
+          "Nitrogen": 91.681892, 
+          "Oxygen": 5.388079
+        }, 
+        "atmosphereType": "Thick Nitrogen", 
+        "axialTilt": 0.39323, 
+        "bodyId": 43, 
+        "distanceToArrival": 1730.255082, 
+        "earthMasses": 2.784824, 
+        "gravity": 1.39769695115734, 
+        "id64": 1549238866408376731, 
+        "isLandable": false, 
+        "meanAnomaly": 41.667047, 
+        "name": "Pipe (stem) Sector DL-Y d17 10", 
+        "orbitalEccentricity": 0.066595, 
+        "orbitalInclination": 8.237966, 
+        "orbitalPeriod": 163.45804626191, 
+        "parents": [
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 8998.685, 
+        "rotationalPeriod": 2.50886919614583, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.102325813918247, 
+        "solidComposition": {
+          "Ice": 0.0764, 
+          "Metal": 31.9309, 
+          "Rock": 64.0023
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 5.69802306933136, 
+        "surfaceTemperature": 238.030365, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:51:49Z", 
+          "meanAnomaly": "2026-04-20T16:51:49Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:51:49+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 75.846249, 
+        "ascendingNode": -148.301524, 
+        "atmosphereComposition": {
+          "Ammonia": 32.634861, 
+          "Methane": 32.634861, 
+          "Nitrogen": 32.634861
+        }, 
+        "atmosphereType": "Thick Methane-rich", 
+        "axialTilt": -0.206654, 
+        "bodyId": 44, 
+        "distanceToArrival": 1778.443195, 
+        "earthMasses": 1.441109, 
+        "gravity": 1.27830886101764, 
+        "id64": 1585267663427340699, 
+        "isLandable": false, 
+        "meanAnomaly": 271.038015, 
+        "name": "Pipe (stem) Sector DL-Y d17 11", 
+        "orbitalEccentricity": 0.008643, 
+        "orbitalInclination": 1.524535, 
+        "orbitalPeriod": 2239.87114926179, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 6768.8855, 
+        "rotationalPeriod": 0.482147939583333, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 3.56427210739919, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.2839, 
+          "Rock": 66.7161
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 22.549333826795, 
+        "surfaceTemperature": 421.193787, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:52:28Z", 
+          "meanAnomaly": "2026-04-20T16:52:28Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:52:28+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 291.651711, 
+        "ascendingNode": 58.365882, 
+        "bodyId": 46, 
+        "id64": 1657325257465268635, 
+        "meanAnomaly": 188.553738, 
+        "name": "Pipe (stem) Sector DL-Y d17 barycentre 46", 
+        "orbitalEccentricity": 0.020724, 
+        "orbitalInclination": -6.279842, 
+        "orbitalPeriod": 3453.66855186444, 
+        "semiMajorAxis": 4.75710396997707, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-20T13:39:36Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-20 13:39:36+00"
+      }, 
+      {
+        "argOfPeriapsis": 104.90423, 
+        "ascendingNode": 6.838358, 
+        "atmosphereComposition": {
+          "Helium": 27.750427, 
+          "Hydrogen": 72.249565
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 1.427585, 
+        "bodyId": 47, 
+        "distanceToArrival": 2478.591638, 
+        "earthMasses": 3233.471436, 
+        "gravity": 29.4878706026308, 
+        "id64": 1693354054484232603, 
+        "isLandable": false, 
+        "meanAnomaly": 255.754166, 
+        "name": "Pipe (stem) Sector DL-Y d17 12", 
+        "orbitalEccentricity": 0.160098, 
+        "orbitalInclination": 7.951723, 
+        "orbitalPeriod": 359.199527237153, 
+        "parents": [
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 66757.4, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1729382851503196571, 
+            "innerRadius": 115100000.0, 
+            "mass": 574260000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 12 A Ring", 
+            "outerRadius": 178270000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 1, 
+                "Benitoite": 2, 
+                "Monazite": 1, 
+                "Serendibite": 1
+              }, 
+              "updateTime": "2021-07-05 13:47:56+00"
+            }, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 1765411648522160539, 
+            "innerRadius": 178370000.0, 
+            "mass": 7228300000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 12 B Ring", 
+            "outerRadius": 514790000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 6, 
+                "Benitoite": 9, 
+                "Monazite": 4, 
+                "Musgravite": 6, 
+                "Serendibite": 1
+              }, 
+              "updateTime": "2021-07-05 13:48:03+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.35954368482639, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.177917026206094, 
+        "stations": [], 
+        "subType": "Class IV gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 875.704712, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:18Z", 
+          "meanAnomaly": "2026-04-20T16:55:18Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:18+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 348.899518, 
+        "ascendingNode": 34.138091, 
+        "atmosphereType": null, 
+        "axialTilt": -0.851739, 
+        "bodyId": 50, 
+        "distanceToArrival": 2477.60179, 
+        "earthMasses": 0.005202, 
+        "gravity": 0.143909044560008, 
+        "id64": 1801440445541124507, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.906045, 
+          "Chromium": 8.81137, 
+          "Iron": 19.592438, 
+          "Mercury": 0.85557, 
+          "Nickel": 14.818899, 
+          "Phosphorus": 10.183323, 
+          "Selenium": 2.960448, 
+          "Sulphur": 18.915581, 
+          "Tellurium": 1.453998, 
+          "Tin": 1.177839, 
+          "Zinc": 5.324492
+        }, 
+        "meanAnomaly": 183.341241, 
+        "name": "Pipe (stem) Sector DL-Y d17 12 a", 
+        "orbitalEccentricity": 0.00197, 
+        "orbitalInclination": -0.136845, 
+        "orbitalPeriod": 1.34505366009259, 
+        "parents": [
+          {
+            "Planet": 47
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1212.08925, 
+        "rotationalPeriod": 1.3450670240162, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00508770954319733, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:55:26+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.2579, 
+          "Rock": 90.7422
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 281.482666, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:27Z", 
+          "meanAnomaly": "2026-04-20T16:55:27Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:27+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 23.944181, 
+        "ascendingNode": -146.756002, 
+        "atmosphereType": null, 
+        "axialTilt": -0.267675, 
+        "bodyId": 51, 
+        "distanceToArrival": 2476.933722, 
+        "earthMasses": 0.006204, 
+        "gravity": 0.152705822371775, 
+        "id64": 1837469242560088475, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.135859, 
+          "Carbon": 15.218375, 
+          "Chromium": 8.399649, 
+          "Iron": 18.676958, 
+          "Manganese": 7.713393, 
+          "Nickel": 14.12647, 
+          "Niobium": 1.276471, 
+          "Phosphorus": 9.743066, 
+          "Sulphur": 18.097801, 
+          "Tungsten": 1.025553, 
+          "Vanadium": 4.586411
+        }, 
+        "meanAnomaly": 53.047452, 
+        "name": "Pipe (stem) Sector DL-Y d17 12 b", 
+        "orbitalEccentricity": 0.001786, 
+        "orbitalInclination": 0.082829, 
+        "orbitalPeriod": 3.03632255505787, 
+        "parents": [
+          {
+            "Planet": 47
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1284.9825, 
+        "rotationalPeriod": 3.03635252216435, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00875510226153218, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ]
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 248.617661, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:29Z", 
+          "meanAnomaly": "2026-04-20T16:55:29Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:29+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 299.777085, 
+        "ascendingNode": 32.815302, 
+        "atmosphereType": null, 
+        "axialTilt": 2.952974, 
+        "bodyId": 52, 
+        "distanceToArrival": 2476.055576, 
+        "earthMasses": 0.010349, 
+        "gravity": 0.182204547772, 
+        "id64": 1873498039579052443, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.821493, 
+          "Iron": 19.48674, 
+          "Manganese": 8.047824, 
+          "Mercury": 0.850954, 
+          "Nickel": 14.738955, 
+          "Niobium": 1.331815, 
+          "Phosphorus": 10.129191, 
+          "Sulphur": 18.815031, 
+          "Technetium": 0.696962, 
+          "Vanadium": 4.785265, 
+          "Zinc": 5.295767
+        }, 
+        "meanAnomaly": 125.196564, 
+        "name": "Pipe (stem) Sector DL-Y d17 12 c", 
+        "orbitalEccentricity": 0.00012, 
+        "orbitalInclination": -0.075891, 
+        "orbitalPeriod": 5.67569197327546, 
+        "parents": [
+          {
+            "Planet": 47
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1519.325375, 
+        "rotationalPeriod": -5.67574866825231, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0132854145815151, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ]
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.2538, 
+          "Rock": 90.7462
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 228.779739, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:32Z", 
+          "meanAnomaly": "2026-04-20T16:55:32Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:32+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 122.258716, 
+        "ascendingNode": 70.478045, 
+        "atmosphereType": null, 
+        "axialTilt": -0.401388, 
+        "bodyId": 53, 
+        "distanceToArrival": 2476.050552, 
+        "earthMasses": 0.000319, 
+        "gravity": 0.0542882634852656, 
+        "id64": 1909526836598016411, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.434605, 
+          "Carbon": 17.389601, 
+          "Iron": 18.474194, 
+          "Manganese": 7.629654, 
+          "Nickel": 13.973106, 
+          "Phosphorus": 11.133121, 
+          "Sulphur": 20.679834, 
+          "Tellurium": 1.589613, 
+          "Tungsten": 1.014419, 
+          "Vanadium": 4.536619, 
+          "Zirconium": 2.145235
+        }, 
+        "meanAnomaly": 29.855599, 
+        "name": "Pipe (stem) Sector DL-Y d17 12 c a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 1.970865, 
+        "orbitalPeriod": 0.29515721318287, 
+        "parents": [
+          {
+            "Planet": 52
+          }, 
+          {
+            "Planet": 47
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 488.5979375, 
+        "rotationalPeriod": 0.299670165856481, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 2.75546512959225e-05, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:55:33+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 3.1896, 
+          "Rock": 96.8104
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 228.779739, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:33Z", 
+          "meanAnomaly": "2026-04-20T16:55:33Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:33+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 55.441964, 
+        "ascendingNode": 161.975546, 
+        "atmosphereType": null, 
+        "axialTilt": 0.189613, 
+        "bodyId": 54, 
+        "distanceToArrival": 2475.642626, 
+        "earthMasses": 0.015446, 
+        "gravity": 0.209043234424391, 
+        "id64": 1945555633616980379, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.164401, 
+          "Arsenic": 2.462408, 
+          "Carbon": 15.600781, 
+          "Chromium": 8.610714, 
+          "Iron": 19.146271, 
+          "Manganese": 7.907214, 
+          "Mercury": 0.836086, 
+          "Molybdenum": 1.25024, 
+          "Nickel": 14.481438, 
+          "Phosphorus": 9.987887, 
+          "Sulphur": 18.552559
+        }, 
+        "meanAnomaly": 45.293882, 
+        "name": "Pipe (stem) Sector DL-Y d17 12 d", 
+        "orbitalEccentricity": 0.002274, 
+        "orbitalInclination": 2.352695, 
+        "orbitalPeriod": 7.80778378247685, 
+        "parents": [
+          {
+            "Planet": 47
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1732.903, 
+        "rotationalPeriod": 7.80786175568287, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0164329081473777, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ]
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 220.150238, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:36Z", 
+          "meanAnomaly": "2026-04-20T16:55:36Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:36+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 268.837834, 
+        "ascendingNode": -58.702266, 
+        "atmosphereType": null, 
+        "axialTilt": 0.073198, 
+        "bodyId": 55, 
+        "distanceToArrival": 2474.677822, 
+        "earthMasses": 0.01058, 
+        "gravity": 0.183427959620679, 
+        "id64": 1981584430635944347, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.609708, 
+          "Carbon": 16.534012, 
+          "Iron": 20.291592, 
+          "Manganese": 8.380219, 
+          "Mercury": 0.8861, 
+          "Nickel": 15.347711, 
+          "Phosphorus": 10.585358, 
+          "Selenium": 3.077326, 
+          "Sulphur": 19.662365, 
+          "Tellurium": 1.511402, 
+          "Tungsten": 1.114212
+        }, 
+        "meanAnomaly": 30.459817, 
+        "name": "Pipe (stem) Sector DL-Y d17 12 e", 
+        "orbitalEccentricity": 0.015191, 
+        "orbitalInclination": 0.880498, 
+        "orbitalPeriod": 12.2515312223495, 
+        "parents": [
+          {
+            "Planet": 47
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1531.044, 
+        "rotationalPeriod": 12.2516537671644, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0221899417582202, 
+        "signals": {
+          "guesses": [
+            "Lindigoticum Sinuous Tubers"
+          ]
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 209.422134, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:39Z", 
+          "meanAnomaly": "2026-04-20T16:55:39Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:39+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "absoluteMagnitude": 22.832321, 
+        "age": 350, 
+        "argOfPeriapsis": 284.904225, 
+        "ascendingNode": 6.838358, 
+        "axialTilt": 2.621351, 
+        "bodyId": 56, 
+        "distanceToArrival": 2372.457046, 
+        "id64": 2017613227654908315, 
+        "luminosity": "V", 
+        "mainStar": false, 
+        "meanAnomaly": 316.753903, 
+        "name": "Pipe (stem) Sector DL-Y d17 13", 
+        "orbitalEccentricity": 0.160098, 
+        "orbitalInclination": 7.951723, 
+        "orbitalPeriod": 359.199527237153, 
+        "parents": [
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "rings": [
+          {
+            "id64": 2053642024673872283, 
+            "innerRadius": 83429000.0, 
+            "mass": 10398000000000.0, 
+            "name": "Pipe (stem) Sector DL-Y d17 13 A Ring", 
+            "outerRadius": 600930000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 1, 
+                "Benitoite": 1
+              }, 
+              "updateTime": "2021-03-15 01:04:43+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 0.973133466828704, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.111853680281648, 
+        "solarMasses": 0.011719, 
+        "solarRadius": 0.0598449690869878, 
+        "spectralClass": "Y4", 
+        "stations": [], 
+        "subType": "Y (Brown dwarf) Star", 
+        "surfaceTemperature": 376.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-20T13:39:36Z", 
+          "meanAnomaly": "2026-06-20T13:39:36Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-20 13:39:36+00"
+      }, 
+      {
+        "argOfPeriapsis": 10.679206, 
+        "ascendingNode": 128.855115, 
+        "atmosphereType": null, 
+        "axialTilt": -0.49926, 
+        "bodyId": 58, 
+        "distanceToArrival": 2387.14106, 
+        "earthMasses": 0.005993, 
+        "gravity": 0.150908330784134, 
+        "id64": 2089670821692836251, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.544144, 
+          "Carbon": 16.118628, 
+          "Chromium": 8.896535, 
+          "Iron": 19.781803, 
+          "Molybdenum": 1.29174, 
+          "Nickel": 14.962128, 
+          "Niobium": 1.351981, 
+          "Phosphorus": 10.319422, 
+          "Sulphur": 19.168386, 
+          "Technetium": 0.707515, 
+          "Vanadium": 4.857723
+        }, 
+        "meanAnomaly": 232.683626, 
+        "name": "Pipe (stem) Sector DL-Y d17 13 a", 
+        "orbitalEccentricity": 0.001825, 
+        "orbitalInclination": 0.015586, 
+        "orbitalPeriod": 1.23975370769676, 
+        "parents": [
+          {
+            "Star": 56
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1270.45225, 
+        "rotationalPeriod": 1.2397582352662, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00562481974197559, 
+        "signals": {
+          "biology": [
+            "Bark Mounds"
+          ], 
+          "genuses": [
+            "$Codex_Ent_Cone_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-04-20 16:54:59+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 206.380539, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:54:59Z", 
+          "meanAnomaly": "2026-04-20T16:54:59Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:54:59+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 262.77768, 
+        "ascendingNode": -23.726195, 
+        "atmosphereType": null, 
+        "axialTilt": 0.278966, 
+        "bodyId": 59, 
+        "distanceToArrival": 2389.819215, 
+        "earthMasses": 0.019266, 
+        "gravity": 0.225703171204242, 
+        "id64": 2125699618711800219, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.248531, 
+          "Carbon": 16.72797, 
+          "Iron": 20.529629, 
+          "Nickel": 15.527752, 
+          "Phosphorus": 10.709534, 
+          "Sulphur": 19.893023, 
+          "Tin": 1.231828, 
+          "Tungsten": 1.127283, 
+          "Vanadium": 5.041362, 
+          "Zinc": 5.579185, 
+          "Zirconium": 2.383913
+        }, 
+        "meanAnomaly": 203.820052, 
+        "name": "Pipe (stem) Sector DL-Y d17 13 b", 
+        "orbitalEccentricity": 7.6e-05, 
+        "orbitalInclination": 0.210839, 
+        "orbitalPeriod": 3.24335514946759, 
+        "parents": [
+          {
+            "Star": 56
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1862.584625, 
+        "rotationalPeriod": 3.24336690297454, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0106794289523403, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 192.090637, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:01Z", 
+          "meanAnomaly": "2026-04-20T16:55:01Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:01+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 261.743234, 
+        "ascendingNode": -28.211362, 
+        "atmosphereType": null, 
+        "axialTilt": -0.104661, 
+        "bodyId": 60, 
+        "distanceToArrival": 2394.210091, 
+        "earthMasses": 0.007229, 
+        "gravity": 0.160918017742429, 
+        "id64": 2161728415730764187, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.501564, 
+          "Carbon": 15.755751, 
+          "Germanium": 5.560805, 
+          "Iron": 19.336458, 
+          "Manganese": 7.985759, 
+          "Nickel": 14.625285, 
+          "Phosphorus": 10.087101, 
+          "Polonium": 0.501837, 
+          "Sulphur": 18.736849, 
+          "Tin": 1.160235, 
+          "Vanadium": 4.748361
+        }, 
+        "meanAnomaly": 63.277054, 
+        "name": "Pipe (stem) Sector DL-Y d17 13 c", 
+        "orbitalEccentricity": 0.011405, 
+        "orbitalInclination": 2.566813, 
+        "orbitalPeriod": 7.06587980190972, 
+        "parents": [
+          {
+            "Star": 56
+          }, 
+          {
+            "Null": 46
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1351.1785, 
+        "rotationalPeriod": 7.06590550118055, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0179471633888295, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0725, 
+          "Rock": 90.9275
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 183.446259, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-04-20T16:55:04Z", 
+          "meanAnomaly": "2026-04-20T16:55:04Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-04-20 16:55:04+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 35.177308, 
+        "ascendingNode": -126.320998, 
+        "atmosphereComposition": {
+          "Ammonia": 6.842093, 
+          "Carbon dioxide": 78.681412, 
+          "Methane": 6.842093
+        }, 
+        "atmosphereType": "Thick Carbon dioxide", 
+        "axialTilt": 0.059858, 
+        "bodyId": 61, 
+        "distanceToArrival": 5938.700125, 
+        "earthMasses": 6.676681, 
+        "gravity": 2.53064902620577, 
+        "id64": 2197757212749728155, 
+        "isLandable": false, 
+        "meanAnomaly": 328.936867, 
+        "name": "Pipe (stem) Sector DL-Y d17 14", 
+        "orbitalEccentricity": 0.162907, 
+        "orbitalInclination": 53.205729, 
+        "orbitalPeriod": 16862.2064369696, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 10355.021, 
+        "rotationalPeriod": 1.56355543515046, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 13.6908925032603, 
+        "solidComposition": {
+          "Ice": 0.8372, 
+          "Metal": 34.3321, 
+          "Rock": 64.8308
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 4945.88841845547, 
+        "surfaceTemperature": 411.635498, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-09T04:17:40Z", 
+          "meanAnomaly": "2026-06-09T04:17:40Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-09 04:17:40+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }
+    ], 
+    "bodyCount": 34, 
+    "controllingFaction": {
+      "activeStates": [
+        {
+          "state": "Expansion"
+        }
+      ], 
+      "allegiance": "Independent", 
+      "government": "Feudal", 
+      "name": "The Dukes of Mikunn", 
+      "state": "Expansion"
+    }, 
+    "coords": {
+      "x": 14.96875, 
+      "y": 42.8125, 
+      "z": 498.09375
+    }, 
+    "date": "2026-06-20 13:39:35+00", 
+    "government": "Feudal", 
+    "id64": 594592926107, 
+    "name": "Pipe (stem) Sector DL-Y d17", 
+    "population": 194368, 
+    "primaryEconomy": "Industrial", 
+    "region": {
+      "name": "Inner Orion Spur", 
+      "region": 18
+    }, 
+    "secondaryEconomy": "None", 
+    "security": "Low", 
+    "timestamps": {
+      "factions": "2026-06-20T13:39:23Z"
+    }
+  }
+}

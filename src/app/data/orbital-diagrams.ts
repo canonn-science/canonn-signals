@@ -51,6 +51,23 @@ export interface PeriapsisDiagram {
   arc: string;
 }
 
+/** One Lagrange point's marker position and the anchor for its "Lx" label. */
+export interface LagrangeMarker {
+  id: 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
+  point: Point;  // where the marker (and any occupying body) is drawn
+  label: Point;  // anchor for the "Lx" caption, nudged clear of the marker
+}
+
+export interface LagrangeDiagram {
+  center: Point;         // the primary, at the centre of the orbit
+  primaryRadius: number;
+  primaryLabel: Point;   // anchor for the primary's caption
+  orbitRadius: number;   // radius of the (circular) reference orbit
+  secondary: Point;      // the secondary body, on the orbit at angle 0 (to the right)
+  secondaryLabel: Point; // anchor for the secondary's caption
+  markers: LagrangeMarker[];
+}
+
 const DEG = Math.PI / 180;
 
 /** Round to 3 decimals so bound SVG attributes stay tidy and tests stay stable.
@@ -218,4 +235,48 @@ export function periapsisDiagram(argDeg: number, eccentricity?: number): Periaps
   const arc = arcPath(focus.x, focus.y, 16, 0, arg);
 
   return { focus, focusRadius: 4, ellipse, referenceLine, periapsisPoint, parentLabel, bodyLabel, arc };
+}
+
+/** Round a point's coordinates for tidy, test-stable SVG attributes. */
+function roundPoint(p: Point): Point {
+  return { x: r(p.x), y: r(p.y) };
+}
+
+/**
+ * The canonical five-point Lagrange schematic of a two-body system: a primary at the
+ * centre, a secondary on a circular reference orbit to the right (angle 0), and the five
+ * Lagrange points in their textbook positions — L1 between the bodies, L2 just beyond the
+ * secondary, L3 opposite, and L4 / L5 leading / trailing by 60°.
+ *
+ * The layout is fixed (it illustrates the configuration, not any one body's live angles);
+ * callers drop actual bodies onto the secondary slot and the L-points, or leave them as
+ * placeholders. Screen "up" is -y, so L4 (leading, +60°) sits above the axis and L5 below.
+ */
+export function lagrangeDiagram(): LagrangeDiagram {
+  const center = { x: CENTER, y: CENTER };
+  const orbitRadius = 34;
+
+  const secondary = pointAt(center.x, center.y, orbitRadius, 0);
+  const l1: Point = { x: center.x + orbitRadius - 12, y: center.y };
+  const l2: Point = { x: center.x + orbitRadius + 11, y: center.y };
+
+  const markers: LagrangeMarker[] = [
+    { id: 'L1', point: roundPoint(l1), label: { x: r(l1.x), y: r(center.y - 9) } },
+    { id: 'L2', point: roundPoint(l2), label: { x: r(l2.x), y: r(center.y - 9) } },
+    { id: 'L3', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 180)), label: { x: r(center.x - orbitRadius), y: r(center.y - 9) } },
+    { id: 'L4', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 60)), label: roundPoint(pointAt(center.x, center.y, orbitRadius + 13, 60)) },
+    { id: 'L5', point: roundPoint(pointAt(center.x, center.y, orbitRadius, -60)), label: roundPoint(pointAt(center.x, center.y, orbitRadius + 13, -60)) },
+  ];
+
+  return {
+    center,
+    primaryRadius: 7,
+    // Primary caption sits well below the centre and the secondary's just below its marker, so
+    // the two names land on separate bands and never overlap even when both are long.
+    primaryLabel: { x: center.x, y: r(center.y + 18) },
+    orbitRadius,
+    secondary: roundPoint(secondary),
+    secondaryLabel: { x: r(secondary.x), y: r(center.y + 11) },
+    markers,
+  };
 }

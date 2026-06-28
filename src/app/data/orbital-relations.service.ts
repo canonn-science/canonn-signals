@@ -1,12 +1,39 @@
 import { Injectable } from '@angular/core';
 import { CanonnBiostatsBody, SystemBody } from '../home/home.component';
 
+/** The five Lagrange points of a two-body system. */
+export type LagrangePointId = 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
+
 /** Result of Trojan/Lagrange analysis for a body relative to its co-orbital siblings. */
 export interface TrojanStatus {
   /** Lagrange point the body occupies ('L1'–'L5'), or null when it is not a Trojan. */
-  lagrangePoint: string | null;
+  lagrangePoint: LagrangePointId | null;
   /** True when this body hosts Trojans at both L4 and L5 (it is the reference body, not a Trojan). */
   isHost: boolean;
+}
+
+/** A body sitting at one of the slots of a Lagrange configuration. */
+export interface LagrangeOccupant {
+  /** The body's name (raw — callers may map it to a display name). */
+  name: string;
+  /** Its `bodyId`, for DOM ids / de-duplication. */
+  bodyId: number;
+  /** True for the body the configuration was requested for (so the UI can highlight it). */
+  isFocus: boolean;
+}
+
+/**
+ * A co-orbital family expressed as a Lagrange diagram: the central primary they orbit,
+ * the secondary (a host with companions at L4 & L5, when one exists), and whichever
+ * bodies occupy each Lagrange point. Built by {@link OrbitalRelationsService.lagrangeConfiguration}.
+ */
+export interface LagrangeConfiguration {
+  /** Name of the shared parent the family orbits (the central primary), or null. */
+  primaryName: string | null;
+  /** The co-orbital secondary (host), or null when none is recorded → drawn as a placeholder. */
+  secondary: LagrangeOccupant | null;
+  /** Bodies at each Lagrange point — usually 0 or 1 per point. */
+  points: Record<LagrangePointId, LagrangeOccupant[]>;
 }
 
 /** A future periapsis/apoapsis passage: when it occurs and how many days away it is. */
@@ -170,6 +197,19 @@ export class OrbitalRelationsService {
     }
 
     // L3, L4, L5 candidates share the same orbital distance (semi-major axis).
+    //
+    // A body's true along-orbit position is its mean longitude λ = Ω + ω + M
+    // (ascendingNode + argOfPeriapsis + meanAnomaly), so the angular separation of two
+    // co-orbital siblings is Δλ = ΔΩ + Δω + ΔM. We compare argOfPeriapsis (Δω) alone.
+    // That is exact — not merely a heuristic — for Elite's data, because the game holds
+    // Ω and M *identical* across co-orbital siblings and encodes the entire along-orbit
+    // offset in argOfPeriapsis, so ΔΩ = ΔM = 0 and Δλ = Δω. Verified against every real
+    // co-orbital pair in the fixtures — both 180° binaries (Alpha Centauri's "2045 PC2" /
+    // "Lagrange" L3 pair, Merope 1 a/b, …) and genuine ±60° Trojans (Pro Eurl JF-A d88,
+    // Pipe (stem) Sector DL-Y d17, Prooe Bli FQ-R c19-2, Truecho NE-P c22-0, and the
+    // Eorld Byio AA-A h539 host with companions at both L4 and L5): in each, ascendingNode
+    // and meanAnomaly match between siblings (or are absent on both) and only argOfPeriapsis
+    // differs. See the orbital-relations spec's "real game fixtures" block for the pinned values.
     const sameSMABodies = this.coOrbitalSiblings(body, sibling =>
       sibling.bodyData.semiMajorAxis === bd.semiMajorAxis,
     );
@@ -222,6 +262,57 @@ export class OrbitalRelationsService {
     }
 
     return result;
+  }
+
+  /**
+   * Resolves the whole co-orbital family `body` belongs to into a Lagrange diagram: the
+   * shared parent (central primary), the secondary host (if any), and which bodies occupy
+   * each Lagrange point. Every family member is classified with {@link detectTrojanStatus},
+   * so the assignment matches the badges shown on each body. `body` itself is flagged as the
+   * focus so the UI can highlight it.
+   *
+   * Returns null when there is nothing meaningful to draw — no parent, no shared orbital
+   * period, or no co-orbital relationships detected anywhere in the family.
+   */
+  lagrangeConfiguration(body: SystemBody): LagrangeConfiguration | null {
+    const parent = body.parent;
+    const bd = body.bodyData;
+    if (!parent || !bd.orbitalPeriod) {
+      return null;
+    }
+
+    // The co-orbital family: every sibling sharing this body's orbital period (so L1/L2
+    // partners at a different radius are included too), plus `body` itself — it already
+    // lives in `parent.subBodies`. Members without an argOfPeriapsis can't be classified.
+    const family = parent.subBodies.filter(member =>
+      member.bodyData.orbitalPeriod === bd.orbitalPeriod &&
+      member.bodyData.argOfPeriapsis !== undefined,
+    );
+
+    const points: Record<LagrangePointId, LagrangeOccupant[]> = { L1: [], L2: [], L3: [], L4: [], L5: [] };
+    let secondary: LagrangeOccupant | null = null;
+
+    for (const member of family) {
+      const status = this.detectTrojanStatus(member);
+      if (!status.isHost && !status.lagrangePoint) { continue; }
+      const occupant: LagrangeOccupant = {
+        name: member.bodyData.name,
+        bodyId: member.bodyData.bodyId,
+        isFocus: member === body,
+      };
+      if (status.isHost) {
+        secondary = occupant;
+      } else if (status.lagrangePoint) {
+        points[status.lagrangePoint].push(occupant);
+      }
+    }
+
+    const hasOccupant = secondary !== null || Object.values(points).some(slot => slot.length > 0);
+    if (!hasOccupant) {
+      return null;
+    }
+
+    return { primaryName: parent.bodyData.name, secondary, points };
   }
 
   /**

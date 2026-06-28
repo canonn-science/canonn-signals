@@ -71,6 +71,163 @@ describe('OrbitalRelationsService', () => {
       expect(service.detectTrojanStatus(inner).lagrangePoint).toBe('L1');
       expect(service.detectTrojanStatus(outer).lagrangePoint).toBe('L2');
     });
+
+    it('matches Elite\'s convention: ED encodes the co-orbital offset in argOfPeriapsis alone', () => {
+      // The true along-orbit position is mean longitude λ = Ω + ω + M, so comparing
+      // argOfPeriapsis (ω) alone is only exact when siblings share ascendingNode (Ω) and
+      // meanAnomaly (M). Real game data does exactly that: ED holds Ω and M identical across
+      // co-orbital siblings and varies only argOfPeriapsis. These are the verbatim orbital
+      // elements of Alpha Centauri's "2045 PC2" / "Lagrange" pair (e2e fixture) — a genuine
+      // same-radius L3 co-orbital, the partner literally named "Lagrange". Ω and M match to
+      // full precision; only argOfPeriapsis differs (by 180°).
+      const [pc2, lagrange] = makeFamily([
+        { orbitalPeriod: 9348.90664562031, semiMajorAxis: 9.56568437539316,
+          argOfPeriapsis: 269.999997, ascendingNode: 0.0, meanAnomaly: 36.634872 },
+        { orbitalPeriod: 9348.90664562031, semiMajorAxis: 9.56568437539316,
+          argOfPeriapsis: 89.999999, ascendingNode: 0.0, meanAnomaly: 36.634872 },
+      ]);
+      expect(service.detectTrojanStatus(pc2).lagrangePoint).toBe('L3');
+      expect(service.detectTrojanStatus(lagrange).lagrangePoint).toBe('L3');
+
+      // Because ΔΩ = ΔM = 0 in ED's data, adding the shared Ω/M back into a full
+      // mean-longitude comparison would not change the verdict: Δλ = Δω. Re-running the
+      // same geometry without any Ω/M gives the identical L3 result, proving the
+      // argOfPeriapsis-only comparison loses nothing for real game data.
+      const [bareA, bareB] = makeFamily([
+        { orbitalPeriod: 9348.90664562031, semiMajorAxis: 9.56568437539316, argOfPeriapsis: 269.999997 },
+        { orbitalPeriod: 9348.90664562031, semiMajorAxis: 9.56568437539316, argOfPeriapsis: 89.999999 },
+      ]);
+      expect(service.detectTrojanStatus(bareA).lagrangePoint).toBe('L3');
+      expect(service.detectTrojanStatus(bareB).lagrangePoint).toBe('L3');
+    });
+
+    // Real same-radius Trojan/Lagrange systems (genuine ±60° co-orbitals, not 180° binaries),
+    // pulled verbatim from the committed biostats fixtures under e2e/fixtures/. Each pair shares
+    // an identical orbitalPeriod and semiMajorAxis; ascendingNode (Ω) and meanAnomaly (M) are
+    // identical between siblings (or absent on both), and the entire ±60° along-orbit offset is
+    // carried by argOfPeriapsis — so the argOfPeriapsis-only test reproduces ED's own placement
+    // exactly. These lock in that real Trojan data is detected, and confirm the empirical finding
+    // generalises beyond the 180° binaries above. (Values verified against the fixtures.)
+    describe('real game fixtures (e2e/fixtures/*.json)', () => {
+      it('Pro Eurl JF-A d88 B 2/B 3 — ±60° in argOfPeriapsis, no Ω/M recorded', () => {
+        // pro-eurl-jf-a-d88.json: bodies 30 & 33, asc/meanAnomaly absent on both.
+        const [b2, b3] = makeFamily([
+          { orbitalPeriod: 2756.17222222222, semiMajorAxis: 2.36276632726164, argOfPeriapsis: 256.983124 },
+          { orbitalPeriod: 2756.17222222222, semiMajorAxis: 2.36276632726164, argOfPeriapsis: 316.983124 },
+        ]);
+        expect(service.detectTrojanStatus(b2).lagrangePoint).toBe('L5');
+        expect(service.detectTrojanStatus(b3).lagrangePoint).toBe('L4');
+      });
+
+      it('Prooe Bli FQ-R c19-2 2/3 — ±60° in argOfPeriapsis, no Ω/M recorded', () => {
+        // prooe-bli-fq-r-c19-2.json: bodies 18 & 25, asc/meanAnomaly absent on both.
+        const [two, three] = makeFamily([
+          { orbitalPeriod: 1323.52527777778, semiMajorAxis: 1.90290777597278, argOfPeriapsis: 213.138443 },
+          { orbitalPeriod: 1323.52527777778, semiMajorAxis: 1.90290777597278, argOfPeriapsis: 273.138428 },
+        ]);
+        expect(service.detectTrojanStatus(two).lagrangePoint).toBe('L5');
+        expect(service.detectTrojanStatus(three).lagrangePoint).toBe('L4');
+      });
+
+      it('Truecho NE-P c22-0 6/7 — ±60° across the 0° seam, shared Ω and M', () => {
+        // truecho-ne-p-c22-0.json: bodies 50 & 68. Ω = 57.140393 on both; M matches to ~1e-4.
+        const [six, seven] = makeFamily([
+          { orbitalPeriod: 5199.37670065297, semiMajorAxis: 5.61591537457029,
+            argOfPeriapsis: 55.239595, ascendingNode: 57.140393, meanAnomaly: 311.627298 },
+          { orbitalPeriod: 5199.37670065297, semiMajorAxis: 5.61591537457029,
+            argOfPeriapsis: 355.23958, ascendingNode: 57.140393, meanAnomaly: 311.627451 },
+        ]);
+        expect(service.detectTrojanStatus(six).lagrangePoint).toBe('L4');
+        expect(service.detectTrojanStatus(seven).lagrangePoint).toBe('L5');
+      });
+
+      it('Pipe (stem) Sector DL-Y d17 barycentre/11 — ±60° in argOfPeriapsis, shared Ω and M', () => {
+        // pipe-stem-sector-dl-y-d17.json: bodies 34 & 44. Ω = -148.301524 on both; M matches to ~1e-4.
+        const [bary, eleven] = makeFamily([
+          { orbitalPeriod: 2239.87114926179, semiMajorAxis: 3.56427210739919,
+            argOfPeriapsis: 135.846247, ascendingNode: -148.301524, meanAnomaly: 271.037909 },
+          { orbitalPeriod: 2239.87114926179, semiMajorAxis: 3.56427210739919,
+            argOfPeriapsis: 75.846249, ascendingNode: -148.301524, meanAnomaly: 271.038015 },
+        ]);
+        expect(service.detectTrojanStatus(bary).lagrangePoint).toBe('L4');
+        expect(service.detectTrojanStatus(eleven).lagrangePoint).toBe('L5');
+      });
+
+      it('Eorld Byio AA-A h539 — a host barycentre with Trojans at both L4 and L5', () => {
+        // eorld-byio-aa-a-h539.json: barycentre 35 sits between A 18 (+60°) and A 19 (-60°), all
+        // at the same radius with identical Ω = 128.746136 and M ≈ 280.54. The barycentre is the
+        // co-orbital primary (host), not itself a Trojan.
+        const [bary, a18, a19] = makeFamily([
+          { orbitalPeriod: 78.8197259384144, semiMajorAxis: 1.24773884117624,
+            argOfPeriapsis: 255.841558, ascendingNode: 128.746136, meanAnomaly: 280.536448 },
+          { orbitalPeriod: 78.8197259384144, semiMajorAxis: 1.24773884117624,
+            argOfPeriapsis: 315.841556, ascendingNode: 128.746136, meanAnomaly: 280.540582 },
+          { orbitalPeriod: 78.8197259384144, semiMajorAxis: 1.24773884117624,
+            argOfPeriapsis: 195.84156, ascendingNode: 128.746136, meanAnomaly: 280.539129 },
+        ]);
+        const host = service.detectTrojanStatus(bary);
+        expect(host.isHost).toBe(true);
+        expect(host.lagrangePoint).toBeNull();
+        expect(service.detectTrojanStatus(a18).lagrangePoint).toBe('L4');
+        expect(service.detectTrojanStatus(a19).lagrangePoint).toBe('L5');
+      });
+    });
+  });
+
+  describe('lagrangeConfiguration', () => {
+    it('returns null when the body has no parent or no orbital period', () => {
+      const [orphan] = makeFamily([{ argOfPeriapsis: 0, semiMajorAxis: 5 }]);
+      orphan.parent = null;
+      expect(service.lagrangeConfiguration(orphan)).toBeNull();
+
+      const [noPeriod] = makeFamily([{ argOfPeriapsis: 0, semiMajorAxis: 5 }]);
+      expect(service.lagrangeConfiguration(noPeriod)).toBeNull();
+    });
+
+    it('returns null when the body has no co-orbital relationships', () => {
+      const [lonely] = makeFamily([{ orbitalPeriod: 10, semiMajorAxis: 5, argOfPeriapsis: 0 }]);
+      expect(service.lagrangeConfiguration(lonely)).toBeNull();
+    });
+
+    it('resolves a host + L4/L5 family (Eorld Byio AA-A h539), flagging the focus', () => {
+      // The same real host configuration used above: barycentre (host) between A 18 (L4) and A 19 (L5).
+      const [bary, a18, a19] = makeFamily([
+        { orbitalPeriod: 78.8197259384144, semiMajorAxis: 1.24773884117624,
+          argOfPeriapsis: 255.841558, ascendingNode: 128.746136, meanAnomaly: 280.536448 },
+        { orbitalPeriod: 78.8197259384144, semiMajorAxis: 1.24773884117624,
+          argOfPeriapsis: 315.841556, ascendingNode: 128.746136, meanAnomaly: 280.540582 },
+        { orbitalPeriod: 78.8197259384144, semiMajorAxis: 1.24773884117624,
+          argOfPeriapsis: 195.84156, ascendingNode: 128.746136, meanAnomaly: 280.539129 },
+      ]);
+
+      // Opened from the host: it occupies the secondary slot (focused), Trojans fill L4 and L5.
+      const fromHost = service.lagrangeConfiguration(bary)!;
+      expect(fromHost.primaryName).toBe('Parent');
+      expect(fromHost.secondary).toEqual({ name: 'Child 1', bodyId: 1, isFocus: true });
+      expect(fromHost.points.L4).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: false }]);
+      expect(fromHost.points.L5).toEqual([{ name: 'Child 3', bodyId: 3, isFocus: false }]);
+      expect(fromHost.points.L1).toEqual([]);
+      expect(fromHost.points.L2).toEqual([]);
+      expect(fromHost.points.L3).toEqual([]);
+
+      // Opened from the L4 Trojan: same configuration, but the focus moves to the L4 occupant.
+      const fromL4 = service.lagrangeConfiguration(a18)!;
+      expect(fromL4.secondary).toEqual({ name: 'Child 1', bodyId: 1, isFocus: false });
+      expect(fromL4.points.L4).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: true }]);
+      expect(service.lagrangeConfiguration(a19)!.points.L5[0].isFocus).toBe(true);
+    });
+
+    it('resolves a lone ±60° pair with no host as a placeholder secondary', () => {
+      // Pro Eurl JF-A d88 B 2 / B 3: a 60°-apart pair labelled L5 / L4, with no recorded host.
+      const [b2, b3] = makeFamily([
+        { orbitalPeriod: 2756.17222222222, semiMajorAxis: 2.36276632726164, argOfPeriapsis: 256.983124 },
+        { orbitalPeriod: 2756.17222222222, semiMajorAxis: 2.36276632726164, argOfPeriapsis: 316.983124 },
+      ]);
+      const config = service.lagrangeConfiguration(b2)!;
+      expect(config.secondary).toBeNull(); // → drawn as a placeholder
+      expect(config.points.L5).toEqual([{ name: 'Child 1', bodyId: 1, isFocus: true }]);
+      expect(config.points.L4).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: false }]);
+    });
   });
 
   describe('detectRosetteStatus', () => {
