@@ -39,6 +39,8 @@ export interface CollisionStatus {
   synodicPeriodDays: number | null;
   /** Next contact window (when the bodies are within combined radii), or null when timing data is missing. */
   nextCollision: CollisionWindow | null;
+  /** Up to 10 upcoming contact windows in chronological order; empty when timing data is missing. */
+  upcomingCollisions: CollisionWindow[];
   /** Sum of the two bodies' radii (km) — the contact threshold; null when not a candidate. */
   combinedRadiiKm: number | null;
 }
@@ -320,10 +322,12 @@ export class OrbitalRelationsService {
     }
 
     // Position in the orbital plane (periapsis along +x), then standard 3-1-3 rotation.
+    // The ED/Spansh data uses the opposite sign convention from the standard astronomical
+    // frame, so both angles must be negated before the rotation is applied.
     const xo = a * (Math.cos(E) - e);
     const yo = a * Math.sqrt(1 - e * e) * Math.sin(E);
-    const node = (bd.ascendingNode ?? 0) * DEG_TO_RAD;
-    const argp = (bd.argOfPeriapsis ?? 0) * DEG_TO_RAD;
+    const node = -(bd.ascendingNode ?? 0) * DEG_TO_RAD;
+    const argp = -(bd.argOfPeriapsis ?? 0) * DEG_TO_RAD;
     const incl = (bd.orbitalInclination ?? 0) * DEG_TO_RAD;
     const cO = Math.cos(node), sO = Math.sin(node);
     const cw = Math.cos(argp), sw = Math.sin(argp);
@@ -478,7 +482,9 @@ export class OrbitalRelationsService {
       if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) { return null; }
       const M = this.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);
       if (!Number.isFinite(M)) { return null; }
-      return ((((bd.ascendingNode ?? 0) + (bd.argOfPeriapsis ?? 0) + M) % 360) + 360) % 360;
+      // Angles are negated to match the sign convention used in orbitalStateVector.
+      // Mean longitude = M - Ω - ω (negated Ω and ω relative to the raw ED values).
+      return (((M - (bd.ascendingNode ?? 0) - (bd.argOfPeriapsis ?? 0)) % 360) + 360) % 360;
     };
     const lonA = lon(a), lonB = lon(b);
     if (lonA == null || lonB == null || !Number.isFinite(synodicDays)) { return null; }
@@ -499,9 +505,14 @@ export class OrbitalRelationsService {
    * for the true minimum separation (separation oscillates at the orbital period, not just
    * the synodic one), and report the first anchor whose closest approach is within contact.
    */
-  private nextContact(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number): CollisionWindow | null {
+  /**
+   * Returns up to `count` upcoming contact windows between two bodies, searching consecutive
+   * synodic-period conjunctions for genuine 3D contacts (separation ≤ combinedRadiiKm).
+   * De-duplicates windows so a single prolonged contact episode is only reported once.
+   */
+  private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number): CollisionWindow[] {
     const firstDays = this.nextConjunctionDays(a, b, synodicDays, now);
-    if (firstDays == null || !Number.isFinite(synodicDays)) { return null; }
+    if (firstDays == null || !Number.isFinite(synodicDays)) { return []; }
 
     // Cheap repeated propagation: precompute each body's epoch so we avoid re-parsing the
     // timestamp string on every one of the many separation evaluations below.
@@ -518,8 +529,15 @@ export class OrbitalRelationsService {
 
     const windowDays = 2 * Math.max(a.orbitalPeriod!, b.orbitalPeriod!);
     const stepDays = Math.min(a.orbitalPeriod!, b.orbitalPeriod!) / 40;
-    for (let k = 0; k < MAX_CONJUNCTIONS_SCANNED; k++) {
+    const stepMs = (30 / 86400) * MS_PER_DAY; // 30-second probe steps for bisection
+    const maxSpanMs = windowDays * MS_PER_DAY;  // ≈ 2 × the longer orbital period
+    const results: CollisionWindow[] = [];
+
+    for (let k = 0; k < MAX_CONJUNCTIONS_SCANNED && results.length < count; k++) {
       const centerMs = now + (firstDays + k * synodicDays) * MS_PER_DAY;
+      // Skip conjunction windows that fall inside an already-found contact episode.
+      if (results.length > 0 && centerMs < results[results.length - 1].end.getTime()) { continue; }
+
       let bestT = -1, bestSep = Infinity;
       for (let t = centerMs - windowDays * MS_PER_DAY; t <= centerMs + windowDays * MS_PER_DAY; t += stepDays * MS_PER_DAY) {
         if (t < now) { continue; }
@@ -538,45 +556,40 @@ export class OrbitalRelationsService {
         const s = sep(t);
         if (s < bestSep) { bestSep = s; bestT = t; }
       }
-      if (bestSep <= contactKm) {
-        // `bestT` is a confirmed in-contact instant (the minimum-separation time). The contact
-        // is an interval, so root-find the two times where sep(t) === contactKm bracketing it:
-        // step outward in small increments until separation rises back above contactKm, then
-        // bisect for precision. Bound the outward walk to ~2 orbital periods either way.
-        const stepMs = (30 / 86400) * MS_PER_DAY; // 30-second probe steps
-        const maxSpanMs = windowDays * MS_PER_DAY; // ≈ 2 × the longer orbital period
 
-        // START: walk backward to bracket the down-crossing, then bisect.
-        let lo = bestT;
-        let hi = bestT - stepMs;
-        while (bestT - hi <= maxSpanMs && sep(hi) <= contactKm) {
-          lo = hi;
-          hi -= stepMs;
-        }
-        // [hi, lo] now brackets the crossing (sep(hi) > contactKm ≥ sep(lo)); bisect.
-        for (let i = 0; i < 40; i++) {
-          const mid = (hi + lo) / 2;
-          if (sep(mid) > contactKm) { hi = mid; } else { lo = mid; }
-        }
-        const startMs = lo;
+      if (bestSep > contactKm) { continue; }
 
-        // END: symmetric, walk forward to bracket the up-crossing, then bisect.
-        let elo = bestT;
-        let ehi = bestT + stepMs;
-        while (ehi - bestT <= maxSpanMs && sep(ehi) <= contactKm) {
-          elo = ehi;
-          ehi += stepMs;
-        }
-        for (let i = 0; i < 40; i++) {
-          const mid = (elo + ehi) / 2;
-          if (sep(mid) > contactKm) { ehi = mid; } else { elo = mid; }
-        }
-        const endMs = elo;
+      // `bestT` is a confirmed in-contact instant (the minimum-separation time). The contact
+      // is an interval, so root-find the two times where sep(t) === contactKm bracketing it:
+      // step outward in small increments until separation rises back above contactKm, then
+      // bisect for precision. Bound the outward walk to ~2 orbital periods either way.
 
-        return { start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: bestSep };
+      // START: walk backward to bracket the down-crossing, then bisect.
+      let lo = bestT;
+      let hi = bestT - stepMs;
+      while (bestT - hi <= maxSpanMs && sep(hi) <= contactKm) { lo = hi; hi -= stepMs; }
+      for (let i = 0; i < 40; i++) {
+        const mid = (hi + lo) / 2;
+        if (sep(mid) > contactKm) { hi = mid; } else { lo = mid; }
       }
+      const startMs = lo;
+
+      // De-duplicate: skip if this window is part of a contact episode already recorded.
+      if (results.length > 0 && startMs <= results[results.length - 1].end.getTime()) { continue; }
+
+      // END: walk forward to bracket the up-crossing, then bisect.
+      let elo = bestT;
+      let ehi = bestT + stepMs;
+      while (ehi - bestT <= maxSpanMs && sep(ehi) <= contactKm) { elo = ehi; ehi += stepMs; }
+      for (let i = 0; i < 40; i++) {
+        const mid = (elo + ehi) / 2;
+        if (sep(mid) > contactKm) { ehi = mid; } else { elo = mid; }
+      }
+      const endMs = elo;
+
+      results.push({ start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: bestSep });
     }
-    return null;
+    return results;
   }
 
   /**
@@ -594,13 +607,13 @@ export class OrbitalRelationsService {
    */
   detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
     const none: CollisionStatus = {
-      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, combinedRadiiKm: null,
+      isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null,
     };
     const bd = body.bodyData;
     const range = this.orbitalRadialRange(bd);
     if (!body.parent || !bd.orbitalPeriod || !range) { return none; }
 
-    let best: { partner: SystemBody; synodic: number; event: CollisionWindow | null; contactKm: number } | null = null;
+    let best: { partner: SystemBody; synodic: number; events: CollisionWindow[]; contactKm: number } | null = null;
     for (const sibling of body.parent.subBodies) {
       if (sibling === body) { continue; }
       const sd = sibling.bodyData;
@@ -620,20 +633,26 @@ export class OrbitalRelationsService {
       if (this.minOrbitDistanceKm(bd, sd, contactKm) > contactKm) { continue; }
 
       const synodic = 1 / Math.abs(1 / bd.orbitalPeriod - 1 / sd.orbitalPeriod);
-      const event = this.nextContact(bd, sd, contactKm, synodic, now);
+      // Fetch the first contact only for partner selection; the winning partner gets the full 10.
+      const events = this.nextContacts(bd, sd, contactKm, synodic, now, 1);
+      const first = events[0] ?? null;
       // Prefer the partner with the soonest predicted collision; keep any geometric
       // candidate as a fallback when timing data is unavailable for an earlier one.
-      if (!best || (event && (!best.event || event.days < best.event.days))) {
-        best = { partner: sibling, synodic, event, contactKm };
+      if (!best || (first && (!best.events[0] || first.days < best.events[0].days))) {
+        best = { partner: sibling, synodic, events, contactKm };
       }
     }
 
     if (!best) { return none; }
+
+    // Expand the winning partner to the full upcoming-collisions list.
+    const upcoming = this.nextContacts(bd, best.partner.bodyData, best.contactKm, best.synodic, now, 10);
     return {
       isCandidate: true,
       partnerName: best.partner.bodyData.name,
       synodicPeriodDays: best.synodic,
-      nextCollision: best.event,
+      nextCollision: upcoming[0] ?? null,
+      upcomingCollisions: upcoming,
       combinedRadiiKm: best.contactKm,
     };
   }
