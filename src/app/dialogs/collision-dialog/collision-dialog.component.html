@@ -5,7 +5,7 @@
     <div class="values">
       <ul>
         <li><strong>Bodies:</strong> {{ data.bodyName }}
-          @if (data.partnerName) { &amp; {{ data.partnerName }} }
+          @if (collisionPartners.length) { &amp; {{ collisionPartners.join(', ') }} }
         </li>
         @if (data.synodicPeriodDays !== null) {
         <li><strong>Synodic period:</strong>
@@ -20,9 +20,9 @@
         @if (data.nextCollision; as c) {
         <li>
           @if (c.days < 0) {
-            <strong>Status:</strong> <span class="hint">Collision in progress now</span>
+            <strong>Status:</strong> <span class="hint">Collision in progress now with {{ windowPartner(c) }}</span>
           } @else {
-            <strong>Next collision in:</strong>
+            <strong>Next collision</strong> (with {{ windowPartner(c) }}) <strong>in:</strong>
             {{ c.days | number:'1.0-0' }} days
             @if (yearsUntil !== null && yearsUntil >= 1) { ({{ yearsUntil | number:'1.1-1' }} years) }
           }
@@ -65,6 +65,7 @@
         <thead>
           <tr>
             <th>#</th>
+            <th>With</th>
             <th>Contact start (UTC)</th>
             <th>Days until</th>
             <th>Duration</th>
@@ -72,9 +73,10 @@
           </tr>
         </thead>
         <tbody>
-          @for (w of data.upcomingCollisions; track w.start.getTime(); let i = $index) {
+          @for (w of data.upcomingCollisions; track w.start.getTime() + (w.partnerName ?? ''); let i = $index) {
           <tr>
             <td class="num">{{ i + 1 }}</td>
+            <td>{{ windowPartner(w) }}</td>
             <td class="date">{{ w.start | date:'yyyy-MM-dd HH:mm':'UTC' }} UTC</td>
             <td class="num">
               @if (w.days < 0) {

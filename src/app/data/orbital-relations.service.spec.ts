@@ -627,5 +627,51 @@ describe('OrbitalRelationsService', () => {
       // All three moons have geometrically crossing orbits → 1 b is a simultaneous partner.
       expect(r.simultaneousPartners).toContain('1 b');
     });
+
+    it('merges upcoming collisions across every crossing partner of the body', () => {
+      // The same 1 a / 1 b / 1 c trio: 1 a directly crosses BOTH 1 b and 1 c, so its upcoming
+      // list must interleave contacts with both siblings (a multi-body collision cluster),
+      // sorted chronologically, each window naming its own partner and contact radius.
+      const nowHere = Date.parse('2026-06-28T00:00:00Z');
+      const [a] = makeFamily([
+        { name: '1 a', orbitalPeriod: 0.157127550081019, semiMajorAxis: 0.000251518168059788,
+          orbitalEccentricity: 3.3e-05, orbitalInclination: 0.013618,
+          argOfPeriapsis: 237.157193, ascendingNode: 113.296374,
+          meanAnomaly: 332.120793, radius: 622.7360625,
+          timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+        { name: '1 b', orbitalPeriod: 0.153610475914352, semiMajorAxis: 0.000247750778161951,
+          orbitalEccentricity: 0.000216, orbitalInclination: 0.00413,
+          argOfPeriapsis: 200.490883, ascendingNode: 41.825083,
+          meanAnomaly: 33.450288, radius: 450.6381875,
+          timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+        { name: '1 c', orbitalPeriod: 0.154680379282407, semiMajorAxis: 0.000248899845368514,
+          orbitalEccentricity: 0.001125, orbitalInclination: 0.061853,
+          argOfPeriapsis: 12.874691, ascendingNode: 95.932804,
+          meanAnomaly: 161.468548, radius: 800.657125,
+          timestamps: { meanAnomaly: '2026-06-23T11:53:53Z' } as any },
+      ]);
+      const r = service.detectCollisionStatus(a, nowHere);
+      expect(r.isCandidate).toBe(true);
+
+      // The list interleaves both partners, not just the primary.
+      const partners = new Set(r.upcomingCollisions.map(w => w.partnerName));
+      expect(partners).toContain('1 b');
+      expect(partners).toContain('1 c');
+
+      // Chronologically ordered, and every window self-describes its pair.
+      for (let i = 1; i < r.upcomingCollisions.length; i++) {
+        expect(r.upcomingCollisions[i].start.getTime())
+          .toBeGreaterThanOrEqual(r.upcomingCollisions[i - 1].start.getTime());
+      }
+      for (const w of r.upcomingCollisions) {
+        expect(w.partnerName).toBeTruthy();
+        expect(w.combinedRadiiKm).toBeGreaterThan(0);
+        expect(w.minSeparationKm).toBeLessThanOrEqual(w.combinedRadiiKm!);
+      }
+
+      // The primary partner (soonest collision) owns the first window.
+      expect(r.upcomingCollisions[0].partnerName).toBe(r.partnerName);
+      expect(r.nextCollision).toBe(r.upcomingCollisions[0]);
+    });
   });
 });

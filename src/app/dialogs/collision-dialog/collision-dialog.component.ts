@@ -67,8 +67,9 @@ export class CollisionDialogComponent {
    */
   public get overlapPercent(): number | null {
     const c = this.data.nextCollision;
-    if (!c || !this.data.combinedRadiiKm) { return null; }
-    return Math.max(0, (1 - c.minSeparationKm / this.data.combinedRadiiKm) * 100);
+    const combined = c?.combinedRadiiKm ?? this.data.combinedRadiiKm;
+    if (!c || !combined) { return null; }
+    return Math.max(0, (1 - c.minSeparationKm / combined) * 100);
   }
 
   /** Plain-language severity for the overlap, mirroring the Canonn collision-table wording. */
@@ -91,6 +92,32 @@ export class CollisionDialogComponent {
     return this.data.synodicPeriodDays === null ? null : this.data.synodicPeriodDays / DAYS_PER_YEAR;
   }
 
+  /** Body name with the system-name prefix stripped (e.g. "Foo System 1 a" → "1 a"). */
+  public shortName(name: string | null | undefined): string {
+    if (!name) { return ''; }
+    const prefix = this.data.systemName + ' ';
+    return name.startsWith(prefix) ? name.slice(prefix.length) : name;
+  }
+
+  /**
+   * Distinct sibling names this body actually collides with, drawn from the upcoming-collisions
+   * list (so a multi-body cluster lists every partner). Falls back to the primary partner when
+   * there are no timed windows. Used for the "Bodies" summary line.
+   */
+  public get collisionPartners(): string[] {
+    const names = new Set<string>();
+    for (const w of this.data.upcomingCollisions) {
+      if (w.partnerName) { names.add(w.partnerName); }
+    }
+    if (names.size === 0 && this.data.partnerName) { names.add(this.data.partnerName); }
+    return [...names];
+  }
+
+  /** Short partner name for a contact window (the sibling it is a collision with). */
+  public windowPartner(w: CollisionWindow): string {
+    return this.shortName(w.partnerName ?? this.data.partnerName);
+  }
+
   /**
    * Prose summary of the collision pair: population, body types, atmospheres, moons/rings,
    * period difference, synodic interval, and a rough collision-frequency hint.
@@ -110,10 +137,7 @@ export class CollisionDialogComponent {
     };
 
     /** Body name with the system-name prefix stripped (e.g. "Foo System 1 a" → "1 a"). */
-    const shortName = (name: string): string => {
-      const prefix = d.systemName + ' ';
-      return name.startsWith(prefix) ? name.slice(prefix.length) : name;
-    };
+    const shortName = (name: string): string => this.shortName(name);
 
     /** Atmosphere description, or empty string when there is none. */
     const atmoStr = (info: CollisionBodyInfo | null): string => {
@@ -231,8 +255,10 @@ export class CollisionDialogComponent {
 
   /** Overlap percentage for a given contact window (0% = grazing, 100% = dead-on). */
   public overlapPercentFor(w: CollisionWindow): number | null {
-    if (!this.data.combinedRadiiKm) { return null; }
-    return Math.max(0, (1 - w.minSeparationKm / this.data.combinedRadiiKm) * 100);
+    // Use the window's own pair radii (partners differ in size); fall back to the status-level value.
+    const combined = w.combinedRadiiKm ?? this.data.combinedRadiiKm;
+    if (!combined) { return null; }
+    return Math.max(0, (1 - w.minSeparationKm / combined) * 100);
   }
 
   /** Years until the start of a contact window (for display alongside day counts). */

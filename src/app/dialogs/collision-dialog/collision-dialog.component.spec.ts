@@ -99,6 +99,33 @@ describe('CollisionDialogComponent', () => {
     expect(fixture.componentInstance.description).toContain('5 collisions are predicted over the next 5 years.');
   });
 
+  it('lists every crossing partner and renders a per-partner "With" column for multi-body clusters', () => {
+    const windows = [
+      { start: new Date('2026-07-01T00:00:00Z'), end: new Date('2026-07-01T01:00:00Z'),
+        days: 3, minSeparationKm: 200, partnerName: 'Test 1 c', combinedRadiiKm: 1000 },
+      { start: new Date('2026-07-05T00:00:00Z'), end: new Date('2026-07-05T01:00:00Z'),
+        days: 7, minSeparationKm: 400, partnerName: 'Test 1 d', combinedRadiiKm: 800 },
+    ];
+    const fixture = setup({
+      bodyName: 'Test 1 b', partnerName: 'Test 1 c', synodicPeriodDays: 5, combinedRadiiKm: 1000,
+      upcomingCollisions: windows, bodyInfo: null, partnerInfo: null, systemPopulation: 0,
+      systemName: 'Test', simultaneousPartners: ['Test 1 d'],
+      nextCollision: windows[0],
+    });
+    const c = fixture.componentInstance;
+    // Both crossing partners are surfaced for the "Bodies" line.
+    expect(c.collisionPartners).toEqual(['Test 1 c', 'Test 1 d']);
+    // Each window names its own partner (system prefix stripped).
+    expect(c.windowPartner(windows[0])).toBe('1 c');
+    expect(c.windowPartner(windows[1])).toBe('1 d');
+    // Overlap uses the window's own combined radii, not the status-level value.
+    expect(c.overlapPercentFor(windows[1])).toBeCloseTo((1 - 400 / 800) * 100, 6);
+    // Both partners appear in the rendered table.
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('1 c');
+    expect(el.textContent).toContain('1 d');
+  });
+
   it('shows the candidate heading and an explanatory note when timing data is missing', () => {
     const fixture = setup({
       bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,
