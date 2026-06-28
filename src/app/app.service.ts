@@ -111,6 +111,11 @@ export class AppService {
   /** Memoises the one-shot nebula asset load so concurrent callers share a single fetch. */
   private nebulaeLoad?: Promise<void>;
 
+  /** Optional timestamp override (ms since epoch) set via the `?t=` URL param for debugging. */
+  private readonly _nowOverride = signal<number | null>(null);
+  public readonly nowOverride: Signal<number | null> = this._nowOverride.asReadonly();
+  public setNowOverride(ms: number | null): void { this._nowOverride.set(ms); }
+
   constructor() {
     void this.loadCodexEntries();
     void this.loadEdastroSystems();

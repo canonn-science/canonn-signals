@@ -211,7 +211,9 @@ export class SystemBodyComponent implements OnChanges {
     // the async codex effect, which leave the orbital geometry untouched.
     if (this.collisionBody !== body) {
       this.collisionBody = body;
-      this.collisionStatus = this.orbitalRelations.detectCollisionStatus(body);
+      const nowOverride = this.appService.nowOverride();
+      this.collisionStatus = this.orbitalRelations.detectCollisionStatus(
+        body, nowOverride ?? Date.now());
     }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
