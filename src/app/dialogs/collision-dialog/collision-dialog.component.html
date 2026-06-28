@@ -49,6 +49,39 @@
       </ul>
     </div>
 
+    @if (data.upcomingCollisions.length > 0) {
+    <div class="upcoming-collisions">
+      <h3>Upcoming collisions</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Contact start (UTC)</th>
+            <th>Days until</th>
+            <th>Duration</th>
+            <th>Overlap</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of data.upcomingCollisions; track w.start.getTime(); let i = $index) {
+          <tr>
+            <td class="num">{{ i + 1 }}</td>
+            <td class="date">{{ w.start | date:'yyyy-MM-dd HH:mm':'UTC' }} UTC</td>
+            <td class="num">
+              {{ w.days | number:'1.0-0' }}
+              @if (yearsUntilFor(w) >= 1) {<span class="hint">({{ yearsUntilFor(w) | number:'1.1-1' }} yr)</span>}
+            </td>
+            <td>{{ formatDuration(w) }}</td>
+            <td class="num">
+              @if (overlapPercentFor(w); as pct) { {{ pct | number:'1.0-1' }}% }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
     <div class="explanation">
       <p><strong>What does this mean?</strong></p>
       <p>

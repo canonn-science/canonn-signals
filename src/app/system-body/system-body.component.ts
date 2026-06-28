@@ -985,6 +985,7 @@ export class SystemBodyComponent implements OnChanges {
         partnerName: status.partnerName,
         synodicPeriodDays: status.synodicPeriodDays,
         nextCollision: status.nextCollision,
+        upcomingCollisions: status.upcomingCollisions,
         combinedRadiiKm: status.combinedRadiiKm,
       } satisfies CollisionDialogData,
     });

@@ -10,6 +10,8 @@ export interface CollisionDialogData {
   partnerName: string | null;
   synodicPeriodDays: number | null;
   nextCollision: CollisionWindow | null;
+  /** Up to 10 upcoming contact windows in chronological order. */
+  upcomingCollisions: CollisionWindow[];
   /** Sum of the two bodies' radii (km) — the contact threshold. */
   combinedRadiiKm: number | null;
 }
@@ -69,5 +71,34 @@ export class CollisionDialogComponent {
   /** Synodic period expressed in years (for context alongside the day count). */
   public get synodicPeriodYears(): number | null {
     return this.data.synodicPeriodDays === null ? null : this.data.synodicPeriodDays / DAYS_PER_YEAR;
+  }
+
+  /**
+   * Contact-window duration as a human-readable string: e.g. "2 days 4 hours and 5 minutes".
+   * Any unit whose value is zero is omitted entirely.
+   */
+  public formatDuration(w: CollisionWindow): string {
+    const totalMinutes = Math.round((w.end.getTime() - w.start.getTime()) / 60000);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    const parts: string[] = [];
+    if (days > 0) { parts.push(`${days} day${days !== 1 ? 's' : ''}`); }
+    if (hours > 0) { parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`); }
+    if (minutes > 0) { parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`); }
+    if (parts.length === 0) { return 'less than 1 minute'; }
+    if (parts.length === 1) { return parts[0]; }
+    return parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+  }
+
+  /** Overlap percentage for a given contact window (0% = grazing, 100% = dead-on). */
+  public overlapPercentFor(w: CollisionWindow): number | null {
+    if (!this.data.combinedRadiiKm) { return null; }
+    return Math.max(0, (1 - w.minSeparationKm / this.data.combinedRadiiKm) * 100);
+  }
+
+  /** Years until the start of a contact window (for display alongside day counts). */
+  public yearsUntilFor(w: CollisionWindow): number {
+    return w.days / DAYS_PER_YEAR;
   }
 }
