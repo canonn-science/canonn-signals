@@ -1,7 +1,9 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
 import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faChartColumn, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { MatDialog } from '@angular/material/dialog';
+import { HistogramDialogComponent, HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/app/data/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
@@ -376,6 +378,21 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
   public readonly faFileCode = faFileCode;
   public readonly faMagnifyingGlass = faMagnifyingGlass;
+  public readonly faChartColumn = faChartColumn;
+  private readonly dialog = inject(MatDialog);
+
+  /** Opens the body-type histogram for the current system. */
+  public showBodyHistogram(): void {
+    const data = this.data();
+    if (!data) return;
+    this.dialog.open<HistogramDialogComponent, HistogramDialogData>(HistogramDialogComponent, {
+      width: '640px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: { systemName: data.system.name, bodies: data.system.bodies },
+    });
+  }
   private readonly _searching = signal(false);
   /** A system requested (e.g. via query param) while a search was already in flight. */
   private pendingSystemRequest: string | null = null;

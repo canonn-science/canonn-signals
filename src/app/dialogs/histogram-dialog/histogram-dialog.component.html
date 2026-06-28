@@ -1,0 +1,21 @@
+<app-dialog-shell [heading]="title">
+  @let chart = histogram();
+  @if (chart.bars.length) {
+    <div class="histogram" role="img"
+      [attr.aria-label]="'Distribution of ' + chart.total + ' bodies across ' + chart.bars.length + ' types'">
+      @for (bar of chart.bars; track bar.label) {
+        <div class="histogram-row">
+          <div class="histogram-label" [title]="bar.label">{{ bar.label }}</div>
+          <div class="histogram-track">
+            <div class="histogram-fill" [class]="'histogram-fill--' + bar.kind.toLowerCase()"
+              [style.width.%]="barWidth(bar.count)"></div>
+          </div>
+          <div class="histogram-count">{{ bar.count | number }}</div>
+        </div>
+      }
+    </div>
+    <div class="histogram-total">{{ chart.total | number }} bodies across {{ chart.bars.length | number }} types</div>
+  } @else {
+    <p class="histogram-empty">No bodies to chart for this system.</p>
+  }
+</app-dialog-shell>
