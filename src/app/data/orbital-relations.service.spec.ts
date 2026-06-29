@@ -1,5 +1,6 @@
 import { OrbitalRelationsService } from './orbital-relations.service';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
+import { BODY_TYPE } from './body-types';
 
 describe('OrbitalRelationsService', () => {
   let service: OrbitalRelationsService;
@@ -51,6 +52,23 @@ describe('OrbitalRelationsService', () => {
         { orbitalPeriod: 10, semiMajorAxis: 5, argOfPeriapsis: 180 },
       ]);
       expect(service.detectTrojanStatus(opposite).lagrangePoint).toBe('L3');
+    });
+
+    it('suppresses any status when the shared parent is a barycentre', () => {
+      // A barycentre is the centre of mass of a binary, not a real central body, so its
+      // children orbiting it (here a 180° pair that would otherwise read as L3) have no
+      // Lagrange host and therefore no Trojan/Lagrange status.
+      const [a, b] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 5, argOfPeriapsis: 0 },
+        { orbitalPeriod: 10, semiMajorAxis: 5, argOfPeriapsis: 180 },
+      ]);
+      // With the default (Star) parent the pair is detected as L3…
+      expect(service.detectTrojanStatus(a).lagrangePoint).toBe('L3');
+      // …but under a barycentre parent the status — and the whole diagram — is suppressed.
+      a.parent!.bodyData.type = BODY_TYPE.Barycentre;
+      expect(service.detectTrojanStatus(a).lagrangePoint).toBeNull();
+      expect(service.detectTrojanStatus(b).lagrangePoint).toBeNull();
+      expect(service.lagrangeConfiguration(a)).toBeNull();
     });
 
     it('distinguishes L1 (inner) from L2 (outer) for aligned same-period bodies', () => {

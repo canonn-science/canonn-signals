@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanonnBiostatsBody, SystemBody } from '../home/home.component';
+import { BODY_TYPE } from './body-types';
 
 /** The five Lagrange points of a two-body system. */
 export type LagrangePointId = 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
@@ -196,6 +197,14 @@ export class OrbitalRelationsService {
       return result;
     }
 
+    // A Lagrange configuration needs a real massive central body to define the points
+    // relative to. When the shared parent is a barycentre, the "co-orbital" siblings are
+    // really the components of a binary orbiting their own centre of mass — there is no
+    // third central body hosting Lagrange points — so there is no Trojan/Lagrange status.
+    if (body.parent.bodyData.type === BODY_TYPE.Barycentre) {
+      return result;
+    }
+
     // L3, L4, L5 candidates share the same orbital distance (semi-major axis).
     //
     // A body's true along-orbit position is its mean longitude λ = Ω + ω + M
@@ -278,6 +287,13 @@ export class OrbitalRelationsService {
     const parent = body.parent;
     const bd = body.bodyData;
     if (!parent || !bd.orbitalPeriod) {
+      return null;
+    }
+
+    // The centre of a Lagrange diagram is the body the family orbits; a barycentre is the
+    // centre of mass of a binary, not a real central body, so it can't host Lagrange points.
+    // Mirrors the guard in detectTrojanStatus, which already suppresses the badges here.
+    if (parent.bodyData.type === BODY_TYPE.Barycentre) {
       return null;
     }
 
