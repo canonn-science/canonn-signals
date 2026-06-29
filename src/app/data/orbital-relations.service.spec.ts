@@ -228,6 +228,26 @@ describe('OrbitalRelationsService', () => {
       expect(config.points.L5).toEqual([{ name: 'Child 1', bodyId: 1, isFocus: true }]);
       expect(config.points.L4).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: false }]);
     });
+
+    it('promotes one body of a 180° L3 binary to the secondary slot', () => {
+      // Cloomoo IL-Y e1 C / D: same radius and period, 180° apart in argOfPeriapsis with no
+      // recorded host, so both classify as L3. The diagram must read as a real two-body system,
+      // not two bodies stacked on one L3 point with an empty secondary.
+      const [c, d] = makeFamily([
+        { orbitalPeriod: 0.569169995960648, semiMajorAxis: 0.0101967507608476, argOfPeriapsis: 201.543965 },
+        { orbitalPeriod: 0.569169995960648, semiMajorAxis: 0.0101967507608476, argOfPeriapsis: 21.543971 },
+      ]);
+
+      // Opened from C: C stays at the L3 point it is badged with; its partner D fills the secondary slot.
+      const fromC = service.lagrangeConfiguration(c)!;
+      expect(fromC.points.L3).toEqual([{ name: 'Child 1', bodyId: 1, isFocus: true }]);
+      expect(fromC.secondary).toEqual({ name: 'Child 2', bodyId: 2, isFocus: false });
+
+      // Opened from D: symmetric — D is at L3 (focused), C is promoted to the secondary slot.
+      const fromD = service.lagrangeConfiguration(d)!;
+      expect(fromD.points.L3).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: true }]);
+      expect(fromD.secondary).toEqual({ name: 'Child 1', bodyId: 1, isFocus: false });
+    });
   });
 
   describe('detectRosetteStatus', () => {

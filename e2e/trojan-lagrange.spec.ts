@@ -179,7 +179,7 @@ test.describe('Lagrange points dialog', () => {
     await expect(svg.locator('circle.placeholder')).toHaveCount(4);
   });
 
-  test('L3 badge opens the diagram with both opposed bodies sharing the L3 point', async ({ page }) => {
+  test('L3 badge opens the diagram with the partner promoted to the secondary slot', async ({ page }) => {
     await loadFixtureSystem(page, byName('Cloomoo IL-Y e1'));
 
     // Body 6 (C) is labelled L3; clicking it opens the diagram with C focused.
@@ -187,16 +187,47 @@ test.describe('Lagrange points dialog', () => {
 
     const svg = page.locator('app-lagrange-dialog svg');
     await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
-    // Both opposed siblings occupy the single L3 slot, captioned together with the prefix stripped.
-    await expect(svg).toContainText('C, D');
+    // The 180° pair is drawn as a real two-body system: C at L3 (its badge), D as the secondary
+    // opposite it — not both stacked on L3 with an empty secondary. Prefixes are stripped.
+    await expect(svg).toContainText('C');
+    await expect(svg).toContainText('D');
     await expect(svg).not.toContainText('Cloomoo IL-Y e1 C');
+    // The secondary slot is filled (a real body), so its placeholder caption is gone.
+    await expect(svg).not.toContainText('secondary');
     for (const id of ['L1', 'L2', 'L3', 'L4', 'L5']) {
       await expect(svg).toContainText(id);
     }
-    // The two bodies share one L3 marker, drawn once and highlighted (the clicked body is among them).
+    // Two real bodies — C at L3 (focused, the clicked body) and D in the secondary slot.
     await expect(svg.locator('circle.body.focus')).toHaveCount(1);
-    await expect(svg.locator('circle.body')).toHaveCount(1);
-    // L1/L2/L4/L5 + the empty secondary slot (no recorded host) are placeholders.
-    await expect(svg.locator('circle.placeholder')).toHaveCount(5);
+    await expect(svg.locator('circle.body')).toHaveCount(2);
+    // Only the four empty Lagrange points (L1/L2/L4/L5) remain as placeholders.
+    await expect(svg.locator('circle.placeholder')).toHaveCount(4);
+  });
+
+  test('renders the L3 body name below its marker, level with the secondary', async ({ page }) => {
+    await loadFixtureSystem(page, byName('Cloomoo IL-Y e1'));
+    await page.locator('#body-6 > .body-title .badge.badge-blue', { hasText: 'L3' }).click();
+
+    const svg = page.locator('app-lagrange-dialog svg');
+    await expect(svg).toBeVisible();
+
+    // C occupies the L3 point on the left (the focused marker); its name is the text caption for it.
+    // Match the captions exactly: `hasText` substring matching is case-insensitive, so a future
+    // co-orbital body named e.g. "C 1" would otherwise also match and silently pick the wrong node
+    // (boundingBox doesn't enforce strict single-match).
+    const l3Marker = svg.locator('circle.body.focus');
+    const cName = svg.locator('text.body-name', { hasText: /^C$/ });
+    const dName = svg.locator('text.body-name', { hasText: /^D$/ });
+    const [markerBox, cBox, dBox] = await Promise.all([
+      l3Marker.boundingBox(),
+      cName.boundingBox(),
+      dName.boundingBox(),
+    ]);
+    expect(markerBox && cBox && dBox).toBeTruthy();
+
+    // The name sits fully below the L3 marker — not floating above it as it did before the fix.
+    expect(cBox!.y).toBeGreaterThan(markerBox!.y + markerBox!.height);
+    // …and on the same horizontal band as the secondary (D) opposite it, so the pair reads together.
+    expect(Math.abs(cBox!.y - dBox!.y)).toBeLessThan(2);
   });
 });

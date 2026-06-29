@@ -307,6 +307,19 @@ export class OrbitalRelationsService {
       }
     }
 
+    // A 180° "binary" — two comparable bodies opposite each other with no recorded host —
+    // makes every sibling classify as the *other's* L3, so both pile onto the single L3
+    // marker while the secondary slot sits empty. That is geometrically self-contradictory:
+    // L3 is defined relative to a secondary the diagram would then be drawing as absent.
+    // Promote one of the pair into the secondary slot so the schematic reads as a real
+    // two-body system (secondary on the orbit, its partner opposite at L3). Keep the focused
+    // body — the one whose L3 badge was clicked — at L3 and lift its partner up, so whichever
+    // body opened the dialog is drawn at the L3 point its own badge advertises.
+    if (!secondary && points.L3.length > 1) {
+      const partnerIndex = Math.max(0, points.L3.findIndex(o => !o.isFocus));
+      [secondary] = points.L3.splice(partnerIndex, 1);
+    }
+
     const hasOccupant = secondary !== null || Object.values(points).some(slot => slot.length > 0);
     if (!hasOccupant) {
       return null;

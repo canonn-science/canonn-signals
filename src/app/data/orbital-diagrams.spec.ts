@@ -214,6 +214,15 @@ describe('orbital-diagrams', () => {
       }
     });
 
+    it('drops the L3 body name below its marker, on the secondary caption band', () => {
+      const l3 = d.markers.find(m => m.id === 'L3')!;
+      // The "L3" caption stays above the marker; the occupying body's name hangs below it…
+      expect(l3.label.y).toBeLessThan(l3.point.y);
+      expect(l3.nameLabel.y).toBeGreaterThan(l3.point.y);
+      // …on the same horizontal band as the secondary opposite it, so the two read as a pair.
+      expect(l3.nameLabel.y).toBeCloseTo(d.secondaryLabel.y, 6);
+    });
+
     it('keeps every drawn point within the view box', () => {
       const pts = [d.center, d.secondary, ...d.markers.map(m => m.point)];
       for (const p of pts) {

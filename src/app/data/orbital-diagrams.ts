@@ -51,11 +51,12 @@ export interface PeriapsisDiagram {
   arc: string;
 }
 
-/** One Lagrange point's marker position and the anchor for its "Lx" label. */
+/** One Lagrange point's marker position and the anchors for its captions. */
 export interface LagrangeMarker {
   id: 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
-  point: Point;  // where the marker (and any occupying body) is drawn
-  label: Point;  // anchor for the "Lx" caption, nudged clear of the marker
+  point: Point;      // where the marker (and any occupying body) is drawn
+  label: Point;      // anchor for the "Lx" caption, nudged clear of the marker
+  nameLabel: Point;  // anchor for an occupying body's name (placed below its marker)
 }
 
 export interface LagrangeDiagram {
@@ -260,12 +261,21 @@ export function lagrangeDiagram(): LagrangeDiagram {
   const l1: Point = { x: center.x + orbitRadius - 12, y: center.y };
   const l2: Point = { x: center.x + orbitRadius + 11, y: center.y };
 
+  const l3Label = { x: r(center.x - orbitRadius), y: r(center.y - 9) };
+  const l4Label = roundPoint(pointAt(center.x, center.y, orbitRadius + 13, 60));
+  const l5Label = roundPoint(pointAt(center.x, center.y, orbitRadius + 13, -60));
+
+  // An occupying body's name sits just below its "Lx" caption by default. The lone exception
+  // is L3: it shares the horizontal axis with the secondary opposite it, whose name hangs below
+  // its marker — so L3's name drops below its marker too, keeping the two bodies' captions on a
+  // matching band rather than leaving the left one floating above the point.
+  const below = (p: Point): Point => ({ x: p.x, y: r(p.y + 6) });
   const markers: LagrangeMarker[] = [
-    { id: 'L1', point: roundPoint(l1), label: { x: r(l1.x), y: r(center.y - 9) } },
-    { id: 'L2', point: roundPoint(l2), label: { x: r(l2.x), y: r(center.y - 9) } },
-    { id: 'L3', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 180)), label: { x: r(center.x - orbitRadius), y: r(center.y - 9) } },
-    { id: 'L4', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 60)), label: roundPoint(pointAt(center.x, center.y, orbitRadius + 13, 60)) },
-    { id: 'L5', point: roundPoint(pointAt(center.x, center.y, orbitRadius, -60)), label: roundPoint(pointAt(center.x, center.y, orbitRadius + 13, -60)) },
+    { id: 'L1', point: roundPoint(l1), label: { x: r(l1.x), y: r(center.y - 9) }, nameLabel: { x: r(l1.x), y: r(center.y - 3) } },
+    { id: 'L2', point: roundPoint(l2), label: { x: r(l2.x), y: r(center.y - 9) }, nameLabel: { x: r(l2.x), y: r(center.y - 3) } },
+    { id: 'L3', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 180)), label: l3Label, nameLabel: { x: l3Label.x, y: r(center.y + 11) } },
+    { id: 'L4', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 60)), label: l4Label, nameLabel: below(l4Label) },
+    { id: 'L5', point: roundPoint(pointAt(center.x, center.y, orbitRadius, -60)), label: l5Label, nameLabel: below(l5Label) },
   ];
 
   return {
