@@ -81,6 +81,18 @@ const SYSTEMS: TrojanSystem[] = [
       { bodyId: 39, name: 'Eorld Byio AA-A h539 A 19', badge: 'L5', tooltip: 'Trojan at Lagrange L5 — click for the diagram' },
     ],
   },
+  {
+    // C and D share an exact semi-major axis and orbital period but sit 180° apart in
+    // argOfPeriapsis (201.54° vs 21.54°) with ascendingNode and meanAnomaly held equal —
+    // the classic L3 opposition. Each body therefore carries an L3 badge.
+    fixture: 'cloomoo-il-y-e1.json',
+    systemName: 'Cloomoo IL-Y e1',
+    id64: 6033516940,
+    badges: [
+      { bodyId: 6, name: 'Cloomoo IL-Y e1 C', badge: 'L3', tooltip: 'Trojan at Lagrange L3 — click for the diagram' },
+      { bodyId: 7, name: 'Cloomoo IL-Y e1 D', badge: 'L3', tooltip: 'Trojan at Lagrange L3 — click for the diagram' },
+    ],
+  },
 ];
 
 /**
@@ -165,5 +177,26 @@ test.describe('Lagrange points dialog', () => {
     // L4 + L5 bodies; L1/L2/L3 + the empty secondary slot are placeholders.
     await expect(svg.locator('circle.body')).toHaveCount(2);
     await expect(svg.locator('circle.placeholder')).toHaveCount(4);
+  });
+
+  test('L3 badge opens the diagram with both opposed bodies sharing the L3 point', async ({ page }) => {
+    await loadFixtureSystem(page, byName('Cloomoo IL-Y e1'));
+
+    // Body 6 (C) is labelled L3; clicking it opens the diagram with C focused.
+    await page.locator('#body-6 > .body-title .badge.badge-blue', { hasText: 'L3' }).click();
+
+    const svg = page.locator('app-lagrange-dialog svg');
+    await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
+    // Both opposed siblings occupy the single L3 slot, captioned together with the prefix stripped.
+    await expect(svg).toContainText('C, D');
+    await expect(svg).not.toContainText('Cloomoo IL-Y e1 C');
+    for (const id of ['L1', 'L2', 'L3', 'L4', 'L5']) {
+      await expect(svg).toContainText(id);
+    }
+    // The two bodies share one L3 marker, drawn once and highlighted (the clicked body is among them).
+    await expect(svg.locator('circle.body.focus')).toHaveCount(1);
+    await expect(svg.locator('circle.body')).toHaveCount(1);
+    // L1/L2/L4/L5 + the empty secondary slot (no recorded host) are placeholders.
+    await expect(svg.locator('circle.placeholder')).toHaveCount(5);
   });
 });
