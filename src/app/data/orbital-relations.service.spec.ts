@@ -54,21 +54,64 @@ describe('OrbitalRelationsService', () => {
       expect(service.detectTrojanStatus(opposite).lagrangePoint).toBe('L3');
     });
 
-    it('suppresses any status when the shared parent is a barycentre', () => {
-      // A barycentre is the centre of mass of a binary, not a real central body, so its
-      // children orbiting it (here a 180° pair that would otherwise read as L3) have no
-      // Lagrange host and therefore no Trojan/Lagrange status.
+    it('suppresses the L3 of a 180° pair when the shared parent is a barycentre', () => {
+      // A barycentre is the centre of mass of a binary, not a real central body, so a 180°
+      // pair orbiting it is just the two components opposite each other — there is no third
+      // central body hosting an L3, so the opposition is left unbadged (Cloomoo IL-Y e1 C/D).
       const [a, b] = makeFamily([
         { orbitalPeriod: 10, semiMajorAxis: 5, argOfPeriapsis: 0 },
         { orbitalPeriod: 10, semiMajorAxis: 5, argOfPeriapsis: 180 },
       ]);
       // With the default (Star) parent the pair is detected as L3…
       expect(service.detectTrojanStatus(a).lagrangePoint).toBe('L3');
-      // …but under a barycentre parent the status — and the whole diagram — is suppressed.
+      // …but under a barycentre parent the L3 — and the whole diagram — is suppressed.
       a.parent!.bodyData.type = BODY_TYPE.Barycentre;
       expect(service.detectTrojanStatus(a).lagrangePoint).toBeNull();
       expect(service.detectTrojanStatus(b).lagrangePoint).toBeNull();
       expect(service.lagrangeConfiguration(a)).toBeNull();
+    });
+
+    it('still detects a ±60° Trojan host under a barycentre (Hyuqoae GH-V f2-368 AB 2/3/4)', () => {
+      // Unlike a 180° binary, a ±60° co-orbital trio has a genuine massive secondary (the
+      // host) its companions hang off, so the configuration is real even when the trio orbits
+      // a barycentre. AB 2 (a T Tauri star) sits between AB 3 (+60°) and AB 4 (−60°), all at
+      // the same radius around barycentre 1 — verbatim argOfPeriapsis from the Spansh dump.
+      const [ab2, ab3, ab4] = makeFamily([
+        { orbitalPeriod: 1159.38864, semiMajorAxis: 5.35998361098975, argOfPeriapsis: 134.271718 },
+        { orbitalPeriod: 1159.38864, semiMajorAxis: 5.35998361098975, argOfPeriapsis: 194.271716 },
+        { orbitalPeriod: 1159.38864, semiMajorAxis: 5.35998361098975, argOfPeriapsis: 74.27172 },
+      ]);
+      ab2.parent!.bodyData.type = BODY_TYPE.Barycentre;
+
+      const host = service.detectTrojanStatus(ab2);
+      expect(host.isHost).toBe(true);
+      expect(host.lagrangePoint).toBeNull();
+      expect(service.detectTrojanStatus(ab3).lagrangePoint).toBe('L4');
+      expect(service.detectTrojanStatus(ab4).lagrangePoint).toBe('L5');
+
+      // The diagram builds too, centred on the barycentre as the primary.
+      const config = service.lagrangeConfiguration(ab3)!;
+      expect(config.primaryName).toBe('Parent');
+      expect(config.secondary).toEqual({ name: 'Child 1', bodyId: 1, isFocus: false });
+      expect(config.points.L4).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: true }]);
+      expect(config.points.L5).toEqual([{ name: 'Child 3', bodyId: 3, isFocus: false }]);
+      expect(config.points.L3).toEqual([]);
+    });
+
+    it('suppresses L1/L2 when the shared parent is a barycentre', () => {
+      // L1/L2 (like L3) are defined relative to a real central body, so an aligned
+      // same-period pair that reads as L1/L2 around a star is left unbadged around a
+      // barycentre — only a ±60° Trojan host survives there.
+      const [inner, outer] = makeFamily([
+        { orbitalPeriod: 10, semiMajorAxis: 4, argOfPeriapsis: 30, ascendingNode: 50 },
+        { orbitalPeriod: 10, semiMajorAxis: 6, argOfPeriapsis: 30, ascendingNode: 50 },
+      ]);
+      // With the default (Star) parent the pair reads as L1 / L2…
+      expect(service.detectTrojanStatus(inner).lagrangePoint).toBe('L1');
+      // …but under a barycentre parent both are suppressed.
+      inner.parent!.bodyData.type = BODY_TYPE.Barycentre;
+      expect(service.detectTrojanStatus(inner).lagrangePoint).toBeNull();
+      expect(service.detectTrojanStatus(outer).lagrangePoint).toBeNull();
     });
 
     it('distinguishes L1 (inner) from L2 (outer) for aligned same-period bodies', () => {

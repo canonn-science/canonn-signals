@@ -197,13 +197,15 @@ export class OrbitalRelationsService {
       return result;
     }
 
-    // A Lagrange configuration needs a real massive central body to define the points
-    // relative to. When the shared parent is a barycentre, the "co-orbital" siblings are
-    // really the components of a binary orbiting their own centre of mass — there is no
-    // third central body hosting Lagrange points — so there is no Trojan/Lagrange status.
-    if (body.parent.bodyData.type === BODY_TYPE.Barycentre) {
-      return result;
-    }
+    // L1, L2 and L3 are defined relative to a real massive central body. When the shared
+    // parent is a barycentre there is no such third body — its children are the components
+    // of a binary (or families) orbiting a centre of mass — so those points are suppressed
+    // below (the L3 branch and the L1/L2 block both bail on `parentIsBarycentre`). A ±60°
+    // Trojan host, by contrast, *is* the massive co-orbital secondary its companions hang
+    // off, so it remains valid even around a barycentre; we therefore no longer suppress the
+    // whole family here (commit 97d9a50 did, which also hid genuine barycentre-orbiting
+    // Trojan hosts like Hyuqoae GH-V f2-368 AB 2/3/4).
+    const parentIsBarycentre = body.parent.bodyData.type === BODY_TYPE.Barycentre;
 
     // L3, L4, L5 candidates share the same orbital distance (semi-major axis).
     //
@@ -245,10 +247,21 @@ export class OrbitalRelationsService {
         const relativePos = this.signedAngleDiff(bd.argOfPeriapsis!, sibling.bodyData.argOfPeriapsis!);
         result.lagrangePoint = relativePos > 0 ? 'L4' : 'L5';
         return result;
-      } else if (Math.abs(normalizedDiff - 180) < ANGLE_TOLERANCE_DEG) {
+      } else if (!parentIsBarycentre && Math.abs(normalizedDiff - 180) < ANGLE_TOLERANCE_DEG) {
+        // 180° opposition → L3, but only around a real central body. A 180° pair orbiting a
+        // barycentre is a binary, not an L3, so it falls through here and is left unbadged.
         result.lagrangePoint = 'L3';
         return result;
       }
+    }
+
+    // L1 and L2 (like L3) are defined relative to a real massive central body, so under a
+    // barycentre none of them apply — only the ±60° Trojan host detected above (which is
+    // itself the massive co-orbital secondary) survives. A binary's components are 180°
+    // opposed, never aligned, so the L1/L2 test below can't misfire on one anyway, but we
+    // stop here to keep the barycentre rule symmetric with the suppressed L3.
+    if (parentIsBarycentre) {
+      return result;
     }
 
     // L1, L2 share the orbital period but sit at a different distance, aligned in
@@ -290,12 +303,11 @@ export class OrbitalRelationsService {
       return null;
     }
 
-    // The centre of a Lagrange diagram is the body the family orbits; a barycentre is the
-    // centre of mass of a binary, not a real central body, so it can't host Lagrange points.
-    // Mirrors the guard in detectTrojanStatus, which already suppresses the badges here.
-    if (parent.bodyData.type === BODY_TYPE.Barycentre) {
-      return null;
-    }
+    // A barycentre can be the centre of a genuine Trojan configuration (its mass hosts a
+    // ±60° co-orbital secondary at L4/L5), so — unlike commit 97d9a50, which bailed out for
+    // every barycentre — we build the diagram and let detectTrojanStatus decide per member.
+    // A plain 180° binary orbiting a barycentre yields no classified members (its L3 is
+    // suppressed there), so the family below has no occupants and we still return null.
 
     // The co-orbital family: every sibling sharing this body's orbital period (so L1/L2
     // partners at a different radius are included too), plus `body` itself — it already

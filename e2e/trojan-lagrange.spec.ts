@@ -6,10 +6,12 @@ import { loadFixtureSystem, type FixtureOptions } from './support/system-fixture
  *
  * The unit suite (`orbital-relations.service.spec.ts`) pins the detection maths; these
  * tests close the loop by proving the full pipeline — biostats parse → body-tree build →
- * co-orbital detection → header badge — lights up the right badge on the right body for
- * five real systems. They are genuine same-radius ±60° Trojans (not 180° binaries), each
- * encoding the entire offset in `argOfPeriapsis` with ascendingNode/meanAnomaly held equal
- * across siblings — see the fixtures under `e2e/fixtures/` and the service-spec rationale.
+ * co-orbital detection → header badge — lights up the right badge on the right body across
+ * several real systems. Most are genuine same-radius ±60° Trojans, each encoding the entire
+ * offset in `argOfPeriapsis` with ascendingNode/meanAnomaly held equal across siblings;
+ * Hyuqoae GH-V f2-368 adds a Trojan host that orbits a barycentre, and Cloomoo IL-Y e1
+ * covers a same-radius 180° binary whose L3 is suppressed under its barycentre — see the
+ * fixtures under `e2e/fixtures/` and the service-spec rationale.
  *
  * A body's own header carries the badge as `<span class="badge badge-blue">` with text
  * "L4"/"L5" (a Trojan) or "Host" (the co-orbital primary, companions at both L4 and L5).
@@ -79,6 +81,24 @@ const SYSTEMS: TrojanSystem[] = [
       { bodyId: 35, name: 'Eorld Byio AA-A h539 barycentre', badge: 'Host', tooltip: HOST_TOOLTIP },
       { bodyId: 38, name: 'Eorld Byio AA-A h539 A 18', badge: 'L4', tooltip: 'Trojan at Lagrange L4 — click for the diagram' },
       { bodyId: 39, name: 'Eorld Byio AA-A h539 A 19', badge: 'L5', tooltip: 'Trojan at Lagrange L5 — click for the diagram' },
+    ],
+  },
+  {
+    // AB 2 / AB 3 / AB 4 are a same-radius ±60° Trojan trio — AB 2 (a T Tauri star) is the
+    // host, AB 3 leads at +60° (L4), AB 4 trails at −60° (L5) — but they orbit *barycentre 1*,
+    // not a star. They are still badged: a Trojan host is a real massive secondary even around
+    // a barycentre (commit 97d9a50 wrongly suppressed these). The same-radius 180° L3
+    // suppression under a barycentre is covered by Cloomoo C/D below; here the three 180°
+    // stellar pairs (A/B, AB 5/6, AB 7/8) sit at *different* radii, so they aren't co-orbital
+    // L-point candidates at all — the suppression test confirms the trojan fix doesn't bleed
+    // a badge onto them.
+    fixture: 'hyuqoae-gh-v-f2-368.json',
+    systemName: 'Hyuqoae GH-V f2-368',
+    id64: 197707429341,
+    badges: [
+      { bodyId: 13, name: 'Hyuqoae GH-V f2-368 AB 2', badge: 'Host', tooltip: HOST_TOOLTIP },
+      { bodyId: 15, name: 'Hyuqoae GH-V f2-368 AB 3', badge: 'L4', tooltip: 'Trojan at Lagrange L4 — click for the diagram' },
+      { bodyId: 16, name: 'Hyuqoae GH-V f2-368 AB 4', badge: 'L5', tooltip: 'Trojan at Lagrange L5 — click for the diagram' },
     ],
   },
   {
@@ -230,4 +250,65 @@ test.describe('Lagrange points dialog', () => {
     // With nothing to click, the diagram is never created.
     await expect(page.locator('app-lagrange-dialog')).toHaveCount(0);
   });
+
+  test('badges a barycentre Trojan host but not the same system\'s 180° binaries', async ({ page }) => {
+    await loadFixtureSystem(page, byName('Hyuqoae GH-V f2-368'));
+
+    // AB 2 (body 13) hosts AB 3 / AB 4 at ±60° around barycentre 1 → it is badged Host, and
+    // clicking opens the diagram centred on the barycentre as the primary.
+    await page.locator('#body-13 > .body-title .badge.badge-blue', { hasText: 'Host' }).click();
+    const svg = page.locator('app-lagrange-dialog svg');
+    await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
+    await expect(svg).toContainText('AB 2');
+    await expect(svg).toContainText('AB 3');
+    await expect(svg).toContainText('AB 4');
+    // The barycentre is the primary at the centre (system prefix stripped).
+    await expect(svg).toContainText('barycentre 1');
+    // Host + L4 + L5 are real bodies; L1/L2/L3 stay placeholders.
+    await expect(svg.locator('circle.body')).toHaveCount(3);
+    await expect(svg.locator('circle.placeholder')).toHaveCount(3);
+
+    // The system's three 180° stellar pairs (A/B, AB 5/6, AB 7/8) sit at different radii, so
+    // they are not co-orbital L-point candidates — they must carry no Trojan/Lagrange badge,
+    // confirming the trojan fix above doesn't bleed onto a barycentre's other children.
+    // (The same-radius 180° L3-suppression guard itself is exercised by the Cloomoo test.)
+    for (const bodyId of [2, 3, 18, 19, 21, 22]) {
+      const header = page.locator(`#body-${bodyId} > .body-title`);
+      await expect(header, `#body-${bodyId} header should render`).toBeVisible();
+      await expect(
+        header.locator('.badge.badge-blue').filter({ hasText: /^(L[1-5]|Host)$/ }),
+        `#body-${bodyId} should carry no Trojan/Lagrange badge`,
+      ).toHaveCount(0);
+    }
+  });
+
+  // Open the same AB 2/3/4 family from each member and confirm the diagram is identical —
+  // host AB 2 always fills the secondary slot, AB 3/AB 4 stay on L4/L5 — with the focus
+  // highlight tracking whichever body was clicked.
+  for (const { bodyId, badge, name } of [
+    { bodyId: 13, badge: 'Host', name: 'AB 2' },
+    { bodyId: 15, badge: 'L4', name: 'AB 3' },
+    { bodyId: 16, badge: 'L5', name: 'AB 4' },
+  ] as const) {
+    test(`opens the AB 2/3/4 barycentre Trojan diagram from ${name} (${badge})`, async ({ page }) => {
+      await loadFixtureSystem(page, byName('Hyuqoae GH-V f2-368'));
+
+      await page.locator(`#body-${bodyId} > .body-title .badge.badge-blue`, { hasText: badge }).click();
+
+      const svg = page.locator('app-lagrange-dialog svg');
+      await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
+      // Host AB 2 (secondary) + AB 3 (L4) + AB 4 (L5) are all drawn, around barycentre 1.
+      await expect(svg).toContainText('AB 2');
+      await expect(svg).toContainText('AB 3');
+      await expect(svg).toContainText('AB 4');
+      await expect(svg).toContainText('barycentre 1');
+      // The host fills the secondary slot, so it is never a "secondary" placeholder caption.
+      await expect(svg).not.toContainText('secondary');
+      // Three real bodies (host + L4 + L5); L1/L2/L3 remain placeholders.
+      await expect(svg.locator('circle.body')).toHaveCount(3);
+      await expect(svg.locator('circle.placeholder')).toHaveCount(3);
+      // Exactly the clicked body is highlighted.
+      await expect(svg.locator('circle.body.focus')).toHaveCount(1);
+    });
+  }
 });

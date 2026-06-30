@@ -1,0 +1,751 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "argOfPeriapsis": 109.366434, 
+        "ascendingNode": -36.728229, 
+        "bodyId": 1, 
+        "id64": 36028994726393309, 
+        "meanAnomaly": 250.135333, 
+        "name": "Hyuqoae GH-V f2-368 barycentre 1", 
+        "orbitalEccentricity": 0.018647, 
+        "orbitalInclination": -24.77492, 
+        "orbitalPeriod": 221067.501438989, 
+        "semiMajorAxis": 36.688103011163, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2023-03-19T16:20:05Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2023-03-19 16:20:05+00"
+      }, 
+      {
+        "absoluteMagnitude": 9.852539, 
+        "age": 2, 
+        "argOfPeriapsis": 246.855099, 
+        "ascendingNode": 9.389044, 
+        "axialTilt": 0.0, 
+        "belts": [
+          {
+            "innerRadius": 268270000.0, 
+            "mass": 814410000000000.0, 
+            "name": "Hyuqoae GH-V f2-368 A A Belt", 
+            "outerRadius": 5194700000.0, 
+            "type": "Metallic"
+          }
+        ], 
+        "bodyId": 2, 
+        "distanceToArrival": 0.0, 
+        "id64": 72057791745357277, 
+        "luminosity": "VI", 
+        "mainStar": true, 
+        "meanAnomaly": 173.627046, 
+        "name": "Hyuqoae GH-V f2-368 A", 
+        "orbitalEccentricity": 0.030209, 
+        "orbitalInclination": -8.435659, 
+        "orbitalPeriod": 276.581273862604, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.0665819440972222, 
+        "semiMajorAxis": 0.690326955647963, 
+        "solarMasses": 9.976563, 
+        "solarRadius": 0.206726050323508, 
+        "spectralClass": "AeBe8", 
+        "stations": [], 
+        "subType": "Herbig Ae/Be Star", 
+        "surfaceTemperature": 3999.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:05Z", 
+          "meanAnomaly": "2023-03-19T16:20:05Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:05+00"
+      }, 
+      {
+        "absoluteMagnitude": -1.713486, 
+        "age": 2, 
+        "argOfPeriapsis": 66.855104, 
+        "ascendingNode": 9.389044, 
+        "axialTilt": 0.0, 
+        "bodyId": 3, 
+        "distanceToArrival": 1054.097151, 
+        "id64": 108086588764321245, 
+        "luminosity": "Vz", 
+        "meanAnomaly": 173.627058, 
+        "name": "Hyuqoae GH-V f2-368 B", 
+        "orbitalEccentricity": 0.030209, 
+        "orbitalInclination": -8.435659, 
+        "orbitalPeriod": 276.581273862604, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.959768594201389, 
+        "semiMajorAxis": 1.36047980261348, 
+        "solarMasses": 5.0625, 
+        "solarRadius": 2.77911354708843, 
+        "spectralClass": "B0", 
+        "stations": [], 
+        "subType": "B (Blue-White) Star", 
+        "surfaceTemperature": 15632.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:06Z", 
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "absoluteMagnitude": -0.152802, 
+        "age": 2, 
+        "argOfPeriapsis": 289.366428, 
+        "ascendingNode": -36.728229, 
+        "axialTilt": 0.0, 
+        "bodyId": 4, 
+        "distanceToArrival": 96085.427759, 
+        "id64": 144115385783285213, 
+        "luminosity": "Vz", 
+        "meanAnomaly": 250.135333, 
+        "name": "Hyuqoae GH-V f2-368 C", 
+        "orbitalEccentricity": 0.018647, 
+        "orbitalInclination": -24.77492, 
+        "orbitalPeriod": 221067.501438989, 
+        "parents": [
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.953280565787037, 
+        "semiMajorAxis": 153.98837308771, 
+        "solarMasses": 3.640625, 
+        "solarRadius": 2.1477658317757, 
+        "spectralClass": "B0", 
+        "stations": [], 
+        "subType": "B (Blue-White) Star", 
+        "surfaceTemperature": 12415.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:06Z", 
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "absoluteMagnitude": 16.070679, 
+        "age": 2, 
+        "argOfPeriapsis": 124.012879, 
+        "ascendingNode": 23.115559, 
+        "axialTilt": -2.536546, 
+        "bodyId": 12, 
+        "distanceToArrival": 2034.030178, 
+        "id64": 432345761934996957, 
+        "luminosity": "VI", 
+        "meanAnomaly": 136.92159, 
+        "name": "Hyuqoae GH-V f2-368 AB 1", 
+        "orbitalEccentricity": 0.01, 
+        "orbitalInclination": 0.027107, 
+        "orbitalPeriod": 570.710851914352, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 1.77805319981482, 
+        "semiMajorAxis": 3.3416031175574, 
+        "solarMasses": 0.082031, 
+        "solarRadius": 0.2225646930266, 
+        "spectralClass": "TTS6", 
+        "stations": [], 
+        "subType": "T Tauri Star", 
+        "surfaceTemperature": 921.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:06Z", 
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "absoluteMagnitude": 17.870773, 
+        "age": 2, 
+        "argOfPeriapsis": 134.271718, 
+        "ascendingNode": 167.443119, 
+        "axialTilt": 2.99549, 
+        "bodyId": 13, 
+        "distanceToArrival": 2393.264912, 
+        "id64": 468374558953960925, 
+        "luminosity": "VI", 
+        "meanAnomaly": 80.552574, 
+        "name": "Hyuqoae GH-V f2-368 AB 2", 
+        "orbitalEccentricity": 5.3e-05, 
+        "orbitalInclination": 0.280852, 
+        "orbitalPeriod": 1159.38864096447, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.577998723912037, 
+        "semiMajorAxis": 5.35998361098975, 
+        "solarMasses": 0.042969, 
+        "solarRadius": 0.150512667145938, 
+        "spectralClass": "TTS9", 
+        "stations": [], 
+        "subType": "T Tauri Star", 
+        "surfaceTemperature": 740.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:06Z", 
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "argOfPeriapsis": 1.770638, 
+        "ascendingNode": 167.374339, 
+        "atmosphereType": null, 
+        "axialTilt": -0.188433, 
+        "bodyId": 14, 
+        "distanceToArrival": 2405.272826, 
+        "earthMasses": 0.025277, 
+        "gravity": 0.252970531253186, 
+        "id64": 504403355972924893, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 14.520767, 
+          "Chromium": 8.659201, 
+          "Germanium": 5.074257, 
+          "Iron": 19.254086, 
+          "Manganese": 7.95174, 
+          "Mercury": 0.840794, 
+          "Molybdenum": 1.25728, 
+          "Nickel": 14.562983, 
+          "Phosphorus": 9.296445, 
+          "Sulphur": 17.2682, 
+          "Tellurium": 1.314243
+        }, 
+        "meanAnomaly": 252.514523, 
+        "name": "Hyuqoae GH-V f2-368 AB 2 a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 89.964291, 
+        "orbitalPeriod": 102.521174207882, 
+        "parents": [
+          {
+            "Star": 13
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 2015.16625, 
+        "rotationalPeriod": 0.66796377619213, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.151911998202538, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 13.9335, 
+          "Rock": 85.9483
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 576.194519, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:21Z", 
+          "meanAnomaly": "2023-03-19T16:20:21Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2023-03-19 16:20:21+00"
+      }, 
+      {
+        "argOfPeriapsis": 194.271716, 
+        "ascendingNode": 167.443119, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 98.245087, 
+          "Silicates": 0.705356, 
+          "Sulphur dioxide": 0.982451
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide", 
+        "axialTilt": 0.484315, 
+        "bodyId": 15, 
+        "distanceToArrival": 2729.48248, 
+        "earthMasses": 2.538967, 
+        "gravity": 1.61009228102376, 
+        "id64": 540432152991888861, 
+        "isLandable": false, 
+        "meanAnomaly": 80.552613, 
+        "name": "Hyuqoae GH-V f2-368 AB 3", 
+        "orbitalEccentricity": 5.3e-05, 
+        "orbitalInclination": 0.280852, 
+        "orbitalPeriod": 1159.38864096447, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 8005.523, 
+        "rotationalPeriod": 0.437838859097222, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.35998361098975, 
+        "solidComposition": {
+          "Ice": 0.8715, 
+          "Metal": 32.6422, 
+          "Rock": 66.4864
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 1686.70460399704, 
+        "surfaceTemperature": 2235.307617, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:17Z", 
+          "meanAnomaly": "2023-03-19T16:20:17Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2023-03-19 16:20:17+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 74.27172, 
+        "ascendingNode": 167.443119, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 98.916832, 
+          "Silicates": 0.093773, 
+          "Sulphur dioxide": 0.989168
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide", 
+        "axialTilt": 0.070373, 
+        "bodyId": 16, 
+        "distanceToArrival": 2357.373492, 
+        "earthMasses": 2.297379, 
+        "gravity": 1.55345834607933, 
+        "id64": 576460950010852829, 
+        "isLandable": false, 
+        "meanAnomaly": 80.55267, 
+        "name": "Hyuqoae GH-V f2-368 AB 4", 
+        "orbitalEccentricity": 5.3e-05, 
+        "orbitalInclination": 0.280852, 
+        "orbitalPeriod": 1159.38864096447, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 7752.703, 
+        "rotationalPeriod": 1.61204727231481, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.35998361098975, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.9292, 
+          "Rock": 67.0708
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 331.547081174439, 
+        "surfaceTemperature": 1827.096313, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:32Z", 
+          "meanAnomaly": "2023-03-19T16:20:32Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2023-03-19 16:20:32+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 223.747821, 
+        "ascendingNode": -149.992587, 
+        "bodyId": 17, 
+        "id64": 612489747029816797, 
+        "meanAnomaly": 299.443771, 
+        "name": "Hyuqoae GH-V f2-368 barycentre 17", 
+        "orbitalEccentricity": 0.000189, 
+        "orbitalInclination": 0.00193, 
+        "orbitalPeriod": 1789.65946866406, 
+        "semiMajorAxis": 7.15908828477669, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "absoluteMagnitude": 20.766098, 
+        "age": 2, 
+        "argOfPeriapsis": 75.140482, 
+        "ascendingNode": 25.554169, 
+        "axialTilt": 0.214325, 
+        "bodyId": 18, 
+        "distanceToArrival": 3356.755621, 
+        "id64": 648518544048780765, 
+        "luminosity": "VI", 
+        "meanAnomaly": 159.032551, 
+        "name": "Hyuqoae GH-V f2-368 AB 5", 
+        "orbitalEccentricity": 0.080373, 
+        "orbitalInclination": 5.489458, 
+        "orbitalPeriod": 10.0232151647454, 
+        "parents": [
+          {
+            "Null": 17
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 1.82449502616898, 
+        "semiMajorAxis": 0.0280772073951255, 
+        "solarMasses": 0.023438, 
+        "solarRadius": 0.103607166067577, 
+        "spectralClass": "TTS3", 
+        "stations": [], 
+        "subType": "T Tauri Star", 
+        "surfaceTemperature": 458.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:06Z", 
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "absoluteMagnitude": 16.779297, 
+        "age": 2, 
+        "argOfPeriapsis": 255.140477, 
+        "ascendingNode": 25.554169, 
+        "axialTilt": -2.64055, 
+        "bodyId": 19, 
+        "distanceToArrival": 3366.433315, 
+        "id64": 684547341067744733, 
+        "luminosity": "VI", 
+        "meanAnomaly": 159.032551, 
+        "name": "Hyuqoae GH-V f2-368 AB 6", 
+        "orbitalEccentricity": 0.080373, 
+        "orbitalInclination": 5.489458, 
+        "orbitalPeriod": 10.0232151647454, 
+        "parents": [
+          {
+            "Null": 17
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 1.59658835553241, 
+        "semiMajorAxis": 0.0116845931189277, 
+        "solarMasses": 0.058594, 
+        "solarRadius": 0.18081663263839, 
+        "spectralClass": "TTS7", 
+        "stations": [], 
+        "subType": "T Tauri Star", 
+        "surfaceTemperature": 868.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:06Z", 
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "argOfPeriapsis": 23.993109, 
+        "ascendingNode": 113.669965, 
+        "bodyId": 20, 
+        "id64": 720576138086708701, 
+        "meanAnomaly": 115.509544, 
+        "name": "Hyuqoae GH-V f2-368 barycentre 20", 
+        "orbitalEccentricity": 0.000616, 
+        "orbitalInclination": 0.042273, 
+        "orbitalPeriod": 2709.76195180858, 
+        "semiMajorAxis": 9.43984666072106, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "absoluteMagnitude": 19.498215, 
+        "age": 2, 
+        "argOfPeriapsis": 121.635267, 
+        "ascendingNode": 28.993842, 
+        "axialTilt": 0.912848, 
+        "bodyId": 21, 
+        "distanceToArrival": 5051.884891, 
+        "id64": 756604935105672669, 
+        "luminosity": "VI", 
+        "meanAnomaly": 28.767439, 
+        "name": "Hyuqoae GH-V f2-368 AB 7", 
+        "orbitalEccentricity": 0.06732, 
+        "orbitalInclination": -1.840812, 
+        "orbitalPeriod": 141.980016121157, 
+        "parents": [
+          {
+            "Null": 20
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 1.4876636555787, 
+        "semiMajorAxis": 0.0065270821167239, 
+        "solarMasses": 0.023438, 
+        "solarRadius": 0.101684566498922, 
+        "spectralClass": "TTS1", 
+        "stations": [], 
+        "subType": "T Tauri Star", 
+        "surfaceTemperature": 619.0, 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:06Z", 
+          "meanAnomaly": "2023-03-19T16:20:06Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2023-03-19 16:20:06+00"
+      }, 
+      {
+        "argOfPeriapsis": 301.635262, 
+        "ascendingNode": 28.993842, 
+        "atmosphereComposition": {
+          "Helium": 25.350952, 
+          "Hydrogen": 74.64904
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.490868, 
+        "bodyId": 22, 
+        "distanceToArrival": 5096.485875, 
+        "earthMasses": 379.11673, 
+        "gravity": 2.85552717446722, 
+        "id64": 792633732124636637, 
+        "isLandable": false, 
+        "meanAnomaly": 28.768433, 
+        "name": "Hyuqoae GH-V f2-368 AB 8", 
+        "orbitalEccentricity": 0.06732, 
+        "orbitalInclination": -1.840812, 
+        "orbitalPeriod": 141.980016121157, 
+        "parents": [
+          {
+            "Null": 20
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 73456.448, 
+        "rotationalPeriod": 1.01619651865741, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.155825513198072, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 486.382507, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:40Z", 
+          "meanAnomaly": "2023-03-19T16:20:40Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2023-03-19 16:20:40+00"
+      }, 
+      {
+        "argOfPeriapsis": 86.695622, 
+        "ascendingNode": -52.062803, 
+        "atmosphereComposition": {
+          "Helium": 25.350962, 
+          "Hydrogen": 74.649048
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -1.895134, 
+        "bodyId": 23, 
+        "distanceToArrival": 6421.776723, 
+        "earthMasses": 41.875248, 
+        "gravity": 2.06278831446926, 
+        "id64": 828662529143600605, 
+        "isLandable": false, 
+        "meanAnomaly": 137.718205, 
+        "name": "Hyuqoae GH-V f2-368 AB 9", 
+        "orbitalEccentricity": 0.002018, 
+        "orbitalInclination": -6.977794, 
+        "orbitalPeriod": 4411.07498826804, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 28723.542, 
+        "rotationalPeriod": 1.25311270824074, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 13.0629243284662, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 365.061676, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:12Z", 
+          "meanAnomaly": "2023-03-19T16:20:12Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2023-03-19 16:20:12+00"
+      }, 
+      {
+        "argOfPeriapsis": 36.94226, 
+        "ascendingNode": 49.324959, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 14.494181, 
+          "Silicates": 0.556578, 
+          "Water": 84.306541
+        }, 
+        "atmosphereType": "Hot thick Water", 
+        "axialTilt": 0.010949, 
+        "bodyId": 24, 
+        "distanceToArrival": 6376.692209, 
+        "earthMasses": 9.113529, 
+        "gravity": 2.93977536453554, 
+        "id64": 864691326162564573, 
+        "isLandable": false, 
+        "meanAnomaly": 240.569106, 
+        "name": "Hyuqoae GH-V f2-368 AB 10", 
+        "orbitalEccentricity": 0.012444, 
+        "orbitalInclination": 0.043243, 
+        "orbitalPeriod": 4560.97570282442, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 11224.651, 
+        "rotationalPeriod": 0.896478270497685, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 13.3572156932559, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.9291, 
+          "Rock": 67.0707
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 8103.10426844313, 
+        "surfaceTemperature": 2433.744629, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:28Z", 
+          "meanAnomaly": "2023-03-19T16:20:28Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2023-03-19 16:20:28+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 66.375143, 
+        "ascendingNode": -57.995686, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 14.739788, 
+          "Silicates": 0.496542, 
+          "Water": 84.110657
+        }, 
+        "atmosphereType": "Hot thick Water", 
+        "axialTilt": 0.193281, 
+        "bodyId": 25, 
+        "distanceToArrival": 7019.014831, 
+        "earthMasses": 9.015028, 
+        "gravity": 2.92385479759356, 
+        "id64": 900720123181528541, 
+        "isLandable": false, 
+        "meanAnomaly": 38.353189, 
+        "name": "Hyuqoae GH-V f2-368 AB 11", 
+        "orbitalEccentricity": 0.005658, 
+        "orbitalInclination": 0.018924, 
+        "orbitalPeriod": 4658.61328498081, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 11194.179, 
+        "rotationalPeriod": 0.991199151226852, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 13.5471691563165, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.9292, 
+          "Rock": 67.0708
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 7882.00061189243, 
+        "surfaceTemperature": 2410.926025, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2023-03-19T16:20:46Z", 
+          "meanAnomaly": "2023-03-19T16:20:46Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2023-03-19 16:20:46+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }
+    ], 
+    "coords": {
+      "x": -7427.78125, 
+      "y": -118.71875, 
+      "z": 35762.4375
+    }, 
+    "date": "2023-03-19 16:20:00+00", 
+    "government": "None", 
+    "id64": 197707429341, 
+    "name": "Hyuqoae GH-V f2-368", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}
