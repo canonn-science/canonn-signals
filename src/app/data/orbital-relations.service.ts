@@ -323,6 +323,20 @@ export class OrbitalRelationsService {
       }
     }
 
+    // An L3 opposition has no host (neither body has companions at both L4 and L5), so the
+    // pair both read as L3 and the secondary slot would be left empty — stacking the two
+    // opposed bodies on the single L3 marker. But L3 is defined as the point 180° across the
+    // primary *from the secondary*, so one of the opposed pair plays the secondary's role:
+    // promote it into the secondary slot and the diagram draws them on opposite sides of the
+    // orbit (secondary at 0°, the other at L3), exactly the geometry the configuration is.
+    // Promote a non-focused member when possible, so a dialog opened from an L3 badge keeps
+    // the clicked body on the labelled L3 marker.
+    if (secondary === null && points.L3.length > 1) {
+      const focusIndex = points.L3.findIndex(o => o.isFocus);
+      const promoteIndex = focusIndex === 0 ? 1 : 0;
+      [secondary] = points.L3.splice(promoteIndex, 1);
+    }
+
     const hasOccupant = secondary !== null || Object.values(points).some(slot => slot.length > 0);
     if (!hasOccupant) {
       return null;

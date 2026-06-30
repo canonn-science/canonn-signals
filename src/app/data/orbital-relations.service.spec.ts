@@ -246,6 +246,26 @@ describe('OrbitalRelationsService', () => {
       expect(config.points.L5).toEqual([{ name: 'Child 1', bodyId: 1, isFocus: true }]);
       expect(config.points.L4).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: false }]);
     });
+
+    it('promotes one of an L3 opposition to the secondary slot, keeping the focus at L3', () => {
+      // Pro Eurl HW-W e1-1 B 3 a / B 3 b: a ~180° pair around the real planet B 3, both L3.
+      // With no host, one is drawn as the secondary on the orbit and the other on L3 opposite,
+      // so the diagram shows the genuine opposition instead of two dots on a single marker.
+      const [a, b] = makeFamily([
+        { orbitalPeriod: 2.66276909722222, semiMajorAxis: 0.00100000075736372, argOfPeriapsis: 111.912498 },
+        { orbitalPeriod: 2.66276909722222, semiMajorAxis: 0.00100000075736372, argOfPeriapsis: 291.153168 },
+      ]);
+
+      // Opened from B 3 a: its sibling fills the secondary slot, the focused body stays at L3.
+      const fromA = service.lagrangeConfiguration(a)!;
+      expect(fromA.secondary).toEqual({ name: 'Child 2', bodyId: 2, isFocus: false });
+      expect(fromA.points.L3).toEqual([{ name: 'Child 1', bodyId: 1, isFocus: true }]);
+
+      // Opened from B 3 b: the focus moves with the clicked body, again kept on the L3 marker.
+      const fromB = service.lagrangeConfiguration(b)!;
+      expect(fromB.secondary).toEqual({ name: 'Child 1', bodyId: 1, isFocus: false });
+      expect(fromB.points.L3).toEqual([{ name: 'Child 2', bodyId: 2, isFocus: true }]);
+    });
   });
 
   describe('detectRosetteStatus', () => {

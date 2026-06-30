@@ -81,6 +81,19 @@ const SYSTEMS: TrojanSystem[] = [
       { bodyId: 39, name: 'Eorld Byio AA-A h539 A 19', badge: 'L5', tooltip: 'Trojan at Lagrange L5 — click for the diagram' },
     ],
   },
+  {
+    // B 3 a / B 3 b share an exact semi-major axis and period but sit ~180° apart in
+    // argOfPeriapsis around the real planet B 3 — a genuine L3 opposition with a massive
+    // central body (unlike Cloomoo's barycentre binary below, which is suppressed). Both
+    // members read as L3.
+    fixture: 'pro-eurl-hw-w-e1-1.json',
+    systemName: 'Pro Eurl HW-W e1-1',
+    id64: 5651842260,
+    badges: [
+      { bodyId: 31, name: 'Pro Eurl HW-W e1-1 B 3 a', badge: 'L3', tooltip: 'Trojan at Lagrange L3 — click for the diagram' },
+      { bodyId: 32, name: 'Pro Eurl HW-W e1-1 B 3 b', badge: 'L3', tooltip: 'Trojan at Lagrange L3 — click for the diagram' },
+    ],
+  },
 ];
 
 /**
@@ -178,6 +191,26 @@ test.describe('Lagrange points dialog', () => {
     // L4 + L5 bodies; L1/L2/L3 + the empty secondary slot are placeholders.
     await expect(svg.locator('circle.body')).toHaveCount(2);
     await expect(svg.locator('circle.placeholder')).toHaveCount(4);
+  });
+
+  test('L3 opposition draws one body as the secondary and the other at L3', async ({ page }) => {
+    await loadFixtureSystem(page, byName('Pro Eurl HW-W e1-1'));
+
+    // B 3 a (body 31) is one half of the L3 pair; clicking its badge focuses it in the diagram.
+    await page.locator('#body-31 > .body-title .badge.badge-blue', { hasText: 'L3' }).click();
+
+    const svg = page.locator('app-lagrange-dialog svg');
+    await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
+    // The opposed pair is split across the orbit: one promoted to the secondary slot, the
+    // other left on the L3 marker — so neither the placeholder secondary nor a stacked L3.
+    await expect(svg).toContainText('B 3 a');
+    await expect(svg).toContainText('B 3 b');
+    await expect(svg).not.toContainText('secondary');
+    // Two real bodies (secondary + L3); L1/L2/L4/L5 stay placeholders.
+    await expect(svg.locator('circle.body')).toHaveCount(2);
+    await expect(svg.locator('circle.placeholder')).toHaveCount(4);
+    // The clicked body stays on the labelled L3 marker as the single highlighted one.
+    await expect(svg.locator('circle.body.focus')).toHaveCount(1);
   });
 
   test('shows no Lagrange badge for a 180° binary orbiting a barycentre', async ({ page }) => {

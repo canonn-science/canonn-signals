@@ -18,7 +18,7 @@
           <text class="point-label" [attr.x]="m.label.x" [attr.y]="m.label.y" text-anchor="middle">{{ m.id }}</text>
           @if (m.occupants.length) {
             <text class="body-name" [class.focus]="hasFocus(m.occupants)"
-              [attr.x]="m.label.x" [attr.y]="m.label.y + 6" text-anchor="middle">{{ shortNames(m.occupants) }}</text>
+              [attr.x]="m.nameLabel.x" [attr.y]="m.nameLabel.y" text-anchor="middle">{{ shortNames(m.occupants) }}</text>
           }
         }
 

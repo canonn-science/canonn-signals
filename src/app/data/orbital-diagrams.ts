@@ -51,11 +51,12 @@ export interface PeriapsisDiagram {
   arc: string;
 }
 
-/** One Lagrange point's marker position and the anchor for its "Lx" label. */
+/** One Lagrange point's marker position and the anchors for its "Lx" label and body name. */
 export interface LagrangeMarker {
   id: 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
-  point: Point;  // where the marker (and any occupying body) is drawn
-  label: Point;  // anchor for the "Lx" caption, nudged clear of the marker
+  point: Point;     // where the marker (and any occupying body) is drawn
+  label: Point;     // anchor for the "Lx" caption, nudged clear of the marker
+  nameLabel: Point; // anchor for an occupying body's name, on the far side from the caption
 }
 
 export interface LagrangeDiagram {
@@ -259,13 +260,21 @@ export function lagrangeDiagram(): LagrangeDiagram {
   const secondary = pointAt(center.x, center.y, orbitRadius, 0);
   const l1: Point = { x: center.x + orbitRadius - 12, y: center.y };
   const l2: Point = { x: center.x + orbitRadius + 11, y: center.y };
+  const l3 = pointAt(center.x, center.y, orbitRadius, 180);
+  const l4 = pointAt(center.x, center.y, orbitRadius, 60);
+  const l5 = pointAt(center.x, center.y, orbitRadius, -60);
+  const l4Label = pointAt(center.x, center.y, orbitRadius + 13, 60);
+  const l5Label = pointAt(center.x, center.y, orbitRadius + 13, -60);
 
   const markers: LagrangeMarker[] = [
-    { id: 'L1', point: roundPoint(l1), label: { x: r(l1.x), y: r(center.y - 9) } },
-    { id: 'L2', point: roundPoint(l2), label: { x: r(l2.x), y: r(center.y - 9) } },
-    { id: 'L3', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 180)), label: { x: r(center.x - orbitRadius), y: r(center.y - 9) } },
-    { id: 'L4', point: roundPoint(pointAt(center.x, center.y, orbitRadius, 60)), label: roundPoint(pointAt(center.x, center.y, orbitRadius + 13, 60)) },
-    { id: 'L5', point: roundPoint(pointAt(center.x, center.y, orbitRadius, -60)), label: roundPoint(pointAt(center.x, center.y, orbitRadius + 13, -60)) },
+    { id: 'L1', point: roundPoint(l1), label: { x: r(l1.x), y: r(center.y - 9) }, nameLabel: { x: r(l1.x), y: r(center.y - 3) } },
+    { id: 'L2', point: roundPoint(l2), label: { x: r(l2.x), y: r(center.y - 9) }, nameLabel: { x: r(l2.x), y: r(center.y - 3) } },
+    // L3 sits opposite the secondary, on the left. Its "L3" caption goes above the marker but
+    // the occupant's name drops *below* it — onto the same band as the secondary's name on the
+    // right — so an L3-opposition pair reads as two names mirrored across the primary.
+    { id: 'L3', point: roundPoint(l3), label: { x: r(center.x - orbitRadius), y: r(center.y - 9) }, nameLabel: { x: r(l3.x), y: r(center.y + 11) } },
+    { id: 'L4', point: roundPoint(l4), label: roundPoint(l4Label), nameLabel: { x: r(l4Label.x), y: r(l4Label.y + 6) } },
+    { id: 'L5', point: roundPoint(l5), label: roundPoint(l5Label), nameLabel: { x: r(l5Label.x), y: r(l5Label.y + 6) } },
   ];
 
   return {
