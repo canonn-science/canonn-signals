@@ -1,0 +1,545 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "argOfPeriapsis": 193.963046, 
+        "ascendingNode": -120.818875, 
+        "bodyId": 1, 
+        "id64": 36028803052480908, 
+        "meanAnomaly": 340.244734, 
+        "name": "Cloomoo IL-Y e1 barycentre 1", 
+        "orbitalEccentricity": 0.125718, 
+        "orbitalInclination": -35.004933, 
+        "orbitalPeriod": 47204.2771677176, 
+        "semiMajorAxis": 9.30357918004369, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-29T01:39:12Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-29 01:39:12+00"
+      }, 
+      {
+        "argOfPeriapsis": 55.802533, 
+        "ascendingNode": -114.252201, 
+        "bodyId": 2, 
+        "id64": 72057600071444876, 
+        "meanAnomaly": 306.844262, 
+        "name": "Cloomoo IL-Y e1 barycentre 2", 
+        "orbitalEccentricity": 0.301272, 
+        "orbitalInclination": 10.330291, 
+        "orbitalPeriod": 49.628642284213, 
+        "semiMajorAxis": 0.209175995544458, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-29T01:39:12Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-29 01:39:12+00"
+      }, 
+      {
+        "absoluteMagnitude": -0.613342, 
+        "age": 312, 
+        "argOfPeriapsis": 294.916777, 
+        "ascendingNode": -133.33131, 
+        "axialTilt": 0.0, 
+        "bodyId": 3, 
+        "distanceToArrival": 0.0, 
+        "id64": 108086397090408844, 
+        "luminosity": "IVab", 
+        "mainStar": true, 
+        "meanAnomaly": 192.304069, 
+        "name": "Cloomoo IL-Y e1 A", 
+        "orbitalEccentricity": 0.024102, 
+        "orbitalInclination": 24.075428, 
+        "orbitalPeriod": 0.615566430821759, 
+        "parents": [
+          {
+            "Null": 2
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.645732390844907, 
+        "semiMajorAxis": 0.00807582555072967, 
+        "solarMasses": 3.941406, 
+        "solarRadius": 2.15167227030913, 
+        "spectralClass": "B8", 
+        "stations": [], 
+        "subType": "B (Blue-White) Star", 
+        "surfaceTemperature": 13791.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:39:13Z", 
+          "meanAnomaly": "2026-06-29T01:39:13Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-29 01:39:13+00"
+      }, 
+      {
+        "absoluteMagnitude": 2.646088, 
+        "age": 312, 
+        "argOfPeriapsis": 114.916782, 
+        "ascendingNode": -133.33131, 
+        "axialTilt": 0.0, 
+        "bodyId": 4, 
+        "distanceToArrival": 12.980196, 
+        "id64": 144115194109372812, 
+        "luminosity": "Vb", 
+        "meanAnomaly": 192.2963, 
+        "name": "Cloomoo IL-Y e1 B", 
+        "orbitalEccentricity": 0.024102, 
+        "orbitalInclination": 24.075428, 
+        "orbitalPeriod": 0.615566430821759, 
+        "parents": [
+          {
+            "Null": 2
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.69357198568287, 
+        "semiMajorAxis": 0.0173372513753918, 
+        "solarMasses": 1.835938, 
+        "solarRadius": 1.40463252336449, 
+        "spectralClass": "A7", 
+        "stations": [], 
+        "subType": "A (Blue-White) Star", 
+        "surfaceTemperature": 8060.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:39:12Z", 
+          "meanAnomaly": "2026-06-29T01:39:12Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-29 01:39:12+00"
+      }, 
+      {
+        "argOfPeriapsis": 235.802507, 
+        "ascendingNode": -114.252201, 
+        "bodyId": 5, 
+        "id64": 180143991128336780, 
+        "meanAnomaly": 306.844358, 
+        "name": "Cloomoo IL-Y e1 barycentre 5", 
+        "orbitalEccentricity": 0.301272, 
+        "orbitalInclination": 10.330291, 
+        "orbitalPeriod": 49.628642284213, 
+        "semiMajorAxis": 0.346052830828272, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-29T01:39:13Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-29 01:39:13+00"
+      }, 
+      {
+        "absoluteMagnitude": 2.666824, 
+        "age": 312, 
+        "argOfPeriapsis": 201.543965, 
+        "ascendingNode": 47.365904, 
+        "axialTilt": 0.0, 
+        "bodyId": 6, 
+        "distanceToArrival": 243.06794, 
+        "id64": 216172788147300748, 
+        "luminosity": "Vb", 
+        "meanAnomaly": 37.303036, 
+        "name": "Cloomoo IL-Y e1 C", 
+        "orbitalEccentricity": 0.011917, 
+        "orbitalInclination": 16.025465, 
+        "orbitalPeriod": 0.569169995960648, 
+        "parents": [
+          {
+            "Null": 5
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.83162723287037, 
+        "semiMajorAxis": 0.0101967507608476, 
+        "solarMasses": 1.746094, 
+        "solarRadius": 1.48104852336449, 
+        "spectralClass": "A8", 
+        "stations": [], 
+        "subType": "A (Blue-White) Star", 
+        "surfaceTemperature": 7812.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:39:13Z", 
+          "meanAnomaly": "2026-06-29T01:39:13Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-29 01:39:13+00"
+      }, 
+      {
+        "absoluteMagnitude": 2.853394, 
+        "age": 312, 
+        "argOfPeriapsis": 21.543971, 
+        "ascendingNode": 47.365904, 
+        "axialTilt": 0.0, 
+        "bodyId": 7, 
+        "distanceToArrival": 248.910991, 
+        "id64": 252201585166264716, 
+        "luminosity": "Vb", 
+        "meanAnomaly": 37.303036, 
+        "name": "Cloomoo IL-Y e1 D", 
+        "orbitalEccentricity": 0.011917, 
+        "orbitalInclination": 16.025465, 
+        "orbitalPeriod": 0.569169995960648, 
+        "parents": [
+          {
+            "Null": 5
+          }, 
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.606214906701389, 
+        "semiMajorAxis": 0.0101967507608476, 
+        "solarMasses": 1.746094, 
+        "solarRadius": 1.4084472178289, 
+        "spectralClass": "A9", 
+        "stations": [], 
+        "subType": "A (Blue-White) Star", 
+        "surfaceTemperature": 7674.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:39:13Z", 
+          "meanAnomaly": "2026-06-29T01:39:13Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-29 01:39:13+00"
+      }, 
+      {
+        "absoluteMagnitude": 1.886566, 
+        "age": 312, 
+        "argOfPeriapsis": 13.963051, 
+        "ascendingNode": -120.818875, 
+        "axialTilt": 0.0, 
+        "bodyId": 8, 
+        "distanceToArrival": 25225.030867, 
+        "id64": 288230382185228684, 
+        "luminosity": "VI", 
+        "meanAnomaly": 340.244734, 
+        "name": "Cloomoo IL-Y e1 E", 
+        "orbitalEccentricity": 0.125718, 
+        "orbitalInclination": -35.004933, 
+        "orbitalPeriod": 47204.2771677176, 
+        "parents": [
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.920351252118055, 
+        "semiMajorAxis": 47.683232697072, 
+        "solarMasses": 1.808594, 
+        "solarRadius": 1.5621946340762, 
+        "spectralClass": "A3", 
+        "stations": [], 
+        "subType": "A (Blue-White) Star", 
+        "surfaceTemperature": 9103.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:39:13Z", 
+          "meanAnomaly": "2026-06-29T01:39:13Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-29 01:39:13+00"
+      }, 
+      {
+        "argOfPeriapsis": 202.150452, 
+        "ascendingNode": 156.646912, 
+        "atmosphereType": null, 
+        "axialTilt": -0.188921, 
+        "bodyId": 9, 
+        "distanceToArrival": 621.88193, 
+        "earthMasses": 0.400998, 
+        "gravity": 0.768258998674416, 
+        "id64": 324259179204192652, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 12.639412, 
+          "Chromium": 9.576516, 
+          "Germanium": 4.432872, 
+          "Iron": 21.293772, 
+          "Manganese": 8.794109, 
+          "Molybdenum": 1.390471, 
+          "Nickel": 16.105715, 
+          "Phosphorus": 8.091969, 
+          "Sulphur": 15.03088, 
+          "Tin": 1.372425, 
+          "Yttrium": 1.271851
+        }, 
+        "meanAnomaly": 185.676258, 
+        "name": "Cloomoo IL-Y e1 ABCD 1", 
+        "orbitalEccentricity": 0.000642, 
+        "orbitalInclination": 0.043947, 
+        "orbitalPeriod": 164.90149277228, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 4605.7885, 
+        "rotationalPeriod": 1.67431649658565, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.2363278555988, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.0836, 
+          "Rock": 66.9164
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 879.072998, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:41:31Z", 
+          "meanAnomaly": "2026-06-29T01:41:31Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-29 01:41:31+00"
+      }, 
+      {
+        "argOfPeriapsis": 230.052372, 
+        "ascendingNode": 72.952708, 
+        "atmosphereType": null, 
+        "axialTilt": 0.291987, 
+        "bodyId": 10, 
+        "distanceToArrival": 909.519298, 
+        "earthMasses": 0.496783, 
+        "gravity": 0.834213215050474, 
+        "id64": 360287976223156620, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 13.305812, 
+          "Chromium": 10.081427, 
+          "Iron": 22.41646, 
+          "Molybdenum": 1.463782, 
+          "Nickel": 16.954868, 
+          "Niobium": 1.532045, 
+          "Phosphorus": 8.518609, 
+          "Sulphur": 15.823366, 
+          "Tellurium": 1.208656, 
+          "Zinc": 6.091955, 
+          "Zirconium": 2.603013
+        }, 
+        "meanAnomaly": 83.185021, 
+        "name": "Cloomoo IL-Y e1 ABCD 2", 
+        "orbitalEccentricity": 0.001617, 
+        "orbitalInclination": 0.001562, 
+        "orbitalPeriod": 263.138246481065, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 4919.6165, 
+        "rotationalPeriod": 0.825066230162037, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.68826244214677, 
+        "signals": {}, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.0836, 
+          "Rock": 66.9164
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 761.678101, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:41:18Z", 
+          "meanAnomaly": "2026-06-29T01:41:18Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-29 01:41:18+00"
+      }, 
+      {
+        "argOfPeriapsis": 276.04562, 
+        "ascendingNode": 3.886808, 
+        "atmosphereComposition": {
+          "Sulphur dioxide": 100.0
+        }, 
+        "atmosphereType": "Hot Sulphur dioxide", 
+        "axialTilt": 0.433028, 
+        "bodyId": 11, 
+        "distanceToArrival": 1991.168658, 
+        "earthMasses": 0.333164, 
+        "gravity": 0.715938615274804, 
+        "id64": 396316773242120588, 
+        "isLandable": false, 
+        "meanAnomaly": 123.137312, 
+        "name": "Cloomoo IL-Y e1 ABCD 3", 
+        "orbitalEccentricity": 0.00451, 
+        "orbitalInclination": 0.338992, 
+        "orbitalPeriod": 971.80565612184, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 4348.8845, 
+        "rotationalPeriod": 0.860892748368056, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 4.03369951167537, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.0851, 
+          "Rock": 66.9149
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.687271851102887, 
+        "surfaceTemperature": 539.619629, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:41:36Z", 
+          "meanAnomaly": "2026-06-29T01:41:36Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-29 01:41:36+00"
+      }, 
+      {
+        "argOfPeriapsis": 191.194665, 
+        "ascendingNode": -96.315001, 
+        "atmosphereComposition": {
+          "Sulphur dioxide": 100.0
+        }, 
+        "atmosphereType": "Sulphur dioxide", 
+        "axialTilt": 0.335701, 
+        "bodyId": 15, 
+        "distanceToArrival": 3024.081798, 
+        "earthMasses": 0.228536, 
+        "gravity": 0.62139971448965, 
+        "id64": 540431961317976460, 
+        "isLandable": false, 
+        "meanAnomaly": 355.147407, 
+        "name": "Cloomoo IL-Y e1 ABCD 6", 
+        "orbitalEccentricity": 0.075326, 
+        "orbitalInclination": -28.56074, 
+        "orbitalPeriod": 2100.23823159712, 
+        "parents": [
+          {
+            "Null": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 3866.1475, 
+        "rotationalPeriod": 0.4566248896875, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 6.74263474458214, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.0853, 
+          "Rock": 66.9147
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.41741657414261, 
+        "surfaceTemperature": 428.836304, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:41:56Z", 
+          "meanAnomaly": "2026-06-29T01:41:56Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-29 01:41:56+00"
+      }, 
+      {
+        "argOfPeriapsis": 208.73262, 
+        "ascendingNode": 30.345304, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 97.921028, 
+          "Nitrogen": 1.099532, 
+          "Sulphur dioxide": 0.97921
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide", 
+        "axialTilt": 0.148944, 
+        "bodyId": 19, 
+        "distanceToArrival": 26255.737869, 
+        "earthMasses": 1.966716, 
+        "gravity": 1.45196777811767, 
+        "id64": 684547149393832332, 
+        "isLandable": false, 
+        "meanAnomaly": 269.118195, 
+        "name": "Cloomoo IL-Y e1 E 1", 
+        "orbitalEccentricity": 0.181614, 
+        "orbitalInclination": -124.553544, 
+        "orbitalPeriod": 1194.97833980455, 
+        "parents": [
+          {
+            "Star": 8
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 7419.5745, 
+        "rotationalPeriod": 0.537327226539352, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 2.68525416172284, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.7491, 
+          "Rock": 67.2509
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 293.371862817666, 
+        "surfaceTemperature": 1388.382935, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-29T01:41:02Z", 
+          "meanAnomaly": "2026-06-29T01:41:02Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-29 01:41:02+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }
+    ], 
+    "bodyCount": 14, 
+    "coords": {
+      "x": 16363.65625, 
+      "y": 216.3125, 
+      "z": 24774.4375
+    }, 
+    "date": "2026-06-29 01:39:13+00", 
+    "government": "None", 
+    "id64": 6033516940, 
+    "name": "Cloomoo IL-Y e1", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "region": {
+      "name": "Norma Expanse", 
+      "region": 10
+    }, 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}

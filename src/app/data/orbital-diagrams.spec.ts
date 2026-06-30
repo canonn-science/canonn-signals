@@ -3,6 +3,7 @@ import {
   arcPath,
   axialTiltDiagram,
   inclinationDiagram,
+  lagrangeDiagram,
   periapsisDiagram,
 } from './orbital-diagrams';
 
@@ -171,6 +172,66 @@ describe('orbital-diagrams', () => {
       // High eccentricity is clamped (rx > ry, finite) and a missing value still draws an ellipse.
       expect(high.ellipse.rx).toBeGreaterThan(high.ellipse.ry);
       expect(def.ellipse.rx).toBeGreaterThan(0);
+    });
+  });
+
+  describe('lagrangeDiagram', () => {
+    const d = lagrangeDiagram();
+
+    it('centres the primary and puts the secondary on the orbit to the right', () => {
+      expect(d.center).toEqual({ x: CENTER, y: CENTER });
+      // Secondary sits one orbit-radius to the right, on the axis.
+      expect(d.secondary).toEqual({ x: CENTER + d.orbitRadius, y: CENTER });
+      expect(dist(d.center, d.secondary)).toBeCloseTo(d.orbitRadius, 6);
+    });
+
+    it('exposes all five Lagrange points in L1…L5 order', () => {
+      expect(d.markers.map(m => m.id)).toEqual(['L1', 'L2', 'L3', 'L4', 'L5']);
+    });
+
+    it('places L4 leading (above the axis) and L5 trailing (below), 60° off, on the orbit', () => {
+      const l4 = d.markers.find(m => m.id === 'L4')!;
+      const l5 = d.markers.find(m => m.id === 'L5')!;
+      // Screen "up" is -y: the leading point sits above the axis, the trailing one below.
+      expect(l4.point.y).toBeLessThan(CENTER);
+      expect(l5.point.y).toBeGreaterThan(CENTER);
+      // Both ride the reference orbit and mirror each other across the axis.
+      expect(dist(d.center, l4.point)).toBeCloseTo(d.orbitRadius, 3);
+      expect(dist(d.center, l5.point)).toBeCloseTo(d.orbitRadius, 3);
+      expect(l4.point.x).toBeCloseTo(l5.point.x, 6);
+      expect(l4.point.y - CENTER).toBeCloseTo(CENTER - l5.point.y, 6);
+    });
+
+    it('orders L1 inside the orbit, L3 opposite the secondary, L2 beyond it', () => {
+      const x = (id: string) => d.markers.find(m => m.id === id)!.point.x;
+      // L3 opposite < primary < L1 inside < secondary < L2 beyond, all on the axis (y = CENTER).
+      expect(x('L3')).toBeLessThan(CENTER);
+      expect(x('L1')).toBeGreaterThan(CENTER);
+      expect(x('L1')).toBeLessThan(d.secondary.x);
+      expect(x('L2')).toBeGreaterThan(d.secondary.x);
+      for (const id of ['L1', 'L2', 'L3']) {
+        expect(d.markers.find(m => m.id === id)!.point.y).toBe(CENTER);
+      }
+    });
+
+    it('drops the L3 occupant name below its marker, onto the secondary name band', () => {
+      const l3 = d.markers.find(m => m.id === 'L3')!;
+      // The "L3" caption stays above the marker; the body name goes below it…
+      expect(l3.label.y).toBeLessThan(l3.point.y);
+      expect(l3.nameLabel.y).toBeGreaterThan(l3.point.y);
+      // …onto the same horizontal band as the secondary's name on the opposite side.
+      expect(l3.nameLabel.y).toBeCloseTo(d.secondaryLabel.y, 6);
+      expect(l3.nameLabel.x).toBeCloseTo(l3.point.x, 6);
+    });
+
+    it('keeps every drawn point within the view box', () => {
+      const pts = [d.center, d.secondary, ...d.markers.map(m => m.point)];
+      for (const p of pts) {
+        expect(p.x).toBeGreaterThanOrEqual(0);
+        expect(p.x).toBeLessThanOrEqual(VIEW_BOX_SIZE);
+        expect(p.y).toBeGreaterThanOrEqual(0);
+        expect(p.y).toBeLessThanOrEqual(VIEW_BOX_SIZE);
+      }
     });
   });
 });

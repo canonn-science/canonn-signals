@@ -1,0 +1,59 @@
+<app-dialog-shell [heading]="title">
+  <div class="lagrange-dialog">
+    <div class="diagram">
+      <svg [attr.viewBox]="viewBox" class="lagrange-diagram" role="img" aria-label="Lagrange points diagram">
+        <!-- Reference orbit + primary–secondary axis -->
+        <circle class="orbit" [attr.cx]="diagram.center.x" [attr.cy]="diagram.center.y" [attr.r]="diagram.orbitRadius" />
+        <line class="axis-reference" [attr.x1]="diagram.center.x - diagram.orbitRadius" [attr.y1]="diagram.center.y"
+          [attr.x2]="diagram.markers[1].point.x" [attr.y2]="diagram.center.y" />
+
+        <!-- The five Lagrange points: a body marker when occupied, a dashed placeholder otherwise -->
+        @for (m of markers(); track m.id) {
+          @if (m.occupants.length) {
+            <circle class="body" [class.focus]="hasFocus(m.occupants)"
+              [attr.cx]="m.point.x" [attr.cy]="m.point.y" r="4" />
+          } @else {
+            <circle class="placeholder" [attr.cx]="m.point.x" [attr.cy]="m.point.y" r="3.5" />
+          }
+          <text class="point-label" [attr.x]="m.label.x" [attr.y]="m.label.y" text-anchor="middle">{{ m.id }}</text>
+          @if (m.occupants.length) {
+            <text class="body-name" [class.focus]="hasFocus(m.occupants)"
+              [attr.x]="m.nameLabel.x" [attr.y]="m.nameLabel.y" text-anchor="middle">{{ shortNames(m.occupants) }}</text>
+          }
+        }
+
+        <!-- Secondary (the co-orbital host) -->
+        @if (data.config.secondary; as secondary) {
+          <circle class="body" [class.focus]="secondary.isFocus"
+            [attr.cx]="diagram.secondary.x" [attr.cy]="diagram.secondary.y" r="4" />
+          <text class="body-name" [class.focus]="secondary.isFocus"
+            [attr.x]="diagram.secondaryLabel.x" [attr.y]="diagram.secondaryLabel.y" text-anchor="middle">{{ short(secondary.name) }}</text>
+        } @else {
+          <circle class="placeholder" [attr.cx]="diagram.secondary.x" [attr.cy]="diagram.secondary.y" r="3.5" />
+          <text class="point-label" [attr.x]="diagram.secondaryLabel.x" [attr.y]="diagram.secondaryLabel.y" text-anchor="middle">secondary</text>
+        }
+
+        <!-- Primary (the body the family orbits) -->
+        <circle class="primary" [attr.cx]="diagram.center.x" [attr.cy]="diagram.center.y" [attr.r]="diagram.primaryRadius" />
+        @if (data.config.primaryName) {
+          <text class="primary-name" [attr.x]="diagram.primaryLabel.x" [attr.y]="diagram.primaryLabel.y" text-anchor="middle">{{ short(data.config.primaryName) }}</text>
+        }
+      </svg>
+    </div>
+
+    <div class="explanation">
+      <p>
+        <strong>Lagrange points</strong> are the five positions where a small body can keep pace with two
+        larger ones — here
+        @if (data.config.primaryName) { <strong>{{ data.config.primaryName }}</strong> } @else { the primary }
+        at the centre and the secondary on its orbit. <strong>L4</strong> and <strong>L5</strong> lead and
+        trail the secondary by 60° and are the stable points where Trojan bodies gather; <strong>L1</strong>,
+        <strong>L2</strong> and <strong>L3</strong> lie along the primary–secondary line.
+      </p>
+      <p>
+        Filled dots are real bodies in this system@if (focusedNote) {, with <strong>{{ focusedNote }}</strong> highlighted};
+        dashed circles are unoccupied points shown for reference.
+      </p>
+    </div>
+  </div>
+</app-dialog-shell>

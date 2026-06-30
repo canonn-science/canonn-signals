@@ -67,11 +67,12 @@
       <span class="badge badge-gray">Terraformable</span>
       }
       @if (trojanHostStatus) {
-      <span class="badge badge-blue"
-        matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points">Host</span>
+      <span class="badge badge-blue clickable" (click)="showLagrangeDialog()"
+        matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points — click for the diagram">Host</span>
       }
       @if (trojanStatus) {
-      <span class="badge badge-blue" [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{
+      <span class="badge badge-blue clickable" (click)="showLagrangeDialog()"
+        [matTooltip]="'Trojan at Lagrange ' + trojanStatus + ' — click for the diagram'">{{
         trojanStatus }}</span>
       }
       @if (rosetteStatus) {

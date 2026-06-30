@@ -1,0 +1,100 @@
+.lagrange-dialog {
+    .diagram {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+
+    .lagrange-diagram {
+        width: 420px;
+        max-width: 100%;
+        height: auto;
+        // Subtle backdrop so light strokes stay legible on any theme.
+        background: var(--color-surface-2);
+        border-radius: 8px;
+        // Generous padding + visible overflow so edge labels are never clipped.
+        padding: 20px;
+        overflow: visible;
+
+        line,
+        circle {
+            vector-effect: non-scaling-stroke;
+        }
+
+        .orbit {
+            fill: none;
+            stroke: var(--color-text-muted);
+            stroke-width: 1;
+            opacity: 0.6;
+        }
+
+        .axis-reference {
+            stroke: var(--color-text-muted);
+            stroke-width: 1;
+            stroke-dasharray: 4 3;
+            opacity: 0.6;
+        }
+
+        .primary {
+            fill: var(--color-warning);
+            stroke: var(--color-text-bright);
+            stroke-width: 1;
+        }
+
+        // A real body occupying a Lagrange point or the secondary slot.
+        .body {
+            fill: var(--color-info);
+            stroke: var(--color-text-bright);
+            stroke-width: 1;
+
+            &.focus {
+                fill: var(--color-accent);
+                stroke-width: 1.5;
+            }
+        }
+
+        // An unoccupied Lagrange point / missing secondary.
+        .placeholder {
+            fill: none;
+            stroke: var(--color-text-muted);
+            stroke-width: 1.25;
+            stroke-dasharray: 3 2;
+        }
+
+        // The "Lx" caption on each point (and the "secondary" placeholder caption).
+        .point-label {
+            fill: var(--color-text-muted);
+            font-size: 5px;
+            font-weight: 700;
+            paint-order: stroke;
+            stroke: var(--color-surface-2);
+            stroke-width: 1.75px;
+            stroke-linejoin: round;
+        }
+
+        // Real body names dropped onto the diagram.
+        .body-name,
+        .primary-name {
+            fill: var(--color-text-bright);
+            font-size: 4.5px;
+            font-weight: 600;
+            paint-order: stroke;
+            stroke: var(--color-surface-2);
+            stroke-width: 1.5px;
+            stroke-linejoin: round;
+        }
+
+        .body-name.focus {
+            fill: var(--color-accent);
+            font-weight: 700;
+        }
+    }
+
+    .explanation {
+        line-height: 1.6;
+
+        p {
+            margin-bottom: 8px;
+        }
+    }
+}

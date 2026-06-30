@@ -19,19 +19,6 @@ pre-dates this branch.
   for exactly this comparison. Fix: use periapsis. (The `1.26` coefficient = 2^(1/3) is the
   correct rigid-body value.)
 
-## Approximations (document, not necessarily fix)
-
-- **Trojan/Lagrange detection keys off `argOfPeriapsis` alone** —
-  [orbital-relations.service.ts:56](src/app/data/orbital-relations.service.ts#L56).
-  `detectTrojanStatus` computes its ±60°/180° geometry purely from `argOfPeriapsis`
-  differences ([:73](src/app/data/orbital-relations.service.ts#L73),
-  [:83](src/app/data/orbital-relations.service.ts#L83),
-  [:87](src/app/data/orbital-relations.service.ts#L87)). The true angular position of a
-  co-orbital body is its mean longitude λ = Ω + ω + M, so ω alone is only correct when the
-  siblings also share the ascending node Ω and mean anomaly M. A reasonable heuristic for
-  ED's largely coplanar, near-circular pairs, but an approximation — worth a clarifying code
-  comment so it isn't mistaken for an exact L4/L5 test.
-
 ## pgnames (vendored procedural-generation code)
 
 - **`tryParse` rejects all `…AB-C d<n1>-<n2>` names** —
