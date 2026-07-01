@@ -35,7 +35,7 @@ export class ConvertIconComponent {
   readonly label = input.required<string>();
   /** Conversion-row label for the unit shown inline in the UI; that row is accented in the dialog. */
   readonly uiUnit = input<string | null | undefined>();
-  /** Conversion-row label for the unit the value natively arrives in (journal/API); badged in the dialog. */
+  /** Conversion-row label for the unit the value is recorded in by the game journal; badged in the dialog. */
   readonly sourceUnit = input<string | null | undefined>();
 
   protected async open(event: Event): Promise<void> {
