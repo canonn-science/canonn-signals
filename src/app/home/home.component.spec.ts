@@ -267,23 +267,28 @@ describe('HomeComponent', () => {
   });
 
   describe('showBodyHistogram', () => {
-    it('does nothing when no system is loaded', () => {
+    it('does nothing when no system is loaded', async () => {
       const dialog = TestBed.inject(MatDialog);
       const open = vi.spyOn(dialog, 'open');
       component.data.set(null);
 
-      component.showBodyHistogram();
+      await component.showBodyHistogram();
 
       expect(open).not.toHaveBeenCalled();
     });
 
-    it('opens the histogram dialog with the system name and bodies', () => {
+    it('opens the histogram dialog with the system name and bodies', async () => {
       const dialog = TestBed.inject(MatDialog);
       const open = vi.spyOn(dialog, 'open').mockReturnValue({} as never);
       const bodies = [{ type: 'Star', subType: 'M Star' }];
-      component.data.set({ system: { name: 'Sol', bodies } } as never);
+      component.data.set({
+        system: {
+          name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 },
+          region: { name: 'Inner Orion Spur', region: 18 }, population: 0, bodies,
+        },
+      } as never);
 
-      component.showBodyHistogram();
+      await component.showBodyHistogram();
 
       expect(open).toHaveBeenCalledTimes(1);
       const [, config] = open.mock.calls[0];
