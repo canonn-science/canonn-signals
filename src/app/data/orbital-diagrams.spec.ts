@@ -1,5 +1,6 @@
 import {
   VIEW_BOX_SIZE,
+  anomalyDiagram,
   arcPath,
   axialTiltDiagram,
   inclinationDiagram,
@@ -172,6 +173,69 @@ describe('orbital-diagrams', () => {
       // High eccentricity is clamped (rx > ry, finite) and a missing value still draws an ellipse.
       expect(high.ellipse.rx).toBeGreaterThan(high.ellipse.ry);
       expect(def.ellipse.rx).toBeGreaterThan(0);
+    });
+  });
+
+  describe('anomalyDiagram', () => {
+    it('coincides the mean and true markers at periapsis (M = ν = 0)', () => {
+      // Each point's x/y is independently rounded to 3 decimals (see `r()`), so the
+      // distance between two theoretically-identical points can be a few thousandths.
+      const d = anomalyDiagram(0, 0, 0.5);
+      expect(dist(d.meanPoint, d.truePoint)).toBeCloseTo(0, 2);
+    });
+
+    it('coincides the mean and true markers at apoapsis (M = ν = 180)', () => {
+      const d = anomalyDiagram(180, 180, 0.5);
+      expect(dist(d.meanPoint, d.truePoint)).toBeCloseTo(0, 2);
+    });
+
+    it('coincides mean and true markers everywhere for a circular orbit', () => {
+      const d = anomalyDiagram(90, 90, 0);
+      expect(dist(d.meanPoint, d.truePoint)).toBeCloseTo(0, 2);
+    });
+
+    it('diverges mean and true markers mid-orbit for an eccentric orbit', () => {
+      // At M = 90 with e = 0.5, true anomaly leads well past 90° (see meanToTrueAnomaly),
+      // so the two markers land on visibly different points.
+      const d = anomalyDiagram(90, 130, 0.5);
+      expect(dist(d.meanPoint, d.truePoint)).toBeGreaterThan(1);
+    });
+
+    it('draws the true-anomaly point on the ellipse and the mean-anomaly point on the wider auxiliary circle', () => {
+      const d = anomalyDiagram(90, 130, 0.5);
+      expect(d.auxCircle.rx).toBeCloseTo(d.ellipse.rx, 6);
+      expect(d.auxCircle.ry).toBeCloseTo(d.ellipse.rx, 6); // auxiliary circle is a true circle
+      expect(d.ellipse.ry).toBeLessThan(d.ellipse.rx); // real orbit stays elliptical
+    });
+
+    it('orients the ellipse and markers by the body\'s own argument of periapsis, like periapsisDiagram', () => {
+      // At ν = M = 0 the body sits exactly at periapsis, a fixed distance from the focus —
+      // rotating argOfPeriapsis should carry that point (and the ellipse) around the focus
+      // without changing its distance, the same convention periapsisDiagram uses. This is
+      // what lets two colliding bodies' diagrams (different orbits, same physical position)
+      // agree on where their markers land instead of always drawing periapsis along +x.
+      const unrotated = anomalyDiagram(0, 0, 0.5);
+      const rotated = anomalyDiagram(0, 0, 0.5, 90);
+
+      expect(rotated.ellipse.rotation).toBe(-90);
+      expect(dist(rotated.focus, rotated.truePoint)).toBeCloseTo(dist(unrotated.focus, unrotated.truePoint), 3);
+
+      // Unrotated periapsis sits along +x from the focus (screen y unchanged).
+      expect(unrotated.truePoint.y).toBeCloseTo(unrotated.focus.y, 2);
+      expect(unrotated.truePoint.x).toBeGreaterThan(unrotated.focus.x);
+
+      // A 90° argument of periapsis rotates periapsis to screen "up" (x unchanged, y decreases).
+      expect(rotated.truePoint.x).toBeCloseTo(rotated.focus.x, 2);
+      expect(rotated.truePoint.y).toBeLessThan(rotated.focus.y);
+    });
+
+    it('rotates the mean-anomaly marker by the same argument of periapsis', () => {
+      const unrotated = anomalyDiagram(90, 90, 0.5);
+      const rotated = anomalyDiagram(90, 90, 0.5, 90);
+      // M = 90 sits 90° around the auxiliary circle from periapsis; adding a 90° argument of
+      // periapsis carries it to 180° absolute — the far side of the circle from the unrotated case.
+      expect(dist(unrotated.focus, unrotated.meanPoint)).toBeCloseTo(dist(rotated.focus, rotated.meanPoint), 3);
+      expect(rotated.meanPoint.x).toBeLessThan(unrotated.meanPoint.x);
     });
   });
 

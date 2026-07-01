@@ -410,6 +410,36 @@ export class OrbitalRelationsService {
     return (((meanAnomalyDeg + orbitalCycles * 360) % 360) + 360) % 360;
   }
 
+  /** Walks to the root of the system tree containing `body`. */
+  private systemRoot(body: SystemBody): SystemBody {
+    let node = body;
+    while (node.parent) { node = node.parent; }
+    return node;
+  }
+
+  /** Every body in the system (root + all descendants), flattened. */
+  private flattenSystem(root: SystemBody): SystemBody[] {
+    const out: SystemBody[] = [root];
+    for (const child of root.subBodies) { out.push(...this.flattenSystem(child)); }
+    return out;
+  }
+
+  /**
+   * The most recent mean-anomaly observation timestamp recorded anywhere in `body`'s
+   * system — the shared epoch every body's displayed mean/true anomaly is calculated
+   * at, so bodies observed at different times still read as one consistent snapshot.
+   * Null when no body in the system carries a mean-anomaly timestamp.
+   */
+  systemAnomalyEpoch(body: SystemBody): Date | null {
+    let latestMs: number | null = null;
+    for (const b of this.flattenSystem(this.systemRoot(body))) {
+      const ts = b.bodyData.timestamps?.meanAnomaly;
+      const ms = ts ? Date.parse(ts) : NaN;
+      if (Number.isFinite(ms) && (latestMs === null || ms > latestMs)) { latestMs = ms; }
+    }
+    return latestMs === null ? null : new Date(latestMs);
+  }
+
   /**
    * Converts a mean anomaly (degrees) to a true anomaly (degrees, wrapped to [0, 360))
    * for the given eccentricity by solving Kepler's equation M = E - e·sin E with

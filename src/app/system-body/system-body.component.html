@@ -706,7 +706,8 @@
         </div>
         }
         <!-- Dynamics Section -->
-        @if (body().bodyData.rotationalPeriod || body().bodyData.distanceToArrival !== undefined) {
+        @if (body().bodyData.rotationalPeriod || body().bodyData.distanceToArrival !== undefined ||
+        getMeanAnomaly() !== undefined) {
         <div class="body-data-section">
           <div class="body-data-section-header">Dynamics</div>
           @if (body().bodyData.rotationalPeriod) {
@@ -727,6 +728,26 @@
             </div>
             <div [matTooltip]="body().bodyData.distanceToArrival + ' ls'">
               {{ body().bodyData.distanceToArrival | number:'0.2-2' }} ls
+            </div>
+          </div>
+          }
+          @if (getMeanAnomaly() !== undefined) {
+          <div class="body-data-entry clickable" (click)="showAnomalyDialog('mean')">
+            <div>
+              Mean anomaly<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">
+              {{ getMeanAnomaly() | number:'0.2-2' }}°
+            </div>
+          </div>
+          }
+          @if (getTrueAnomaly() !== undefined) {
+          <div class="body-data-entry clickable" (click)="showAnomalyDialog('true')">
+            <div>
+              True anomaly<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">
+              {{ getTrueAnomaly() | number:'0.2-2' }}°
             </div>
           </div>
           }
