@@ -411,6 +411,49 @@ describe('OrbitalRelationsService', () => {
     });
   });
 
+  describe('systemAnomalyEpoch', () => {
+    it('returns the most recent mean-anomaly timestamp among siblings', () => {
+      const [a, b] = makeFamily([
+        { timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' } },
+        { timestamps: { distanceToArrival: '', meanAnomaly: '2026-03-01T00:00:00Z' } },
+      ]);
+      expect(service.systemAnomalyEpoch(a)?.toISOString()).toBe(new Date('2026-03-01T00:00:00Z').toISOString());
+      expect(service.systemAnomalyEpoch(b)?.toISOString()).toBe(new Date('2026-03-01T00:00:00Z').toISOString());
+    });
+
+    it('walks up to the true system root and back down through every branch', () => {
+      const root: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Star', id64: 0n, subType: '', type: 'Star' } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const branchA: SystemBody = {
+        bodyData: { bodyId: 1, name: 'A', id64: 0n, subType: '', type: 'Planet' } as CanonnBiostatsBody,
+        subBodies: [], parent: root,
+      };
+      const branchB: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: 'B', id64: 0n, subType: '', type: 'Planet',
+          timestamps: { distanceToArrival: '', meanAnomaly: '2026-05-01T00:00:00Z' },
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: root,
+      };
+      const grandchild: SystemBody = {
+        bodyData: { bodyId: 3, name: 'A-moon', id64: 0n, subType: '', type: 'Planet' } as CanonnBiostatsBody,
+        subBodies: [], parent: branchA,
+      };
+      branchA.subBodies = [grandchild];
+      root.subBodies = [branchA, branchB];
+
+      // Called from a grandchild several levels below the timestamped body in a sibling branch.
+      expect(service.systemAnomalyEpoch(grandchild)?.toISOString()).toBe(new Date('2026-05-01T00:00:00Z').toISOString());
+    });
+
+    it('returns null when nothing in the system has a mean-anomaly timestamp', () => {
+      const [only] = makeFamily([{ orbitalPeriod: 10 }]);
+      expect(service.systemAnomalyEpoch(only)).toBeNull();
+    });
+  });
+
   describe('degreesToEvent', () => {
     it('measures the angle to apoapsis from 180°', () => {
       expect(service.degreesToEvent(0, 'apo')).toBe(180);

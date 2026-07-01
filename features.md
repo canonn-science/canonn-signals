@@ -90,6 +90,13 @@ Organized into five main categories with dedicated sections:
   - Next apoapsis date/time
   - Current orbital position
   - Time-based orbital predictions
+- **Mean & True Anomaly Display**: Shown in the body's Dynamics section,
+  clearly marked as calculated rather than raw:
+  - Propagated to a shared epoch — the most recent mean-anomaly observation
+    recorded anywhere in the system — so every body reads as one consistent snapshot
+  - Click either value for a dialog showing the value as recorded by Spansh (with its
+    timestamp), the epoch-calculated value shown in the list, and a live value for
+    right now
 
 #### Roche Limit Analysis
 - **Dual Roche Limits**: Calculates both:
@@ -132,6 +139,10 @@ Organized into five main categories with dedicated sections:
   - **Axial Tilt**: the body's spin axis relative to its orbital plane
   - **Orbital Inclination**: the orbital plane's tilt, with the body's position marked
   - **Argument of Periapsis**: the ellipse with the periapsis direction highlighted
+  - **Mean vs. True Anomaly**: an animated, live-updating diagram showing a fictitious
+    constant-speed marker on a circumscribed circle (mean anomaly) alongside the real
+    body's position on the ellipse (true anomaly), converging at periapsis/apoapsis and
+    for circular orbits, diverging as eccentricity grows
 - **Educational Overlays**: Each diagram annotates the relevant angle and reference plane
 
 ### Physical Properties

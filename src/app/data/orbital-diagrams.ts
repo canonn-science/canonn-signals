@@ -238,6 +238,72 @@ export function periapsisDiagram(argDeg: number, eccentricity?: number): Periaps
   return { focus, focusRadius: 4, ellipse, referenceLine, periapsisPoint, parentLabel, bodyLabel, arc };
 }
 
+export interface AnomalyDiagram {
+  focus: Point;            // parent body, sits at a focus of the ellipse
+  focusRadius: number;
+  ellipse: EllipseShape;   // the real orbit, rotated by the body's argument of periapsis
+  auxCircle: EllipseShape; // circumscribed circle, same centre, radius = semi-major axis
+  referenceLine: Line;     // shared 0° reference direction (e.g. ascending node), fixed for every body
+  meanPoint: Point;        // fictitious constant-speed body, on the auxiliary circle at M
+  truePoint: Point;        // the real body, on the ellipse at true anomaly ν
+  parentLabel: Point;
+  bodyLabel: Point;
+}
+
+/**
+ * Mean anomaly vs. true anomaly: a fictitious body moving at constant angular speed
+ * around a circle circumscribing the orbit (mean anomaly `meanAnomalyDeg`) compared
+ * with the real body's position on the elliptical orbit (true anomaly `trueAnomalyDeg`).
+ * The two coincide at periapsis/apoapsis and for a circular orbit, and diverge more as
+ * eccentricity grows.
+ *
+ * `argOfPeriapsisDeg` orients the ellipse (and both markers) relative to the shared 0°
+ * reference direction used across every body's diagram — the same convention as
+ * {@link periapsisDiagram}. Without it (defaulting to 0) two bodies that are actually
+ * colliding would be drawn with their periapses both pointing along +x regardless of
+ * their real orbits, making their true-anomaly markers land in unrelated places even
+ * though the bodies are at the same physical position.
+ */
+export function anomalyDiagram(meanAnomalyDeg: number, trueAnomalyDeg: number, eccentricity?: number, argOfPeriapsisDeg?: number): AnomalyDiagram {
+  const M = Number.isFinite(meanAnomalyDeg) ? meanAnomalyDeg : 0;
+  const nu = Number.isFinite(trueAnomalyDeg) ? trueAnomalyDeg : 0;
+  const arg = Number.isFinite(argOfPeriapsisDeg as number) ? (argOfPeriapsisDeg as number) : 0;
+  // Unlike periapsisDiagram, e = 0 is a valid and useful case here: a circular orbit is
+  // exactly where M and ν coincide, which is part of what this diagram teaches.
+  const e = clamp(Number.isFinite(eccentricity as number) ? (eccentricity as number) : 0.5, 0, 0.85);
+
+  const maxApo = 46;            // apoapsis distance from the focus
+  const a = maxApo / (1 + e);   // semi-major axis
+  const b = a * Math.sqrt(1 - e * e);
+  const c = a * e;              // focus offset from the ellipse centre
+
+  const focus = { x: CENTER, y: CENTER };
+  const phi = arg * DEG;
+  const u = { x: Math.cos(phi), y: -Math.sin(phi) }; // periapsis direction (screen)
+
+  const ellipse: EllipseShape = {
+    cx: r(focus.x - c * u.x), cy: r(focus.y - c * u.y), rx: r(a), ry: r(b), rotation: r(-arg),
+  };
+  const auxCircle: EllipseShape = { cx: ellipse.cx, cy: ellipse.cy, rx: r(a), ry: r(a), rotation: 0 };
+
+  // Mean anomaly is measured from periapsis just like true anomaly, so its marker sits
+  // at the same absolute angle (arg + M) on the auxiliary circle.
+  const meanPoint = roundPoint(pointAt(ellipse.cx, ellipse.cy, a, arg + M));
+
+  // True anomaly's distance from the focus depends only on ν (angle from periapsis);
+  // its screen direction is the absolute angle (arg + ν).
+  const nuRad = nu * DEG;
+  const rNu = (a * (1 - e * e)) / (1 + e * Math.cos(nuRad));
+  const absNu = (arg + nu) * DEG;
+  const truePoint: Point = { x: r(focus.x + rNu * Math.cos(absNu)), y: r(focus.y - rNu * Math.sin(absNu)) };
+
+  const referenceLine: Line = { x1: focus.x, y1: focus.y, x2: focus.x + maxApo, y2: focus.y };
+
+  const { parentLabel, bodyLabel } = labelAnchors(focus, truePoint);
+
+  return { focus, focusRadius: 4, ellipse, auxCircle, referenceLine, meanPoint, truePoint, parentLabel, bodyLabel };
+}
+
 /** Round a point's coordinates for tidy, test-stable SVG attributes. */
 function roundPoint(p: Point): Point {
   return { x: r(p.x), y: r(p.y) };

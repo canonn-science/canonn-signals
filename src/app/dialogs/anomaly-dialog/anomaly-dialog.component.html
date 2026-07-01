@@ -1,0 +1,79 @@
+<app-dialog-shell [heading]="heading">
+  <div class="anomaly-dialog">
+    <div class="values">
+      <ul>
+        <li><strong>Body:</strong> {{ data.bodyName || 'This body' }}</li>
+        <li><strong>Recorded mean anomaly (M₀):</strong> {{ data.recordedMeanAnomaly | number:'0.1-1' }}° at
+          {{ data.recordedTimestamp | date:'yyyy-MM-dd HH:mm' }} UTC</li>
+        @if (hasEccentricity) {
+        <li><strong>Recorded true anomaly (ν₀):</strong> {{ recordedTrueAnomaly() | number:'0.1-1' }}°</li>
+        }
+        <li><strong>Shown in the Orbit list (calculated for {{ data.systemEpoch | date:'yyyy-MM-dd HH:mm' }} UTC):</strong>
+          M = {{ data.meanAnomalyAtEpoch | number:'0.1-1' }}°
+          @if (hasEccentricity) { , ν = {{ trueAnomalyAtEpoch() | number:'0.1-1' }}° }
+        </li>
+        <li><strong>Live, right now:</strong>
+          M = {{ meanAnomalyLive() | number:'0.1-1' }}°
+          @if (hasEccentricity) { , ν = {{ trueAnomalyLive() | number:'0.1-1' }}° }
+        </li>
+      </ul>
+    </div>
+
+    @if (diagram(); as d) {
+    <div class="diagram">
+      <svg viewBox="0 0 120 120" class="anomaly-diagram" role="img" aria-label="Mean vs. true anomaly diagram">
+        <!-- Periapsis reference direction -->
+        <line class="reference-dashed" [attr.x1]="d.referenceLine.x1" [attr.y1]="d.referenceLine.y1"
+          [attr.x2]="d.referenceLine.x2" [attr.y2]="d.referenceLine.y2" />
+        <!-- Auxiliary circle (radius = semi-major axis) that the fictitious mean-anomaly body moves around -->
+        <ellipse class="aux-circle" [attr.cx]="d.auxCircle.cx" [attr.cy]="d.auxCircle.cy"
+          [attr.rx]="d.auxCircle.rx" [attr.ry]="d.auxCircle.ry" />
+        <!-- The real orbit -->
+        <ellipse class="orbit-plane" [attr.cx]="d.ellipse.cx" [attr.cy]="d.ellipse.cy"
+          [attr.rx]="d.ellipse.rx" [attr.ry]="d.ellipse.ry" />
+        <!-- Parent body at the focus -->
+        <circle class="planet" [attr.cx]="d.focus.x" [attr.cy]="d.focus.y" [attr.r]="d.focusRadius" />
+        <!-- Mean-anomaly marker (fictitious constant-speed body, on the circle) -->
+        <circle class="marker-mean" [attr.cx]="d.meanPoint.x" [attr.cy]="d.meanPoint.y" r="3.5" />
+        <!-- True-anomaly marker (the real body, on the ellipse) -->
+        <circle class="marker" [attr.cx]="d.truePoint.x" [attr.cy]="d.truePoint.y" r="3.5" />
+        @if (data.bodyName) {
+        <text class="label" [attr.x]="d.bodyLabel.x" [attr.y]="d.bodyLabel.y" text-anchor="middle">{{ data.bodyName }}</text>
+        }
+      </svg>
+      <div class="legend">
+        <span class="legend-entry"><span class="swatch swatch-mean"></span> Mean anomaly (M) — constant angular speed</span>
+        <span class="legend-entry"><span class="swatch swatch-true"></span> True anomaly (ν) — actual position</span>
+      </div>
+    </div>
+    }
+
+    <div class="explanation">
+      <p>
+        <strong>Mean anomaly</strong> is the angle of a hypothetical body moving around the orbit at a constant
+        angular velocity — it advances in exact proportion to elapsed time.
+        <strong>True anomaly</strong> is the actual angle of the real body along its elliptical orbit, measured from
+        periapsis.
+      </p>
+      @if (hasEccentricity) {
+      <p>
+        The two are identical at periapsis and apoapsis, and identical throughout a perfectly circular orbit
+        (eccentricity 0) — the body moves at constant speed all the way round. As eccentricity increases the real
+        body speeds up near periapsis and slows down near apoapsis, so true anomaly races ahead of mean anomaly in
+        the first half of the orbit and falls behind in the second half, before the two meet again at periapsis.
+      </p>
+      } @else {
+      <p>
+        True anomaly can't be calculated for this body because it has no recorded orbital eccentricity.
+      </p>
+      }
+      <p>
+        Both values are recalculated here from the recorded mean anomaly (M₀) and its timestamp: elapsed time since
+        that timestamp, divided by the orbital period, gives the number of orbits completed, which advances M₀ by
+        that many full turns. The Orbit list shows this propagated to the most recent observation timestamp
+        anywhere in the system, so every body reads as one consistent snapshot; the values above also show it
+        propagated to right now.
+      </p>
+    </div>
+  </div>
+</app-dialog-shell>

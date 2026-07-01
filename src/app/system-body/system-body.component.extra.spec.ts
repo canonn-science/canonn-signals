@@ -762,6 +762,60 @@ describe('SystemBodyComponent (extended coverage)', () => {
     });
   });
 
+  describe('anomaly dialog', () => {
+    it('opens with the epoch-calculated mean/true anomaly and the recorded values', async () => {
+      render(makeBody({
+        meanAnomaly: 45, orbitalPeriod: 200, orbitalEccentricity: 0.3,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      }));
+      await component.showAnomalyDialog('mean');
+      expect(lastDialogData().type).toBe('mean');
+      expect(lastDialogData().recordedMeanAnomaly).toBe(45);
+      expect(lastDialogData().meanAnomalyAtEpoch).toBe(component.getMeanAnomaly());
+      expect(lastDialogData().systemEpoch).toEqual(component.getSystemAnomalyEpoch());
+
+      await component.showAnomalyDialog('true');
+      expect(lastDialogData().type).toBe('true');
+    });
+
+    it('does not expose a mean/true anomaly row or open the dialog when telemetry is missing', async () => {
+      render(makeBody({}));
+      expect(component.getMeanAnomaly()).toBeUndefined();
+      expect(component.getTrueAnomaly()).toBeUndefined();
+      const before = dialogOpenCalls;
+      await component.showAnomalyDialog('mean');
+      expect(dialogOpenCalls).toBe(before);
+    });
+
+    it('omits true anomaly when eccentricity is unrecorded, but keeps mean anomaly', () => {
+      render(makeBody({
+        meanAnomaly: 45, orbitalPeriod: 200,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      }));
+      expect(component.getMeanAnomaly()).not.toBeUndefined();
+      expect(component.getTrueAnomaly()).toBeUndefined();
+    });
+
+    it('calculates every body in a system at the same shared epoch — the most recent observation', () => {
+      const parent = makeBody({ name: 'Star' });
+      const older = makeBody({
+        name: 'Old', meanAnomaly: 10, orbitalPeriod: 100,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      }, parent);
+      const newer = makeBody({
+        name: 'New', meanAnomaly: 20, orbitalPeriod: 100,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-04-01T00:00:00Z' },
+      }, parent);
+      parent.subBodies = [older, newer];
+
+      render(older);
+      expect(component.getSystemAnomalyEpoch()?.toISOString()).toBe(new Date('2026-04-01T00:00:00Z').toISOString());
+
+      render(newer);
+      expect(component.getSystemAnomalyEpoch()?.toISOString()).toBe(new Date('2026-04-01T00:00:00Z').toISOString());
+    });
+  });
+
   describe('collision dialog', () => {
     it('opens the collision dialog with this body name and the candidate details', async () => {
       render(makeBody({ name: 'X 1 b' }));

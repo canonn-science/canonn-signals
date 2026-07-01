@@ -23,6 +23,7 @@ import type { OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagr
 import type { TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
 import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
+import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
 import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
 import type { SynodicDiagramInput } from '../data/collision-diagram';
 import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
@@ -140,6 +141,9 @@ export class SystemBodyComponent implements OnChanges {
   // rather than on every change-detection pass (several are bound multiple times).
   public readonly getApoapsis = signal(0);
   public readonly getPeriapsis = signal(0);
+  public readonly getSystemAnomalyEpoch = signal<Date | null>(null);
+  public readonly getMeanAnomaly = signal<number | undefined>(undefined);
+  public readonly getTrueAnomaly = signal<number | undefined>(undefined);
   public readonly getRingWidth = signal(0);
   public readonly getRingArea = signal(0);
   public readonly getRingDensity = signal(0);
@@ -387,6 +391,20 @@ export class SystemBodyComponent implements OnChanges {
     const eccentricity = bd.orbitalEccentricity ?? 0;
     this.getApoapsis.set(semiMajorAxisKm * (1 + eccentricity));
     this.getPeriapsis.set(semiMajorAxisKm * (1 - eccentricity));
+
+    // Mean/true anomaly: propagated to the most recent mean-anomaly observation
+    // timestamp anywhere in the system (not "now"), so every body in a system reads
+    // as one consistent snapshot even when their individual recordings differ in age.
+    const epoch = this.orbitalRelations.systemAnomalyEpoch(body);
+    this.getSystemAnomalyEpoch.set(epoch);
+    let meanAnomalyAtEpoch: number | undefined;
+    if (bd.meanAnomaly != null && bd.orbitalPeriod && bd.timestamps?.meanAnomaly && epoch) {
+      meanAnomalyAtEpoch = this.orbitalRelations.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, epoch.getTime());
+    }
+    this.getMeanAnomaly.set(meanAnomalyAtEpoch);
+    this.getTrueAnomaly.set(meanAnomalyAtEpoch !== undefined && bd.orbitalEccentricity != null
+      ? this.orbitalRelations.meanToTrueAnomaly(meanAnomalyAtEpoch, bd.orbitalEccentricity)
+      : undefined);
 
     // Ring geometry.
     const outer = bd.outerRadius ?? 0;
@@ -1051,6 +1069,34 @@ export class SystemBodyComponent implements OnChanges {
         currentMeanAnomaly,
         degreesToEvent
       } satisfies ApoPeriDialogData,
+    });
+  }
+
+  /** Opens the Mean/True Anomaly dialog with the recorded, epoch, and live values. */
+  public async showAnomalyDialog(type: 'mean' | 'true'): Promise<void> {
+    const bd = this.body().bodyData;
+    const epoch = this.getSystemAnomalyEpoch();
+    const meanAnomalyAtEpoch = this.getMeanAnomaly();
+    if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly || !epoch || meanAnomalyAtEpoch === undefined) return;
+
+    const { AnomalyDialogComponent } = await import('../dialogs/anomaly-dialog/anomaly-dialog.component');
+    this.dialog.open(AnomalyDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      autoFocus: 'first-heading',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        type,
+        bodyName: this.getBodyDisplayName(bd.name),
+        recordedMeanAnomaly: bd.meanAnomaly,
+        recordedTimestamp: new Date(bd.timestamps.meanAnomaly),
+        systemEpoch: epoch,
+        meanAnomalyAtEpoch,
+        eccentricity: bd.orbitalEccentricity ?? undefined,
+        orbitalPeriodDays: bd.orbitalPeriod,
+        argOfPeriapsisDeg: bd.argOfPeriapsis ?? 0,
+      } satisfies AnomalyDialogData,
     });
   }
 
