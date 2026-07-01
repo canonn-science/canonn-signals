@@ -7,6 +7,12 @@
     max-height: 90vh;
 }
 
+// Opt-in (see `fitContent`): size to the content instead, so short dialogs aren't padded
+// out to 80vh. The max-height still caps tall content, which then scrolls as usual.
+:host.fit-content {
+    height: auto;
+}
+
 h2[mat-dialog-title] {
     flex: 0 0 auto;
     margin: 0;

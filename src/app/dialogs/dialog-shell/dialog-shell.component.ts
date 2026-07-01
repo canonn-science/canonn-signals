@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, Input } from '@angular/core';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import {
   MatDialogActions,
@@ -18,6 +18,10 @@ import { MatButton } from '@angular/material/button';
  * and a Close button:
  *  - `[shell-title-extra]` — extra content alongside the heading text (e.g. a link).
  *  - `[shell-actions]` — extra action buttons placed after the Close button.
+ *
+ * By default the shell is a fixed height so the info dialogs don't jump in size as their
+ * content varies. Set `fitContent` for a dialog whose body should size to its content
+ * instead, growing only up to the shared max-height before its content scrolls.
  */
 @Component({
   selector: 'app-dialog-shell',
@@ -29,4 +33,10 @@ import { MatButton } from '@angular/material/button';
 export class DialogShellComponent {
   /** Heading shown in the dialog title bar. */
   @Input({ required: true }) heading!: string;
+
+  /**
+   * When true, the shell sizes to its content (auto height, capped at the shared
+   * max-height) instead of the default fixed height. Reflected to the host as a class.
+   */
+  @Input() @HostBinding('class.fit-content') fitContent = false;
 }

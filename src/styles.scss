@@ -215,9 +215,14 @@ hr {
    A fixed-width box so the icons line up in a column and values without one can reserve
    the exact same gutter (see .body-data-entry gutter rule in system-body.component.scss). */
 .convert-icon {
-  display: inline-block;
+  // inline-flex + a content-height box lets vertical-align: middle centre the glyph on the
+  // value text. (A plain inline-block leaves the FontAwesome svg's own vertical-align: -0.125em
+  // and the line-box strut in play, which drops the icon toward the value's baseline.)
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 14px;
-  text-align: center;
+  height: 1em;
   margin-left: 6px;
   font-size: 0.8em;
   vertical-align: middle;
