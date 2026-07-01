@@ -22,9 +22,10 @@ test.describe('Unit-conversion dialog (fixture)', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('Radius');
 
-    // Units are listed largest-unit-first (declared order, not sorted at runtime).
+    // Units are listed largest-unit-first (declared order, not sorted at runtime). The unit
+    // the value natively arrives in is badged "from journal" (km here — Radius arrives in km).
     await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
-      'Light Years', 'AU', 'Solar Radii', 'Light seconds', 'km', 'm',
+      'Light Years', 'AU', 'Solar Radii', 'Light seconds', 'km from journal', 'm',
     ]);
 
     // Clicking a value copies it and flips the cell to "Copied!" (clipboard is
@@ -32,8 +33,10 @@ test.describe('Unit-conversion dialog (fixture)', () => {
     if (browserName === 'chromium') {
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
     }
+    // The km row's header now reads "km from journal" (badged), so match it by prefix.
     const kmValue = dialog
-      .locator('.conversion-table tbody tr', { has: page.getByText('km', { exact: true }) })
+      .locator('.conversion-table tbody tr')
+      .filter({ has: page.getByRole('rowheader', { name: /^km/ }) })
       .locator('td.value');
     await kmValue.click();
     if (browserName === 'chromium') {
@@ -51,7 +54,7 @@ test.describe('Unit-conversion dialog (fixture)', () => {
     const dialog = page.locator('app-unit-conversion-dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
-      'Solar Masses', 'Earth Masses', 'Megatonnes',
+      'Solar Masses from journal', 'Earth Masses', 'Megatonnes',
     ]);
     await expect(dialog.locator('.comparisons')).toContainText('African bush elephants');
   });
