@@ -27,7 +27,7 @@ describe('JsonDialogComponent', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('formats the body JSON and renders the bodyId in the EDGalaxy link', () => {
-    const fixture = setup({ body: makeBody({ subType: 'Rocky body', bodyId: 3 }), edGalaxyData: null });
+    const fixture = setup({ body: makeBody({ subType: 'Rocky body', bodyId: 3 }), edGalaxyData: null, now: 0 });
     const c = fixture.componentInstance;
     expect(c.formattedBodyJson).toContain('"subType": "Rocky body"');
     expect(c.edGalaxyHref).toContain('bodyId=3');
@@ -35,14 +35,14 @@ describe('JsonDialogComponent', () => {
 
   it('falls back to the parent bodyId for a ring with no own id', () => {
     const parent = makeBody({ bodyId: 7 });
-    const fixture = setup({ body: makeBody({ bodyId: -1, type: 'Ring' }, parent), edGalaxyData: null });
+    const fixture = setup({ body: makeBody({ bodyId: -1, type: 'Ring' }, parent), edGalaxyData: null, now: 0 });
     expect(fixture.componentInstance.edGalaxyHref).toContain('bodyId=7');
   });
 
   it('flashes the copied state when copying succeeds', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
-    const fixture = setup({ body: makeBody({}), edGalaxyData: null });
+    const fixture = setup({ body: makeBody({}), edGalaxyData: null, now: 0 });
     fixture.componentInstance.copyBodyJson();
     await Promise.resolve();
     expect(writeText).toHaveBeenCalled();

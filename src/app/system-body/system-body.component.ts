@@ -27,6 +27,7 @@ import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collisio
 import type { SynodicDiagramInput } from '../data/collision-diagram';
 import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
 import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
+import { BodyEnrichmentService } from '../data/body-enrichment.service';
 import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dialog.component';
 import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
@@ -41,11 +42,6 @@ const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
  * smoothly; the exact contact minima are threaded into the curve separately for precise markers.
  */
 const COLLISION_DIAGRAM_SAMPLES = 1000;
-
-/** Rings below this surface density (kg/km²) are considered invisible. */
-const INVISIBLE_RING_MAX_DENSITY = 0.1;
-/** Rings wider than this (km) are considered invisible when density is also low. */
-const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
 
 /**
  * Maximum gap between adjacent rings (km) for the Racing Rings badge.
@@ -74,6 +70,7 @@ export class SystemBodyComponent implements OnChanges {
   private readonly physics = inject(BodyPhysicsService);
   private readonly stellarPhysics = inject(StellarPhysicsService);
   private readonly orbitalRelations = inject(OrbitalRelationsService);
+  private readonly enrichment = inject(BodyEnrichmentService);
 
   // Expose Math.abs for template use
   abs(value: number): number {
@@ -382,11 +379,10 @@ export class SystemBodyComponent implements OnChanges {
     const body = this.body();
     const bd = body.bodyData;
 
-    // Orbit extents (km).
-    const semiMajorAxisKm = (bd.semiMajorAxis ?? 0) * 149597870.7;
-    const eccentricity = bd.orbitalEccentricity ?? 0;
-    this.getApoapsis.set(semiMajorAxisKm * (1 + eccentricity));
-    this.getPeriapsis.set(semiMajorAxisKm * (1 - eccentricity));
+    // Orbit extents (km) — shared with the JSON export via BodyPhysicsService.
+    const extents = this.physics.orbitExtentsKm(bd);
+    this.getApoapsis.set(extents?.apoapsisKm ?? 0);
+    this.getPeriapsis.set(extents?.periapsisKm ?? 0);
 
     // Ring geometry.
     const outer = bd.outerRadius ?? 0;
@@ -501,10 +497,7 @@ export class SystemBodyComponent implements OnChanges {
 
 
   public getEccentricityAnalysis(eccentricity: number): string {
-    if (eccentricity === 0) return 'Circular';
-    if (eccentricity < 0.4) return 'Nearly Circular';
-    if (eccentricity < 0.8) return 'Eccentric';
-    return 'Highly Eccentric';
+    return this.physics.eccentricityClass(eccentricity);
   }
 
 
@@ -853,6 +846,11 @@ export class SystemBodyComponent implements OnChanges {
     this.hoveredIndex = index;
   }
 
+  /** Epoch the export's time-dependent values use — the app clock override (frozen-clock tests / `?t=`) or now. */
+  private exportNow(): number {
+    return this.appService.nowOverride() ?? Date.now();
+  }
+
   public async showBodyJsonDialog(): Promise<void> {
     const { JsonDialogComponent } = await import('../dialogs/json-dialog/json-dialog.component');
     this.dialog.open(JsonDialogComponent, {
@@ -860,13 +858,13 @@ export class SystemBodyComponent implements OnChanges {
       maxWidth: '95vw',
       autoFocus: 'first-heading',
       restoreFocus: false,
-      data: { body: this.body(), edGalaxyData: this.edGalaxyData() } satisfies JsonDialogData,
+      data: { body: this.body(), edGalaxyData: this.edGalaxyData(), now: this.exportNow() } satisfies JsonDialogData,
     });
   }
 
-  /** Copies the body JSON to the clipboard (right-click shortcut on the JSON button). */
+  /** Copies the body JSON — raw Spansh plus the `calculated` block — to the clipboard (right-click shortcut). */
   public copyBodyJson(): void {
-    navigator.clipboard?.writeText(formatBodyJson(this.body().bodyData))
+    navigator.clipboard?.writeText(formatBodyJson(this.enrichment.enrichBody(this.body(), this.exportNow())))
       .catch(() => { /* clipboard unavailable */ });
   }
 
@@ -1319,7 +1317,7 @@ export class SystemBodyComponent implements OnChanges {
 
   /** Shared invisibility heuristic used for ring stats, badges, and dialog explanations. */
   private isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
-    return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
+    return this.physics.isLowDensityWideRing(widthKm, densityKgPerKm2);
   }
 
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
