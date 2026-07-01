@@ -142,7 +142,53 @@
                 {{ data.system.coords.x }} / {{ data.system.coords.y }} / {{ data.system.coords.z }}
               </div>
             </div>
+            <div class="system-data-entry">
+              <div>Permit required</div>
+              <div>{{ isPermitLocked() ? 'Yes' : 'No' }}</div>
+            </div>
+            @if (data.system.date) {
+            <div class="system-data-entry">
+              <div>Info updated</div>
+              <div class="info-updated-value" [matTooltip]="formatUpdatedTooltip(data.system.date)"
+                matTooltipClass="multiline-tooltip">{{ formatUpdated(data.system.date) }}</div>
+            </div>
+            }
           </div>
+          @if (data.system.population > 0) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Society</div>
+            @if (systemEconomyDisplay(data.system); as economy) {
+            <div class="system-data-entry">
+              <div>Economy</div>
+              <div>{{ economy }}</div>
+            </div>
+            }
+            @if (data.system.government && data.system.government !== 'None') {
+            <div class="system-data-entry">
+              <div>Government</div>
+              <div>{{ data.system.government }}</div>
+            </div>
+            }
+            @if (data.system.allegiance && data.system.allegiance !== 'None') {
+            <div class="system-data-entry">
+              <div>Allegiance</div>
+              <div>{{ data.system.allegiance }}</div>
+            </div>
+            }
+            @if (data.system.controllingFaction?.name; as factionName) {
+            <div class="system-data-entry">
+              <div>Controlling faction</div>
+              <div>{{ factionName }}</div>
+            </div>
+            }
+            @if (data.system.security && data.system.security !== 'None') {
+            <div class="system-data-entry">
+              <div>Security</div>
+              <div>{{ data.system.security }}</div>
+            </div>
+            }
+          </div>
+          }
           @if (edGalaxy?.Simbad?.Name || edGalaxy?.Simbad?.RAJ2000 || edGalaxy?.Simbad?.DEJ2000) {
           <div class="system-data-section">
             <div class="system-data-section-header">Simbad</div>
@@ -275,7 +321,14 @@
                                       ? 'System completeness unknown (' + completeness.known + ' bodies known, total unknown)'
                                       : 'System completeness ' + completeness.percent + '% (' + completeness.known + ' of ' + completeness.total + ' bodies known)'">
       <div class="system-completeness-header">
-        <span class="system-completeness-label">System Completeness</span>
+        <span class="system-completeness-label-group">
+          <span class="system-completeness-label">System Completeness</span>
+          <button type="button" class="histogram-button" (click)="showBodyHistogram()"
+            title="Show a histogram of body types in this system" aria-label="Show histogram of body types">
+            <fa-icon [icon]="faChartColumn" aria-hidden="true"></fa-icon>
+          </button>
+        </span>
+        <span class="system-completeness-count">{{ completeness.known }} / {{ completeness.total ?? '?' }} bodies</span>
         <span class="system-completeness-value">{{ completeness.percent === null ? '?' : completeness.percent }}%</span>
       </div>
       <div class="system-completeness-track">

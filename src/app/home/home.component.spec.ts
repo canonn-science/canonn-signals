@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, provideZonelessChangeDetection, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 
 import { HomeComponent } from './home.component';
 import { AppService } from '../app.service';
@@ -180,6 +181,119 @@ describe('HomeComponent', () => {
       ]);
       // Only the star and planet are real bodies → 2 of 4 → 50%.
       expect(component.systemCompleteness()).toEqual({ known: 2, total: 4, percent: 50 });
+    });
+  });
+
+  describe('isPermitLocked', () => {
+    function loadSystemNamed(name: string, id64: bigint) {
+      component.data.set({
+        system: {
+          name, id64, coords: { x: 0, y: 0, z: 0 },
+          region: { name: 'Inner Orion Spur', region: 18 }, population: 0, bodies: [],
+        },
+      } as any);
+    }
+
+    it('is true for a permit-locked system', () => {
+      loadSystemNamed('Sol', 10477373803n);
+      expect(component.isPermitLocked()).toBe(true);
+    });
+
+    it('is false for an open system', () => {
+      loadSystemNamed('Maia', 224644818084n);
+      expect(component.isPermitLocked()).toBe(false);
+    });
+
+    it('is false when no system is loaded', () => {
+      component.data.set(null);
+      expect(component.isPermitLocked()).toBe(false);
+    });
+  });
+
+  describe('systemEconomyDisplay', () => {
+    it('joins primary and secondary economies', () => {
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'Refinery', secondaryEconomy: 'Service' } as any))
+        .toBe('Refinery / Service');
+    });
+
+    it('shows only the primary when the secondary is "None" or a duplicate', () => {
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'Industrial', secondaryEconomy: 'None' } as any))
+        .toBe('Industrial');
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'Extraction', secondaryEconomy: 'Extraction' } as any))
+        .toBe('Extraction');
+    });
+
+    it('returns an empty string when there is no economy', () => {
+      expect(component.systemEconomyDisplay({ primaryEconomy: 'None', secondaryEconomy: 'None' } as any)).toBe('');
+      expect(component.systemEconomyDisplay({ primaryEconomy: null, secondaryEconomy: null } as any)).toBe('');
+    });
+  });
+
+  describe('formatUpdated', () => {
+    it('renders local wall-clock time in a stable YYYY-MM-DD HH:mm layout', () => {
+      expect(component.formatUpdated('2026-06-19 16:46:17+00')).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    });
+
+    it('honors the source UTC offset (the same instant renders identically)', () => {
+      // 16:46 UTC and 18:46+02 are the same moment, so both map to the same local time
+      // whatever the host time zone — proving the offset is applied, not the raw digits.
+      expect(component.formatUpdated('2026-06-19 18:46:17+02'))
+        .toBe(component.formatUpdated('2026-06-19 16:46:17+00'));
+    });
+
+    it('returns an empty string for a missing date', () => {
+      expect(component.formatUpdated('')).toBe('');
+      expect(component.formatUpdated(null)).toBe('');
+    });
+  });
+
+  describe('formatUpdatedTooltip', () => {
+    it('shows the local time (with offset) on the first line and UTC on the second', () => {
+      const tip = component.formatUpdatedTooltip('2026-06-19 16:46:17+00');
+      const [localLine, utcLine] = tip.split('\n');
+      expect(localLine).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} local time \(UTC[+-]\d{2}:\d{2}\)$/);
+      expect(utcLine).toBe('2026-06-19 16:46:17 UTC');
+    });
+
+    it('reflects the source UTC offset (same instant → same tooltip)', () => {
+      expect(component.formatUpdatedTooltip('2026-06-19 18:46:17+02'))
+        .toBe(component.formatUpdatedTooltip('2026-06-19 16:46:17+00'));
+    });
+
+    it('returns an empty string for a missing date', () => {
+      expect(component.formatUpdatedTooltip('')).toBe('');
+      expect(component.formatUpdatedTooltip(null)).toBe('');
+    });
+  });
+
+  describe('showBodyHistogram', () => {
+    it('does nothing when no system is loaded', async () => {
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open');
+      component.data.set(null);
+
+      await component.showBodyHistogram();
+
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('opens the histogram dialog with the system name and bodies', async () => {
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open').mockReturnValue({} as never);
+      const bodies = [{ type: 'Star', subType: 'M Star' }];
+      component.data.set({
+        system: {
+          name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 },
+          region: { name: 'Inner Orion Spur', region: 18 }, population: 0, bodyCount: 8, bodies,
+        },
+      } as never);
+
+      await component.showBodyHistogram();
+
+      expect(open).toHaveBeenCalledTimes(1);
+      const [, config] = open.mock.calls[0];
+      expect(config?.data).toEqual({ systemName: 'Sol', bodies, totalBodyCount: 8 });
+      expect(config?.autoFocus).toBe('first-heading');
     });
   });
 });

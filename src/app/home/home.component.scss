@@ -61,6 +61,45 @@
     font-size: 16px;
 }
 
+/* Known/total body count, sits between the label and the % in the header. */
+.system-completeness-count {
+    font-size: 11px;
+    font-weight: normal;
+    opacity: 0.85;
+}
+
+/* The "Info updated" value carries a tooltip (local time + UTC); hint it with help cursor. */
+.info-updated-value {
+    cursor: help;
+}
+
+/* Label + histogram button form the left group, so the count stays centered
+   under the header's `space-between` distribution. */
+.system-completeness-label-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Opens the body-type histogram; sits just right of the label. */
+.histogram-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--color-accent);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+}
+
+.histogram-button:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-link-hover);
+}
+
 .system-completeness-track {
     position: relative;
     height: 12px;

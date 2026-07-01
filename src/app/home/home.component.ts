@@ -1,13 +1,16 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
 import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faChartColumn, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { MatDialog } from '@angular/material/dialog';
+import type { HistogramDialogComponent, HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/app/data/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatAutocompleteTrigger, MatAutocomplete, MatOption } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { SystemBodyComponent } from '../system-body/system-body.component';
 import { RegionMapComponent } from '../region-map/region-map.component';
@@ -18,13 +21,14 @@ import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
 import { CREDITS_HTML } from '../data/credits.generated';
 import { findNearestNebulae, NearestNebula } from '../data/nebulae';
+import { isPermitLockedSystem } from '../data/permit-locked-systems';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe]
+  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe, MatTooltip]
 })
 export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);
@@ -289,6 +293,79 @@ export class HomeComponent implements OnInit, OnDestroy {
     return { known, total, percent };
   });
 
+  /**
+   * Whether the loaded system requires a permit. The biostats API carries no
+   * permit field, so this is matched against a hand-maintained static list
+   * (see permit-locked-systems.ts).
+   */
+  readonly isPermitLocked = computed<boolean>(() => {
+    const system = this.data()?.system;
+    return !!system && isPermitLockedSystem(system.name);
+  });
+
+  /**
+   * Combined economy label, e.g. "Refinery / Service". Drops the placeholder
+   * "None" and any null/duplicate so a single-economy system shows just one name
+   * and an unpopulated system shows nothing.
+   */
+  systemEconomyDisplay(system: CanonnBiostats['system']): string {
+    const seen = new Set<string>();
+    const parts: string[] = [];
+    for (const economy of [system.primaryEconomy, system.secondaryEconomy]) {
+      if (!economy || economy === 'None') continue;
+      if (seen.has(economy)) continue;
+      seen.add(economy);
+      parts.push(economy);
+    }
+    return parts.join(' / ');
+  }
+
+  /**
+   * Formats the system's update timestamp — a UTC value like "2026-06-19 16:46:17+00"
+   * — as wall-clock time in the browser's local time zone (e.g. "2026-06-19 18:46" for
+   * a UTC+2 viewer). The layout is fixed ("YYYY-MM-DD HH:mm") and locale-independent;
+   * only the zone offset varies. Uses the timestamp's own offset, not the current
+   * clock, so it stays deterministic under the e2e timezone pin. Returns '' for a
+   * missing date and the raw string if it can't be parsed.
+   */
+  formatUpdated(date: string | null | undefined): string {
+    if (!date) return '';
+    // Normalise the API's "YYYY-MM-DD HH:mm:ss+00" into a parseable ISO instant
+    // (space → 'T', bare "+00" hour offset → "+00:00"), then render local components.
+    const iso = date.trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+    const instant = new Date(iso);
+    if (isNaN(instant.getTime())) return date;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())} `
+      + `${pad(instant.getHours())}:${pad(instant.getMinutes())}`;
+  }
+
+  /**
+   * Tooltip companion to {@link formatUpdated}: repeats the update timestamp on two lines,
+   * first as the viewer's local time (with the zone offset that applied on that date, so
+   * DST is honoured) and then as UTC. Both lines carry seconds for precision. Uses the
+   * timestamp's own offset rather than the current clock, so it stays deterministic under
+   * the e2e timezone pin. Returns '' for a missing date and the raw string if unparseable.
+   */
+  formatUpdatedTooltip(date: string | null | undefined): string {
+    if (!date) return '';
+    const iso = date.trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+    const instant = new Date(iso);
+    if (isNaN(instant.getTime())) return date;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const local = `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())} `
+      + `${pad(instant.getHours())}:${pad(instant.getMinutes())}:${pad(instant.getSeconds())}`;
+    const utc = `${instant.getUTCFullYear()}-${pad(instant.getUTCMonth() + 1)}-${pad(instant.getUTCDate())} `
+      + `${pad(instant.getUTCHours())}:${pad(instant.getUTCMinutes())}:${pad(instant.getUTCSeconds())}`;
+    // getTimezoneOffset() is minutes *behind* UTC, so negate to get the conventional
+    // "minutes east of UTC" used in the "UTC±HH:MM" label.
+    const offsetMin = -instant.getTimezoneOffset();
+    const sign = offsetMin >= 0 ? '+' : '-';
+    const absMin = Math.abs(offsetMin);
+    const offset = `UTC${sign}${pad(Math.floor(absMin / 60))}:${pad(absMin % 60)}`;
+    return `${local} local time (${offset})\n${utc} UTC`;
+  }
+
   private distance3d(a: { x: number, y: number, z: number }, b: { x: number, y: number, z: number }): number {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
   }
@@ -328,6 +405,23 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
   public readonly faFileCode = faFileCode;
   public readonly faMagnifyingGlass = faMagnifyingGlass;
+  public readonly faChartColumn = faChartColumn;
+  private readonly dialog = inject(MatDialog);
+
+  /** Opens the body-type histogram for the current system. */
+  public async showBodyHistogram(): Promise<void> {
+    const data = this.data();
+    if (!data) return;
+    const { HistogramDialogComponent } = await import('../dialogs/histogram-dialog/histogram-dialog.component');
+    this.dialog.open<HistogramDialogComponent, HistogramDialogData>(HistogramDialogComponent, {
+      width: '640px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      autoFocus: 'first-heading',
+      data: { systemName: data.system.name, bodies: data.system.bodies, totalBodyCount: data.system.bodyCount ?? null },
+    });
+  }
   private readonly _searching = signal(false);
   /** A system requested (e.g. via query param) while a search was already in flight. */
   private pendingSystemRequest: string | null = null;
@@ -995,11 +1089,17 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 export interface CanonnBiostats {
   system: {
-    allegiance: string;
+    // Null on unpopulated systems (the API reports no allegiance for those).
+    allegiance: string | null;
     bodies: CanonnBiostatsBody[];
     // Optional: some systems (e.g. unsurveyed ones) omit this in the API payload.
     bodyCount?: number;
-    // controllingFaction
+    controllingFaction?: {
+      name: string;
+      allegiance?: string;
+      government?: string;
+      state?: string;
+    };
     coords: {
       x: number;
       y: number;
@@ -1012,7 +1112,7 @@ export interface CanonnBiostats {
     population: number;
     // powerState
     // powers
-    // primaryEconomy
+    primaryEconomy?: string | null;
     // Absent for some systems (e.g. uninhabited deep-space systems served by Spansh), so optional.
     region?: {
       name: string;
@@ -1022,8 +1122,8 @@ export interface CanonnBiostats {
       anomaly?: string[];
       cloud?: string[];
     };
-    // secondaryEconomy
-    // security
+    secondaryEconomy?: string | null;
+    security?: string | null;
   }
 }
 

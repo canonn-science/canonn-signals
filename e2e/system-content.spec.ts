@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
+import { expectSystemRow } from './support/system-fixture';
 
 /**
  * Deterministic content tests for the loaded-system view. These run against the
@@ -114,5 +115,15 @@ test.describe('System content (test fixture)', () => {
   test('exposes the raw-JSON control on a body header', async ({ page }) => {
     // Every body header offers a "view JSON" button for the underlying data.
     await expect(page.locator('#body-2 .body-title .json-button')).toBeVisible();
+  });
+
+  test('hides the Society section for an unpopulated system but still shows permit/updated', async ({ page }) => {
+    // The test fixture has population 0, so the populated-only Society block is absent.
+    await expect(page.locator('.system-data-section-header').filter({ hasText: 'Society' })).toHaveCount(0);
+
+    // Permit + info-updated are shown for every system. "Test System" is not permit-locked.
+    await expectSystemRow(page, 'Permit required', 'No');
+    // Rendered in local time; the suite pins timezoneId to UTC, so this is the UTC wall-clock.
+    await expectSystemRow(page, 'Info updated', '2024-11-19 17:15');
   });
 });

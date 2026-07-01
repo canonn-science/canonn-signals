@@ -1,9 +1,10 @@
 :host {
-    // Every dialog that uses the shell shares one height so they don't jump in size
-    // as content varies. The header and actions stay pinned; the content area scrolls.
+    // Autoscale to the content's natural height, capped at the viewport. Short dialogs
+    // (e.g. the body histogram) hug their content instead of padding out to a fixed
+    // height; tall ones stop growing at the cap and scroll their content area. The
+    // header and actions stay pinned.
     display: flex;
     flex-direction: column;
-    height: 80vh;
     max-height: 90vh;
 }
 
@@ -19,8 +20,11 @@ h2[mat-dialog-title] {
 }
 
 mat-dialog-content {
-    // Fill the remaining height between the header and the actions, scrolling overflow.
+    // Take the space between the header and the actions. `min-height: 0` lets this flex
+    // child shrink below its content height so, once the host hits its max-height cap,
+    // the overflow scrolls here instead of pushing the dialog past the viewport.
     flex: 1 1 auto;
+    min-height: 0;
     max-height: none;
     padding: 24px;
     color: var(--color-text);
