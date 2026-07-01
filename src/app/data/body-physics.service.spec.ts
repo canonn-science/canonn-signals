@@ -296,4 +296,38 @@ describe('BodyPhysicsService', () => {
       expect(service.massStabilityAlert(undefined, 5)).toBeNull();
     });
   });
+
+  describe('orbitExtentsKm', () => {
+    it('derives semi-major axis, apoapsis and periapsis in km', () => {
+      const extents = service.orbitExtentsKm({ semiMajorAxis: 1, orbitalEccentricity: 0.5 } as CanonnBiostatsBody);
+      expect(extents).not.toBeNull();
+      expect(extents!.semiMajorAxisKm).toBeCloseTo(KM_PER_AU, 3);
+      expect(extents!.apoapsisKm).toBeCloseTo(KM_PER_AU * 1.5, 3);
+      expect(extents!.periapsisKm).toBeCloseTo(KM_PER_AU * 0.5, 3);
+      expect(extents!.eccentricity).toBe(0.5);
+    });
+
+    it('defaults eccentricity to 0 and returns null without a semi-major axis', () => {
+      expect(service.orbitExtentsKm({ semiMajorAxis: 2 } as CanonnBiostatsBody)!.apoapsisKm)
+        .toBeCloseTo(2 * KM_PER_AU, 3);
+      expect(service.orbitExtentsKm({} as CanonnBiostatsBody)).toBeNull();
+    });
+  });
+
+  describe('eccentricityClass', () => {
+    it('classifies eccentricity into the four bands', () => {
+      expect(service.eccentricityClass(0)).toBe('Circular');
+      expect(service.eccentricityClass(0.39)).toBe('Nearly Circular');
+      expect(service.eccentricityClass(0.5)).toBe('Eccentric');
+      expect(service.eccentricityClass(0.9)).toBe('Highly Eccentric');
+    });
+  });
+
+  describe('isLowDensityWideRing', () => {
+    it('flags only rings that are both very diffuse and very wide', () => {
+      expect(service.isLowDensityWideRing(2_000_000, 0.05)).toBe(true);
+      expect(service.isLowDensityWideRing(2_000_000, 0.5)).toBe(false); // too dense
+      expect(service.isLowDensityWideRing(500_000, 0.05)).toBe(false); // too narrow
+    });
+  });
 });

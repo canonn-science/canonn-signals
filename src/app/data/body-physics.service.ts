@@ -10,6 +10,11 @@ const EARTH_MASSES_PER_SOLAR_MASS = 332950;
 export const GRAVITATIONAL_CONSTANT = 6.6743e-11;
 export const SPEED_OF_LIGHT = 299792458;
 
+/** Rings below this surface density (kg/km²) are considered invisible in-game. */
+export const INVISIBLE_RING_MAX_DENSITY = 0.1;
+/** Rings wider than this (km) are considered invisible when density is also low. */
+export const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
+
 /**
  * Degenerate-matter stability limits (solar masses). The Chandrasekhar limit caps a
  * white dwarf supported by electron degeneracy pressure; the Tolman–Oppenheimer–Volkoff
@@ -39,6 +44,14 @@ export interface PlanetaryDensity {
   tooltip: string;
   /** Raw bulk density in kg/m³ — the base for the unit-conversion dialog. */
   densityKgM3: number;
+}
+
+/** Orbit extents (km) derived from a body's semi-major axis and eccentricity. */
+export interface OrbitExtentsKm {
+  semiMajorAxisKm: number;
+  apoapsisKm: number;
+  periapsisKm: number;
+  eccentricity: number;
 }
 
 export interface ShepherdingHillLimit {
@@ -92,6 +105,40 @@ export interface RingDynamics {
 export class BodyPhysicsService {
   private sphereVolumeM3(radiusM: number): number {
     return (4 / 3) * Math.PI * radiusM ** 3;
+  }
+
+  /**
+   * Orbit extents (km) from a body's semi-major axis (AU) and eccentricity: apoapsis =
+   * a(1+e), periapsis = a(1−e). Returns null when there is no semi-major axis. Single
+   * source of truth shared by the orbit row in the UI and the JSON export.
+   */
+  orbitExtentsKm(bd: CanonnBiostatsBody): OrbitExtentsKm | null {
+    if (!bd.semiMajorAxis) { return null; }
+    const semiMajorAxisKm = bd.semiMajorAxis * KM_PER_AU;
+    const eccentricity = bd.orbitalEccentricity ?? 0;
+    return {
+      semiMajorAxisKm,
+      apoapsisKm: semiMajorAxisKm * (1 + eccentricity),
+      periapsisKm: semiMajorAxisKm * (1 - eccentricity),
+      eccentricity,
+    };
+  }
+
+  /** Descriptive eccentricity class: Circular / Nearly Circular / Eccentric / Highly Eccentric. */
+  eccentricityClass(eccentricity: number): string {
+    if (eccentricity === 0) { return 'Circular'; }
+    if (eccentricity < 0.4) { return 'Nearly Circular'; }
+    if (eccentricity < 0.8) { return 'Eccentric'; }
+    return 'Highly Eccentric';
+  }
+
+  /**
+   * Invisible-ring heuristic: a ring is invisible in-game when it is both very low surface
+   * density (kg/km²) and very wide (km). Shared by the ring badge, the invisible-ring dialog
+   * and the JSON export so all three agree.
+   */
+  isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
+    return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
   }
 
   /** Parent radius in km, or null when the parent exposes no radius. */
