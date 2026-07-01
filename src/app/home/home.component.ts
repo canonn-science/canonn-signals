@@ -419,7 +419,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       autoFocus: 'first-heading',
-      data: { systemName: data.system.name, bodies: data.system.bodies },
+      data: { systemName: data.system.name, bodies: data.system.bodies, totalBodyCount: data.system.bodyCount ?? null },
     });
   }
   private readonly _searching = signal(false);

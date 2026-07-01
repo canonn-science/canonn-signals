@@ -8,6 +8,11 @@ import { BodyHistogram, HistogramBodyInput, buildBodyHistogram } from '../../dat
 export interface HistogramDialogData {
   systemName: string;
   bodies: HistogramBodyInput[];
+  /**
+   * Reported total body count for the system (`bodyCount`), used to surface how many
+   * bodies are still unknown. `null`/omitted when the total itself is unknown.
+   */
+  totalBodyCount?: number | null;
 }
 
 /**
@@ -26,6 +31,18 @@ export class HistogramDialogComponent {
   readonly data = inject<HistogramDialogData>(MAT_DIALOG_DATA);
 
   readonly histogram: Signal<BodyHistogram> = computed(() => buildBodyHistogram(this.data.bodies ?? []));
+
+  /**
+   * Bodies the system has but the histogram can't chart (no data yet). When the reported
+   * total is known, this is `total − charted` (clamped at 0 in case of a stale/under-reported
+   * count); `known` is false when the total itself is unknown, so the view falls back to a
+   * count-free label.
+   */
+  readonly unknownBodies: Signal<{ known: boolean; count: number }> = computed(() => {
+    const total = this.data.totalBodyCount;
+    if (total === null || total === undefined) return { known: false, count: 0 };
+    return { known: true, count: Math.max(0, total - this.histogram().total) };
+  });
 
   get title(): string {
     return `Body types — ${this.data.systemName}`;

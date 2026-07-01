@@ -16,6 +16,12 @@
       }
     </div>
     <div class="histogram-total">{{ chart.total | number }} bodies across {{ chart.bars.length | number }} types</div>
+    @let unknown = unknownBodies();
+    @if (!unknown.known) {
+      <div class="histogram-unknown">Additional unknown bodies</div>
+    } @else if (unknown.count > 0) {
+      <div class="histogram-unknown">{{ unknown.count | number }} additional unknown {{ unknown.count === 1 ? 'body' : 'bodies' }}</div>
+    }
   } @else {
     <p class="histogram-empty">No bodies to chart for this system.</p>
   }

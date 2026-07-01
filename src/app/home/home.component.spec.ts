@@ -284,7 +284,7 @@ describe('HomeComponent', () => {
       component.data.set({
         system: {
           name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 },
-          region: { name: 'Inner Orion Spur', region: 18 }, population: 0, bodies,
+          region: { name: 'Inner Orion Spur', region: 18 }, population: 0, bodyCount: 8, bodies,
         },
       } as never);
 
@@ -292,7 +292,7 @@ describe('HomeComponent', () => {
 
       expect(open).toHaveBeenCalledTimes(1);
       const [, config] = open.mock.calls[0];
-      expect(config?.data).toEqual({ systemName: 'Sol', bodies });
+      expect(config?.data).toEqual({ systemName: 'Sol', bodies, totalBodyCount: 8 });
       expect(config?.autoFocus).toBe('first-heading');
     });
   });

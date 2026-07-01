@@ -49,6 +49,63 @@ describe('HistogramDialogComponent', () => {
     expect(c.barWidth(1)).toBe(50);
   });
 
+  it('reports the count of unknown bodies when the total is known', () => {
+    const fixture = setup({
+      systemName: 'Sol',
+      totalBodyCount: 40,
+      bodies: [
+        { type: 'Star', subType: 'G (White-Yellow) Star' },
+        { type: 'Planet', subType: 'Icy body' },
+      ],
+    });
+    const c = fixture.componentInstance;
+
+    expect(c.unknownBodies()).toEqual({ known: true, count: 38 });
+    expect(fixture.nativeElement.querySelector('.histogram-unknown')?.textContent?.trim())
+      .toBe('38 additional unknown bodies');
+  });
+
+  it('uses the singular for a single unknown body', () => {
+    const fixture = setup({
+      systemName: 'Sol',
+      totalBodyCount: 3,
+      bodies: [
+        { type: 'Star', subType: 'G (White-Yellow) Star' },
+        { type: 'Planet', subType: 'Icy body' },
+      ],
+    });
+
+    expect(fixture.nativeElement.querySelector('.histogram-unknown')?.textContent?.trim())
+      .toBe('1 additional unknown body');
+  });
+
+  it('hides the unknown-bodies line when every reported body is charted', () => {
+    const fixture = setup({
+      systemName: 'Sol',
+      totalBodyCount: 2,
+      bodies: [
+        { type: 'Star', subType: 'G (White-Yellow) Star' },
+        { type: 'Planet', subType: 'Icy body' },
+      ],
+    });
+    const c = fixture.componentInstance;
+
+    expect(c.unknownBodies()).toEqual({ known: true, count: 0 });
+    expect(fixture.nativeElement.querySelector('.histogram-unknown')).toBeNull();
+  });
+
+  it('shows a count-free label when the total body count is unknown', () => {
+    const fixture = setup({
+      systemName: 'Sol',
+      bodies: [{ type: 'Planet', subType: 'Icy body' }],
+    });
+    const c = fixture.componentInstance;
+
+    expect(c.unknownBodies()).toEqual({ known: false, count: 0 });
+    expect(fixture.nativeElement.querySelector('.histogram-unknown')?.textContent?.trim())
+      .toBe('Additional unknown bodies');
+  });
+
   it('returns 0 width when there are no bodies and shows the empty message', () => {
     const fixture = setup({ systemName: 'Empty', bodies: [] });
     const c = fixture.componentInstance;
