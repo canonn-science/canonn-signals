@@ -210,6 +210,13 @@
     overflow-wrap: anywhere;
 }
 
+/* Values that have no "⇄" convert affordance reserve the same trailing gutter the icon
+   would occupy (margin-left 6px + width 14px), so every value's text right-edge lines up
+   in one column whether or not it is convertible. */
+.system-body .body-data-entry > div:last-child:not(:has(.convert-icon)):not(:has(.unit-select-field)) {
+    padding-right: 20px;
+}
+
 /* ---------------------------------------------------------------------------
  * Responsive — small screens (phones).
  * ------------------------------------------------------------------------- */

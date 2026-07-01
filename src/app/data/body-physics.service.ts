@@ -1,12 +1,9 @@
 import { Injectable } from '@angular/core';
 import { CanonnBiostatsBody, SystemBody } from '../home/home.component';
 import { BODY_TYPE } from './body-types';
+import { KM_PER_AU, KM_PER_SOLAR_RADIUS, KG_PER_EARTH_MASS, KG_PER_SOLAR_MASS, KG_PER_MEGATONNE } from './unit-conversions';
 
-/** Physical constants and unit conversions used across the body physics maths. */
-const KM_PER_AU = 149597870.7;
-const KM_PER_SOLAR_RADIUS = 695700;
-const KG_PER_EARTH_MASS = 5.972e24;
-const KG_PER_SOLAR_MASS = 1.989e30;
+/** Approximate Earth masses per solar mass, used for parent-mass conversions. */
 const EARTH_MASSES_PER_SOLAR_MASS = 332950;
 
 /** Newtonian gravitational constant (m³ kg⁻¹ s⁻²) and speed of light (m/s). */
@@ -40,6 +37,8 @@ export interface PlanetaryDensity {
   value: number;
   unit: string;
   tooltip: string;
+  /** Raw bulk density in kg/m³ — the base for the unit-conversion dialog. */
+  densityKgM3: number;
 }
 
 export interface ShepherdingHillLimit {
@@ -173,14 +172,26 @@ export class BodyPhysicsService {
 
     const densityKgM3 = massKg / this.sphereVolumeM3(radiusKm * 1000);
 
-    // Use g/cm³ for typical densities, kg/m³ for extreme ones (neutron stars, etc.).
-    const value = densityKgM3 < 10000 ? densityKgM3 / 1000 : densityKgM3;
-    const unit = densityKgM3 < 10000 ? 'g/cm³' : 'kg/m³';
+    // Pick the unit by magnitude: g/cm³ for ordinary bodies, kg/m³ mid-range, and Mt/cm³
+    // for degenerate matter — a neutron star reads a fraction of a Mt/cm³, far tidier than
+    // ~1e17 kg/m³. 1 Mt/cm³ = 1e18 kg/m³ (Elite's teragram megatonne, see KG_PER_MEGATONNE).
+    let value: number;
+    let unit: string;
+    if (densityKgM3 >= 1e15) {
+      value = densityKgM3 / 1e18;
+      unit = 'Mt/cm³';
+    } else if (densityKgM3 < 10000) {
+      value = densityKgM3 / 1000;
+      unit = 'g/cm³';
+    } else {
+      value = densityKgM3;
+      unit = 'kg/m³';
+    }
 
     // Round to 6 significant figures so the tooltip stays readable across scales
     // (ordinary rock ~3936 kg/m³ … neutron-star matter ~1e17 kg/m³) without
     // dumping raw floating-point digits.
-    return { value, unit, tooltip: `${densityKgM3.toPrecision(6)} kg/m³` };
+    return { value, unit, tooltip: `${densityKgM3.toPrecision(6)} kg/m³`, densityKgM3 };
   }
 
   /**

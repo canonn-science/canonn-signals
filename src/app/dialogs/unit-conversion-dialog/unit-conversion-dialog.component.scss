@@ -1,0 +1,100 @@
+.unit-conversion-dialog .hint {
+    margin: 0 0 12px;
+    opacity: 0.7;
+    font-size: 0.9em
+}
+
+.unit-conversion-dialog .conversion-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em
+}
+
+.unit-conversion-dialog .conversion-table th,
+.unit-conversion-dialog .conversion-table td {
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-surface-5);
+    line-height: 1.5
+}
+
+.unit-conversion-dialog .conversion-table thead th {
+    font-weight: 600
+}
+
+/* The values are right-aligned, so right-align their column header to match. */
+.unit-conversion-dialog .conversion-table thead th:last-child {
+    text-align: right
+}
+
+/* Row whose unit is the one shown inline in the UI. */
+.unit-conversion-dialog .conversion-table tbody tr.ui-unit {
+    background: var(--color-surface-3)
+}
+
+.unit-conversion-dialog .conversion-table tbody tr.ui-unit > th[scope="row"] {
+    box-shadow: inset 3px 0 0 0 var(--color-accent)
+}
+
+/* Small chips marking the UI / source units on a unit row. */
+.unit-conversion-dialog .conversion-table .unit-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.72em;
+    font-weight: 600;
+    line-height: 1.4;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.03em
+}
+
+.unit-conversion-dialog .conversion-table .unit-tag.ui {
+    background: var(--color-accent);
+    color: var(--color-black)
+}
+
+.unit-conversion-dialog .conversion-table .unit-tag.source {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-surface-5)
+}
+
+.unit-conversion-dialog .conversion-table tbody th {
+    white-space: nowrap;
+    font-weight: 600
+}
+
+.unit-conversion-dialog .conversion-table td.value {
+    font-family: monospace;
+    text-align: right;
+    white-space: nowrap;
+    user-select: none
+}
+
+.unit-conversion-dialog .conversion-table td.value.clickable:hover,
+.unit-conversion-dialog .conversion-table td.value.clickable:focus-visible {
+    color: var(--color-white);
+    text-decoration: underline
+}
+
+.unit-conversion-dialog .comparisons {
+    margin-top: 20px;
+    line-height: 1.6
+}
+
+.unit-conversion-dialog .comparisons-heading {
+    font-weight: 600;
+    margin-bottom: 8px
+}
+
+.unit-conversion-dialog .comparisons ul {
+    margin: 0;
+    padding-left: 20px
+}
+
+.unit-conversion-dialog .comparisons ul li {
+    padding: 4px 0
+}

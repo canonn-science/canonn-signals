@@ -91,10 +91,30 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.radToDeg(undefined)).toBeNull();
     });
 
-    it('formats Earth and Solar masses', () => {
+    it('resolves a body mass (kg) from whichever source field it carries', () => {
+      render(makeBody({ type: 'Star', solarMasses: 2 }));
+      expect(component.getMassKg()).toBeCloseTo(2 * 1.989e30, -25);
+      render(makeBody({ type: 'Planet', earthMasses: 1 }));
+      expect(component.getMassKg()).toBeCloseTo(5.972e24, -19);
+      render(makeBody({ type: 'Ring', mass: 5 }));
+      expect(component.getMassKg()).toBeCloseTo(5e12, 0);
       render(makeBody({}));
-      expect(component.formatEarthMass(1.2345).display).toBe('1.23 Earth masses');
-      expect(component.formatSolarMass(2).display).toBe('2.00');
+      expect(component.getMassKg()).toBeNull();
+    });
+
+    it('formats mass dynamically by magnitude', () => {
+      render(makeBody({}));
+      expect(component.formatMass(5.25 * 1.989e30)).toBe('5.25 Solar masses');
+      expect(component.formatMass(0.67 * 5.972e24)).toBe('0.67 Earth masses');
+    });
+
+    it('shows a star radius in km for compact objects and white dwarfs, solar radii otherwise', () => {
+      render(makeBody({ type: 'Star', subType: 'White Dwarf (DA) Star', solarRadius: 0.011 }));
+      expect(component.getStarRadiusKm()).toBeCloseTo(0.011 * 695700, 0);
+      render(makeBody({ type: 'Star', subType: 'Neutron Star', solarRadius: 0.00002 }));
+      expect(component.getStarRadiusKm()).toBeCloseTo(0.00002 * 695700, 3);
+      render(makeBody({ type: 'Star', subType: 'G (White-Yellow) Star', solarRadius: 1.1 }));
+      expect(component.getStarRadiusKm()).toBeNull();
     });
 
     it('exposes trackBy helpers and mouse-enter state', () => {
@@ -870,6 +890,20 @@ describe('SystemBodyComponent (extended coverage)', () => {
       const badge: HTMLElement = fixture.nativeElement.querySelector('.badge-red');
       expect(badge).not.toBeNull();
       expect(badge!.textContent?.trim()).toBe('Collision In Progress');
+    });
+  });
+
+  describe('conversion base-value getters', () => {
+    it('converts semi-major axis (AU) and distance-to-arrival (ls) to km bases', () => {
+      render(makeBody({ semiMajorAxis: 1, distanceToArrival: 100 }));
+      expect(component.getSemiMajorAxisKm()).toBeCloseTo(149597870.7, 0);
+      expect(component.getDistanceToArrivalKm()).toBeCloseTo(100 * 299792.458, 0);
+      expect(component.getSolarRadiusKm()).toBeNull();
+    });
+
+    it('converts an ordinary star radius (solar radii) to a km base', () => {
+      render(makeBody({ type: 'Star', subType: 'G (White-Yellow) Star', solarRadius: 1.1 }));
+      expect(component.getSolarRadiusKm()).toBeCloseTo(1.1 * 695700, 0);
     });
   });
 

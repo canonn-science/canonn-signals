@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
+import { KM_PER_SOLAR_RADIUS } from './unit-conversions';
 
-const KM_PER_SOLAR_RADIUS = 695700;
 const SECONDS_PER_DAY = 86400;
 
 /**

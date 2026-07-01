@@ -1,0 +1,42 @@
+<app-dialog-shell [heading]="title" [fitContent]="true">
+  <div class="unit-conversion-dialog">
+    <p class="hint">Click a value to copy it.</p>
+    <table class="conversion-table">
+      <thead>
+        <tr>
+          <th scope="col">Unit</th>
+          <th scope="col">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows; track row.unit; let i = $index) {
+          <tr [class.ui-unit]="row.unit === uiUnit">
+            <th scope="row">
+              {{ row.unit }}
+              @if (row.unit === sourceUnit) {
+                <span class="unit-tag source" matTooltip="The unit this value is recorded in by the game journal">from journal</span>
+              }
+            </th>
+            <td class="value clickable"
+                matTooltip="Click to copy"
+                [attr.aria-label]="'Copy value in ' + row.unit"
+                (click)="copy(row, i)">
+              {{ copiedIndex() === i ? 'Copied!' : row.display }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (comparisons.length) {
+      <div class="comparisons">
+        <p class="comparisons-heading">Just for fun, that's about</p>
+        <ul>
+          @for (c of comparisons; track c.label) {
+            <li>{{ c.display }} {{ c.label }}</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+</app-dialog-shell>

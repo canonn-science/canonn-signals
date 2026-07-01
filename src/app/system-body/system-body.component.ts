@@ -31,6 +31,26 @@ import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
 import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dialog.component';
 import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
+import { ConvertIconComponent } from '../dialogs/unit-conversion-dialog/convert-icon.component';
+import {
+  dynamicAreaUnitLabel,
+  dynamicDistanceUnitLabel,
+  dynamicLengthUnitLabel,
+  dynamicMassUnitLabel,
+  formatDynamicArea,
+  formatDynamicDistanceLs,
+  formatDynamicLength,
+  formatDynamicMass,
+  formatLengthInUnit,
+  InlineLengthUnit,
+  pickInlineLengthUnit,
+  KM_PER_AU,
+  KM_PER_LIGHT_SECOND,
+  KM_PER_SOLAR_RADIUS,
+  KG_PER_EARTH_MASS,
+  KG_PER_MEGATONNE,
+  KG_PER_SOLAR_MASS,
+} from '../data/unit-conversions';
 
 /** Horizon (days) over which simultaneous (multi-body) collisions are scanned for the dialog's section. */
 const SIMULTANEOUS_COLLISION_HORIZON_DAYS = 180;
@@ -67,7 +87,7 @@ const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective]
+  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective, ConvertIconComponent]
 })
 export class SystemBodyComponent implements OnChanges {
   private readonly appService = inject(AppService);
@@ -123,9 +143,6 @@ export class SystemBodyComponent implements OnChanges {
   public readonly expanded = signal(false);
 
   public hoveredIndex: number = -1;
-
-  public formattedEarthMass: { display: string; tooltip: string } | null = null;
-  public formattedSolarMass: { display: string; tooltip: string } | null = null;
 
   // Cache for expensive computed properties
   public readonly getMaterialBadges = signal<{ name: string, class: string, tooltip: string }[]>([]);
@@ -234,14 +251,6 @@ export class SystemBodyComponent implements OnChanges {
     this.getNextApoapsis.set(this.calculateNextApoapsis());
     this.getRocheExcess.set(this.calculateRocheExcess());
     this.getStellarAgeAssessment.set(this.computeStellarAgeAssessment());
-
-    // Calculate formatted mass values once when body changes
-    this.formattedEarthMass = body.bodyData.earthMasses
-      ? this.formatEarthMass(body.bodyData.earthMasses)
-      : null;
-    this.formattedSolarMass = body.bodyData.solarMasses
-      ? this.formatSolarMass(body.bodyData.solarMasses)
-      : null;
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
@@ -682,19 +691,113 @@ export class SystemBodyComponent implements OnChanges {
       && isPlottableStarClass(bodyData.spectralClass, bodyData.subType);
   }
 
-  public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
-    return {
-      display: `${earthMasses.toFixed(2)} Earth masses`,
-      tooltip: `${earthMasses} Earth masses`
-    };
+  // --- Inline dynamic-by-magnitude formatters (delegated to the shared pure module) ---
+  public formatLength(km: number): string { return formatDynamicLength(km); }
+  public formatDistanceLs(ls: number): string { return formatDynamicDistanceLs(ls); }
+  public formatMass(kg: number): string { return formatDynamicMass(kg); }
+  public formatArea(km2: number): string { return formatDynamicArea(km2); }
+
+  // --- Conversion-dialog "shown in UI" unit labels (which dialog row to accent). ---
+  public lengthUnitLabel(km: number | null | undefined): string {
+    return km == null ? '' : dynamicLengthUnitLabel(km);
+  }
+  public distanceUnitLabel(km: number | null | undefined): string {
+    return km == null ? '' : dynamicDistanceUnitLabel(km);
+  }
+  public massUnitLabel(kg: number | null | undefined): string {
+    return kg == null ? '' : dynamicMassUnitLabel(kg);
+  }
+  public areaUnitLabel(km2: number | null | undefined): string {
+    return km2 == null ? '' : dynamicAreaUnitLabel(km2);
+  }
+  /** Dialog-row label for the inline duration unit chosen by {@link formatPeriodDays}. */
+  public durationUnitLabel(days: number | null | undefined): string {
+    if (days == null || !Number.isFinite(days)) { return ''; }
+    return this.periodParts(days).label;
+  }
+  /** Dialog-row label for the inline velocity unit chosen by {@link formatVelocityKms}. */
+  public velocityUnitLabel(kms: number | null | undefined): string {
+    if (kms == null || !Number.isFinite(kms)) { return ''; }
+    return this.isRelativistic(kms) ? 'c (fraction of light)' : 'km/s';
+  }
+  /** Native (journal/API) mass unit for this body, by which field carries it. */
+  public massSourceUnit(): string {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) { return 'Solar Masses'; }
+    if (bd.earthMasses != null) { return 'Earth Masses'; }
+    if (bd.mass != null) { return 'Megatonnes'; }
+    return '';
   }
 
-  public formatSolarMass(solarMasses: number): { display: string; tooltip: string } {
-    return {
-      display: `${solarMasses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      tooltip: `${solarMasses.toLocaleString('en-US', { maximumFractionDigits: 20 })} Solar masses`
-    };
+  // --- Shared orbit-distance unit: semi-major axis, apoapsis and periapsis (#5). ---
+  /**
+   * One length unit shared by the semi-major-axis/apoapsis/periapsis trio, chosen from the
+   * semi-major axis (the orbit's representative scale; apoapsis ≤ 2a and periapsis ≥ 0 stay
+   * the same order of magnitude). Falls back to apoapsis then periapsis when absent.
+   */
+  public orbitDistanceUnit(): InlineLengthUnit {
+    const rep = this.getSemiMajorAxisKm() ?? (this.getApoapsis() || this.getPeriapsis() || 0);
+    return pickInlineLengthUnit(rep);
   }
+  public formatOrbitDistance(km: number | null | undefined): string {
+    return km == null ? '' : formatLengthInUnit(km, this.orbitDistanceUnit());
+  }
+  public orbitDistanceUnitLabel(): string { return this.orbitDistanceUnit().label; }
+
+  /** This body's mass in kilograms from whichever source field it carries, or null. */
+  public getMassKg(): number | null {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) { return bd.solarMasses * KG_PER_SOLAR_MASS; }
+    if (bd.earthMasses != null) { return bd.earthMasses * KG_PER_EARTH_MASS; }
+    if (bd.mass != null) { return bd.mass * KG_PER_MEGATONNE; }
+    return null;
+  }
+
+  /** Tooltip for the mass row: the value in its stored unit at full precision. */
+  public getMassTooltip(): string {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) {
+      return `${bd.solarMasses.toLocaleString('en-US', { maximumFractionDigits: 20 })} Solar masses`;
+    }
+    if (bd.earthMasses != null) { return `${bd.earthMasses} Earth masses`; }
+    if (bd.mass != null) { return `${bd.mass} Mt`; }
+    return '';
+  }
+
+  /** This body's semi-major axis in km (stored in AU), or null. */
+  public getSemiMajorAxisKm(): number | null {
+    const au = this.body().bodyData.semiMajorAxis;
+    return au == null ? null : au * KM_PER_AU;
+  }
+
+  /** This body's distance-to-arrival in km (stored in light-seconds), or null. */
+  public getDistanceToArrivalKm(): number | null {
+    const ls = this.body().bodyData.distanceToArrival;
+    return ls == null ? null : ls * KM_PER_LIGHT_SECOND;
+  }
+
+  /** An ordinary star's radius in km (stored in solar radii), for the conversion dialog; null if absent. */
+  public getSolarRadiusKm(): number | null {
+    const solarRadius = this.body().bodyData.solarRadius;
+    return solarRadius == null ? null : solarRadius * KM_PER_SOLAR_RADIUS;
+  }
+
+  /**
+   * Physical radius in km for stars shown in km rather than solar radii: neutron stars,
+   * black holes (compact objects) and — per the display spec — white dwarfs. Null for
+   * ordinary stars, which keep solar radii. Kept distinct from {@link isBlackHoleOrNeutronStar}
+   * so the tangential-velocity gate stays compact-object-only.
+   */
+  public getStarRadiusKm(): number | null {
+    const compact = this.getCompactObjectRadiusKm();
+    if (compact !== null) { return compact; }
+    const bd = this.body().bodyData;
+    if (bd.subType?.startsWith('White Dwarf')) {
+      return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+    }
+    return null;
+  }
+
 
 
   /**
@@ -1417,34 +1520,45 @@ export class SystemBodyComponent implements OnChanges {
     }
   }
 
+  /** True when a velocity is fast enough to read as a fraction of c rather than km/s. */
+  private isRelativistic(velocityKms: number): boolean {
+    return velocityKms / (SPEED_OF_LIGHT / 1000) >= 0.01;
+  }
+
   private formatVelocityKms(velocityKms: number): string {
-    const fractionOfC = velocityKms / (SPEED_OF_LIGHT / 1000);
-    if (fractionOfC >= 0.01) {
-      return `${fractionOfC.toFixed(3)}c`;
+    if (this.isRelativistic(velocityKms)) {
+      return `${(velocityKms / (SPEED_OF_LIGHT / 1000)).toFixed(3)}c`;
     }
     return `${velocityKms.toFixed(3)} km/s`;
   }
 
-  private formatPeriodDays(days: number): string {
+  /**
+   * The unit a period reads in at this magnitude: numeric value, inline abbreviation, and
+   * the matching conversion-dialog row label ('' for ms/s/decades/centuries, which have no
+   * dialog row). Single source for both {@link formatPeriodDays} and {@link durationUnitLabel}.
+   */
+  private periodParts(days: number): { value: number; unit: string; label: string } {
     const absDays = Math.abs(days);
     const seconds = absDays * 86400;
     const minutes = seconds / 60;
     const hours = minutes / 60;
     const weeks = absDays / 7;
     const years = absDays / 365.25;
-    const decades = years / 10;
-    const centuries = years / 100;
-    const sign = days < 0 ? '-' : '';
 
-    if (seconds < 1) return `${sign}${(seconds * 1000).toFixed(2)} ms`;
-    if (seconds < 60) return `${sign}${seconds.toFixed(2)} s`;
-    if (minutes < 60) return `${sign}${minutes.toFixed(2)} min`;
-    if (hours < 24) return `${sign}${hours.toFixed(2)} h`;
-    if (absDays < 7) return `${sign}${absDays.toFixed(2)} days`;
-    if (weeks < 52) return `${sign}${weeks.toFixed(2)} weeks`;
-    if (years < 10) return `${sign}${years.toFixed(2)} years`;
-    if (decades < 10) return `${sign}${decades.toFixed(2)} decades`;
-    return `${sign}${centuries.toFixed(2)} centuries`;
+    if (seconds < 1) return { value: seconds * 1000, unit: 'ms', label: '' };
+    if (seconds < 60) return { value: seconds, unit: 's', label: '' };
+    if (minutes < 60) return { value: minutes, unit: 'min', label: 'Minutes' };
+    if (hours < 24) return { value: hours, unit: 'h', label: 'Hours' };
+    if (absDays < 7) return { value: absDays, unit: 'days', label: 'Days' };
+    if (weeks < 52) return { value: weeks, unit: 'weeks', label: 'Weeks' };
+    if (years < 10) return { value: years, unit: 'years', label: 'Years' };
+    if (years / 10 < 10) return { value: years / 10, unit: 'decades', label: '' };
+    return { value: years / 100, unit: 'centuries', label: '' };
+  }
+
+  private formatPeriodDays(days: number): string {
+    const { value, unit } = this.periodParts(days);
+    return `${days < 0 ? '-' : ''}${value.toFixed(2)} ${unit}`;
   }
 
   public getRotationalPeriodDisplay(): string {

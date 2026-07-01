@@ -29,13 +29,15 @@ const BODY_SPECS: BodySpec[] = [
         header: 'Orbit',
         rows: {
           'Orbital period': '2.56 decades',
-          'Semi-major axis': '693,042,242.53 km',
+          // Semi-major axis, apoapsis and periapsis share one length unit (chosen from the
+          // semi-major axis magnitude); above ~1 ls the trio reads in light seconds.
+          'Semi-major axis': '2,311.74 ls',
           'Orbital eccentricity': '0.5179 Eccentric',
-          Apoapsis: '1,051,968,819.93 km',
+          Apoapsis: '3,508.99 ls',
           // Day-count to the next apsis. Wall-clock-dependent, but deterministic because
           // the fixture loader pins `now` to 2026-06-14T00:00:00Z (see loadFixtureSystem).
           'Next apoapsis': '3,721.9 days',
-          Periapsis: '334,115,665.12 km',
+          Periapsis: '1,114.49 ls',
           'Next periapsis': '8,396.3 days',
           'Orbital inclination': '79.21°',
           'Argument of periapsis': '116.66°',
@@ -52,8 +54,8 @@ const BODY_SPECS: BodySpec[] = [
       {
         header: 'Physical Properties',
         rows: {
-          'Solar radius': '1.10',
-          'Solar masses': '1.18',
+          Radius: '1.10 R☉',
+          Mass: '1.18 Solar masses',
           Density: '1.24 g/cm³',
           'Axial tilt': '10.05°',
           Age: '9440 million years',
@@ -78,10 +80,10 @@ const BODY_SPECS: BodySpec[] = [
         header: 'Orbit',
         rows: {
           'Orbital period': '2.56 decades',
-          'Semi-major axis': '952,535,688.88 km',
+          'Semi-major axis': '3,177.32 ls',
           'Orbital eccentricity': '0.5179 Eccentric',
-          Apoapsis: '1,445,853,922.15 km',
-          Periapsis: '459,217,455.61 km',
+          Apoapsis: '4,822.85 ls',
+          Periapsis: '1,531.78 ls',
           'Orbital inclination': '79.21°',
           'Argument of periapsis': '296.66°',
           'Ascending node': '-155.15°',
@@ -90,8 +92,8 @@ const BODY_SPECS: BodySpec[] = [
       {
         header: 'Physical Properties',
         rows: {
-          'Solar radius': '0.90',
-          'Solar masses': '0.86',
+          Radius: '0.90 R☉',
+          Mass: '0.86 Solar masses',
           Density: '1.63 g/cm³',
           'Axial tilt': '11.63°',
           Age: '9212 million years',
@@ -127,7 +129,7 @@ const BODY_SPECS: BodySpec[] = [
         header: 'Orbit',
         rows: {
           'Orbital period': '3.24 days',
-          'Semi-major axis': '6,260,765.19 km',
+          'Semi-major axis': '20.88 ls',
           'Orbital eccentricity': '0.0000 Circular',
           'Orbital inclination': '0.05°',
           'Argument of periapsis': '4.95°',
@@ -173,10 +175,10 @@ const BODY_SPECS: BodySpec[] = [
         header: 'Orbit',
         rows: {
           'Orbital period': '2.56 decades',
-          'Semi-major axis': '1,431,006,133.56 km',
+          'Semi-major axis': '4,773.32 ls',
           'Orbital eccentricity': '0.5179 Eccentric',
-          Apoapsis: '2,172,124,210.13 km',
-          Periapsis: '689,888,056.99 km',
+          Apoapsis: '7,245.43 ls',
+          Periapsis: '2,301.22 ls',
           'Argument of periapsis': '90.00°',
         },
       },
@@ -249,7 +251,7 @@ const BODY_SPECS: BodySpec[] = [
         header: 'Orbit',
         rows: {
           'Orbital period': '4.43 weeks',
-          'Semi-major axis': '1,495,979.73 km',
+          'Semi-major axis': '4.99 ls',
           'Orbital eccentricity': '0.0100 Nearly Circular',
           'Orbital inclination': '77.10°',
         },
@@ -272,7 +274,7 @@ const BODY_SPECS: BodySpec[] = [
           Volcanism: 'Minor Metallic Magma',
         },
       },
-      { header: 'Dynamics', rows: { 'Rotational period': '1.05 days', 'Distance to arrival': '6,395,278.54 ls' } },
+      { header: 'Dynamics', rows: { 'Rotational period': '1.05 days', 'Distance to arrival': '0.20 ly' } },
     ],
   },
 ];

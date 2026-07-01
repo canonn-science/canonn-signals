@@ -21,9 +21,17 @@ describe('BodyPhysicsService', () => {
       expect(result.value).toBeCloseTo(5.51, 1);
     });
 
-    it('switches to kg/m³ for extreme densities', () => {
-      // A neutron-star-like density: heavy and tiny.
+    it('switches to Mt/cm³ for degenerate-matter densities', () => {
+      // A neutron-star-like density: heavy and tiny (~3.8e17 kg/m³ ≈ 0.38 Mt/cm³).
       const result = service.getPlanetaryDensity({ solarMasses: 1.4, radius: 12 } as CanonnBiostatsBody)!;
+      expect(result.unit).toBe('Mt/cm³');
+      expect(result.value).toBeCloseTo(0.385, 2);
+      expect(result.densityKgM3).toBeCloseTo(3.85e17, -16);
+    });
+
+    it('uses kg/m³ for mid-range densities (white-dwarf scale)', () => {
+      // ~1e9 kg/m³: above the g/cm³ cut-off but below the Mt/cm³ tier.
+      const result = service.getPlanetaryDensity({ earthMasses: 50, radius: 700 } as CanonnBiostatsBody)!;
       expect(result.unit).toBe('kg/m³');
     });
 
