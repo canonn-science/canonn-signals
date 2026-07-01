@@ -41,6 +41,7 @@ describe('buildConversions', () => {
 
   it('converts duration from days', () => {
     const rows = buildConversions('duration', 1);
+    expect(copyNum(rows, 'Seconds')).toBeCloseTo(86400, 6);
     expect(copyNum(rows, 'Minutes')).toBeCloseTo(1440, 6);
     expect(copyNum(rows, 'Hours')).toBeCloseTo(24, 6);
     expect(copyNum(rows, 'Days')).toBeCloseTo(1, 6);

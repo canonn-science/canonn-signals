@@ -14,6 +14,7 @@ export const KM_PER_LIGHT_YEAR = 9.4607304725808e12; // KM_PER_LIGHT_SECOND × 8
 export const M_PER_KM = 1000;
 
 // --- Duration (base: days) ---
+export const SECONDS_PER_DAY = 86400;
 export const MINUTES_PER_DAY = 1440;
 export const HOURS_PER_DAY = 24;
 export const WEEKS_PER_DAY = 1 / 7;
@@ -74,6 +75,7 @@ const CONVERSIONS: Record<QuantityKind, { unit: string; factor: number }[]> = {
     { unit: 'Days', factor: 1 },
     { unit: 'Hours', factor: HOURS_PER_DAY },
     { unit: 'Minutes', factor: MINUTES_PER_DAY },
+    { unit: 'Seconds', factor: SECONDS_PER_DAY },
   ],
   mass: [
     { unit: 'Solar Masses', factor: 1 / KG_PER_SOLAR_MASS },

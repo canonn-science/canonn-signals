@@ -198,7 +198,7 @@
                 Orbital period
               </div>
               <div>
-                <span [matTooltip]="body().bodyData.orbitalPeriod + ' days'">{{ getOrbitalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.orbitalPeriod" label="Orbital period" [uiUnit]="durationUnitLabel(body().bodyData.orbitalPeriod)" sourceUnit="Days" />
+                <span [matTooltip]="body().bodyData.orbitalPeriod + ' days'">{{ getOrbitalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.orbitalPeriod" label="Orbital period" [uiUnit]="durationUnitLabel(body().bodyData.orbitalPeriod)" sourceUnit="Seconds" />
               </div>
             </div>
             }
@@ -208,7 +208,7 @@
                 Semi-major axis
               </div>
               <div>
-                <span [matTooltip]="body().bodyData.semiMajorAxis + ' au'">{{ formatOrbitDistance(getSemiMajorAxisKm()) }}</span><app-convert-icon [kind]="'length'" [value]="getSemiMajorAxisKm()" label="Semi-major axis" [uiUnit]="orbitDistanceUnitLabel()" sourceUnit="AU" />
+                <span [matTooltip]="body().bodyData.semiMajorAxis + ' au'">{{ formatOrbitDistance(getSemiMajorAxisKm()) }}</span><app-convert-icon [kind]="'length'" [value]="getSemiMajorAxisKm()" label="Semi-major axis" [uiUnit]="orbitDistanceUnitLabel()" sourceUnit="m" />
               </div>
             </div>
             }
@@ -393,7 +393,7 @@
               Radius
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.radius + ' km'">{{ body().bodyData.radius | number:'0.2-2' }} km</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.radius" label="Radius" uiUnit="km" sourceUnit="km" />
+              <span [matTooltip]="body().bodyData.radius + ' km'">{{ body().bodyData.radius | number:'0.2-2' }} km</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.radius" label="Radius" uiUnit="km" sourceUnit="m" />
             </div>
           </div>
           }
@@ -412,7 +412,7 @@
               Radius
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.solarRadius!.toString() + ' R☉'">{{ body().bodyData.solarRadius | number:'0.2-2' }} R☉</span><app-convert-icon [kind]="'length'" [value]="getSolarRadiusKm()" label="Radius" uiUnit="Solar Radii" sourceUnit="Solar Radii" />
+              <span [matTooltip]="body().bodyData.solarRadius!.toString() + ' R☉'">{{ body().bodyData.solarRadius | number:'0.2-2' }} R☉</span><app-convert-icon [kind]="'length'" [value]="getSolarRadiusKm()" label="Radius" uiUnit="Solar Radii" sourceUnit="m" />
             </div>
           </div>
           }
@@ -506,7 +506,7 @@
               Inner radius
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.innerRadius + ' km'">{{ formatLength(body().bodyData.innerRadius!) }}</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.innerRadius" label="Inner radius" [uiUnit]="lengthUnitLabel(body().bodyData.innerRadius)" sourceUnit="km" />
+              <span [matTooltip]="body().bodyData.innerRadius + ' km'">{{ formatLength(body().bodyData.innerRadius!) }}</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.innerRadius" label="Inner radius" [uiUnit]="lengthUnitLabel(body().bodyData.innerRadius)" sourceUnit="m" />
             </div>
           </div>
           }
@@ -516,7 +516,7 @@
               Outer radius
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.outerRadius + ' km'">{{ formatLength(body().bodyData.outerRadius!) }}</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.outerRadius" label="Outer radius" [uiUnit]="lengthUnitLabel(body().bodyData.outerRadius)" sourceUnit="km" />
+              <span [matTooltip]="body().bodyData.outerRadius + ' km'">{{ formatLength(body().bodyData.outerRadius!) }}</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.outerRadius" label="Outer radius" [uiUnit]="lengthUnitLabel(body().bodyData.outerRadius)" sourceUnit="m" />
             </div>
           </div>
           }
@@ -672,7 +672,7 @@
             </div>
             <div>
               <span [matTooltip]="cachedSurfacePressureTooltip() || ''"
-                    matTooltipClass="multiline-tooltip">{{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres</span><app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="atm" />
+                    matTooltipClass="multiline-tooltip">{{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres</span><app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="Pa" />
             </div>
           </div>
           }
@@ -698,7 +698,7 @@
               Rotational period
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.rotationalPeriod + ' days'">{{ getRotationalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.rotationalPeriod" label="Rotational period" [uiUnit]="durationUnitLabel(body().bodyData.rotationalPeriod)" sourceUnit="Days" />
+              <span [matTooltip]="body().bodyData.rotationalPeriod + ' days'">{{ getRotationalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.rotationalPeriod" label="Rotational period" [uiUnit]="durationUnitLabel(body().bodyData.rotationalPeriod)" sourceUnit="Seconds" />
             </div>
           </div>
           }
