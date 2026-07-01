@@ -35,11 +35,16 @@ describe('ConvertIconComponent', () => {
     return fixture.componentInstance;
   }
 
-  it('opens the conversion dialog with the kind, base value and label, stopping propagation', () => {
-    render('length', 6371, 'Radius');
+  // The click handler is async: it lazy-loads the dialog via a dynamic import() before opening it.
+  // Call it directly and await the returned promise so the assertion sees the resolved open() call.
+  const click = (component: ConvertIconComponent, event: Event = new MouseEvent('click')): Promise<void> =>
+    (component as unknown as { open(e: Event): Promise<void> }).open(event);
+
+  it('opens the conversion dialog with the kind, base value and label, stopping propagation', async () => {
+    const component = render('length', 6371, 'Radius');
     const event = new MouseEvent('click');
     const stop = vi.spyOn(event, 'stopPropagation');
-    fixture.nativeElement.querySelector('fa-icon').dispatchEvent(event);
+    await click(component, event);
 
     expect(stop).toHaveBeenCalled();
     expect(opened).toHaveLength(1);
@@ -49,19 +54,19 @@ describe('ConvertIconComponent', () => {
     });
   });
 
-  it('passes the UI and source unit labels through to the dialog', () => {
-    render('mass', 2.88e30, 'Mass', 'Solar Masses', 'Earth Masses');
-    fixture.nativeElement.querySelector('fa-icon').dispatchEvent(new MouseEvent('click'));
+  it('passes the UI and source unit labels through to the dialog', async () => {
+    const component = render('mass', 2.88e30, 'Mass', 'Solar Masses', 'Earth Masses');
+    await click(component);
 
     expect(opened[0].config.data).toEqual({
       title: 'Mass', kind: 'mass', baseValue: 2.88e30, uiUnit: 'Solar Masses', sourceUnit: 'Earth Masses',
     });
   });
 
-  it('does not open for a missing or non-finite value', () => {
+  it('does not open for a missing or non-finite value', async () => {
     for (const v of [null, undefined, NaN, Infinity]) {
-      render('mass', v, 'Mass');
-      fixture.nativeElement.querySelector('fa-icon').dispatchEvent(new MouseEvent('click'));
+      const component = render('mass', v, 'Mass');
+      await click(component);
     }
     expect(opened).toHaveLength(0);
   });
