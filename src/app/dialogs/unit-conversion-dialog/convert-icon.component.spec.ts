@@ -25,12 +25,14 @@ describe('ConvertIconComponent', () => {
     label: string,
     uiUnit?: string,
     sourceUnit?: string,
+    sourcePrecise?: boolean,
   ): ConvertIconComponent {
     fixture.componentRef.setInput('kind', kind);
     fixture.componentRef.setInput('value', value);
     fixture.componentRef.setInput('label', label);
     if (uiUnit !== undefined) { fixture.componentRef.setInput('uiUnit', uiUnit); }
     if (sourceUnit !== undefined) { fixture.componentRef.setInput('sourceUnit', sourceUnit); }
+    if (sourcePrecise !== undefined) { fixture.componentRef.setInput('sourcePrecise', sourcePrecise); }
     fixture.detectChanges();
     return fixture.componentInstance;
   }
@@ -50,7 +52,7 @@ describe('ConvertIconComponent', () => {
     expect(opened).toHaveLength(1);
     expect(opened[0].component).toBe(UnitConversionDialogComponent);
     expect(opened[0].config.data).toEqual({
-      title: 'Radius', kind: 'length', baseValue: 6371, uiUnit: null, sourceUnit: null,
+      title: 'Radius', kind: 'length', baseValue: 6371, uiUnit: null, sourceUnit: null, sourcePrecise: true,
     });
   });
 
@@ -59,7 +61,17 @@ describe('ConvertIconComponent', () => {
     await click(component);
 
     expect(opened[0].config.data).toEqual({
-      title: 'Mass', kind: 'mass', baseValue: 2.88e30, uiUnit: 'Solar Masses', sourceUnit: 'Earth Masses',
+      title: 'Mass', kind: 'mass', baseValue: 2.88e30, uiUnit: 'Solar Masses',
+      sourceUnit: 'Earth Masses', sourcePrecise: true,
+    });
+  });
+
+  it('forwards sourcePrecise=false for a back-converted (imprecise) source unit', async () => {
+    const component = render('length', 6371, 'Radius', 'km', 'm', false);
+    await click(component);
+
+    expect(opened[0].config.data).toEqual({
+      title: 'Radius', kind: 'length', baseValue: 6371, uiUnit: 'km', sourceUnit: 'm', sourcePrecise: false,
     });
   });
 

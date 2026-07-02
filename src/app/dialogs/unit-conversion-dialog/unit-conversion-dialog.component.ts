@@ -23,6 +23,12 @@ export interface UnitConversionDialogData {
   uiUnit?: string | null;
   /** Conversion-row label for the unit the value natively arrives in (badged), or null. */
   sourceUnit?: string | null;
+  /**
+   * Whether the data source delivers the value in exactly `sourceUnit`. When false, the
+   * value reaches us in a different unit and the source row is a back-conversion — badged
+   * "Journal / unprecise" and left rounded rather than shown at full precision. Defaults true.
+   */
+  sourcePrecise?: boolean;
 }
 
 /**
@@ -42,11 +48,14 @@ export class UnitConversionDialogComponent {
   private readonly data = inject<UnitConversionDialogData>(MAT_DIALOG_DATA);
 
   protected readonly title = this.data.title;
-  protected readonly rows: ConversionRow[] = buildConversions(this.data.kind, this.data.baseValue);
-  /** Conversion-row label shown inline in the UI (accented row), if any. */
-  protected readonly uiUnit = this.data.uiUnit ?? null;
   /** Conversion-row label the value natively arrives in (source badge), if any. */
   protected readonly sourceUnit = this.data.sourceUnit ?? null;
+  /** Whether the source row holds the exact figure (true) or a back-conversion (false). */
+  protected readonly sourcePrecise = this.data.sourcePrecise ?? true;
+  protected readonly rows: ConversionRow[] =
+    buildConversions(this.data.kind, this.data.baseValue, this.sourceUnit, this.sourcePrecise);
+  /** Conversion-row label shown inline in the UI (accented row), if any. */
+  protected readonly uiUnit = this.data.uiUnit ?? null;
   protected readonly comparisons: MassComparison[] =
     this.data.kind === 'mass' ? buildMassComparisons(this.data.baseValue) : [];
 
