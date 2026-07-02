@@ -332,16 +332,20 @@ export function dynamicAreaUnitLabel(km2: number): string {
 interface InlineArealDensityUnit { unit: string; label: string; perMtKm2: number; }
 
 /**
- * Picks the inline ring/belt areal-density unit (Mt/km², stepping up to Gt/km² for very
- * dense rings) by magnitude. Single source for both the inline display
- * ({@link formatDynamicArealDensity}) and the dialog accent label ({@link dynamicArealDensityUnitLabel}).
+ * Picks the inline ring/belt areal-density unit by magnitude: Mt/km² for ordinary rings,
+ * stepping up to Gt/km² for very dense rings, and dropping to kg/m² (a real surface density)
+ * for sparse belts — which otherwise read as a tiny "0.0x Mt/km²" fraction. Single source for
+ * both the inline display ({@link formatDynamicArealDensity}) and the dialog accent label
+ * ({@link dynamicArealDensityUnitLabel}); every unit here has a matching dialog row.
  */
 function pickInlineArealDensityUnit(mtKm2: number): InlineArealDensityUnit {
-  if (Math.abs(mtKm2) >= MT_PER_GT) { return { unit: 'Gt/km²', label: 'Gt/km²', perMtKm2: 1 / MT_PER_GT }; }
+  const abs = Math.abs(mtKm2);
+  if (abs >= MT_PER_GT) { return { unit: 'Gt/km²', label: 'Gt/km²', perMtKm2: 1 / MT_PER_GT }; }
+  if (abs !== 0 && abs < 0.1) { return { unit: 'kg/m²', label: 'kg/m²', perMtKm2: KG_M2_PER_MT_KM2 }; }
   return { unit: 'Mt/km²', label: 'Mt/km²', perMtKm2: 1 };
 }
 
-/** Inline areal-density display (Mt/km² base), scaling up to Gt/km² for very dense rings. */
+/** Inline areal-density display (Mt/km² base), scaling up to Gt/km² and down to kg/m². */
 export function formatDynamicArealDensity(mtKm2: number): string {
   if (!Number.isFinite(mtKm2)) { return '—'; }
   const u = pickInlineArealDensityUnit(mtKm2);

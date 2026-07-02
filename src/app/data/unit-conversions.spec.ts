@@ -206,11 +206,16 @@ describe('dynamic inline formatters', () => {
     expect(formatDynamicArea(2 * KM_PER_LIGHT_SECOND * KM_PER_LIGHT_SECOND)).toBe('2.00 ls²');
   });
 
-  it('formats ring density in Mt/km², scaling up to Gt/km² for very dense rings', () => {
+  it('formats ring density: Mt/km² mid-range, up to Gt/km², down to kg/m² for sparse belts', () => {
     expect(formatDynamicArealDensity(12.5)).toBe('12.50 Mt/km²');
     expect(formatDynamicArealDensity(2500)).toBe('2.50 Gt/km²');
+    // A sparse belt (~0.05 Mt/km²) drops to kg/m² (× 1e6) rather than reading "0.05 Mt/km²".
+    expect(formatDynamicArealDensity(0.05)).toBe('50,000.00 kg/m²');
     expect(dynamicArealDensityUnitLabel(12.5)).toBe('Mt/km²');
     expect(dynamicArealDensityUnitLabel(2500)).toBe('Gt/km²');
+    expect(dynamicArealDensityUnitLabel(0.05)).toBe('kg/m²');
+    // 0.1 Mt/km² is the boundary — it stays in Mt/km².
+    expect(dynamicArealDensityUnitLabel(0.1)).toBe('Mt/km²');
     expect(formatDynamicArealDensity(NaN)).toBe('—');
     expect(dynamicArealDensityUnitLabel(NaN)).toBe('');
   });
