@@ -1,0 +1,36 @@
+@if (component(); as cmp) {
+  <ng-container *ngComponentOutlet="cmp; injector: bodyInjector" />
+} @else if (failed()) {
+  <h2 mat-dialog-title>Couldn't load</h2>
+  <mat-dialog-content>
+    <p class="lazy-dialog__error" role="alert">
+      This dialog failed to load. Check your connection and try again.
+    </p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Close</button>
+  </mat-dialog-actions>
+} @else if (showSkeleton()) {
+  <h2 mat-dialog-title>
+    <span class="lazy-dialog__sr-only">Loading…</span>
+    <span class="lazy-skeleton lazy-skeleton--title" aria-hidden="true"></span>
+  </h2>
+  <mat-dialog-content>
+    @switch (config.skeleton ?? 'text') {
+      @case ('diagram') {
+        <div class="lazy-skeleton lazy-skeleton--diagram" aria-hidden="true"></div>
+        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w70" aria-hidden="true"></div>
+        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w50" aria-hidden="true"></div>
+      }
+      @default {
+        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w90" aria-hidden="true"></div>
+        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w80" aria-hidden="true"></div>
+        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w85" aria-hidden="true"></div>
+        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w60" aria-hidden="true"></div>
+      }
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Close</button>
+  </mat-dialog-actions>
+}

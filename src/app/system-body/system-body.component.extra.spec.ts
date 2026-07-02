@@ -24,9 +24,9 @@ describe('SystemBodyComponent (extended coverage)', () => {
   let dialogOpenCalls: number;
   let dialogOpenArgs: { component: unknown; config: { data?: any } }[];
 
-  /** The data object handed to the most recent dialog.open call. */
+  /** The inner data the most recent dialog.open routes to its lazily-loaded dialog body. */
   function lastDialogData(): any {
-    return dialogOpenArgs[dialogOpenArgs.length - 1].config.data;
+    return dialogOpenArgs[dialogOpenArgs.length - 1].config.data.data;
   }
 
   beforeEach(() => {
@@ -1051,8 +1051,8 @@ describe('SystemBodyComponent (extended coverage)', () => {
       await component.showTidalLockDialog();
       expect(dialogOpenCalls).toBe(1);
       const { config } = dialogOpenArgs[0];
-      expect(config.data!.resonance).toBe('1:1');
-      expect(config.data!.body.bodyData.rotationalPeriod).toBe(5);
+      expect(config.data!.data.resonance).toBe('1:1');
+      expect(config.data!.data.body.bodyData.rotationalPeriod).toBe(5);
     });
 
     it('opens the JSON dialog with the body and galaxy data', async () => {

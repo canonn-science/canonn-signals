@@ -16,6 +16,7 @@ import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, Lagran
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
+import { openLazyDialog } from '../dialogs/lazy-dialog';
 import type { WhiteDwarfTypesDialogData } from '../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component';
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
@@ -564,8 +565,9 @@ export class SystemBodyComponent implements OnChanges {
   public async showWhiteDwarfSpectralDialog(): Promise<void> {
     const code = this.getWhiteDwarfSpectralCode();
     if (!code) { return; }
-    const { WhiteDwarfTypesDialogComponent } = await import('../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component');
-    this.dialog.open(WhiteDwarfTypesDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component').then(m => m.WhiteDwarfTypesDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
       data: { typeKey: whiteDwarfSpectralTypeKey(code) } satisfies WhiteDwarfTypesDialogData,
@@ -639,11 +641,11 @@ export class SystemBodyComponent implements OnChanges {
       };
     }
 
-    const { OrbitalDiagramDialogComponent } = await import('../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component');
-    this.dialog.open(OrbitalDiagramDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component').then(m => m.OrbitalDiagramDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: { type, degrees, eccentricity: bodyData.orbitalEccentricity, bodyName, parentName, orbit },
@@ -657,11 +659,11 @@ export class SystemBodyComponent implements OnChanges {
   public async showHrDiagram(): Promise<void> {
     const body = this.body();
     const bodyData = body.bodyData;
-    const { HrDiagramDialogComponent } = await import('../dialogs/hr-diagram-dialog/hr-diagram-dialog.component');
-    this.dialog.open(HrDiagramDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/hr-diagram-dialog/hr-diagram-dialog.component').then(m => m.HrDiagramDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -975,11 +977,11 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   public async showBodyJsonDialog(): Promise<void> {
-    const { JsonDialogComponent } = await import('../dialogs/json-dialog/json-dialog.component');
-    this.dialog.open(JsonDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/json-dialog/json-dialog.component').then(m => m.JsonDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       restoreFocus: false,
       data: { body: this.body(), edGalaxyData: this.edGalaxyData() } satisfies JsonDialogData,
     });
@@ -1007,11 +1009,11 @@ export class SystemBodyComponent implements OnChanges {
 
     const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
-    const { InvisibleRingDialogComponent } = await import('../dialogs/invisible-ring-dialog/invisible-ring-dialog.component');
-    this.dialog.open(InvisibleRingDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/invisible-ring-dialog/invisible-ring-dialog.component').then(m => m.InvisibleRingDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       data: {
         ringName,
         innerRadius,
@@ -1027,11 +1029,11 @@ export class SystemBodyComponent implements OnChanges {
 
   /** Opens the Roche-limit chart dialog with the prepared chart data. */
   private async openRocheLimitDialog(data: RocheChartData): Promise<void> {
-    const { RocheLimitDialogComponent } = await import('../dialogs/roche-limit-dialog/roche-limit-dialog.component');
-    this.dialog.open(RocheLimitDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/roche-limit-dialog/roche-limit-dialog.component').then(m => m.RocheLimitDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data,
@@ -1154,11 +1156,11 @@ export class SystemBodyComponent implements OnChanges {
       degreesToEvent = this.orbitalRelations.degreesToEvent(currentMeanAnomaly, type);
     }
 
-    const { ApoPeriDialogComponent } = await import('../dialogs/apo-peri-dialog/apo-peri-dialog.component');
-    this.dialog.open(ApoPeriDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/apo-peri-dialog/apo-peri-dialog.component').then(m => m.ApoPeriDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -1182,11 +1184,11 @@ export class SystemBodyComponent implements OnChanges {
     const meanAnomalyAtEpoch = this.getMeanAnomaly();
     if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly || !epoch || meanAnomalyAtEpoch === undefined) return;
 
-    const { AnomalyDialogComponent } = await import('../dialogs/anomaly-dialog/anomaly-dialog.component');
-    this.dialog.open(AnomalyDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/anomaly-dialog/anomaly-dialog.component').then(m => m.AnomalyDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -1222,11 +1224,11 @@ export class SystemBodyComponent implements OnChanges {
       info: this.buildCollisionBodyInfo(siblings.find(s => s.bodyData.name === name) ?? null),
     }));
 
-    const { CollisionDialogComponent } = await import('../dialogs/collision-dialog/collision-dialog.component');
-    this.dialog.open(CollisionDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/collision-dialog/collision-dialog.component').then(m => m.CollisionDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -1359,11 +1361,11 @@ export class SystemBodyComponent implements OnChanges {
     // truth in BodyPhysicsService (shared with the isActualShepherd badge).
     const shepherdStatus = this.physics.shepherdStatus(hillData);
 
-    const { HillLimitDialogComponent } = await import('../dialogs/hill-limit-dialog/hill-limit-dialog.component');
-    this.dialog.open(HillLimitDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/hill-limit-dialog/hill-limit-dialog.component').then(m => m.HillLimitDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -1668,11 +1670,11 @@ export class SystemBodyComponent implements OnChanges {
     };
     const data: LagrangeDialogData = { config: displayConfig, systemName: this.edGalaxyData()?.Name ?? '' };
 
-    const { LagrangeDialogComponent } = await import('../dialogs/lagrange-dialog/lagrange-dialog.component');
-    this.dialog.open(LagrangeDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/lagrange-dialog/lagrange-dialog.component').then(m => m.LagrangeDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data,
@@ -1736,11 +1738,11 @@ export class SystemBodyComponent implements OnChanges {
     const surfTemp = bd.surfaceTemperature ?? null;
     const estRange = surfTemp ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure) : null;
     const { delta, source } = lookupTempDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
-    const { OnFootSafetyDialogComponent } = await import('../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component');
-    this.dialog.open(OnFootSafetyDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component').then(m => m.OnFootSafetyDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -1761,16 +1763,13 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   public async showTidalLockDialog(): Promise<void> {
-    const { TidalLockDialogComponent } = await import('../dialogs/tidal-lock-dialog/tidal-lock-dialog.component');
-    this.dialog.open(TidalLockDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/tidal-lock-dialog/tidal-lock-dialog.component').then(m => m.TidalLockDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
-      // Focus the dialog heading rather than the default first tabbable element
-      // (a "Further reading" link near the bottom), which would scroll the long
-      // content to the end on open.
-      autoFocus: 'first-heading',
       data: {
         body: this.body(),
         resonance: this.getSpinResonance()
