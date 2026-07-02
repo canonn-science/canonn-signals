@@ -15,21 +15,100 @@ describe('PGSystem', () => {
       expect(sys.toPGName()).toBe('Blae Eock kc-c d0-0');
     });
 
-    it('re-encodes a decoded address to a bigint (region origin is synthesised, so not bit-identical)', () => {
-      const sys = PGSystem.fromSystemAddress(KNOWN_ID64);
-      const addr = sys.toSystemAddress();
-      expect(typeof addr).toBe('bigint');
-      expect(addr).toBeGreaterThan(0n);
+    // Ground truth generated with the EDTS reference implementation
+    // (calculate_id64 + pgnames, systems in the Blae Eock sector), one id64 per
+    // mass code, plus the in-game-verified KNOWN_ID64. These anchor the absolute
+    // bit layout — not just that encode and decode are mutual inverses.
+    const REFERENCE_SYSTEMS = [
+      { id64: KNOWN_ID64, l1: 'k', l2: 'c', l3: 'c', mcode: 'd', n1: 0, n2: 0 },
+      { id64: 216480817500680n, l1: 'h', l2: 'x', l3: 'u', mcode: 'a', n1: 60, n2: 12 },
+      { id64: 7268822034689n, l1: 'c', l2: 'g', l3: 'y', mcode: 'b', n1: 29, n2: 3 },
+      { id64: 38841769759874n, l1: 'b', l2: 'd', l3: 'z', mcode: 'c', n1: 14, n2: 141 },
+      { id64: 319731321411n, l1: 'b', l2: 'm', l3: 'm', mcode: 'd', n1: 7, n2: 9 },
+      { id64: 9900533028n, l1: 'o', l2: 'd', l3: 't', mcode: 'e', n1: 3, n2: 2 },
+      { id64: 700940949n, l1: 'i', l2: 'm', l3: 'w', mcode: 'f', n1: 1, n2: 1 },
+      { id64: 20570446n, l1: 'e', l2: 'g', l3: 'y', mcode: 'g', n1: 0, n2: 0 },
+      { id64: 36141223n, l1: 'a', l2: 'a', l3: 'a', mcode: 'h', n1: 0, n2: 4 },
+    ];
+    const letter = (c: string) => c.charCodeAt(0) - 'a'.charCodeAt(0);
+
+    it('decodes and re-encodes reference id64s across all mass codes', () => {
+      for (const ref of REFERENCE_SYSTEMS) {
+        const sys = PGSystem.fromSystemAddress(ref.id64);
+        expect(sys.regionName).toBe('Blae Eock');
+        expect(sys.mid1a).toBe(letter(ref.l1));
+        expect(sys.mid1b).toBe(letter(ref.l2));
+        expect(sys.mid2).toBe(letter(ref.l3));
+        expect(sys.sizeClass).toBe(letter(ref.mcode));
+        expect(sys.mid3).toBe(ref.n1);
+        expect(sys.sequence).toBe(ref.n2);
+        expect(sys.toSystemAddress()).toBe(ref.id64);
+      }
     });
 
-    it('encodes and decodes the modulated-address form (lossy: toModSystemAddress uses 32-bit bitwise ops)', () => {
+    it('round-trips a sequence wider than 15 bits', () => {
+      // The sequence field is 11 + 3*sizeClass bits; for mass code d that is 20
+      // bits, so 40000 must survive decode -> encode.
       const sys = PGSystem.fromSystemAddress(KNOWN_ID64);
-      const back = PGSystem.fromModSystemAddress(sys.toModSystemAddress());
-      // NOTE: toModSystemAddress builds the result with JS bitwise (32-bit) operators, so
-      // fields packed above bit 31 are truncated — the round-trip is lossy across the board.
-      expect(back).toBeInstanceOf(PGSystem);
-      expect(typeof back.regionName).toBe('string');
-      expect(typeof back.sequence).toBe('number');
+      sys.sequence = 40000;
+      expect(PGSystem.fromSystemAddress(sys.toSystemAddress()).sequence).toBe(40000);
+    });
+
+    it('round-trips the modulated-address form losslessly', () => {
+      for (const ref of REFERENCE_SYSTEMS) {
+        const sys = PGSystem.fromSystemAddress(ref.id64);
+        const back = PGSystem.fromModSystemAddress(sys.toModSystemAddress());
+        // toPGName interpolates the region, letters, size class, n1 and n2, so
+        // one comparison covers every field.
+        expect(back.toPGName()).toBe(sys.toPGName());
+      }
+    });
+
+    it('rejects encoding instead of emitting a wrong address', () => {
+      // Unknown sector: the synthesised region origin is invalid.
+      const [okUnknown, unknown] = PGSystem.tryParse('Totally Made Up XY-Z d1-2');
+      expect(okUnknown).toBe(true);
+      expect(() => unknown.toSystemAddress()).toThrowError(/Unknown sector/);
+      expect(() => unknown.toModSystemAddress()).toThrowError(/Unknown sector/);
+
+      // Letter code outside the sector for the size class: an h-class sector
+      // holds a single boxel, so only AA-A is valid.
+      const [okRange, outOfRange] = PGSystem.tryParse('Blae Eock KC-C h0-0');
+      expect(okRange).toBe(true);
+      expect(() => outOfRange.toSystemAddress()).toThrowError(RangeError);
+
+      // Sequence too large for the field.
+      const [okSeq, seqTooBig] = PGSystem.tryParse('Blae Eock KC-C d0-70000');
+      expect(okSeq).toBe(true);
+      expect(() => seqTooBig.toModSystemAddress()).toThrowError(RangeError);
+
+      // Fragment-valid sector name that resolves outside the galaxy's 6-bit
+      // y-sector range: the address fields cannot represent it.
+      const [okGal, outOfGalaxy] = PGSystem.tryParse('Pyruetchoo AA-A d0');
+      expect(okGal).toBe(true);
+      expect(() => outOfGalaxy.toSystemAddress()).toThrowError(/does not fit/);
+      expect(() => outOfGalaxy.toModSystemAddress()).toThrowError(/does not fit/);
+    });
+
+    it('encodes a parsed PG name to the known system address', () => {
+      const [ok, sys] = PGSystem.tryParse('Blae Eock KC-C d0-0');
+      expect(ok).toBe(true);
+      expect(sys.toSystemAddress()).toBe(KNOWN_ID64);
+    });
+
+    it('encodes names in hand-authored regions with non-boxel-aligned origins', () => {
+      // Real in-game systems (id64s from EDSM). Both regions have catalogued
+      // origins that are not aligned to the boxel grid, so the letter code
+      // legitimately reaches one boxel past sizeX/boxelSize.
+      const cases = [
+        { name: 'Col 285 Sector IB-X b30-0', id64: 669612516897n },
+        { name: 'Cepheus Dark Region B Sector AF-Q b5-0', id64: 659412493657n },
+      ];
+      for (const c of cases) {
+        const [ok, sys] = PGSystem.tryParse(c.name);
+        expect(ok).toBe(true);
+        expect(sys.toSystemAddress()).toBe(c.id64);
+      }
     });
 
     it('exposes its region via the region getter', () => {
@@ -46,12 +125,21 @@ describe('PGSystem', () => {
       expect(sys.sizeClass).toBe('d'.charCodeAt(0) - 'a'.charCodeAt(0));
     });
 
-    it('currently rejects the n1-n2 form because of a substring bug in tryParse', () => {
-      // NOTE: tryParse extracts the mid3 digits with substring(i+1, vend - i + 1) — passing a
-      // *length* where an *end index* is expected — so it slices garbage, parseInt -> NaN, and
-      // every "<sector> AB-C d<n1>-<n2>" name is rejected. Flagged as a latent bug (not fixed).
-      const [ok] = PGSystem.tryParse('Blae Eock kc-c d0-0');
-      expect(ok).toBe(false);
+    it('parses the n1-n2 form into mid3 and sequence', () => {
+      // The last case checks mid3 comes from the system suffix, not from digits
+      // in the sector name itself.
+      const cases = [
+        { name: 'Blae Eock kc-c d0-0', region: 'Blae Eock', mid3: 0, seq: 0 },
+        { name: 'Synuefe EN-H d11-96', region: 'Synuefe', mid3: 11, seq: 96 },
+        { name: 'Col 285 Sector IY-W b16-8', region: 'Col 285 Sector', mid3: 16, seq: 8 },
+      ];
+      for (const c of cases) {
+        const [ok, sys] = PGSystem.tryParse(c.name);
+        expect(ok).toBe(true);
+        expect(sys.regionName).toBe(c.region);
+        expect(sys.mid3).toBe(c.mid3);
+        expect(sys.sequence).toBe(c.seq);
+      }
     });
 
     it('rejects malformed names', () => {

@@ -248,7 +248,7 @@ export class PGSystem implements IPGSystem {
             while (i > 8 && _s[i] >= '0' && _s[i] <= '9') i--;
             if (i === vend) return [false, sys];
 
-            const mid3Str = _s.substring(i + 1, vend - i + 1);
+            const mid3Str = _s.substring(i + 1, vend + 1);
             const mid3 = parseInt(mid3Str);
             if (isNaN(mid3)) return [false, sys];
             sys.mid3 = mid3;
@@ -284,58 +284,108 @@ export class PGSystem implements IPGSystem {
         return [true, sys];
     }
 
-    toSystemAddress(): bigint {
+    /**
+     * Absolute boxel coordinates (from the galaxy origin) of this system's boxel:
+     * the region-relative letter-code offset plus the region origin in boxels.
+     * Throws when the region cannot be resolved or the letter code lies outside
+     * the region, so encoders fail loudly instead of emitting a wrong sector.
+     */
+    private absoluteBoxel(): { x: number; y: number; z: number } {
         const reg = this.region;
+        const boxelSize = 320 << this.sizeClass; // internal units per boxel edge
+
+        if (reg.x0 < 0 || reg.y0 < 0 || reg.z0 < 0) {
+            throw new Error(`Unknown sector: ${this.regionName}`);
+        }
 
         const mid =
             ((this.mid3 * 26 + this.mid2) * 26 + this.mid1b) * 26 + this.mid1a;
-        const x = (mid & 0x7f) + Math.floor(reg.x0 / (320 << this.sizeClass));
-        const y =
-            ((mid >> 7) & 0x7f) + Math.floor(reg.y0 / (320 << this.sizeClass));
-        const z =
-            ((mid >> 14) & 0x7f) + Math.floor(reg.z0 / (320 << this.sizeClass));
-        const seq = this.sequence;
+        if (mid > 0x1fffff) {
+            // Only an oversized n1 can push mid past 21 bits (mid3 contributes mid3 * 26^3).
+            throw new RangeError(`System index n1=${this.mid3} out of range in ${this.regionName}`);
+        }
+        const bx = mid & 0x7f;
+        const by = (mid >> 7) & 0x7f;
+        const bz = (mid >> 14) & 0x7f;
+        // Letter codes count from the region origin snapped DOWN to the boxel
+        // grid, so a region whose origin is not boxel-aligned reaches one boxel
+        // further than sizeX/boxelSize — the bound must include the origin's
+        // offset within its boxel.
+        if (
+            bx * boxelSize >= (reg.x0 % boxelSize) + reg.sizeX ||
+            by * boxelSize >= (reg.y0 % boxelSize) + reg.sizeY ||
+            bz * boxelSize >= (reg.z0 % boxelSize) + reg.sizeZ
+        ) {
+            throw new RangeError(
+                `Letter code out of range for size class ${PGSystem.toLetter(this.sizeClass)} in ${this.regionName}`
+            );
+        }
 
-        const result =
-            this.sizeClass |
-            (z << 3) |
-            (y << (17 - this.sizeClass)) |
-            (x << (30 - this.sizeClass * 2)) |
-            (seq << (44 - this.sizeClass * 3));
+        const x = bx + Math.floor(reg.x0 / boxelSize);
+        const y = by + Math.floor(reg.y0 / boxelSize);
+        const z = bz + Math.floor(reg.z0 / boxelSize);
+        // A system address has 7 sector bits for x/z but only 6 for y; a
+        // parseable name can still resolve to a sector outside that space, and
+        // packing it would silently corrupt neighbouring fields.
+        const sc = this.sizeClass;
+        if (x >= 1 << (14 - sc) || y >= 1 << (13 - sc) || z >= 1 << (14 - sc)) {
+            throw new RangeError(`Sector position of ${this.regionName} does not fit a system address`);
+        }
 
-        return BigInt(result);
+        return { x, y, z };
+    }
+
+    toSystemAddress(): bigint {
+        const sc = this.sizeClass;
+        const { x, y, z } = this.absoluteBoxel();
+
+        // The sequence (N2) field spans bits [44-3*sc, 55); the 9 bits above it
+        // are the body ID, which a system address leaves at zero.
+        const seqWidth = 11 + sc * 3;
+        if (this.sequence < 0 || this.sequence >= 2 ** seqWidth) {
+            throw new RangeError(`Sequence ${this.sequence} does not fit in ${seqWidth} bits`);
+        }
+
+        // Pack with BigInt: JS number bitwise operators truncate operands and
+        // results to 32 bits (ToInt32), so any field reaching bit 31 or above
+        // would be corrupted.
+        return (
+            BigInt(sc) |
+            (BigInt(z) << 3n) |
+            (BigInt(y) << BigInt(17 - sc)) |
+            (BigInt(x) << BigInt(30 - sc * 2)) |
+            (BigInt(this.sequence) << BigInt(44 - sc * 3))
+        );
     }
 
     toModSystemAddress(): bigint {
-        const reg = this.region;
+        const sc = this.sizeClass;
+        const bps = 7 - sc; // log2 of boxels per sector edge at this size class
+        const boxelMask = 0x7f >> sc;
+        const { x, y, z } = this.absoluteBoxel();
 
-        const mid =
-            ((this.mid3 * 26 + this.mid2) * 26 + this.mid1b) * 26 + this.mid1a;
-        const x = (mid & 0x7f) + Math.floor(reg.x0 / (320 << this.sizeClass));
-        const x1 = x & 0x7f;
-        const x2 = (x >> 7) & 0x7f;
-        const y =
-            ((mid >> 7) & 0x7f) + Math.floor(reg.y0 / (320 << this.sizeClass));
-        const y1 = y & 0x7f;
-        const y2 = (y >> 7) & 0x3f;
-        const z =
-            ((mid >> 14) & 0x7f) + Math.floor(reg.z0 / (320 << this.sizeClass));
-        const z1 = z & 0x7f;
-        const z2 = (z >> 7) & 0x7f;
-        const seq = this.sequence;
-        const szclass = this.sizeClass;
+        if (this.sequence < 0 || this.sequence > 0x7fff) {
+            throw new RangeError(`Sequence ${this.sequence} does not fit in the 15-bit mod-address field`);
+        }
 
-        const result =
-            seq |
-            (x1 << 16) |
-            (y1 << 23) |
-            (z1 << 30) |
-            (szclass << 37) |
-            (x2 << 40) |
-            (y2 << 47) |
-            (z2 << 53);
+        // Split each axis into sector coordinate and within-sector boxel. Sectors
+        // span 2^(7 - sizeClass) boxels at this size class, not a fixed 7 bits.
+        // The sector-relative letter code is what fromModSystemAddress reads from
+        // bits 16-36.
+        const midOut =
+            (x & boxelMask) | ((y & boxelMask) << 7) | ((z & boxelMask) << 14);
 
-        return BigInt(result);
+        // Pack with BigInt: JS number bitwise operators truncate operands and
+        // results to 32 bits (ToInt32), so any field reaching bit 31 or above
+        // would be corrupted.
+        return (
+            BigInt(this.sequence) |
+            (BigInt(midOut) << 16n) |
+            (BigInt(sc) << 37n) |
+            (BigInt((x >> bps) & 0x7f) << 40n) |
+            (BigInt((y >> bps) & 0x3f) << 47n) |
+            (BigInt((z >> bps) & 0x7f) << 53n)
+        );
     }
 
     static fromSystemAddress(systemaddress: bigint): PGSystem {
@@ -350,7 +400,11 @@ export class PGSystem implements IPGSystem {
         const x0 = Number((addr >> BigInt(30 - sizeclass * 2)) & BigInt(0x3fff >> sizeclass));
         const x1 = Number((addr >> BigInt(30 - sizeclass * 2)) & BigInt(0x7f >> sizeclass));
         const x2 = Number((addr >> BigInt(37 - sizeclass * 3)) & BigInt(0x7f));
-        const seq = Number((addr >> BigInt(44 - sizeclass * 3)) & BigInt(0x7fff));
+        // The sequence (N2) field is 11 + 3*sizeclass bits wide, ending at bit 55
+        // where the 9-bit body ID starts.
+        const seq = Number(
+            (addr >> BigInt(44 - sizeclass * 3)) & ((1n << BigInt(11 + sizeclass * 3)) - 1n)
+        );
 
         const regionname = PGSectors.getSectorName(
             new ByteXYZ(x2, y2, z2)
