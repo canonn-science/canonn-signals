@@ -3,7 +3,8 @@ import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { faChartColumn, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { MatDialog } from '@angular/material/dialog';
-import type { HistogramDialogComponent, HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
+import { openLazyDialog } from '../dialogs/lazy-dialog';
+import type { HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/app/data/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
@@ -412,14 +413,18 @@ export class HomeComponent implements OnInit, OnDestroy {
   public async showBodyHistogram(): Promise<void> {
     const data = this.data();
     if (!data) return;
-    const { HistogramDialogComponent } = await import('../dialogs/histogram-dialog/histogram-dialog.component');
-    this.dialog.open<HistogramDialogComponent, HistogramDialogData>(HistogramDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/histogram-dialog/histogram-dialog.component').then(m => m.HistogramDialogComponent),
+      skeleton: 'diagram',
       width: '640px',
       maxWidth: '95vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
-      autoFocus: 'first-heading',
-      data: { systemName: data.system.name, bodies: data.system.bodies, totalBodyCount: data.system.bodyCount ?? null },
+      data: {
+        systemName: data.system.name,
+        bodies: data.system.bodies,
+        totalBodyCount: data.system.bodyCount ?? null,
+      } satisfies HistogramDialogData,
     });
   }
   private readonly _searching = signal(false);

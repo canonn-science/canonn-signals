@@ -292,8 +292,10 @@ describe('HomeComponent', () => {
 
       expect(open).toHaveBeenCalledTimes(1);
       const [, config] = open.mock.calls[0];
-      expect(config?.data).toEqual({ systemName: 'Sol', bodies, totalBodyCount: 8 });
-      expect(config?.autoFocus).toBe('first-heading');
+      // The histogram now opens through the lazy-dialog host, which wraps the real data and
+      // defaults focus to the dialog container so it survives the skeleton-to-body swap.
+      expect((config?.data as { data: unknown }).data).toEqual({ systemName: 'Sol', bodies, totalBodyCount: 8 });
+      expect(config?.autoFocus).toBe('dialog');
     });
   });
 });
