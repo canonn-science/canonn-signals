@@ -676,7 +676,7 @@
             </div>
             <div>
               <span [matTooltip]="cachedSurfacePressureTooltip() || ''"
-                    matTooltipClass="multiline-tooltip">{{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres</span><app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="atm" />
+                    matTooltipClass="multiline-tooltip">{{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres</span><app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="Pa" [sourcePrecise]="false" />
             </div>
           </div>
           }

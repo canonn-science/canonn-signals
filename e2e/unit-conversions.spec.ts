@@ -124,9 +124,10 @@ test.describe('Unit-conversion dialog — angle & duration (Alpha Centauri fixtu
     ]);
   });
 
-  test('surface pressure is badged "from journal" on the atm row (data source delivers atmospheres)', async ({ page }) => {
-    // Eden (body 10) has a surface pressure. The data source delivers it in atmospheres
-    // (the journal's Pascals ÷ 101325), so the atm row — not Pa — is the authoritative source.
+  test('surface pressure badges the Pa row "Journal / unprecise" (journal is Pa, data is atm)', async ({ page }) => {
+    // Eden (body 10) has a surface pressure. The game journal records it in Pascals, but the
+    // data source delivers atmospheres (journal Pa ÷ 101325), so the Pa row is a back-conversion
+    // and is badged "Journal / unprecise" — the same treatment as radius (journal m, data km).
     await ensureBodyExpanded(page, 10);
     await bodyRowValue(page, 10, 'Surface pressure').locator('.convert-icon').click();
 
@@ -134,7 +135,7 @@ test.describe('Unit-conversion dialog — angle & duration (Alpha Centauri fixtu
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('Surface pressure');
     await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
-      'atm from journal', 'psi', 'kPa', 'Pa',
+      'atm', 'psi', 'kPa', 'Pa Journal / unprecise',
     ]);
   });
 });
