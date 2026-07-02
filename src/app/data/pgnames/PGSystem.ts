@@ -37,7 +37,10 @@ export class PGSystem implements IPGSystem {
         const mid3 = Math.trunc(this.mid3);
         const seq = Math.trunc(this.sequence);
 
-        return `${this.regionName} ${mid1a}${mid1b}-${mid2} ${size}${mid3}-${seq}`;
+        // Elite Dangerous omits the N1 field (and its hyphen) when it is zero,
+        // so "Synuefe WH-F c0" (N1=0, N2=0) must not render as "…c0-0".
+        const index = mid3 !== 0 ? `${mid3}-${seq}` : `${seq}`;
+        return `${this.regionName} ${mid1a}${mid1b}-${mid2} ${size}${index}`;
     }
 
     /**

@@ -122,9 +122,9 @@ describe('HomeComponent (extended coverage)', () => {
     });
 
     it('resolves a procedural-generation name from a known system address', () => {
+      // N1 is zero for this system, so ED omits it: "…d0", not "…d0-0".
       const name = component.getPGName(10577693187);
-      expect(name.length).toBeGreaterThan(0);
-      expect(name).toMatch(/[A-Z]{2}-[A-Z] [a-z]\d/); // mass-code + index segment
+      expect(name).toBe('Blae Eock KC-C d0');
     });
 
     it('returns an empty PG name for an invalid address', () => {

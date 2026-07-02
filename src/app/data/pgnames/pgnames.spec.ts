@@ -11,8 +11,10 @@ describe('PGSystem', () => {
       const sys = PGSystem.fromSystemAddress(KNOWN_ID64);
       expect(sys.regionName).toBe('Blae Eock');
       expect(sys.sizeClass).toBeGreaterThanOrEqual(0);
-      // toPGName renders the mass-code/index segment in lower case with a sequence suffix.
-      expect(sys.toPGName()).toBe('Blae Eock kc-c d0-0');
+      // toPGName renders the mass-code/index segment in lower case. N1 is zero
+      // here, and Elite Dangerous omits it (and its hyphen), so this is "d0" not
+      // "d0-0" — matching the in-game name "Blae Eock KC-C d0".
+      expect(sys.toPGName()).toBe('Blae Eock kc-c d0');
     });
 
     // Ground truth generated with the EDTS reference implementation
