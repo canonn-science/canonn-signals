@@ -753,6 +753,70 @@ describe('SystemBodyComponent (extended coverage)', () => {
         expect(component.taylorRingTooltip()).toContain('Taylor ring');
       });
 
+      it('classifies a real body\'s ring as Taylor, not Pauper, even though its inner edge alone clears the Pauper distance bar', () => {
+        // Real Canonn data: Byeia Eurk FB-X e1-4 B 3 (Planet, radius 4 381.512 km) with a
+        // single "A Ring" — raw innerRadius/outerRadius are in metres (71 831 000–72 786 000 m
+        // = 71 831–72 786 km once converted, same as the app's own ring loader), mass in Mt.
+        //   R = 4381.512 km        0.25R = 1 095.378 km   14R = 61 341.168 km   2R = 8 763.024 km
+        //   width = 72 786 − 71 831 = 955 km
+        // 955 km < 0.25R -> Taylor. Its inner edge (71 831 km) is also ≥ 14R — which alone would
+        // satisfy the Pauper badge's distance condition — but the span is *narrower* than 0.25R,
+        // so condition 3 (span > 0.25R) correctly keeps this Taylor-only, not Pauper too.
+        const parent = makeBody({ name: 'Byeia Eurk FB-X e1-4 B 3', type: 'Planet', radius: 4381.512 });
+        const ringA = makeBody({
+          name: 'Byeia Eurk FB-X e1-4 B 3 A Ring', type: 'Ring', subType: 'Metal Rich',
+          innerRadius: 71831, outerRadius: 72786, mass: 3949300000,
+        }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('classifies a real body\'s ring as neither Taylor nor Pauper (ordinary width, and just short of the Pauper distance bar)', () => {
+        // Real Canonn data: Eord Flyue BA-A g56 BC 1 (Planet, radius 5 402.809 km) with a
+        // single "A Ring" — raw innerRadius/outerRadius in metres (75 398 000–78 848 000 m =
+        // 75 398–78 848 km once converted), mass in Mt.
+        //   R = 5402.809 km        0.25R = 1 350.70225 km   14R = 75 639.326 km   2R = 10 805.618 km
+        //   width = 78 848 − 75 398 = 3 450 km
+        // 3 450 km > 0.25R -> not Taylor. For Pauper, span (3 450) and inner edge alone would
+        // clear the max-span and "not narrow" bars, but the inner edge (75 398 km) falls just
+        // short of 14R (75 639.326 km) — a ~241 km miss — so the distance condition fails and
+        // this is neither badge.
+        const parent = makeBody({ name: 'Eord Flyue BA-A g56 BC 1', type: 'Planet', radius: 5402.809 });
+        const ringA = makeBody({
+          name: 'Eord Flyue BA-A g56 BC 1 A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 75398, outerRadius: 78848, mass: 16261000000,
+        }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('classifies a real body\'s ring as Pauper', () => {
+        // Real Canonn data: Oochoxt NO-H d10-1 2 (Planet, radius 4 333.2615 km) with a single
+        // "A Ring" — raw innerRadius/outerRadius in metres (63 670 000–65 539 000 m =
+        // 63 670–65 539 km once converted), mass in Mt.
+        //   R = 4333.2615 km       0.25R = 1 083.315375 km   14R = 60 665.661 km   2R = 8 666.523 km
+        //   span = 65 539 − 63 670 = 1 869 km
+        // Inner edge 63 670 km ≥ 14R, span 1 869 km ≤ 2R, and span > 0.25R (wide enough to not
+        // also be Taylor) — all three Pauper conditions hold.
+        const parent = makeBody({ name: 'Oochoxt NO-H d10-1 2', type: 'Planet', radius: 4333.2615 });
+        const ringA = makeBody({
+          name: 'Oochoxt NO-H d10-1 2 A Ring', type: 'Ring', subType: 'Metallic',
+          innerRadius: 63670, outerRadius: 65539, mass: 6745100000,
+        }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(true);
+        expect(component.pauperRingTooltip()).toContain('Pauper ring');
+      });
+
       it('does not mark a single mid-width ring as Taylor or Pauper', () => {
         const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 90000 }]); // width 30 000
         render(ringA);
