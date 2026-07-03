@@ -118,7 +118,10 @@ export class HomeComponent implements OnInit, OnDestroy {
       const mid3 = Math.trunc(pgSystem.mid3);
       const seq = Math.trunc(pgSystem.sequence);
 
-      const result = `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${mid3}-${seq}`;
+      // Elite Dangerous omits the N1 field (and its hyphen) when it is zero, so
+      // "Synuefe WH-F c0" (N1=0, N2=0) must not render as "Synuefe WH-F c0-0".
+      const index = mid3 !== 0 ? `${mid3}-${seq}` : `${seq}`;
+      const result = `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${index}`;
       return result;
     } catch (e) {
       logger.error('[getPGName] Error:', e);

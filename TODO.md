@@ -1,9 +1,8 @@
 # TODO — Flagged issues (not yet addressed)
 
 These were surfaced during the astronomy/physics review and the test-coverage work on
-the `upgrade` branch. None have been fixed, and none are regressions — the logic was
-extracted verbatim from `SystemBodyComponent` into the data services, so each bug
-pre-dates this branch.
+the `upgrade` branch. None are regressions — the logic was extracted verbatim from
+`SystemBodyComponent` into the data services, so each bug pre-dates this branch.
 
 ## Physics / source
 
@@ -18,35 +17,3 @@ pre-dates this branch.
   exposes `periapsis`/`apoapsis` ([:228-229](src/app/data/body-physics.service.ts#L228-L229))
   for exactly this comparison. Fix: use periapsis. (The `1.26` coefficient = 2^(1/3) is the
   correct rigid-body value.)
-
-## pgnames (vendored procedural-generation code)
-
-- **`tryParse` rejects all `…AB-C d<n1>-<n2>` names** —
-  [PGSystem.ts:251](src/app/data/pgnames/PGSystem.ts#L251).
-  The mid3 digit slice uses `substring(i + 1, vend - i + 1)` — a *length* passed where an
-  *end index* is expected. The digits live at `[i+1 .. vend]`, so the correct call is
-  `substring(i + 1, vend + 1)`. Since `i > 8` always, `vend - i + 1` is smaller than `i + 1`,
-  so `substring` swaps the bounds and returns a slice of the region-name text; `parseInt` → `NaN`
-  and the parse fails. Only names without the `-<n2>` suffix currently parse. Behaviour pinned
-  by [pgnames.spec.ts:49-55](src/app/data/pgnames/pgnames.spec.ts#L49-L55)
-  (`'Blae Eock kc-c d0-0'` → rejected).
-
-- **`toModSystemAddress` is lossy (32-bit bitwise overflow)** —
-  [PGSystem.ts:309](src/app/data/pgnames/PGSystem.ts#L309).
-  The result is assembled with JS `|`/`<<`
-  ([:330-336](src/app/data/pgnames/PGSystem.ts#L330-L336)), which coerce to 32-bit signed
-  integers and take the shift count mod 32. Shifts packed above bit 31 — `szclass << 37`,
-  `x2 << 40`, `y2 << 47`, `z2 << 53` — wrap (e.g. `<< 53` becomes `<< 21`) before the value is
-  widened by `BigInt(...)`, so the high fields are truncated and the round-trip is lossy.
-  Behaviour pinned by [pgnames.spec.ts:25-33](src/app/data/pgnames/pgnames.spec.ts#L25-L33).
-
-- **`fromSystemAddress` → `toSystemAddress` is not bit-identical** —
-  [PGSystem.ts:287](src/app/data/pgnames/PGSystem.ts#L287).
-  Two causes. The dominant one is the same 32-bit bitwise packing as `toModSystemAddress`:
-  `toSystemAddress` shifts up to 44 ([:301-304](src/app/data/pgnames/PGSystem.ts#L301-L304))
-  wrap mod 32, so the encode is broken for every sector. Secondarily, for an uncatalogued
-  sector `getRegion` synthesises the origin from `getSectorPos` quantised to the 40960-unit
-  boxel grid ([PGRegion.ts:514-522](src/app/data/pgnames/PGRegion.ts#L514-L522)), discarding the
-  original sub-sector offset. Loosely pinned by
-  [pgnames.spec.ts:18-23](src/app/data/pgnames/pgnames.spec.ts#L18-L23), which only asserts a
-  positive bigint result.
