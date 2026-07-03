@@ -1543,7 +1543,8 @@ export class SystemBodyComponent implements OnChanges {
 
   /**
    * The unit a period reads in at this magnitude: numeric value, inline abbreviation, and
-   * the matching conversion-dialog row label ('' for ms/s, which have no dialog row).
+   * the matching conversion-dialog row label (every band maps to a dialog row, so the inline
+   * unit is accented in the dialog — including Milliseconds for millisecond pulsars).
    * Single source for both {@link formatPeriodDays} and {@link durationUnitLabel}.
    */
   private periodParts(days: number): { value: number; unit: string; label: string } {
@@ -1554,8 +1555,8 @@ export class SystemBodyComponent implements OnChanges {
     const weeks = absDays / 7;
     const years = absDays / 365.25;
 
-    if (seconds < 1) return { value: seconds * 1000, unit: 'ms', label: '' };
-    if (seconds < 60) return { value: seconds, unit: 's', label: '' };
+    if (seconds < 1) return { value: seconds * 1000, unit: 'ms', label: 'Milliseconds' };
+    if (seconds < 60) return { value: seconds, unit: 's', label: 'Seconds' };
     if (minutes < 60) return { value: minutes, unit: 'min', label: 'Minutes' };
     if (hours < 24) return { value: hours, unit: 'h', label: 'Hours' };
     if (absDays < 7) return { value: absDays, unit: 'days', label: 'Days' };

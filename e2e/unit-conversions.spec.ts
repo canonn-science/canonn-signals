@@ -94,7 +94,7 @@ test.describe('Unit-conversion dialog — angle & duration (Alpha Centauri fixtu
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('Next apoapsis');
     await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
-      'Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds',
+      'Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds', 'Milliseconds',
     ]);
   });
 
@@ -108,7 +108,7 @@ test.describe('Unit-conversion dialog — angle & duration (Alpha Centauri fixtu
     // The game journal records the period in seconds, but the data source delivers days, so
     // the Seconds row is a back-conversion and is badged "Journal / unprecise".
     await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
-      'Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds Journal / unprecise',
+      'Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds Journal / unprecise', 'Milliseconds',
     ]);
   });
 
@@ -137,5 +137,55 @@ test.describe('Unit-conversion dialog — angle & duration (Alpha Centauri fixtu
     await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
       'atm', 'psi', 'kPa', 'Pa Journal / unprecise',
     ]);
+  });
+});
+
+/**
+ * Millisecond pulsar: the body panel shows the rotational period in milliseconds, and the
+ * conversion dialog must offer a matching Milliseconds row (with the tiny larger units shown
+ * in scientific notation). Beta Sculptoris B is the nearest real neutron star to Sol with a
+ * sub-2 ms spin (rotationalPeriod 2.2917e-8 days ≈ 1.98 ms), found via the Spansh API.
+ */
+test.describe('Unit-conversion dialog — millisecond pulsar (Beta Sculptoris fixture)', () => {
+  const BS = { fixture: 'beta-sculptoris.json', systemName: 'Beta Sculptoris', id64: 1774711389 };
+  const NEUTRON_STAR = 3; // Beta Sculptoris B
+
+  test.beforeEach(async ({ page }) => {
+    await loadFixtureSystem(page, BS);
+  });
+
+  test('the rotational period reads in milliseconds inline and is convertible to a Milliseconds row', async ({ page }) => {
+    await ensureBodyExpanded(page, NEUTRON_STAR);
+
+    // The body panel shows the spin period in ms, not a rounded-to-zero fraction of a second.
+    const rotational = bodyRowValue(page, NEUTRON_STAR, 'Rotational period');
+    await expect(rotational).toContainText('1.98 ms');
+
+    await rotational.locator('.convert-icon').click();
+    const dialog = page.locator('app-unit-conversion-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Rotational period');
+
+    // The duration table now ends in a Milliseconds row (the app holds the period in days,
+    // and the journal records seconds, so the Seconds row is a badged back-conversion).
+    await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
+      'Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes',
+      'Seconds Journal / unprecise', 'Milliseconds',
+    ]);
+
+    // The inline unit (ms) is the accented row, and reads as a plain human-scale value.
+    const msRow = dialog
+      .locator('.conversion-table tbody tr.ui-unit')
+      .filter({ has: page.getByRole('rowheader', { name: 'Milliseconds', exact: true }) });
+    await expect(msRow).toHaveCount(1);
+    await expect(msRow.locator('td.value')).toHaveText('1.98');
+
+    // A sub-picosecond fraction of a century is unreadable as a decimal, so it falls back to
+    // scientific notation (the same threshold used for very large millisecond counts).
+    const centuriesValue = dialog
+      .locator('.conversion-table tbody tr')
+      .filter({ has: page.getByRole('rowheader', { name: 'Centuries', exact: true }) })
+      .locator('td.value');
+    await expect(centuriesValue).toHaveText(/\de-\d+/);
   });
 });
