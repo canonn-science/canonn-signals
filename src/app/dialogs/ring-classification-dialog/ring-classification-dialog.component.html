@@ -89,20 +89,6 @@
       </ul>
     </div>
 
-    <div class="conclusion">
-      @if (data.kind === 'taylor') {
-      <p>
-        This ring system's total span of {{ fmt(data.span) }} km is under 25% of {{ data.bodyName }}'s radius —
-        unusually narrow.
-      </p>
-      } @else {
-      <p>
-        This ring system sits {{ ratio(data.innermostInner) }}× {{ data.bodyName }}'s radius out and spans only
-        {{ fmt(data.span) }} km — unusually wide and distant.
-      </p>
-      }
-    </div>
-
     <p class="disclaimer">
       <strong>Disclaimer:</strong> The classification is based on the visible and observable structure of the
       ring system rather than its total physical extent — a {{ data.kind === 'taylor' ? 'Taylor' : 'Pauper' }}
