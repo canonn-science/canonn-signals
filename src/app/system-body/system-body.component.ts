@@ -1,5 +1,5 @@
 import { estimateTempRange, isTempSafe, lookupTempDelta } from '../data/temperature-estimation';
-import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
+import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked, DestroyRef } from '@angular/core';
 import { SystemBody, EdGalaxyData, CanonnBiostatsBody } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -13,6 +13,7 @@ import { ClickableDirective } from '../clickable.directive';
 import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
+import { OrbitalWorkerService } from '../data/orbital-worker.service';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
@@ -54,6 +55,14 @@ import {
   KG_PER_MEGATONNE,
   KG_PER_SOLAR_MASS,
 } from '../data/unit-conversions';
+
+/**
+ * Delay (ms) before the collision badge shows its pending skeleton. The collision search now runs
+ * off the main thread, so its result arrives asynchronously; most bodies resolve within a worker
+ * round-trip, so we only reveal the skeleton once the wait crosses this threshold (matching the
+ * lazy-dialog skeleton's own delay) to avoid a flash on the common fast path.
+ */
+const COLLISION_SKELETON_DELAY_MS = 150;
 
 /** Horizon (days) over which simultaneous (multi-body) collisions are scanned for the dialog's section. */
 const SIMULTANEOUS_COLLISION_HORIZON_DAYS = 180;
@@ -98,6 +107,8 @@ export class SystemBodyComponent implements OnChanges {
   private readonly physics = inject(BodyPhysicsService);
   private readonly stellarPhysics = inject(StellarPhysicsService);
   private readonly orbitalRelations = inject(OrbitalRelationsService);
+  private readonly orbitalWorker = inject(OrbitalWorkerService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Expose Math.abs for template use
   abs(value: number): number {
@@ -246,9 +257,7 @@ export class SystemBodyComponent implements OnChanges {
     // the async codex effect, which leave the orbital geometry untouched.
     if (this.collisionBody !== body) {
       this.collisionBody = body;
-      const nowOverride = this.appService.nowOverride();
-      this.collisionStatus = this.orbitalRelations.detectCollisionStatus(
-        body, nowOverride ?? Date.now());
+      this.requestCollisionStatus(body);
     }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
@@ -948,6 +957,14 @@ export class SystemBodyComponent implements OnChanges {
     // Sync the cached collapse/expand-all state once the child components first render.
     afterNextRender(() => this.updateChildrenExpandedState());
 
+    // On teardown, invalidate any in-flight collision request (so a late worker response is dropped
+    // by the generation guard rather than written to a destroyed component) and cancel the pending
+    // skeleton timer.
+    this.destroyRef.onDestroy(() => {
+      this.collisionRequestId++;
+      clearTimeout(this.collisionPendingTimer);
+    });
+
     // Codex reference data loads asynchronously. When it changes, refresh the
     // codex-dependent biology signals (recomputed in ngOnChanges). untracked()
     // stops the effect from also re-running on body() input changes — Angular's
@@ -1214,10 +1231,23 @@ export class SystemBodyComponent implements OnChanges {
 
   /** Opens the collision dialog with this body's collision-candidate details. */
   public async showCollisionDialog(): Promise<void> {
-    const status = this.collisionStatus;
+    const status = this.collisionStatus();
     if (!status?.isCandidate) { return; }
-    const siblings = this.body().parent?.subBodies ?? [];
-    const now = Date.now();
+    // Snapshot the body once: the worker round-trip below is async, so re-reading this.body()
+    // afterwards could pick up a different body if the row's input is re-bound mid-flight, fusing
+    // two bodies into one dialog. Use `now` consistent with the badge's candidacy (honours the
+    // app-level time override) so the dialog's countdowns and now-marker match the badge.
+    const body = this.body();
+    const siblings = body.parent?.subBodies ?? [];
+    const now = this.appService.nowOverride() ?? Date.now();
+
+    // Both of these run the heavy orbital search, so compute them off the main thread before the
+    // dialog opens (one worker round-trip). The badge already knows this body is a candidate, so
+    // this only gathers the detail rows and the distance-over-time curves.
+    const [simultaneousCollisions, separationDiagram] = await Promise.all([
+      this.orbitalWorker.simultaneousCollisionsWithin(body, SIMULTANEOUS_COLLISION_HORIZON_DAYS, now),
+      this.buildCollisionDistanceDiagram(body, siblings, status, now),
+    ]);
 
     // Descriptive info for every collision candidate: each crossing partner from the upcoming
     // windows, the primary partner, and any simultaneous-cluster member — so the dialog can
@@ -1239,13 +1269,13 @@ export class SystemBodyComponent implements OnChanges {
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
-        bodyName: this.body().bodyData.name,
+        bodyName: body.bodyData.name,
         partnerName: status.partnerName,
         synodicPeriodDays: status.synodicPeriodDays,
         nextCollision: status.nextCollision,
         upcomingCollisions: status.upcomingCollisions,
         combinedRadiiKm: status.combinedRadiiKm,
-        bodyInfo: this.buildCollisionBodyInfo(this.body()),
+        bodyInfo: this.buildCollisionBodyInfo(body),
         partnerInfo: this.buildCollisionBodyInfo(
           siblings.find(s => s.bodyData.name === status.partnerName) ?? null
         ),
@@ -1253,8 +1283,8 @@ export class SystemBodyComponent implements OnChanges {
         systemPopulation: this.systemPopulation(),
         systemName: this.edGalaxyData()?.Name ?? '',
         simultaneousPartners: status.simultaneousPartners,
-        simultaneousCollisions: this.orbitalRelations.simultaneousCollisionsWithin(this.body(), SIMULTANEOUS_COLLISION_HORIZON_DAYS, now),
-        separationDiagram: this.buildCollisionDistanceDiagram(this.body(), siblings, status, now),
+        simultaneousCollisions,
+        separationDiagram,
       } satisfies CollisionDialogData,
     });
   }
@@ -1266,12 +1296,12 @@ export class SystemBodyComponent implements OnChanges {
    * marked (uncapped — not just the 10 table rows), so no in-view dip is left without a marker.
    * Returns null when no pair has the phase data needed to place the bodies in time.
    */
-  private buildCollisionDistanceDiagram(
+  private async buildCollisionDistanceDiagram(
     body: SystemBody,
     siblings: SystemBody[],
     status: CollisionStatus,
     now: number,
-  ): SynodicDiagramInput | null {
+  ): Promise<SynodicDiagramInput | null> {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
     // Timeline: ten synodic periods — long enough to show the conjunction dips recurring and
@@ -1282,8 +1312,8 @@ export class SystemBodyComponent implements OnChanges {
     const endMs = now + spanMs;
 
     // Every contact inside the window — uncapped — grouped by the partner each is with, so dips
-    // beyond the table's 10-row limit are still marked.
-    const windowContacts = this.orbitalRelations.upcomingContactsWithin(body, spanMs / MS_PER_DAY, now);
+    // beyond the table's 10-row limit are still marked. Runs off the main thread.
+    const windowContacts = await this.orbitalWorker.upcomingContactsWithin(body, spanMs / MS_PER_DAY, now);
 
     // Distinct siblings this body collides with in-window, plus any from the (capped) status list
     // and the primary partner, so a curve is drawn even when no contact lands inside the window.
@@ -1293,12 +1323,13 @@ export class SystemBodyComponent implements OnChanges {
     if (partnerNames.size === 0 && status.partnerName) { partnerNames.add(status.partnerName); }
     if (partnerNames.size === 0) { return null; }
 
-    const series: SynodicDiagramInput['series'] = [];
-    for (const name of partnerNames) {
+    // Sample each partner's separation curve off the main thread; the calls are independent, so
+    // run them concurrently and preserve partner order when assembling the series below.
+    const built = await Promise.all([...partnerNames].map(async name => {
       const sibling = siblings.find(s => s.bodyData.name === name);
-      if (!sibling) { continue; }
-      const samplesArr = this.orbitalRelations.separationSeries(body.bodyData, sibling.bodyData, now, endMs, COLLISION_DIAGRAM_SAMPLES);
-      if (samplesArr.length === 0) { continue; }
+      if (!sibling) { return null; }
+      const samplesArr = await this.orbitalWorker.separationSeries(body.bodyData, sibling.bodyData, now, endMs, COLLISION_DIAGRAM_SAMPLES);
+      if (samplesArr.length === 0) { return null; }
       // Every contact window already carries this pair's contact threshold (combinedRadiiKm), so
       // prefer it; fall back to the status-level value, then the bare radius sum, only if absent.
       const partnerWindows = windowContacts.filter(w => w.partnerName === name);
@@ -1310,9 +1341,10 @@ export class SystemBodyComponent implements OnChanges {
         tMs: (w.start.getTime() + w.end.getTime()) / 2,
         sepKm: w.minSeparationKm,
       }));
-      series.push({ partnerName: name, combinedRadiiKm, samples: samplesArr, contacts });
-    }
+      return { partnerName: name, combinedRadiiKm, samples: samplesArr, contacts };
+    }));
 
+    const series: SynodicDiagramInput['series'] = built.filter((s): s is NonNullable<typeof s> => s !== null);
     return series.length > 0 ? { startMs: now, endMs, nowMs: now, series } : null;
   }
 
@@ -1648,9 +1680,52 @@ export class SystemBodyComponent implements OnChanges {
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
-  public collisionStatus: CollisionStatus | null = null;
-  /** The body `collisionStatus` was last computed for, to skip recompute on unrelated re-renders. */
+  /**
+   * Result of the off-thread collision search for the current body, or null while it is still
+   * running (or when the body isn't a collision candidate). A signal, not a plain field, because
+   * the worker resolves asynchronously and setting it is what schedules change detection under
+   * zoneless. See {@link requestCollisionStatus}.
+   */
+  public readonly collisionStatus = signal<CollisionStatus | null>(null);
+  /** True once a collision search has been outstanding longer than {@link COLLISION_SKELETON_DELAY_MS}. */
+  public readonly collisionPending = signal(false);
+  /** The body `collisionStatus` was last requested for, to skip recompute on unrelated re-renders. */
   private collisionBody: SystemBody | null = null;
+  /** Generation token: increments per request so a stale worker response for a superseded body is dropped. */
+  private collisionRequestId = 0;
+  /** Timer that reveals the pending skeleton; cleared when the result arrives or the component is destroyed. */
+  private collisionPendingTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Runs {@link OrbitalRelationsCore.detectCollisionStatus} for `body` off the main thread and
+   * lands the result in {@link collisionStatus}. Since the search is now asynchronous, a per-request
+   * generation token ({@link collisionRequestId}) discards a response whose body has since been
+   * superseded (the row's input flipped while the worker was busy), and the pending skeleton is
+   * only revealed if the worker hasn't answered within {@link COLLISION_SKELETON_DELAY_MS}.
+   */
+  private requestCollisionStatus(body: SystemBody): void {
+    const requestId = ++this.collisionRequestId;
+    this.collisionStatus.set(null);
+    const now = this.appService.nowOverride() ?? Date.now();
+
+    clearTimeout(this.collisionPendingTimer);
+    this.collisionPendingTimer = setTimeout(() => {
+      if (requestId === this.collisionRequestId) { this.collisionPending.set(true); }
+    }, COLLISION_SKELETON_DELAY_MS);
+
+    this.orbitalWorker.detectCollisionStatus(body, now)
+      .then(status => {
+        if (requestId !== this.collisionRequestId) { return; }
+        clearTimeout(this.collisionPendingTimer);
+        this.collisionStatus.set(status);
+        this.collisionPending.set(false);
+      })
+      .catch(() => {
+        if (requestId !== this.collisionRequestId) { return; }
+        clearTimeout(this.collisionPendingTimer);
+        this.collisionPending.set(false);
+      });
+  }
 
   /**
    * Opens the Lagrange-points diagram for this body's co-orbital family. Resolves the

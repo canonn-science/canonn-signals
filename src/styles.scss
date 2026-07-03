@@ -138,6 +138,36 @@ body {
   border-radius: 4px;
 }
 
+// Subtle placeholder shown on a body's collision badge while the off-thread orbital search runs
+// (see SystemBodyComponent.collisionPending). It carries a hidden "Collision" label so it occupies
+// exactly the space the real badge will, avoiding a layout shift when the result arrives. Palette
+// mirrors the lazy-dialog skeleton for a consistent loading affordance.
+.badge-skeleton {
+  color: transparent;
+  cursor: default;
+  background-color: rgba(148, 163, 184, 0.16);
+  background-image: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.16) 25%,
+    rgba(148, 163, 184, 0.34) 37%,
+    rgba(148, 163, 184, 0.16) 63%
+  );
+  background-size: 400% 100%;
+  animation: badge-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes badge-skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+// Honour reduced-motion: keep the placeholder, drop the sweep.
+@media (prefers-reduced-motion: reduce) {
+  .badge-skeleton {
+    animation: none;
+  }
+}
+
 a {
   text-decoration: none;
 }

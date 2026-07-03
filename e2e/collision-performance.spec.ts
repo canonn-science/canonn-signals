@@ -4,20 +4,22 @@ import { loadFixtureSystem } from './support/system-fixture';
 /**
  * Performance guard for the 3D collision-candidate search.
  *
- * `OrbitalRelationsService.detectCollisionStatus` runs a synchronous orbit-to-orbit
- * proximity scan for every crossing-orbit sibling of every body, on the main thread,
- * during render. A past regression made the coarse sampling step adaptive down to a
- * 0.05° floor, which for any orbit beyond ~0.1 AU exploded the inner double-loop to
- * 7200² ≈ 52M iterations (~200 ms) *per sibling pair* — freezing the UI for seconds.
+ * `OrbitalRelationsCore.detectCollisionStatus` runs an orbit-to-orbit proximity scan for
+ * every crossing-orbit sibling of every body. It now runs off the main thread, in the
+ * shared collision web worker (via `OrbitalWorkerService`), precisely so this heavy work
+ * can never freeze the UI. This test guards both that boundary and the algorithm's own
+ * bound: a past regression made the coarse sampling step adaptive down to a 0.05° floor,
+ * which for any orbit beyond ~0.1 AU exploded the inner double-loop to 7200² ≈ 52M
+ * iterations (~200 ms) *per sibling pair*; were that work ever moved back on-thread, or the
+ * grid unbounded again, this fixture would block for seconds in a single task.
  *
  * This test loads {@link FIXTURE}, a synthetic system of five planets that share one
  * orbit (so every pair is a guaranteed collision candidate) at 1 AU with small radii —
  * exactly the geometry that drove the step to its floor. It then asserts, via the
  * browser's Long Tasks API, that no single main-thread task during the render exceeds
- * {@link MAX_TASK_MS}. With the regression this fixture blocks for several seconds in a
- * single task; with the bounded grid it stays well under the budget (tens of ms of
- * collision work). This is the "time limit for operations": rendering a collision-heavy
- * system must never monopolise the main thread past the budget.
+ * {@link MAX_TASK_MS}. With the search off-thread and the grid bounded, the main thread
+ * stays well under the budget. This is the "time limit for operations": rendering a
+ * collision-heavy system must never monopolise the main thread past the budget.
  *
  * Chromium-only: the Long Tasks API (`PerformanceObserver` with `entryType: 'longtask'`)
  * is not implemented in Firefox.
