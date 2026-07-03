@@ -66,7 +66,7 @@ const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
  */
 const COLLISION_DIAGRAM_SAMPLES = 1000;
 
-/** Rings below this surface density (kg/km²) are considered invisible. */
+/** Rings below this surface density (Mt/km²) are considered invisible. */
 const INVISIBLE_RING_MAX_DENSITY = 0.1;
 /** Rings wider than this (km) are considered invisible when density is also low. */
 const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
@@ -84,6 +84,17 @@ const RACING_RINGS_MAX_GAP_KM = 50;
  * may be adjusted after in-game observations.
  */
 const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
+
+/**
+ * Body-radius multiple below which a ring system's total span counts as narrow. Used
+ * as the Taylor ring badge's upper threshold, and as the Pauper ring badge's lower
+ * bound (a span this narrow is a Taylor ring, not a Pauper ring).
+ */
+const NARROW_RING_SPAN_RADII = 0.25;
+/** Body-radii the innermost visible ring edge must clear for the Pauper ring badge (unusually distant). */
+const PAUPER_RING_MIN_INNER_EDGE_RADII = 14;
+/** Maximum span (body radii) for the Pauper ring badge — no wider than one body diameter. */
+const PAUPER_RING_MAX_SPAN_RADII = 2;
 
 @Component({
   selector: 'app-system-body',
@@ -184,6 +195,10 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingVelocityDiffTooltip = signal('');
   public readonly isRacingRings = signal(false);
   public readonly racingRingsTooltip = signal('');
+  public readonly isTaylorRing = signal(false);
+  public readonly taylorRingTooltip = signal('');
+  public readonly isPauperRing = signal(false);
+  public readonly pauperRingTooltip = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -457,6 +472,19 @@ export class SystemBodyComponent implements OnChanges {
     } else {
       this.racingRingsTooltip.set('');
     }
+
+    // Taylor (unusually narrow) / Pauper (unusually wide and distant) ring badges.
+    const ringClass = this.classifyRingSystem(body);
+    this.isTaylorRing.set(ringClass?.isTaylor ?? false);
+    this.isPauperRing.set(ringClass?.isPauper ?? false);
+    this.taylorRingTooltip.set(ringClass?.isTaylor
+      ? `Taylor ring: total ring span is ${ringClass.span.toFixed(0)} km, under 25% of the body's radius `
+        + `(${(NARROW_RING_SPAN_RADII * ringClass.parentRadius).toFixed(0)} km) — unusually narrow`
+      : '');
+    this.pauperRingTooltip.set(ringClass?.isPauper
+      ? `Pauper ring: innermost edge sits ${(ringClass.innermostInner / ringClass.parentRadius).toFixed(1)}× the body's radius out, `
+        + `spanning only ${ringClass.span.toFixed(0)} km — unusually wide and distant`
+      : '');
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -1478,6 +1506,38 @@ export class SystemBodyComponent implements OnChanges {
   /** Shared invisibility heuristic used for ring stats, badges, and dialog explanations. */
   private isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
     return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
+  }
+
+  /**
+   * Classifies `body`'s ring system as Taylor (unusually narrow) and/or Pauper (unusually
+   * wide and distant), or null when `body` isn't a visible ring or the classification can't
+   * be computed. Both badges are derived from the same "span" of the body's *visible* rings
+   * (invisible rings — see {@link isInvisibleRing} — are stripped first), so the result is
+   * identical for every ring belonging to the same parent and the badge shows on all of them.
+   */
+  private classifyRingSystem(body: SystemBody): { isTaylor: boolean; isPauper: boolean; span: number; innermostInner: number; parentRadius: number } | null {
+    const bd = body.bodyData;
+    if (bd.type !== BODY_TYPE.Ring || !body.parent || this.isInvisibleRing(bd)) { return null; }
+
+    const parentRadius = this.physics.getParentRadiusKm(body);
+    if (!parentRadius) { return null; }
+
+    const visibleRings = body.parent.subBodies
+      .filter(s => s.bodyData.type === BODY_TYPE.Ring && !this.isInvisibleRing(s.bodyData));
+    if (visibleRings.length === 0) { return null; }
+
+    const innermostInner = Math.min(...visibleRings.map(r => r.bodyData.innerRadius ?? 0));
+    const outermostOuter = Math.max(...visibleRings.map(r => r.bodyData.outerRadius ?? 0));
+    const span = outermostOuter - innermostInner;
+
+    const isTaylor = span < NARROW_RING_SPAN_RADII * parentRadius;
+    // `span > NARROW_RING_SPAN_RADII * parentRadius` here is what keeps this mutually
+    // exclusive with isTaylor above (span < the same threshold).
+    const isPauper = innermostInner >= PAUPER_RING_MIN_INNER_EDGE_RADII * parentRadius
+      && span <= PAUPER_RING_MAX_SPAN_RADII * parentRadius
+      && span > NARROW_RING_SPAN_RADII * parentRadius;
+
+    return { isTaylor, isPauper, span, innermostInner, parentRadius };
   }
 
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {

@@ -729,6 +729,111 @@ describe('SystemBodyComponent (extended coverage)', () => {
         expect(component.isRacingRings()).toBe(false);               // invisible guard fires
       });
     });
+
+    describe('Taylor / Pauper ring badges', () => {
+      // Parent radius R = 50 000 km throughout, so:
+      // Taylor threshold (span < 0.25R)         = 12 500 km
+      // Pauper inner-edge threshold (≥ 14R)     = 700 000 km
+      // Pauper max span (≤ 2R)                  = 100 000 km
+      function makeRingSet(defs: Array<{ name: string; inner: number; outer: number; mass?: number }>) {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const rings = defs.map(d => makeBody(
+          { name: d.name, type: 'Ring', subType: 'Rocky', innerRadius: d.inner, outerRadius: d.outer, mass: d.mass ?? 1e15 },
+          parent,
+        ));
+        parent.subBodies.push(...rings);
+        return { parent, rings };
+      }
+
+      it('marks a single narrow ring as Taylor', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 70000 }]); // width 10 000 < 12 500
+        render(ringA);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
+        expect(component.taylorRingTooltip()).toContain('Taylor ring');
+      });
+
+      it('does not mark a single mid-width ring as Taylor or Pauper', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 90000 }]); // width 30 000
+        render(ringA);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('marks every ring in a tight multi-ring system as Taylor (total span < 0.25R)', () => {
+        const { rings: [a, b, c] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 63000 },
+          { name: 'B Ring', inner: 63500, outer: 66000 },
+          { name: 'C Ring', inner: 66500, outer: 70000 }, // span = 70 000 − 60 000 = 10 000 < 12 500
+        ]);
+        render(a); expect(component.isTaylorRing()).toBe(true);
+        render(b); expect(component.isTaylorRing()).toBe(true);
+        render(c); expect(component.isTaylorRing()).toBe(true);
+      });
+
+      it('marks a single wide, distant ring as Pauper', () => {
+        // inner 750 000 ≥ 700 000, span 50 000 (≤ 100 000, > 12 500)
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 750000, outer: 800000, mass: 1e18 }]);
+        render(ringA);
+        expect(component.isPauperRing()).toBe(true);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.pauperRingTooltip()).toContain('Pauper ring');
+      });
+
+      it('does not mark a ring as Pauper when its span exceeds 2R', () => {
+        // inner 750 000 ≥ 700 000, but span 150 000 > 100 000
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 750000, outer: 900000, mass: 1e18 }]);
+        render(ringA);
+        expect(component.isPauperRing()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+      });
+
+      it('does not mark a ring as Pauper when its inner edge is under 14R', () => {
+        // inner 600 000 < 700 000, span 50 000 (≤ 100 000, > 12 500)
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 600000, outer: 650000, mass: 1e18 }]);
+        render(ringA);
+        expect(component.isPauperRing()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+      });
+
+      it('treats a span of exactly 0.25R as neither Taylor nor Pauper (both thresholds are strict)', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 700000, outer: 712500, mass: 1e18 }]); // span = 12 500 exactly
+        render(ringA);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('strips an invisible outer ring before computing the span, so the inner ring still qualifies as Taylor', () => {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60000, outerRadius: 70000, mass: 1e15 }, parent); // width 10 000 < 12 500, visible
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 2000000, outerRadius: 5000000, mass: 1 }, parent); // wide + low density → invisible
+        parent.subBodies.push(ringA, ringB);
+
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+
+        render(ringB);
+        expect(component.isRingNotVisible()).toBe(true);
+        expect(component.isTaylorRing()).toBe(false); // invisible rings don't carry the badge themselves
+      });
+
+      it('does not classify a body whose only ring is invisible', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 5000000, mass: 1 }]); // wide + low density
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(true);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('does not classify a non-ring body', () => {
+        render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+    });
   });
 
   describe('Roche / shepherding for a moon', () => {
