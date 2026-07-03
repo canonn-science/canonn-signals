@@ -44,8 +44,9 @@ describe('buildConversions', () => {
   it('converts duration from days, centuries-first', () => {
     const rows = buildConversions('duration', 1);
     expect(rows.map(r => r.unit)).toEqual(
-      ['Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds'],
+      ['Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds', 'Milliseconds'],
     );
+    expect(copyNum(rows, 'Milliseconds')).toBeCloseTo(86400000, 6);
     expect(copyNum(rows, 'Seconds')).toBeCloseTo(86400, 6);
     expect(copyNum(rows, 'Minutes')).toBeCloseTo(1440, 6);
     expect(copyNum(rows, 'Hours')).toBeCloseTo(24, 6);
@@ -53,6 +54,16 @@ describe('buildConversions', () => {
     expect(copyNum(rows, 'Years')).toBeCloseTo(1 / 365.25, 9);
     expect(copyNum(rows, 'Decades')).toBeCloseTo(1 / (10 * 365.25), 9);
     expect(copyNum(rows, 'Centuries')).toBeCloseTo(1 / (100 * 365.25), 9);
+  });
+
+  it('shows a millisecond pulsar period readably in ms while tiny larger units fall back to scientific notation', () => {
+    // A 1.4 ms rotation period expressed in days (the base unit).
+    const rows = buildConversions('duration', 1.4 / 86400000);
+    expect(copyNum(rows, 'Milliseconds')).toBeCloseTo(1.4, 9);
+    // The Milliseconds row reads as a plain, human-scale value...
+    expect(display(rows, 'Milliseconds')).toBe('1.4');
+    // ...while the tiny fraction-of-a-century value is shown in scientific notation.
+    expect(display(rows, 'Centuries')).toMatch(/e-\d+$/);
   });
 
   it('converts mass from kilograms', () => {
