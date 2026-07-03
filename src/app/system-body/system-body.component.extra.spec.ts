@@ -817,6 +817,38 @@ describe('SystemBodyComponent (extended coverage)', () => {
         expect(component.pauperRingTooltip()).toContain('Pauper ring');
       });
 
+      it('classifies a real body\'s two-ring system as Pauper on both rings', () => {
+        // Real Canonn data: Nuekuae ZG-K d9-268 C 3 a (Planet, radius 3 163.639 km) with two
+        // visible rings — raw innerRadius/outerRadius in metres, converted to km the same way
+        // the app's own ring loader does:
+        //   A Ring: 59 133 000–60 317 000 m -> 59 133–60 317 km
+        //   B Ring: 60 417 000–65 344 000 m -> 60 417–65 344 km
+        //   R = 3163.639 km   0.25R = 790.90975 km   14R = 44 290.946 km   2R = 6 327.278 km
+        //   span = outermost outer edge (65 344) − innermost inner edge (59 133) = 6 211 km
+        // Inner edge 59 133 km ≥ 14R, span 6 211 km ≤ 2R (just ~116 km under), and span > 0.25R
+        // — all three Pauper conditions hold, and the badge shows on both rings.
+        const parent = makeBody({ name: 'Nuekuae ZG-K d9-268 C 3 a', type: 'Planet', radius: 3163.639 });
+        const ringA = makeBody({
+          name: 'Nuekuae ZG-K d9-268 C 3 a A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 59133, outerRadius: 60317, mass: 4432900000,
+        }, parent);
+        const ringB = makeBody({
+          name: 'Nuekuae ZG-K d9-268 C 3 a B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60417, outerRadius: 65344, mass: 19801000000,
+        }, parent);
+        parent.subBodies.push(ringA, ringB);
+
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(true);
+
+        render(ringB);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(true);
+      });
+
       it('does not mark a single mid-width ring as Taylor or Pauper', () => {
         const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 90000 }]); // width 30 000
         render(ringA);
@@ -833,6 +865,38 @@ describe('SystemBodyComponent (extended coverage)', () => {
         render(a); expect(component.isTaylorRing()).toBe(true);
         render(b); expect(component.isTaylorRing()).toBe(true);
         render(c); expect(component.isTaylorRing()).toBe(true);
+      });
+
+      it('classifies a real body\'s two-ring system as Taylor on both rings (exactly the "2 or more visible rings" case)', () => {
+        // Real Canonn data: Dryao Phylio AA-A h662 BC 2 (gas giant, radius 67 890.304 km) with
+        // two visible rings — raw innerRadius/outerRadius in metres, converted to km the same
+        // way the app's own ring loader does:
+        //   A Ring: 104 180 000–104 920 000 m -> 104 180–104 920 km
+        //   B Ring: 104 930 000–117 400 000 m -> 104 930–117 400 km
+        //   R = 67 890.304 km   0.25R = 16 972.576 km
+        //   span = outermost outer edge (117 400) − innermost inner edge (104 180) = 13 220 km
+        // 13 220 km < 0.25R -> Taylor, and since the span (not either ring's own width) drives
+        // the "2 or more visible rings" rule, the badge shows on both A and B.
+        const parent = makeBody({ name: 'Dryao Phylio AA-A h662 BC 2', type: 'Planet', radius: 67890.304 });
+        const ringA = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 104180, outerRadius: 104920, mass: 50125000000,
+        }, parent);
+        const ringB = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 B Ring', type: 'Ring', subType: 'Icy',
+          innerRadius: 104930, outerRadius: 117400, mass: 1240700000000,
+        }, parent);
+        parent.subBodies.push(ringA, ringB);
+
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
+
+        render(ringB);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
       });
 
       it('marks a single wide, distant ring as Pauper', () => {
