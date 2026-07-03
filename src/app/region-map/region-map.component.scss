@@ -11,6 +11,21 @@
     height: fit-content;
 }
 
+.region-map-slot {
+    width: 100%;
+}
+
+// Square placeholder matching the loaded map's footprint (square viewBox, rendered at 100% width
+// with the same 8px corner radius), so swapping the SVG in causes no vertical layout shift. Dark
+// tint so it reads as the near-black map over the light-grey .system-data panel it sits on.
+.region-map-skeleton {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    --skeleton-base: var(--skeleton-tone-map-base);
+    --skeleton-highlight: var(--skeleton-tone-map-highlight);
+}
+
 .region-map {
     width: 100%;
     overflow: visible;

@@ -49,12 +49,12 @@ describe('LazyDialogHostComponent', () => {
     build({ loader: () => new Promise<Type<unknown>>(() => { /* never resolves */ }), data: {} });
 
     fixture.detectChanges();
-    expect(query('.lazy-skeleton')).toBeNull();
+    expect(query('.skeleton')).toBeNull();
 
     vi.advanceTimersByTime(SKELETON_DELAY_MS);
     fixture.detectChanges();
-    expect(query('.lazy-skeleton--title')).not.toBeNull();
-    expect(query('.lazy-skeleton--line')).not.toBeNull();
+    expect(query('.skeleton-title')).not.toBeNull();
+    expect(query('.skeleton-line')).not.toBeNull();
     // Accessible name is present even though the shimmer bars are aria-hidden.
     expect(text()).toContain('Loading');
   });
@@ -65,7 +65,7 @@ describe('LazyDialogHostComponent', () => {
 
     vi.advanceTimersByTime(SKELETON_DELAY_MS);
     fixture.detectChanges();
-    expect(query('.lazy-skeleton--diagram')).not.toBeNull();
+    expect(query('.skeleton-diagram')).not.toBeNull();
   });
 
   it('swaps in the loaded component without ever showing a skeleton on a fast load', async () => {
@@ -79,7 +79,7 @@ describe('LazyDialogHostComponent', () => {
     // The delay timer may still fire, but the loaded body takes precedence over the skeleton.
     vi.advanceTimersByTime(SKELETON_DELAY_MS);
     fixture.detectChanges();
-    expect(query('.lazy-skeleton')).toBeNull();
+    expect(query('.skeleton')).toBeNull();
   });
 
   it('passes the wrapped data to the loaded body as MAT_DIALOG_DATA', async () => {
@@ -98,7 +98,7 @@ describe('LazyDialogHostComponent', () => {
     fixture.detectChanges();
 
     expect(text()).toContain('failed to load');
-    expect(query('.lazy-skeleton')).toBeNull();
+    expect(query('.skeleton')).toBeNull();
   });
 
   it('clears the pending skeleton timer on destroy', () => {

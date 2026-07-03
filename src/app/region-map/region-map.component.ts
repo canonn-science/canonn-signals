@@ -1,6 +1,6 @@
 import {
   Component, ChangeDetectionStrategy, ElementRef, Injector,
-  OnChanges, afterNextRender, inject, input, output, viewChild,
+  OnChanges, afterNextRender, inject, input, output, signal, viewChild,
 } from '@angular/core';
 import { AppService, IndependentOutpost } from '../app.service';
 import { logger } from '../data/logger';
@@ -36,7 +36,17 @@ const FULL_VIEWBOX = `0 0 ${MAP_SIZE} ${MAP_SIZE}`;
  */
 @Component({
   selector: 'app-region-map',
-  template: '<div #regionMapContainer class="region-map"></div>',
+  // A square skeleton reserves the map's height while the SVG loads, so the data columns and
+  // body tree below don't jump when it injects. The container is always present (never inside the
+  // @if) so `regionMapContainer` resolves before `loadRegionMap` runs.
+  template: `
+    <div class="region-map-slot">
+      @if (!mapLoaded()) {
+        <div class="region-map-skeleton skeleton" aria-hidden="true"></div>
+      }
+      <div #regionMapContainer class="region-map"></div>
+    </div>
+  `,
   styleUrl: './region-map.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -55,6 +65,8 @@ export class RegionMapComponent implements OnChanges {
   private readonly GNOSIS_CACHE_DURATION = 3600000; // 1 hour in milliseconds
   /** Guards against issuing a second SVG fetch while the first is still in flight. */
   private svgLoading = false;
+  /** False until the map SVG is injected (or the load fails); drives the reserved-space skeleton. */
+  readonly mapLoaded = signal(false);
 
   public ngOnChanges(): void {
     // Render after the view has updated so the container element is available.
@@ -105,6 +117,9 @@ export class RegionMapComponent implements OnChanges {
       svgContent = await response.text();
     } catch (error) {
       this.svgLoading = false;
+      // Clear the skeleton even on failure so it doesn't shimmer forever; the map slot just
+      // stays empty (rare — the SVG is a bundled asset).
+      this.mapLoaded.set(true);
       logger.error('Error loading region map:', error);
       return;
     }
@@ -145,7 +160,9 @@ export class RegionMapComponent implements OnChanges {
       }
 
       this.highlightRegion();
+      this.mapLoaded.set(true);
     } catch (error) {
+      this.mapLoaded.set(true);
       logger.error('Error rendering region map:', error);
     }
   }

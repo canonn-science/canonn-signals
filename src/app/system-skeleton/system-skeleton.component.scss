@@ -1,0 +1,148 @@
+// Mirrors the real .system-container chrome (home.component.scss) — the dark title bar, light-grey
+// data panel, grey completeness bar and dark body rows — so the skeleton reads as a real system and
+// the swap to real data doesn't shift the page. Shimmer tone is retinted per surface (darker on the
+// light-grey panels, the default light slate on the dark surfaces) so placeholders stay visible.
+.skeleton-system {
+  display: flex;
+  justify-content: center;
+}
+
+.skeleton-system-inner {
+  width: 80%;
+  margin-bottom: 24px;
+}
+
+// --- Info box: dark title bar flush against the light-grey data panel ---
+.skeleton-title-bar {
+  padding: 8px;
+  background-color: var(--color-surface);
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+.skeleton-title-name {
+  display: block;
+  height: 1.4rem;
+  width: 32%;
+}
+
+.skeleton-data {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 12px 16px;
+  background-color: rgba(150, 150, 150, 0.7);
+  border: 1px solid var(--color-surface);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  // Darker shimmer so placeholders read over the light-grey surface.
+  --skeleton-base: var(--skeleton-tone-on-light-base);
+  --skeleton-highlight: var(--skeleton-tone-on-light-highlight);
+}
+
+// Square block at the region-map's own width band; darker still to resemble the near-black map.
+.skeleton-map {
+  width: 20%;
+  min-width: 200px;
+  max-width: 300px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  align-self: flex-start;
+  border-radius: 8px;
+  --skeleton-base: var(--skeleton-tone-map-base);
+  --skeleton-highlight: var(--skeleton-tone-map-highlight);
+}
+
+.skeleton-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.skeleton-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-panel-header {
+  height: 1rem;
+  width: 45%;
+  margin-bottom: 4px;
+}
+
+.skeleton-panel-row {
+  display: flex;
+  gap: 12px;
+}
+
+// --- Completeness bar (grey box) ---
+.skeleton-completeness {
+  margin-top: 32px;
+  padding: 8px;
+  background-color: rgba(150, 150, 150, 0.7);
+  border-radius: 4px;
+  --skeleton-base: var(--skeleton-tone-on-light-base);
+  --skeleton-highlight: var(--skeleton-tone-on-light-highlight);
+}
+
+.skeleton-completeness-bar {
+  height: 18px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+// --- Body tree rows (dark surface, like each body's .body-title) ---
+.skeleton-bodies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.skeleton-body-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  padding: 8px;
+  background-color: var(--color-surface);
+  border-radius: 4px;
+}
+
+.skeleton-body-name {
+  width: 180px;
+  max-width: 40%;
+}
+
+.skeleton-chip {
+  height: 14px;
+  width: 52px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+// Mirror the real layout's phone breakpoint (home.component.scss @ 600px): full-width container, the
+// map stacked above the columns, and matching padding/gap — so the swap to real data doesn't reflow.
+@media (max-width: 600px) {
+  .skeleton-system {
+    padding: 0 8px;
+  }
+
+  .skeleton-system-inner {
+    width: 100%;
+  }
+
+  .skeleton-data {
+    flex-direction: column;
+    padding: 8px;
+    gap: 12px;
+  }
+
+  .skeleton-map {
+    width: 100%;
+    max-width: none;
+  }
+}

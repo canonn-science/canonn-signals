@@ -1,0 +1,43 @@
+<div class="skeleton-system">
+  <span class="sr-only" role="status">Loading system data…</span>
+  <div class="skeleton-system-inner" aria-hidden="true">
+    <!-- System info box: dark title bar + light-grey data panel (mirrors .system-info-box) -->
+    <div class="skeleton-info-box">
+      <div class="skeleton-title-bar">
+        <span class="skeleton skeleton-line skeleton-title-name"></span>
+      </div>
+      <div class="skeleton-data">
+        <div class="skeleton skeleton-block skeleton-map"></div>
+        <div class="skeleton-columns">
+          @for (panel of panels; track panel) {
+            <div class="skeleton-panel">
+              <span class="skeleton skeleton-line skeleton-panel-header"></span>
+              @for (row of panelRows; track row) {
+                <div class="skeleton-panel-row">
+                  <span class="skeleton skeleton-line skeleton-w40"></span>
+                  <span class="skeleton skeleton-line skeleton-w60"></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- System completeness bar (mirrors .system-completeness) -->
+    <div class="skeleton-completeness">
+      <span class="skeleton skeleton-line skeleton-completeness-bar"></span>
+    </div>
+
+    <!-- Body tree rows (mirrors each body's .body-title) -->
+    <div class="skeleton-bodies">
+      @for (body of bodyRows; track body) {
+        <div class="skeleton-body-row">
+          <span class="skeleton skeleton-line skeleton-body-name"></span>
+          <span class="skeleton skeleton-chip"></span>
+          <span class="skeleton skeleton-chip"></span>
+        </div>
+      }
+    </div>
+  </div>
+</div>
