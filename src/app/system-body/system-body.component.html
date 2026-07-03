@@ -30,12 +30,14 @@
       <span class="badge badge-orange" [matTooltip]="racingRingsTooltip()" matTooltipClass="multiline-tooltip">Racing Rings</span>
       }
       @if (isTaylorRing()) {
-      <span class="badge badge-blue" [matTooltip]="taylorRingTooltip()" matTooltipClass="multiline-tooltip">
+      <span class="badge badge-blue clickable" [matTooltip]="taylorRingTooltip() + ' — click for an explanation'"
+        matTooltipClass="multiline-tooltip" (click)="showRingClassificationDialog('taylor')">
         <img alt="" src="assets/icons/taylor-ring.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
       </span>
       }
       @if (isPauperRing()) {
-      <span class="badge badge-blue" [matTooltip]="pauperRingTooltip()" matTooltipClass="multiline-tooltip">
+      <span class="badge badge-blue clickable" [matTooltip]="pauperRingTooltip() + ' — click for an explanation'"
+        matTooltipClass="multiline-tooltip" (click)="showRingClassificationDialog('pauper')">
         <img alt="" src="assets/icons/pauper-ring.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
       </span>
       }

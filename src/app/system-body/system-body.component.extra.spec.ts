@@ -833,6 +833,45 @@ describe('SystemBodyComponent (extended coverage)', () => {
         expect(component.isTaylorRing()).toBe(false);
         expect(component.isPauperRing()).toBe(false);
       });
+
+      it('opens the Taylor ring explanation dialog with the classification values', async () => {
+        const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60000, outerRadius: 70000, mass: 1e15 }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        await component.showRingClassificationDialog('taylor');
+        const data = lastDialogData();
+        expect(data.kind).toBe('taylor');
+        expect(data.bodyName).toBe('Gas Giant');
+        expect(data.ringName).toBe('A');
+        expect(data.parentRadius).toBe(50000);
+        expect(data.span).toBe(10000);
+        expect(data.rings).toEqual([{ name: 'A', innerRadius: 60000, outerRadius: 70000 }]);
+        expect(data.narrowThresholdKm).toBe(12500);
+      });
+
+      it('opens the Pauper ring explanation dialog with the classification values', async () => {
+        const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 750000, outerRadius: 800000, mass: 1e18 }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        await component.showRingClassificationDialog('pauper');
+        const data = lastDialogData();
+        expect(data.kind).toBe('pauper');
+        expect(data.innermostInner).toBe(750000);
+        expect(data.outermostOuter).toBe(800000);
+        expect(data.pauperInnerEdgeThresholdKm).toBe(700000);
+        expect(data.pauperMaxSpanKm).toBe(100000);
+      });
+
+      it('does not open a dialog when the ring no longer qualifies for either badge', async () => {
+        const before = dialogOpenCalls;
+        render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
+        await component.showRingClassificationDialog('taylor');
+        expect(dialogOpenCalls).toBe(before);
+      });
     });
   });
 

@@ -23,6 +23,7 @@ import { GENUS_NAMES } from '../data/genus';
 import type { OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
 import type { TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
+import type { RingClassificationDialogData, RingClassificationRingInfo } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
 import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
 import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
 import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
@@ -1062,6 +1063,35 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
+  /** Opens the explanation dialog for the Taylor (narrow) or Pauper (wide, distant) ring badge. */
+  public async showRingClassificationDialog(kind: 'taylor' | 'pauper'): Promise<void> {
+    const body = this.body();
+    const ringClass = this.classifyRingSystem(body);
+    if (!ringClass) { return; }
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/ring-classification-dialog/ring-classification-dialog.component').then(m => m.RingClassificationDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        kind,
+        bodyName: body.parent?.bodyData.name ?? '',
+        ringName: body.bodyData.name.replace('Ring', '').trim(),
+        parentRadius: ringClass.parentRadius,
+        rings: ringClass.rings,
+        span: ringClass.span,
+        innermostInner: ringClass.innermostInner,
+        outermostOuter: ringClass.outermostOuter,
+        narrowThresholdKm: NARROW_RING_SPAN_RADII * ringClass.parentRadius,
+        pauperInnerEdgeThresholdKm: PAUPER_RING_MIN_INNER_EDGE_RADII * ringClass.parentRadius,
+        pauperMaxSpanKm: PAUPER_RING_MAX_SPAN_RADII * ringClass.parentRadius,
+      } satisfies RingClassificationDialogData,
+    });
+  }
+
   /** Opens the Roche-limit chart dialog with the prepared chart data. */
   private async openRocheLimitDialog(data: RocheChartData): Promise<void> {
     openLazyDialog(this.dialog, {
@@ -1515,7 +1545,10 @@ export class SystemBodyComponent implements OnChanges {
    * (invisible rings — see {@link isInvisibleRing} — are stripped first), so the result is
    * identical for every ring belonging to the same parent and the badge shows on all of them.
    */
-  private classifyRingSystem(body: SystemBody): { isTaylor: boolean; isPauper: boolean; span: number; innermostInner: number; parentRadius: number } | null {
+  private classifyRingSystem(body: SystemBody): {
+    isTaylor: boolean; isPauper: boolean; span: number; innermostInner: number; outermostOuter: number;
+    parentRadius: number; rings: RingClassificationRingInfo[];
+  } | null {
     const bd = body.bodyData;
     if (bd.type !== BODY_TYPE.Ring || !body.parent || this.isInvisibleRing(bd)) { return null; }
 
@@ -1523,7 +1556,8 @@ export class SystemBodyComponent implements OnChanges {
     if (!parentRadius) { return null; }
 
     const visibleRings = body.parent.subBodies
-      .filter(s => s.bodyData.type === BODY_TYPE.Ring && !this.isInvisibleRing(s.bodyData));
+      .filter(s => s.bodyData.type === BODY_TYPE.Ring && !this.isInvisibleRing(s.bodyData))
+      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
     if (visibleRings.length === 0) { return null; }
 
     const innermostInner = Math.min(...visibleRings.map(r => r.bodyData.innerRadius ?? 0));
@@ -1537,7 +1571,13 @@ export class SystemBodyComponent implements OnChanges {
       && span <= PAUPER_RING_MAX_SPAN_RADII * parentRadius
       && span > NARROW_RING_SPAN_RADII * parentRadius;
 
-    return { isTaylor, isPauper, span, innermostInner, parentRadius };
+    const rings = visibleRings.map(r => ({
+      name: r.bodyData.name.replace('Ring', '').trim(),
+      innerRadius: r.bodyData.innerRadius ?? 0,
+      outerRadius: r.bodyData.outerRadius ?? 0,
+    }));
+
+    return { isTaylor, isPauper, span, innermostInner, outermostOuter, parentRadius, rings };
   }
 
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {

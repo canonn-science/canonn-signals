@@ -1,0 +1,99 @@
+<app-dialog-shell [heading]="heading">
+  <div class="ring-classification-dialog">
+    <div class="diagram">
+      @if (diagram(); as d) {
+      <svg [attr.viewBox]="'0 0 ' + d.viewBoxSize + ' ' + d.viewBoxSize" class="ring-classification-diagram"
+        role="img" [attr.aria-label]="'To-scale illustration of ' + data.bodyName + ' and its rings'">
+        @for (ring of d.rings; track ring.name) {
+        <circle class="ring" [class.focused]="ring.isFocused" [attr.cx]="d.center" [attr.cy]="d.center"
+          [attr.r]="ring.radius" [attr.stroke-width]="ring.strokeWidth" />
+        }
+        <circle class="body" [attr.cx]="d.center" [attr.cy]="d.center" [attr.r]="d.bodyRadius" />
+        <text class="label" [attr.x]="d.center" [attr.y]="d.center + d.bodyRadius + 10" text-anchor="middle">{{ data.bodyName }}</text>
+      </svg>
+      }
+    </div>
+
+    <div class="intro">
+      @if (data.kind === 'taylor') {
+      <p>
+        A <strong>Taylor ring</strong> is an unusually narrow ring system. Once any rings too faint to see
+        in-game are excluded, what's left hugs close around the body instead of spreading out.
+      </p>
+      } @else {
+      <p>
+        A <strong>Pauper ring</strong> is an unusually wide, distant ring system. Once any rings too faint to
+        see in-game are excluded, what's left sits far out from the body as a thin band rather than close in.
+      </p>
+      }
+    </div>
+
+    <div class="formula">
+      <strong>Calculation</strong> (R = body radius; span = outermost outer edge − innermost inner edge, across
+      the body's visible rings only):
+    </div>
+
+    <div class="parameters">
+      @if (data.kind === 'taylor') {
+      <p>A ring system is a Taylor ring when:</p>
+      <ul>
+        <li><strong>Exactly 1 visible ring:</strong> ring width &lt; 0.25R</li>
+        <li><strong>2 or more visible rings:</strong> total span &lt; 0.25R</li>
+      </ul>
+      } @else {
+      <p>A ring system is a Pauper ring when all of the following hold:</p>
+      <ul>
+        <li><strong>Innermost edge</strong> ≥ 14R</li>
+        <li><strong>AND</strong></li>
+        <li><strong>Span</strong> ≤ 2R</li>
+        <li><strong>AND</strong></li>
+        <li><strong>Span</strong> &gt; 0.25R (wide enough to not also be a Taylor ring)</li>
+      </ul>
+      }
+    </div>
+
+    <div class="values">
+      <p><strong>Values for this ring system:</strong></p>
+      <ul>
+        <li><strong>Body radius (R):</strong> {{ fmt(data.parentRadius) }} km</li>
+        <li><strong>Innermost visible edge:</strong> {{ fmt(data.innermostInner) }} km ({{ ratio(data.innermostInner) }}× R)</li>
+        <li><strong>Outermost visible edge:</strong> {{ fmt(data.outermostOuter) }} km ({{ ratio(data.outermostOuter) }}× R)</li>
+        <li><strong>Total span:</strong> {{ fmt(data.span) }} km ({{ ratio(data.span) }}× R)</li>
+        @if (data.kind === 'taylor') {
+        <li><strong>Taylor threshold (0.25R):</strong> {{ fmt(data.narrowThresholdKm) }} km</li>
+        } @else {
+        <li><strong>Pauper inner-edge threshold (14R):</strong> {{ fmt(data.pauperInnerEdgeThresholdKm) }} km</li>
+        <li><strong>Pauper max span (2R):</strong> {{ fmt(data.pauperMaxSpanKm) }} km</li>
+        }
+      </ul>
+      <p><strong>Visible rings:</strong></p>
+      <ul>
+        @for (ring of data.rings; track ring.name) {
+        <li [class.focused]="ring.name === data.ringName">
+          <strong>{{ ring.name }} Ring:</strong> {{ fmt(ring.innerRadius) }} – {{ fmt(ring.outerRadius) }} km
+        </li>
+        }
+      </ul>
+    </div>
+
+    <div class="conclusion">
+      @if (data.kind === 'taylor') {
+      <p>
+        This ring system's total span of {{ fmt(data.span) }} km is under 25% of {{ data.bodyName }}'s radius —
+        unusually narrow.
+      </p>
+      } @else {
+      <p>
+        This ring system sits {{ ratio(data.innermostInner) }}× {{ data.bodyName }}'s radius out and spans only
+        {{ fmt(data.span) }} km — unusually wide and distant.
+      </p>
+      }
+    </div>
+
+    <p class="disclaimer">
+      <strong>Disclaimer:</strong> The illustration above is a simplified, to-scale top-down view drawn from the
+      recorded ring and body radii — actual in-game rings may not be perfectly circular or coplanar. Values may
+      be rounded or truncated compared to ship logs.
+    </p>
+  </div>
+</app-dialog-shell>
