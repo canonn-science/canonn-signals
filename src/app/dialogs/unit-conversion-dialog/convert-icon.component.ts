@@ -5,7 +5,8 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faRightLeft } from '@fortawesome/free-solid-svg-icons';
 import { ClickableDirective } from '../../clickable.directive';
 import { QuantityKind } from '../../data/unit-conversions';
-import type { UnitConversionDialogComponent, UnitConversionDialogData } from './unit-conversion-dialog.component';
+import { openLazyDialog } from '../lazy-dialog';
+import type { UnitConversionDialogData } from './unit-conversion-dialog.component';
 
 /**
  * Small "⇄" affordance rendered after a property value. Clicking it opens the
@@ -45,15 +46,15 @@ export class ConvertIconComponent {
    */
   readonly sourcePrecise = input<boolean | null | undefined>();
 
-  protected async open(event: Event): Promise<void> {
+  protected open(event: Event): void {
     event.stopPropagation();
     const baseValue = this.value();
     if (baseValue == null || !Number.isFinite(baseValue)) { return; }
-    const { UnitConversionDialogComponent } = await import('./unit-conversion-dialog.component');
-    this.dialog.open<UnitConversionDialogComponent, UnitConversionDialogData>(UnitConversionDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('./unit-conversion-dialog.component').then(m => m.UnitConversionDialogComponent),
+      skeleton: 'text',
       width: '600px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       data: {
         title: this.label(),
         kind: this.kind(),
@@ -61,7 +62,7 @@ export class ConvertIconComponent {
         uiUnit: this.uiUnit() ?? null,
         sourceUnit: this.sourceUnit() ?? null,
         sourcePrecise: this.sourcePrecise() ?? true,
-      },
+      } satisfies UnitConversionDialogData,
     });
   }
 }
