@@ -61,6 +61,34 @@ describe('HomeComponent', () => {
     expect(component.formatDEJ2000(-1).startsWith('-')).toBe(true);
   });
 
+  it('publishes the PGName synchronously so its row never blanks while Simbad loads', async () => {
+    // Merope is a hand-named system, so it routes through the async Simbad lookup rather than the
+    // synchronous PG-system fallback. Hold the Simbad promise open to observe the pre-resolve state.
+    const id64 = 396316991853421732n;
+    let resolveSimbad!: (v: unknown) => void;
+    const appService = TestBed.inject(AppService) as unknown as {
+      getSimbad: (...args: unknown[]) => Promise<unknown>;
+    };
+    appService.getSimbad = () => new Promise((res) => { resolveSimbad = res; });
+
+    component.fetchEdGalaxyData('Merope', id64);
+
+    // Before Simbad settles, edGalaxyData already carries the PGName (previously it stayed null for
+    // the whole request, which blanked the "PG Name" row after the skeleton handed over).
+    const pending = component.edGalaxyData();
+    expect(pending).not.toBeNull();
+    expect(pending!.PGName).toBeTruthy();
+    expect(pending!.Simbad).toBeUndefined();
+
+    // Once Simbad resolves it merges in, without ever clearing the PGName row.
+    resolveSimbad({ name: 'Merope', system_address: id64, simbad_name: '23 Tau', ra_j2000: 10, dec_j2000: 20 });
+    await Promise.resolve();
+    await Promise.resolve();
+    const resolved = component.edGalaxyData();
+    expect(resolved!.PGName).toBe(pending!.PGName);
+    expect(resolved!.Simbad?.Name).toBe('23 Tau');
+  });
+
   it('defers a marker/query request while a search is already in flight', () => {
     // Simulate an in-flight search without driving the HTTP path.
     (component as any)._searching.set(true);

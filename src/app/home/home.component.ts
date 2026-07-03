@@ -131,10 +131,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     // async result is discarded rather than clobbering the newer system's data.
     const generation = ++this.edGalaxyGeneration;
 
-    // Fallback used whenever we don't (or can't) resolve Simbad data.
-    const setFallback = () => {
-      this.edGalaxyData.set({ PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined });
-    };
+    // The PGName is derived synchronously from the id64, so publish it immediately. Previously we
+    // waited for the async Simbad lookup before setting edGalaxyData at all, which left the "PG Name"
+    // row absent (edGalaxyData === null) for the whole request — so it flashed out and back in as the
+    // reserved-space skeleton handed over to the real view. Simbad (when present) is merged in later,
+    // and the PGName row stays put throughout.
+    const pgOnly = { PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined };
+    this.edGalaxyData.set(pgOnly);
 
     // Skip the Simbad lookup for procedurally-generated systems: when the
     // PGName matches the system name, the name is a valid PG name, or it
@@ -142,11 +145,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (pgName.toLowerCase() === systemName.toLowerCase()
       || PGSystem.isPGSystemName(systemName)
       || systemName.toLowerCase().includes('sector')) {
-      setFallback();
       return;
     }
 
-    // Call the API for Simbad data
+    // Call the API for Simbad data and merge it in when it resolves.
     this.appService.getSimbad(id64, systemName, coords)
       .then(result => {
         // Drop the response if the user has since navigated to another system.
@@ -168,11 +170,11 @@ export class HomeComponent implements OnInit, OnDestroy {
           } : undefined
         });
       })
-      // Even if the Simbad API fails, still populate edGalaxyData with PGName —
-      // but only while this request is still the current one.
+      // On failure the synchronously-published PGName-only data already stands; reaffirm it only
+      // while this request is still the current one.
       .catch(() => {
         if (generation === this.edGalaxyGeneration) {
-          setFallback();
+          this.edGalaxyData.set(pgOnly);
         }
       });
   }

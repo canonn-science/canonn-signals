@@ -1,7 +1,11 @@
-// Mirrors the real .system-container chrome (home.component.scss) — the dark title bar, light-grey
-// data panel, grey completeness bar and dark body rows — so the skeleton reads as a real system and
-// the swap to real data doesn't shift the page. Shimmer tone is retinted per surface (darker on the
-// light-grey panels, the default light slate on the dark surfaces) so placeholders stay visible.
+// Mirrors the real system chrome (home.component.scss) — the accent title bar, light-grey data panel
+// with two columns, the completeness bar and the dark body rows — so the skeleton reads as a real
+// system and the swap to real data doesn't shift the page. The static section headers and row labels
+// are rendered for real (identical across systems); only the per-system value cells shimmer.
+//
+// Shimmer tone is retinted per surface via the shared `--skeleton-tone-*` presets (styles.scss): a
+// darker tone on the light-grey panels, the default light slate on the dark surfaces — so a
+// placeholder stays visible wherever it sits.
 .skeleton-system {
   display: flex;
   justify-content: center;
@@ -12,8 +16,8 @@
   margin-bottom: 24px;
 }
 
-// --- Info box: dark title bar flush against the light-grey data panel ---
-.skeleton-title-bar {
+// --- Info box: dark accent title bar flush against the light-grey data panel (mirrors .system-title). ---
+.skeleton-title {
   padding: 8px;
   background-color: var(--color-surface);
   border-top-left-radius: 4px;
@@ -22,8 +26,11 @@
 
 .skeleton-title-name {
   display: block;
-  height: 1.4rem;
-  width: 32%;
+  // ~1.6rem so the bar (+ 8px padding) lands close to the real 150%-font title bar's height,
+  // keeping the vertical hand-over shift to a couple of px.
+  height: 1.6rem;
+  width: 40%;
+  max-width: 340px;
 }
 
 .skeleton-data {
@@ -53,32 +60,56 @@
   --skeleton-highlight: var(--skeleton-tone-map-highlight);
 }
 
+// Two-column masonry like the real .system-data-columns (collapses to one on narrower viewports).
 .skeleton-columns {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
   flex: 1 1 auto;
   min-width: 0;
+  column-count: 2;
+  column-gap: 32px;
 }
 
-.skeleton-panel {
+@media (max-width: 1400px) {
+  .skeleton-columns {
+    column-count: 1;
+  }
+}
+
+// --- Data sections: real header + real labels, shimmer only in the value cell (mirrors .system-data-*). ---
+.skeleton-section {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.skeleton-section-header {
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--color-black);
+  background-color: var(--color-text-2);
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 2px;
+}
+
+.skeleton-entry {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.skeleton-panel-header {
-  height: 1rem;
-  width: 45%;
-  margin-bottom: 4px;
-}
-
-.skeleton-panel-row {
-  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
+  min-height: 1.2rem;
+  margin-bottom: 2px;
 }
 
-// --- Completeness bar (grey box) ---
+// The value placeholder: inline-block so the per-row width (set inline in the template) is honoured.
+.skeleton-value {
+  display: inline-block;
+  height: 0.72rem;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+// --- Completeness bar (grey box, mirrors .system-completeness). ---
 .skeleton-completeness {
   margin-top: 32px;
   padding: 8px;
@@ -88,18 +119,63 @@
   --skeleton-highlight: var(--skeleton-tone-on-light-highlight);
 }
 
-.skeleton-completeness-bar {
-  height: 18px;
-  width: 100%;
+.skeleton-completeness-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.skeleton-completeness-label {
+  color: var(--color-white);
+  font-weight: bold;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.skeleton-completeness-count {
+  display: inline-block;
+  width: 84px;
+  height: 0.7rem;
   border-radius: 4px;
 }
 
-// --- Body tree rows (dark surface, like each body's .body-title) ---
+// The "NN%" figure on the far right — mirrors the real header's third element (label | count | %).
+.skeleton-completeness-value {
+  display: inline-block;
+  width: 32px;
+  height: 0.9rem;
+  border-radius: 4px;
+}
+
+.skeleton-completeness-track {
+  position: relative;
+  height: 12px;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.skeleton-completeness-fill {
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: 6px;
+  // Sits on the dark track, so reset to the default light-slate shimmer for contrast.
+  --skeleton-base: rgba(148, 163, 184, 0.16);
+  --skeleton-highlight: rgba(148, 163, 184, 0.34);
+}
+
+// --- Body tree rows (light-grey container, dark rows — like each body's .body-title on .bodies). ---
 .skeleton-bodies {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px;
+  background-color: rgba(150, 150, 150, 0.7);
+  border-radius: 4px;
 }
 
 .skeleton-body-row {
@@ -113,6 +189,8 @@
 }
 
 .skeleton-body-name {
+  display: block;
+  height: 0.85rem;
   width: 180px;
   max-width: 40%;
 }
@@ -125,7 +203,7 @@
 }
 
 // Mirror the real layout's phone breakpoint (home.component.scss @ 600px): full-width container, the
-// map stacked above the columns, and matching padding/gap — so the swap to real data doesn't reflow.
+// map stacked above and centred over the columns, and matching padding/gap — so the swap doesn't reflow.
 @media (max-width: 600px) {
   .skeleton-system {
     padding: 0 8px;
@@ -142,7 +220,6 @@
   }
 
   .skeleton-map {
-    width: 100%;
-    max-width: none;
+    align-self: center;
   }
 }

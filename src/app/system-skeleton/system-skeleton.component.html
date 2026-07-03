@@ -1,39 +1,85 @@
 <div class="skeleton-system">
   <span class="sr-only" role="status">Loading system data…</span>
   <div class="skeleton-system-inner" aria-hidden="true">
-    <!-- System info box: dark title bar + light-grey data panel (mirrors .system-info-box) -->
+    <!-- System info box: accent title bar (system name is per-system → shimmer) + light-grey data panel. -->
     <div class="skeleton-info-box">
-      <div class="skeleton-title-bar">
-        <span class="skeleton skeleton-line skeleton-title-name"></span>
+      <div class="skeleton-title">
+        <span class="skeleton skeleton-title-name"></span>
       </div>
       <div class="skeleton-data">
         <div class="skeleton skeleton-block skeleton-map"></div>
         <div class="skeleton-columns">
-          @for (panel of panels; track panel) {
-            <div class="skeleton-panel">
-              <span class="skeleton skeleton-line skeleton-panel-header"></span>
-              @for (row of panelRows; track row) {
-                <div class="skeleton-panel-row">
-                  <span class="skeleton skeleton-line skeleton-w40"></span>
-                  <span class="skeleton skeleton-line skeleton-w60"></span>
-                </div>
-              }
-            </div>
-          }
+          <!-- Section headers and row labels are the same for every system, so they render for real;
+               only the value cell on the right of each row shimmers. -->
+          <div class="skeleton-section">
+            <div class="skeleton-section-header">Location</div>
+            @for (row of locationRows; track row.label) {
+              <div class="skeleton-entry">
+                <div>{{ row.label }}</div>
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.value"></span></div>
+              </div>
+            }
+          </div>
+          <div class="skeleton-section">
+            <div class="skeleton-section-header">Society</div>
+            @for (row of societyRows; track row.label) {
+              <div class="skeleton-entry">
+                <div>{{ row.label }}</div>
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.value"></span></div>
+              </div>
+            }
+          </div>
+          <!-- Distances: the header is static, but each row's system name is per-system too, so both cells shimmer. -->
+          <div class="skeleton-section">
+            <div class="skeleton-section-header">Distances</div>
+            @for (row of distanceRows; track $index) {
+              <div class="skeleton-entry">
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.name"></span></div>
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.value"></span></div>
+              </div>
+            }
+          </div>
+          <!-- Nearest DSSA: same name + distance shape, both per-system → both cells shimmer. -->
+          <div class="skeleton-section">
+            <div class="skeleton-section-header">Nearest DSSA</div>
+            @for (row of dssaRows; track $index) {
+              <div class="skeleton-entry">
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.name"></span></div>
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.value"></span></div>
+              </div>
+            }
+          </div>
+          <!-- Nearest Nebulae: same name + distance shape, both per-system → both cells shimmer. -->
+          <div class="skeleton-section">
+            <div class="skeleton-section-header">Nearest Nebulae</div>
+            @for (row of nebulaeRows; track $index) {
+              <div class="skeleton-entry">
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.name"></span></div>
+                <div><span class="skeleton skeleton-value" [style.width.px]="row.value"></span></div>
+              </div>
+            }
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- System completeness bar (mirrors .system-completeness) -->
+    <!-- Completeness bar: static "System Completeness" label; the count and fill are per-system → shimmer. -->
     <div class="skeleton-completeness">
-      <span class="skeleton skeleton-line skeleton-completeness-bar"></span>
+      <div class="skeleton-completeness-header">
+        <span class="skeleton-completeness-label">System Completeness</span>
+        <span class="skeleton skeleton-completeness-count"></span>
+        <span class="skeleton skeleton-completeness-value"></span>
+      </div>
+      <div class="skeleton-completeness-track">
+        <span class="skeleton skeleton-completeness-fill"></span>
+      </div>
     </div>
 
-    <!-- Body tree rows (mirrors each body's .body-title) -->
+    <!-- Body tree rows: bodies are unknown until data arrives, so these stay generic. -->
     <div class="skeleton-bodies">
       @for (body of bodyRows; track body) {
         <div class="skeleton-body-row">
-          <span class="skeleton skeleton-line skeleton-body-name"></span>
+          <span class="skeleton skeleton-body-name"></span>
           <span class="skeleton skeleton-chip"></span>
           <span class="skeleton skeleton-chip"></span>
         </div>
