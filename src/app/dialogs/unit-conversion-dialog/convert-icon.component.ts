@@ -37,6 +37,13 @@ export class ConvertIconComponent {
   readonly uiUnit = input<string | null | undefined>();
   /** Conversion-row label for the unit the value is recorded in by the game journal; badged in the dialog. */
   readonly sourceUnit = input<string | null | undefined>();
+  /**
+   * Whether the data source delivers the value in exactly {@link sourceUnit}. Default true
+   * ("from journal"). Set false when the app holds the value in a different unit (e.g. radius
+   * arrives in km though the journal records metres) — the source row is then a back-conversion,
+   * badged "Journal / unprecise" and left rounded.
+   */
+  readonly sourcePrecise = input<boolean | null | undefined>();
 
   protected async open(event: Event): Promise<void> {
     event.stopPropagation();
@@ -53,6 +60,7 @@ export class ConvertIconComponent {
         baseValue,
         uiUnit: this.uiUnit() ?? null,
         sourceUnit: this.sourceUnit() ?? null,
+        sourcePrecise: this.sourcePrecise() ?? true,
       },
     });
   }
