@@ -14,7 +14,12 @@
             <th scope="row">
               {{ row.unit }}
               @if (row.unit === sourceUnit) {
-                <span class="unit-tag source" matTooltip="The unit this value is recorded in by the game journal">from journal</span>
+                @if (sourcePrecise) {
+                  <span class="unit-tag source" matTooltip="The unit this value is recorded in by the game journal">from journal</span>
+                } @else {
+                  <span class="unit-tag source unprecise"
+                        matTooltip="The game journal records this in {{ sourceUnit }}, but the data source provides it in a different unit — so this figure is a back-conversion and may be less precise than the game's own.">Journal / unprecise</span>
+                }
               }
             </th>
             <td class="value clickable"

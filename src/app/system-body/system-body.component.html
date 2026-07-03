@@ -198,7 +198,7 @@
                 Orbital period
               </div>
               <div>
-                <span [matTooltip]="body().bodyData.orbitalPeriod + ' days'">{{ getOrbitalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.orbitalPeriod" label="Orbital period" [uiUnit]="durationUnitLabel(body().bodyData.orbitalPeriod)" sourceUnit="Seconds" />
+                <span [matTooltip]="body().bodyData.orbitalPeriod + ' days'">{{ getOrbitalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.orbitalPeriod" label="Orbital period" [uiUnit]="durationUnitLabel(body().bodyData.orbitalPeriod)" sourceUnit="Seconds" [sourcePrecise]="false" />
               </div>
             </div>
             }
@@ -208,7 +208,7 @@
                 Semi-major axis
               </div>
               <div>
-                <span [matTooltip]="body().bodyData.semiMajorAxis + ' au'">{{ formatOrbitDistance(getSemiMajorAxisKm()) }}</span><app-convert-icon [kind]="'length'" [value]="getSemiMajorAxisKm()" label="Semi-major axis" [uiUnit]="orbitDistanceUnitLabel()" sourceUnit="m" />
+                <span [matTooltip]="body().bodyData.semiMajorAxis + ' au'">{{ formatOrbitDistance(getSemiMajorAxisKm()) }}</span><app-convert-icon [kind]="'length'" [value]="getSemiMajorAxisKm()" label="Semi-major axis" [uiUnit]="orbitDistanceUnitLabel()" sourceUnit="m" [sourcePrecise]="false" />
               </div>
             </div>
             }
@@ -239,8 +239,8 @@
               <div>
                 Next apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
-                {{ getNextApoapsis()!.days | number:'0.1-1' }} days
+              <div>
+                <span [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextApoapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextApoapsis()!.days" label="Next apoapsis" uiUnit="Days" />
               </div>
             </div>
             }
@@ -260,8 +260,8 @@
               <div>
                 Next periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
-                {{ getNextPeriapsis()!.days | number:'0.1-1' }} days
+              <div>
+                <span [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextPeriapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextPeriapsis()!.days" label="Next periapsis" uiUnit="Days" />
               </div>
             </div>
             }
@@ -271,8 +271,8 @@
                 Argument of periapsis<fa-icon class="info-icon" title="Click for more information"
                   [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="body().bodyData.argOfPeriapsis + '° - click for diagram'">
-                {{ body().bodyData.argOfPeriapsis | number:'0.2-2' }}°
+              <div>
+                <span [matTooltip]="body().bodyData.argOfPeriapsis + '° - click for diagram'">{{ body().bodyData.argOfPeriapsis | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="body().bodyData.argOfPeriapsis" label="Argument of periapsis" uiUnit="Degrees" sourceUnit="Degrees" />
               </div>
             </div>
             }
@@ -282,8 +282,8 @@
                 Orbital inclination<fa-icon class="info-icon" title="Click for more information"
                   [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="body().bodyData.orbitalInclination + '° - click for diagram'">
-                {{ body().bodyData.orbitalInclination | number:'0.2-2' }}°
+              <div>
+                <span [matTooltip]="body().bodyData.orbitalInclination + '° - click for diagram'">{{ body().bodyData.orbitalInclination | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="body().bodyData.orbitalInclination" label="Orbital inclination" uiUnit="Degrees" sourceUnit="Degrees" />
               </div>
             </div>
             }
@@ -292,8 +292,8 @@
               <div>
                 Ascending node
               </div>
-              <div [matTooltip]="body().bodyData.ascendingNode + '°'">
-                {{ body().bodyData.ascendingNode | number:'0.2-2' }}°
+              <div>
+                <span [matTooltip]="body().bodyData.ascendingNode + '°'">{{ body().bodyData.ascendingNode | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="body().bodyData.ascendingNode" label="Ascending node" uiUnit="Degrees" sourceUnit="Degrees" />
               </div>
             </div>
             }
@@ -393,7 +393,7 @@
               Radius
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.radius + ' km'">{{ body().bodyData.radius | number:'0.2-2' }} km</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.radius" label="Radius" uiUnit="km" sourceUnit="m" />
+              <span [matTooltip]="body().bodyData.radius + ' km'">{{ body().bodyData.radius | number:'0.2-2' }} km</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.radius" label="Radius" uiUnit="km" sourceUnit="m" [sourcePrecise]="false" />
             </div>
           </div>
           }
@@ -412,7 +412,7 @@
               Radius
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.solarRadius!.toString() + ' R☉'">{{ body().bodyData.solarRadius | number:'0.2-2' }} R☉</span><app-convert-icon [kind]="'length'" [value]="getSolarRadiusKm()" label="Radius" uiUnit="Solar Radii" sourceUnit="m" />
+              <span [matTooltip]="body().bodyData.solarRadius!.toString() + ' R☉'">{{ body().bodyData.solarRadius | number:'0.2-2' }} R☉</span><app-convert-icon [kind]="'length'" [value]="getSolarRadiusKm()" label="Radius" uiUnit="Solar Radii" sourceUnit="m" [sourcePrecise]="false" />
             </div>
           </div>
           }
@@ -467,8 +467,8 @@
             <div>
               Axial tilt<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
-            <div [matTooltip]="radToDeg(body().bodyData.axialTilt) + '° - click for diagram'">
-              {{ radToDeg(body().bodyData.axialTilt) | number:'0.2-2' }}°
+            <div>
+              <span [matTooltip]="radToDeg(body().bodyData.axialTilt) + '° - click for diagram'">{{ radToDeg(body().bodyData.axialTilt) | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="radToDeg(body().bodyData.axialTilt)" label="Axial tilt" uiUnit="Degrees" sourceUnit="Radians" />
             </div>
           </div>
           }
@@ -545,8 +545,8 @@
             <div>
               Density
             </div>
-            <div [matTooltip]="getRingDensity() + ' Mt/km²'">
-              {{ getRingDensity() | number:'0.2-2' }} Mt/km²
+            <div>
+              <span [matTooltip]="getRingDensity() + ' Mt/km²'">{{ formatRingDensity(getRingDensity()) }}</span><app-convert-icon [kind]="'arealDensity'" [value]="getRingDensity()" label="Density" [uiUnit]="ringDensityUnitLabel(getRingDensity())" />
             </div>
           </div>
           }
@@ -650,19 +650,23 @@
               {{ body().bodyData.type === 'Star' ? 'Surface Temperature' : 'Average Surface Temperature'
               }}
             </div>
-            <div [matTooltip]="body().bodyData.surfaceTemperature + ' K'">
-              {{ body().bodyData.surfaceTemperature | number:'0.2-2' }} K
+            <div>
+              <span [matTooltip]="body().bodyData.surfaceTemperature + ' K'">{{ body().bodyData.surfaceTemperature | number:'0.2-2' }} K</span><app-convert-icon [kind]="'temperature'" [value]="body().bodyData.surfaceTemperature" label="Surface temperature" uiUnit="K" sourceUnit="K" />
             </div>
           </div>
           }
           @if (body().bodyData.isLandable && getEstimatedTempRange(); as estTemp) {
           <div class="body-data-entry">
             <div>Min Surface Temperature Estimate</div>
-            <div [matTooltip]="estTemp.min + ' K'">{{ estTemp.min | number:'0.2-2' }} K</div>
+            <div>
+              <span [matTooltip]="estTemp.min + ' K'">{{ estTemp.min | number:'0.2-2' }} K</span><app-convert-icon [kind]="'temperature'" [value]="estTemp.min" label="Min surface temperature estimate" uiUnit="K" />
+            </div>
           </div>
           <div class="body-data-entry">
             <div>Max Surface Temperature Estimate</div>
-            <div [matTooltip]="estTemp.max + ' K'">{{ estTemp.max | number:'0.2-2' }} K</div>
+            <div>
+              <span [matTooltip]="estTemp.max + ' K'">{{ estTemp.max | number:'0.2-2' }} K</span><app-convert-icon [kind]="'temperature'" [value]="estTemp.max" label="Max surface temperature estimate" uiUnit="K" />
+            </div>
           </div>
           }
           @if (body().bodyData.surfacePressure != null && body().bodyData.surfacePressure !== 0) {
@@ -672,7 +676,7 @@
             </div>
             <div>
               <span [matTooltip]="cachedSurfacePressureTooltip() || ''"
-                    matTooltipClass="multiline-tooltip">{{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres</span><app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="Pa" />
+                    matTooltipClass="multiline-tooltip">{{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres</span><app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="Pa" [sourcePrecise]="false" />
             </div>
           </div>
           }
@@ -699,7 +703,7 @@
               Rotational period
             </div>
             <div>
-              <span [matTooltip]="body().bodyData.rotationalPeriod + ' days'">{{ getRotationalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.rotationalPeriod" label="Rotational period" [uiUnit]="durationUnitLabel(body().bodyData.rotationalPeriod)" sourceUnit="Seconds" />
+              <span [matTooltip]="body().bodyData.rotationalPeriod + ' days'">{{ getRotationalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.rotationalPeriod" label="Rotational period" [uiUnit]="durationUnitLabel(body().bodyData.rotationalPeriod)" sourceUnit="Seconds" [sourcePrecise]="false" />
             </div>
           </div>
           }
@@ -719,8 +723,8 @@
             <div>
               Mean anomaly<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
-            <div [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">
-              {{ getMeanAnomaly() | number:'0.2-2' }}°
+            <div>
+              <span [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">{{ getMeanAnomaly() | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="getMeanAnomaly()" label="Mean anomaly" uiUnit="Degrees" sourceUnit="Degrees" />
             </div>
           </div>
           }
@@ -729,8 +733,8 @@
             <div>
               True anomaly<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
-            <div [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">
-              {{ getTrueAnomaly() | number:'0.2-2' }}°
+            <div>
+              <span [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">{{ getTrueAnomaly() | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="getTrueAnomaly()" label="True anomaly" uiUnit="Degrees" />
             </div>
           </div>
           }

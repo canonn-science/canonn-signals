@@ -31,18 +31,34 @@ export const KG_PER_MEGATONNE = 1e12;
 // --- Velocity (base: km/s) ---
 export const SPEED_OF_LIGHT_KM_S = 299792.458;
 
+// --- Angle (base: degrees) ---
+export const RADIANS_PER_DEGREE = Math.PI / 180;
+
 // --- Pressure (base: atm) ---
 export const KPA_PER_ATM = 101.325;
 export const PA_PER_ATM = 101325;
 export const PSI_PER_ATM = 14.6959488;
 
+// --- Temperature (base: Kelvin) --- affine, not purely multiplicative: °C = K − 273.15,
+// °F = K·9/5 − 459.67, °R (Rankine) = K·9/5. Handled via the optional `offset` below.
+export const CELSIUS_ZERO_IN_K = 273.15;
+export const FAHRENHEIT_OFFSET = -459.67;
+
 // 1 Mt/cm³ = 1e12 kg ÷ 1e-6 m³ = 1e18 kg/m³ (uses the teragram megatonne above).
 const KG_M3_PER_MT_CM3 = 1e18;
 // km² in one square light-second.
 const KM2_PER_LS2 = KM_PER_LIGHT_SECOND * KM_PER_LIGHT_SECOND;
+// Areal (surface) density conversion for ring/belt mass: 1 Mt/km² spreads KG_PER_MEGATONNE kg
+// over 1e6 m² (uses the same megatonne as the mass table, so a ring's mass, area and density
+// cross-reference exactly). = 1e12 / 1e6 = 1e6 kg/m².
+const KG_M2_PER_MT_KM2 = KG_PER_MEGATONNE / (M_PER_KM * M_PER_KM);
+// A gigatonne is 1000 of the app's megatonnes — the scale-up unit for very dense rings.
+const MT_PER_GT = 1000;
 
 /** The kinds of quantity a value can be converted between, each with a fixed base unit. */
-export type QuantityKind = 'length' | 'duration' | 'mass' | 'velocity' | 'density' | 'area' | 'pressure';
+export type QuantityKind =
+  | 'length' | 'duration' | 'mass' | 'velocity' | 'density' | 'area' | 'pressure'
+  | 'angle' | 'arealDensity' | 'temperature';
 
 /** One scale-unit row shown in the conversion dialog. */
 export interface ConversionRow {
@@ -60,7 +76,7 @@ export interface ConversionRow {
  * turns the kind's base value into that unit. The order is declared here, not sorted at
  * runtime. Density and area factors are derived from the named constants above.
  */
-const CONVERSIONS: Record<QuantityKind, { unit: string; factor: number }[]> = {
+const CONVERSIONS: Record<QuantityKind, { unit: string; factor: number; offset?: number }[]> = {
   length: [
     { unit: 'Light Years', factor: 1 / KM_PER_LIGHT_YEAR },
     { unit: 'AU', factor: 1 / KM_PER_AU },
@@ -70,6 +86,8 @@ const CONVERSIONS: Record<QuantityKind, { unit: string; factor: number }[]> = {
     { unit: 'm', factor: M_PER_KM },
   ],
   duration: [
+    { unit: 'Centuries', factor: 1 / (100 * DAYS_PER_YEAR) },
+    { unit: 'Decades', factor: 1 / (10 * DAYS_PER_YEAR) },
     { unit: 'Years', factor: 1 / DAYS_PER_YEAR },
     { unit: 'Weeks', factor: WEEKS_PER_DAY },
     { unit: 'Days', factor: 1 },
@@ -101,6 +119,21 @@ const CONVERSIONS: Record<QuantityKind, { unit: string; factor: number }[]> = {
     { unit: 'kPa', factor: KPA_PER_ATM },
     { unit: 'Pa', factor: PA_PER_ATM },
   ],
+  angle: [
+    { unit: 'Radians', factor: RADIANS_PER_DEGREE },
+    { unit: 'Degrees', factor: 1 },
+  ],
+  arealDensity: [
+    { unit: 'Gt/km²', factor: 1 / MT_PER_GT },
+    { unit: 'Mt/km²', factor: 1 },
+    { unit: 'kg/m²', factor: KG_M2_PER_MT_KM2 },
+  ],
+  temperature: [
+    { unit: 'K', factor: 1 },
+    { unit: '°C', factor: 1, offset: -CELSIUS_ZERO_IN_K },
+    { unit: '°F', factor: 9 / 5, offset: FAHRENHEIT_OFFSET },
+    { unit: '°R', factor: 9 / 5 },
+  ],
 };
 
 /** Readable number: grouped with ≤4 fraction digits for ordinary magnitudes, exponential for extremes. */
@@ -120,11 +153,36 @@ function formatCopyNumber(value: number): string {
   return Number(value.toPrecision(12)).toString();
 }
 
-/** Builds the full set of scale-unit rows for a base value of the given kind. */
-export function buildConversions(kind: QuantityKind, baseValue: number): ConversionRow[] {
-  return CONVERSIONS[kind].map(({ unit, factor }) => {
-    const value = baseValue * factor;
-    return { unit, display: formatDisplayNumber(value), copyText: formatCopyNumber(value) };
+/**
+ * The authoritative "from journal" value: full precision (~12 sig figs, not rounded to 4
+ * fraction digits like derived rows) but grouped with thousand separators for readability —
+ * the plain, separator-free form is kept for the clipboard copy value.
+ */
+function formatSourceNumber(value: number): string {
+  if (!Number.isFinite(value)) { return '—'; }
+  if (value === 0) { return '0'; }
+  return Number(value.toPrecision(12)).toLocaleString('en-US', { maximumFractionDigits: 20 });
+}
+
+/**
+ * Builds the full set of scale-unit rows for a base value of the given kind. When
+ * `sourceUnit` names the unit the value natively arrives in, and `sourcePrecise` is true
+ * (the data source delivers the value in exactly that unit), that row is shown at full
+ * precision (unrounded) — it is the authoritative figure the game recorded, so we don't
+ * round it away. When `sourcePrecise` is false the value reaches us in a *different* unit
+ * and this row is a back-conversion, so it stays rounded like the other derived units.
+ */
+export function buildConversions(
+  kind: QuantityKind,
+  baseValue: number,
+  sourceUnit?: string | null,
+  sourcePrecise = true,
+): ConversionRow[] {
+  return CONVERSIONS[kind].map(({ unit, factor, offset = 0 }) => {
+    const value = baseValue * factor + offset;
+    const copyText = formatCopyNumber(value);
+    const isSource = unit === sourceUnit && sourcePrecise && Number.isFinite(value);
+    return { unit, display: isSource ? formatSourceNumber(value) : formatDisplayNumber(value), copyText };
   });
 }
 
@@ -268,4 +326,33 @@ export function formatDynamicArea(km2: number): string {
 /** Dialog-row label for the inline area unit chosen at this magnitude. */
 export function dynamicAreaUnitLabel(km2: number): string {
   return Number.isFinite(km2) ? pickInlineAreaUnit(km2).label : '';
+}
+
+/** Inline areal-density unit: abbreviation, matching dialog-row label, and Mt/km² multiplier. */
+interface InlineArealDensityUnit { unit: string; label: string; perMtKm2: number; }
+
+/**
+ * Picks the inline ring/belt areal-density unit by magnitude: Mt/km² for ordinary rings,
+ * stepping up to Gt/km² for very dense rings, and dropping to kg/m² (a real surface density)
+ * for sparse belts — which otherwise read as a tiny "0.0x Mt/km²" fraction. Single source for
+ * both the inline display ({@link formatDynamicArealDensity}) and the dialog accent label
+ * ({@link dynamicArealDensityUnitLabel}); every unit here has a matching dialog row.
+ */
+function pickInlineArealDensityUnit(mtKm2: number): InlineArealDensityUnit {
+  const abs = Math.abs(mtKm2);
+  if (abs >= MT_PER_GT) { return { unit: 'Gt/km²', label: 'Gt/km²', perMtKm2: 1 / MT_PER_GT }; }
+  if (abs !== 0 && abs < 0.1) { return { unit: 'kg/m²', label: 'kg/m²', perMtKm2: KG_M2_PER_MT_KM2 }; }
+  return { unit: 'Mt/km²', label: 'Mt/km²', perMtKm2: 1 };
+}
+
+/** Inline areal-density display (Mt/km² base), scaling up to Gt/km² and down to kg/m². */
+export function formatDynamicArealDensity(mtKm2: number): string {
+  if (!Number.isFinite(mtKm2)) { return '—'; }
+  const u = pickInlineArealDensityUnit(mtKm2);
+  return `${fixed2(mtKm2 * u.perMtKm2)} ${u.unit}`;
+}
+
+/** Dialog-row label for the inline areal-density unit chosen at this magnitude. */
+export function dynamicArealDensityUnitLabel(mtKm2: number): string {
+  return Number.isFinite(mtKm2) ? pickInlineArealDensityUnit(mtKm2).label : '';
 }

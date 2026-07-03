@@ -22,11 +22,11 @@ test.describe('Unit-conversion dialog (fixture)', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('Radius');
 
-    // Units are listed largest-unit-first (declared order, not sorted at runtime). The unit
-    // the value natively arrives in from the game journal is badged "from journal" — the
-    // journal records body radius in metres, so the m row carries the badge.
+    // Units are listed largest-unit-first (declared order, not sorted at runtime). The
+    // journal records body radius in metres, but the data source delivers it in km, so the
+    // metres row is a back-conversion and is badged "Journal / unprecise" (not "from journal").
     await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
-      'Light Years', 'AU', 'Solar Radii', 'Light seconds', 'km', 'm from journal',
+      'Light Years', 'AU', 'Solar Radii', 'Light seconds', 'km', 'm Journal / unprecise',
     ]);
 
     // Clicking a value copies it and flips the cell to "Copied!" (clipboard is
@@ -57,5 +57,85 @@ test.describe('Unit-conversion dialog (fixture)', () => {
       'Solar Masses from journal', 'Earth Masses', 'Megatonnes',
     ]);
     await expect(dialog.locator('.comparisons')).toContainText('African bush elephants');
+  });
+});
+
+/**
+ * Angle (degrees ⇄ radians) and duration ("Next apoapsis/periapsis") conversions, loaded
+ * from Alpha Centauri whose primary star (body 2) carries an axial tilt and both apsis
+ * day-counts. The clock is pinned by the loader so the day-counts are deterministic.
+ */
+test.describe('Unit-conversion dialog — angle & duration (Alpha Centauri fixture)', () => {
+  const AC = { fixture: 'alpha-centauri.json', systemName: 'Alpha Centauri', id64: 1178708478315 };
+
+  test.beforeEach(async ({ page }) => {
+    await loadFixtureSystem(page, AC);
+  });
+
+  test('an axial tilt (degrees) is convertible to radians, radians badged from journal', async ({ page }) => {
+    await ensureBodyExpanded(page, 2);
+    await bodyRowValue(page, 2, 'Axial tilt').locator('.convert-icon').click();
+
+    const dialog = page.locator('app-unit-conversion-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Axial tilt');
+    // The journal records axial tilt in radians (the app shows degrees), so the Radians
+    // row carries the "from journal" badge and is listed first (radians > degrees).
+    await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
+      'Radians from journal', 'Degrees',
+    ]);
+  });
+
+  test('the "Next apoapsis" day-count is convertible to other durations', async ({ page }) => {
+    await ensureBodyExpanded(page, 2);
+    await bodyRowValue(page, 2, 'Next apoapsis').locator('.convert-icon').click();
+
+    const dialog = page.locator('app-unit-conversion-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Next apoapsis');
+    await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
+      'Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds',
+    ]);
+  });
+
+  test('an orbital period badges the Seconds row "Journal / unprecise" (journal is seconds, data is days)', async ({ page }) => {
+    await ensureBodyExpanded(page, 2);
+    await bodyRowValue(page, 2, 'Orbital period').locator('.convert-icon').click();
+
+    const dialog = page.locator('app-unit-conversion-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Orbital period');
+    // The game journal records the period in seconds, but the data source delivers days, so
+    // the Seconds row is a back-conversion and is badged "Journal / unprecise".
+    await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
+      'Centuries', 'Decades', 'Years', 'Weeks', 'Days', 'Hours', 'Minutes', 'Seconds Journal / unprecise',
+    ]);
+  });
+
+  test('a surface temperature is convertible to °C / °F / °R, K badged from journal', async ({ page }) => {
+    await ensureBodyExpanded(page, 2);
+    await bodyRowValue(page, 2, 'Surface Temperature').locator('.convert-icon').click();
+
+    const dialog = page.locator('app-unit-conversion-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Surface temperature');
+    await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
+      'K from journal', '°C', '°F', '°R',
+    ]);
+  });
+
+  test('surface pressure badges the Pa row "Journal / unprecise" (journal is Pa, data is atm)', async ({ page }) => {
+    // Eden (body 10) has a surface pressure. The game journal records it in Pascals, but the
+    // data source delivers atmospheres (journal Pa ÷ 101325), so the Pa row is a back-conversion
+    // and is badged "Journal / unprecise" — the same treatment as radius (journal m, data km).
+    await ensureBodyExpanded(page, 10);
+    await bodyRowValue(page, 10, 'Surface pressure').locator('.convert-icon').click();
+
+    const dialog = page.locator('app-unit-conversion-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Surface pressure');
+    await expect(dialog.locator('.conversion-table tbody th')).toHaveText([
+      'atm', 'psi', 'kPa', 'Pa Journal / unprecise',
+    ]);
   });
 });

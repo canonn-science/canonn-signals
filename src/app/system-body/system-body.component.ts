@@ -34,11 +34,13 @@ import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 import { ConvertIconComponent } from '../dialogs/unit-conversion-dialog/convert-icon.component';
 import {
+  dynamicArealDensityUnitLabel,
   dynamicAreaUnitLabel,
   dynamicDistanceUnitLabel,
   dynamicLengthUnitLabel,
   dynamicMassUnitLabel,
   formatDynamicArea,
+  formatDynamicArealDensity,
   formatDynamicDistanceLs,
   formatDynamicLength,
   formatDynamicMass,
@@ -698,6 +700,8 @@ export class SystemBodyComponent implements OnChanges {
   public formatDistanceLs(ls: number): string { return formatDynamicDistanceLs(ls); }
   public formatMass(kg: number): string { return formatDynamicMass(kg); }
   public formatArea(km2: number): string { return formatDynamicArea(km2); }
+  /** Ring/belt areal density (Mt/km² base), scaled up to Gt/km² for very dense rings. */
+  public formatRingDensity(mtKm2: number): string { return formatDynamicArealDensity(mtKm2); }
 
   // --- Conversion-dialog "shown in UI" unit labels (which dialog row to accent). ---
   public lengthUnitLabel(km: number | null | undefined): string {
@@ -711,6 +715,9 @@ export class SystemBodyComponent implements OnChanges {
   }
   public areaUnitLabel(km2: number | null | undefined): string {
     return km2 == null ? '' : dynamicAreaUnitLabel(km2);
+  }
+  public ringDensityUnitLabel(mtKm2: number | null | undefined): string {
+    return mtKm2 == null ? '' : dynamicArealDensityUnitLabel(mtKm2);
   }
   /** Dialog-row label for the inline duration unit chosen by {@link formatPeriodDays}. */
   public durationUnitLabel(days: number | null | undefined): string {
@@ -1536,8 +1543,8 @@ export class SystemBodyComponent implements OnChanges {
 
   /**
    * The unit a period reads in at this magnitude: numeric value, inline abbreviation, and
-   * the matching conversion-dialog row label ('' for ms/s/decades/centuries, which have no
-   * dialog row). Single source for both {@link formatPeriodDays} and {@link durationUnitLabel}.
+   * the matching conversion-dialog row label ('' for ms/s, which have no dialog row).
+   * Single source for both {@link formatPeriodDays} and {@link durationUnitLabel}.
    */
   private periodParts(days: number): { value: number; unit: string; label: string } {
     const absDays = Math.abs(days);
@@ -1554,8 +1561,8 @@ export class SystemBodyComponent implements OnChanges {
     if (absDays < 7) return { value: absDays, unit: 'days', label: 'Days' };
     if (weeks < 52) return { value: weeks, unit: 'weeks', label: 'Weeks' };
     if (years < 10) return { value: years, unit: 'years', label: 'Years' };
-    if (years / 10 < 10) return { value: years / 10, unit: 'decades', label: '' };
-    return { value: years / 100, unit: 'centuries', label: '' };
+    if (years / 10 < 10) return { value: years / 10, unit: 'decades', label: 'Decades' };
+    return { value: years / 100, unit: 'centuries', label: 'Centuries' };
   }
 
   private formatPeriodDays(days: number): string {
