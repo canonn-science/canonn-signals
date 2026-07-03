@@ -48,18 +48,21 @@ describe('RingClassificationDialogComponent', () => {
   it('shows the Taylor heading and explanation for a taylor dialog', () => {
     const el: HTMLElement = setup(TAYLOR_DATA).nativeElement;
     expect(el.textContent).toContain('Taylor Ring Explanation');
-    expect(el.textContent).toContain('Taylor ring');
-    expect(el.textContent).not.toContain('Pauper ring');
+    expect(el.textContent).toContain('Taylor Ring');
+    expect(el.textContent).toContain('Elizabeth Taylor');
+    expect(el.textContent).not.toContain('Pauper Ring');
   });
 
   it('shows the Pauper heading and explanation for a pauper dialog', () => {
-    // The Pauper criteria deliberately mention "Taylor ring" once, to explain why the two
-    // badges are mutually exclusive — so this checks the heading/intro, not a blanket absence.
+    // Both dialogs' intros legitimately mention "Elizabeth Taylor" (the engagement-ring lore
+    // behind both names), so the negative checks target the "Taylor Ring" badge name
+    // specifically, not the bare word "Taylor".
     const el: HTMLElement = setup(PAUPER_DATA).nativeElement;
     expect(el.textContent).toContain('Pauper Ring Explanation');
-    expect(el.textContent).toContain('Pauper ring');
+    expect(el.textContent).toContain('Pauper Ring');
+    expect(el.textContent).toContain('Elizabeth Taylor');
     expect(el.textContent).not.toContain('Taylor Ring Explanation');
-    expect(el.querySelector('.intro')!.textContent).not.toContain('Taylor');
+    expect(el.querySelector('.intro')!.textContent).not.toContain('Taylor Ring');
   });
 
   it('lists each visible ring with its inner/outer radius', () => {

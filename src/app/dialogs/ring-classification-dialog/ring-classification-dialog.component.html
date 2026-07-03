@@ -17,13 +17,26 @@
     <div class="intro">
       @if (data.kind === 'taylor') {
       <p>
-        A <strong>Taylor ring</strong> is an unusually narrow ring system. Once any rings too faint to see
-        in-game are excluded, what's left hugs close around the body instead of spreading out.
+        A <strong>Taylor Ring</strong> is a planetary ring system that appears as a single continuous ring
+        surrounding its primary body, with an apparent radial width no greater than 25% of the radius of the
+        primary body.
+      </p>
+      <p>
+        Taylor rings are named after Elizabeth Taylor's famous engagement ring: a diamond so large it dwarfed
+        the band holding it. A Taylor ring is the same idea applied to a planet — the ring is so narrow relative
+        to the body that it reads as almost pure "stone" with barely any band in sight. Not an official
+        astronomical term, but shorthand the exploration community uses for this rare, striking silhouette.
       </p>
       } @else {
       <p>
-        A <strong>Pauper ring</strong> is an unusually wide, distant ring system. Once any rings too faint to
-        see in-game are excluded, what's left sits far out from the body as a thin band rather than close in.
+        A <strong>Pauper Ring</strong> is a planetary ring system that appears as a single continuous ring
+        surrounding its primary body, with a width no greater than the diameter of its primary body but greater
+        than 25% of the radius of the primary body. The inner radius of the ring system must be at least 14
+        times the radius of the primary body.
+      </p>
+      <p>
+        Pauper rings are indirectly inspired by Elizabeth Taylor's famous engagement ring: a diamond so large it
+        dwarfed the band holding it. In this case, however, the "stone" is no wider than the band it's set in.
       </p>
       }
     </div>
@@ -91,9 +104,15 @@
     </div>
 
     <p class="disclaimer">
-      <strong>Disclaimer:</strong> The illustration above is a simplified, to-scale top-down view drawn from the
-      recorded ring and body radii — actual in-game rings may not be perfectly circular or coplanar. Values may
-      be rounded or truncated compared to ship logs.
+      <strong>Disclaimer:</strong> The classification is based on the visible and observable structure of the
+      ring system rather than its total physical extent — a {{ data.kind === 'taylor' ? 'Taylor' : 'Pauper' }}
+      Ring may consist of one or more physical rings and may exhibit banding, density variations, or other
+      internal structure, provided these features do not create the appearance of distinct rings separated by
+      visible gaps. This calculation is based on the recorded ring and body radii, not on in-game observation —
+      camera position and lighting can also affect how a ring system actually appears. This means that even
+      though this site has identified the ring system as a {{ data.kind === 'taylor' ? 'Taylor' : 'Pauper' }}
+      Ring, it is possible that it may not qualify after observation. The illustration above is a simplified,
+      to-scale top-down view; values may also be rounded or truncated compared to ship logs.
     </p>
   </div>
 </app-dialog-shell>

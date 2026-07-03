@@ -59,6 +59,14 @@
         line-height: 1.6;
     }
 
+    .intro p {
+        margin-bottom: 8px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
     .disclaimer {
         padding: 12px;
         background: var(--color-surface-2);
