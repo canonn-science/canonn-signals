@@ -85,4 +85,10 @@ describe('ConvertIconComponent', () => {
     }
     expect(opened).toHaveLength(0);
   });
+
+  it('exposes a value-specific accessible name so screen readers can tell the buttons apart', () => {
+    render('length', 6371, 'Orbital distance');
+    const icon = fixture.nativeElement.querySelector('.convert-icon');
+    expect(icon?.getAttribute('aria-label')).toBe('Show Orbital distance in other units');
+  });
 });

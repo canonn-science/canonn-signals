@@ -102,52 +102,52 @@
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"
         [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
-        <img alt="" src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
+        <img alt="Roche limit exceeded" src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
       </span>
       }
       @if ((geologySignals.length || geologySignalCount) && body().bodyData.type !== 'Star') {
       <div matTooltip="Geological signals">
-        <img alt="" src="assets/icons/Geology.svg" />
+        <img alt="Geological signals" src="assets/icons/Geology.svg" />
       </div>
       }
       @if ((biologySignals.length || biologySignalCount) && body().bodyData.type !== 'Star') {
       <div matTooltip="Biological signals">
-        <img alt="" src="assets/icons/Biology.svg" />
+        <img alt="Biological signals" src="assets/icons/Biology.svg" />
       </div>
       }
       @if (thargoidSignals.length || thargoidSignalCount) {
       <div matTooltip="Thargoid signals">
-        <img alt="" src="assets/icons/Thargoid.svg" />
+        <img alt="Thargoid signals" src="assets/icons/Thargoid.svg" />
       </div>
       }
       @if (guardianSignals.length || guardianSignalCount) {
       <div matTooltip="Guardian signals">
-        <img alt="" src="assets/icons/Guardian.svg" />
+        <img alt="Guardian signals" src="assets/icons/Guardian.svg" />
       </div>
       }
       @if (humanSignalCount) {
       <div matTooltip="Human signals">
-        <img alt="" src="assets/icons/Human.svg" />
+        <img alt="Human signals" src="assets/icons/Human.svg" />
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Gemstone')) {
-      <div matTooltip="Contains gemstones">
-        <span style="font-size: 16px;">💎</span>
+      <div matTooltip="Contains gemstones" role="img" aria-label="Contains gemstones">
+        <span style="font-size: 16px;" aria-hidden="true">💎</span>
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Metal')) {
-      <div matTooltip="Contains metals">
-        <span style="font-size: 16px;">⚙️</span>
+      <div matTooltip="Contains metals" role="img" aria-label="Contains metals">
+        <span style="font-size: 16px;" aria-hidden="true">⚙️</span>
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Mineral')) {
-      <div matTooltip="Contains minerals">
-        <span style="font-size: 16px;">🪨</span>
+      <div matTooltip="Contains minerals" role="img" aria-label="Contains minerals">
+        <span style="font-size: 16px;" aria-hidden="true">🪨</span>
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Fuel')) {
-      <div matTooltip="Contains fuel">
-        <span style="font-size: 16px;">⚡</span>
+      <div matTooltip="Contains fuel" role="img" aria-label="Contains fuel">
+        <span style="font-size: 16px;" aria-hidden="true">⚡</span>
       </div>
       }
       @if (expandable && !expanded()) {
