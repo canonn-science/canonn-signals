@@ -1081,7 +1081,9 @@ export class SystemBodyComponent implements OnChanges {
       data: {
         kind,
         bodyName: body.parent?.bodyData.name ?? '',
-        ringName: body.bodyData.name.replace('Ring', '').trim(),
+        // `body` is one of the visible rings classifyRingSystem requires to compute `ringClass`
+        // (see its early returns above), so it is guaranteed to appear in `ringClass.rings`.
+        ringName: ringClass.rings.find(r => r.innerRadius === (body.bodyData.innerRadius ?? 0))!.name,
         parentRadius: ringClass.parentRadius,
         rings: ringClass.rings,
         span: ringClass.span,
@@ -1541,6 +1543,18 @@ export class SystemBodyComponent implements OnChanges {
     return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
   }
 
+  /** `parent`'s ring-type sub-bodies, sorted by inner radius ascending. Includes invisible rings — callers filter those out themselves when they don't want them. */
+  private sortedRingSiblings(parent: SystemBody): SystemBody[] {
+    return parent.subBodies
+      .filter(s => s.bodyData.type === BODY_TYPE.Ring)
+      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+  }
+
+  /** Strips the " Ring" suffix from a ring body's name, leaving just its letter designation (e.g. "A"). */
+  private stripRingSuffix(name: string): string {
+    return name.replace('Ring', '').trim();
+  }
+
   /**
    * Classifies `body`'s ring system as Taylor (unusually narrow) and/or Pauper (unusually
    * wide and distant), or null when `body` isn't a visible ring or the classification can't
@@ -1558,12 +1572,12 @@ export class SystemBodyComponent implements OnChanges {
     const parentRadius = this.physics.getParentRadiusKm(body);
     if (!parentRadius) { return null; }
 
-    const visibleRings = body.parent.subBodies
-      .filter(s => s.bodyData.type === BODY_TYPE.Ring && !this.isInvisibleRing(s.bodyData))
-      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+    const visibleRings = this.sortedRingSiblings(body.parent)
+      .filter(s => !this.isInvisibleRing(s.bodyData));
     if (visibleRings.length === 0) { return null; }
 
-    const innermostInner = Math.min(...visibleRings.map(r => r.bodyData.innerRadius ?? 0));
+    // Already sorted by inner radius ascending, so the first entry is the innermost inner edge.
+    const innermostInner = visibleRings[0].bodyData.innerRadius ?? 0;
     const outermostOuter = Math.max(...visibleRings.map(r => r.bodyData.outerRadius ?? 0));
     const span = outermostOuter - innermostInner;
 
@@ -1575,7 +1589,7 @@ export class SystemBodyComponent implements OnChanges {
       && span > NARROW_RING_SPAN_RADII * parentRadius;
 
     const rings = visibleRings.map(r => ({
-      name: r.bodyData.name.replace('Ring', '').trim(),
+      name: this.stripRingSuffix(r.bodyData.name),
       innerRadius: r.bodyData.innerRadius ?? 0,
       outerRadius: r.bodyData.outerRadius ?? 0,
     }));
@@ -1596,17 +1610,15 @@ export class SystemBodyComponent implements OnChanges {
     if (bd.type !== BODY_TYPE.Ring || !body.parent) {
       return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
     }
-    const siblings = body.parent.subBodies
-      .filter(s => s.bodyData.name.includes('Ring'))
-      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+    const siblings = this.sortedRingSiblings(body.parent);
     const idx = siblings.indexOf(body);
     if (idx < 0 || idx === siblings.length - 1) {
       return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
     }
     const next = siblings[idx + 1];
     const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
-    const thisLabel = bd.name.replace('Ring', '').trim();
-    const nextLabel = next.bodyData.name.replace('Ring', '').trim();
+    const thisLabel = this.stripRingSuffix(bd.name);
+    const nextLabel = this.stripRingSuffix(next.bodyData.name);
     const currentDynamics = this.physics.ringDynamics(body);
     const nextDynamics = this.physics.ringDynamics(next);
     const velocityDiff = (currentDynamics !== null && nextDynamics !== null)

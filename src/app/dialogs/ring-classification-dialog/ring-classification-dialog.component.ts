@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/c
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { ringClassificationDiagram } from '../../data/ring-classification-diagram';
+import { formatGroupedInteger } from '../../data/unit-conversions';
 
 export interface RingClassificationRingInfo {
   name: string;
@@ -61,7 +62,7 @@ export class RingClassificationDialogComponent {
     ringClassificationDiagram(this.data.parentRadius, this.data.rings, this.data.ringName));
 
   public fmt(value: number): string {
-    return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return formatGroupedInteger(value);
   }
 
   public ratio(value: number): string {

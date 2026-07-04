@@ -217,6 +217,11 @@ function fixed2(value: number): string {
   return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Grouped whole number (no decimals), shared by the dialogs that show plain km/radius figures. */
+export function formatGroupedInteger(value: number): string {
+  return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
 /**
  * Inline length display (km base), choosing m / km / ls / ly by magnitude. Thresholds are
  * sensible defaults tuned for in-system distances; AU is intentionally skipped inline (it
