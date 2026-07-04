@@ -34,19 +34,35 @@ export class OrbitalWorkerService {
 
   /** Lazily spins up the shared worker and its Comlink proxy; null when a worker can't be used. */
   private getProxy(): Comlink.Remote<CollisionWorkerApi> | null {
-    if (this.workerUnavailable || typeof Worker === 'undefined') { return null; }
+    if (this.workerUnavailable) { return null; }
     if (!this.proxy) {
-      try {
-        const worker = new Worker(new URL('./collision.worker', import.meta.url), { type: 'module' });
-        this.proxy = Comlink.wrap<CollisionWorkerApi>(worker);
-      } catch {
-        // Module workers unsupported / blocked by CSP / worker URL unresolvable: fall back to running
-        // the engine inline on the main thread rather than leaving collision status permanently blank.
+      this.proxy = this.createProxy();
+      if (!this.proxy) {
+        // No worker available (SSR/jsdom) or its construction failed: latch off so we stop retrying
+        // and run the engine inline on the main thread rather than leaving collision status blank.
         this.workerUnavailable = true;
         return null;
       }
     }
     return this.proxy;
+  }
+
+  /**
+   * Constructs the shared worker and wraps it in a Comlink proxy, or returns null when workers are
+   * unavailable (SSR/jsdom) or blocked (CSP / unresolvable worker URL). Isolated as a `protected`
+   * seam so unit tests can substitute a fake proxy on the instance — the alternative, mocking the
+   * global `Worker` and the `comlink` module, leaks across files under the Angular builder's
+   * non-isolated Vitest default and made these tests flaky. The real Comlink wire is covered by
+   * collision-worker-api.spec.ts.
+   */
+  protected createProxy(): Comlink.Remote<CollisionWorkerApi> | null {
+    if (typeof Worker === 'undefined') { return null; }
+    try {
+      const worker = new Worker(new URL('./collision.worker', import.meta.url), { type: 'module' });
+      return Comlink.wrap<CollisionWorkerApi>(worker);
+    } catch {
+      return null;
+    }
   }
 
   /** Off-thread {@link OrbitalRelationsCore.detectCollisionStatus}. */
