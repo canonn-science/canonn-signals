@@ -433,6 +433,55 @@ describe('HomeComponent (extended coverage)', () => {
     });
   });
 
+  describe('stale-response guards', () => {
+    it('drops a slow SIMBAD response once another system has been selected', async () => {
+      const svc = TestBed.inject(AppService) as any;
+      let resolveAlpha!: (v: unknown) => void;
+      svc.getSimbad = vi.fn()
+        // First (system Alpha) hangs; the later call (Beta) resolves immediately.
+        .mockReturnValueOnce(new Promise(res => { resolveAlpha = res; }))
+        .mockImplementation(() => Promise.resolve({
+          system_address: 20n, name: 'Beta', simbad_name: 'Beta Star', simbad_ident: '@Beta',
+          ra_j2000: 1, dec_j2000: 2,
+        }));
+
+      component.fetchEdGalaxyData('Alpha', 10n);
+      component.fetchEdGalaxyData('Beta', 20n);
+      await flushPromises();
+      expect(component.edGalaxyData()?.Simbad?.Name).toBe('Beta Star');
+
+      // Alpha's response finally arrives — it must not clobber Beta.
+      resolveAlpha({
+        system_address: 10n, name: 'Alpha', simbad_name: 'Alpha Star', simbad_ident: '@Alpha',
+        ra_j2000: 9, dec_j2000: 9,
+      });
+      await flushPromises();
+      expect(component.edGalaxyData()?.Simbad?.Name).toBe('Beta Star');
+    });
+
+    it('drops a slow EDAstro response (summary + background) after switching systems', async () => {
+      const svc = TestBed.inject(AppService) as any;
+      let resolveAlpha!: (v: unknown) => void;
+      svc.getEdastroData = vi.fn()
+        .mockReturnValueOnce(new Promise(res => { resolveAlpha = res; }))
+        .mockImplementation(() => Promise.resolve({
+          name: 'Beta POI', summary: 'Beta summary', mainImage: 'https://example.com/beta.png',
+        }));
+
+      (component as any).processBodies({ system: { name: 'Alpha', id64: 111, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
+      (component as any).processBodies({ system: { name: 'Beta', id64: 222, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
+      await flushPromises();
+      expect(component.edastroData()?.name).toBe('Beta POI');
+
+      setBackgroundImage.mockClear();
+      // Alpha's EDAstro payload resolves late — must not overwrite Beta's data or background.
+      resolveAlpha({ name: 'Alpha POI', summary: 'Alpha summary', mainImage: 'https://example.com/alpha.png' });
+      await flushPromises();
+      expect(component.edastroData()?.name).toBe('Beta POI');
+      expect(setBackgroundImage).not.toHaveBeenCalledWith('https://example.com/alpha.png');
+    });
+  });
+
   describe('autocomplete suggestions', () => {
     it('debounces input and populates the suggestions signal', async () => {
       httpResponses.set('/typeahead', { values: ['Synuefe AB', 'Synuefe CD'] });

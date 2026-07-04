@@ -38,6 +38,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private lastSimbadSystemName: string | null = null;
   private lastSimbadId64: bigint | null = null;
+  // Monotonic token so a slow SIMBAD response for a previously-selected system
+  // can't overwrite edGalaxyData after the user has navigated to another one.
+  private edGalaxyGeneration = 0;
   // Credits are extracted from readme.md at build time by scripts/generate-credits.js.
   // Bound via [innerHTML], which Angular sanitizes; the source is a trusted local file.
   public creditsHtml: string = CREDITS_HTML;
@@ -132,6 +135,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   fetchEdGalaxyData(systemName: string, id64: bigint, coords?: { x: number, y: number, z: number }) {
     const pgName = this.getPGName(id64);
+    // Claim this request's slot; a later fetch bumps the token so this one's
+    // async result is discarded rather than clobbering the newer system's data.
+    const generation = ++this.edGalaxyGeneration;
 
     // Fallback used whenever we don't (or can't) resolve Simbad data.
     const setFallback = () => {
@@ -151,6 +157,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Call the API for Simbad data
     this.appService.getSimbad(id64, systemName, coords)
       .then(result => {
+        // Drop the response if the user has since navigated to another system.
+        if (generation !== this.edGalaxyGeneration) {
+          return;
+        }
         // Remap API response to expected structure for edGalaxyData
         const hasSimbad = result.simbad_name || result.simbad_ident
           || result.ra_j2000 !== undefined || result.dec_j2000 !== undefined;
@@ -166,8 +176,13 @@ export class HomeComponent implements OnInit, OnDestroy {
           } : undefined
         });
       })
-      // Even if the Simbad API fails, still populate edGalaxyData with PGName.
-      .catch(() => setFallback());
+      // Even if the Simbad API fails, still populate edGalaxyData with PGName —
+      // but only while this request is still the current one.
+      .catch(() => {
+        if (generation === this.edGalaxyGeneration) {
+          setFallback();
+        }
+      });
   }
 
   updateEdGalaxyData() {
@@ -741,6 +756,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (isDifferentSystem || !this.edastroData()) {
       this.appService.getEdastroData(data.system.id64)
         .then(edastroData => {
+          // Ignore a late response once the user has loaded a different system,
+          // or it would show this system's summary/image/background on another.
+          if (this.data()?.system?.id64 !== data.system.id64) {
+            return;
+          }
           if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
             // Sanitize the untrusted EDAstro URLs: the image flows into both an
             // <img src> and the page-background `url(...)` (which bypasses Angular's
