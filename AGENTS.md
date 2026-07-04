@@ -49,7 +49,8 @@ body tree. No backend in this repo.
 - `src/app/data/*.ts` — pure data/lookup tables + pure functions (e.g. `temperature-estimation.ts` with `estimateTempRange`/`lookupTempDelta`, `body-images.ts`, `mining-resources.ts`, `materials.ts`, `body-types.ts`, `genus.ts`, `nebulae.ts`, `white-dwarf.ts`, `stellar-reference.ts`, `hr-diagram.ts`, `orbital-diagrams.ts`, `html-entities.ts`, `json-bigint.ts`) **and** the pure injectable services that back the body renderer:
   - `body-physics.service.ts` — densities, Roche limits, Hill spheres, ring-shepherding.
   - `stellar-physics.service.ts` — spin resonance, tangential velocity, jet-cone angle, neutron-star classification.
-  - `orbital-relations.service.ts` — Trojan/Lagrange (L1–L5) and rosette detection from co-orbital siblings.
+  - `orbital-relations.core.ts` / `orbital-relations.service.ts` — the orbital engine: Trojan/Lagrange (L1–L5) and rosette detection **and** collision prediction (3D orbit-proximity + contact-window search) from co-orbital siblings. The maths lives in the framework-free `OrbitalRelationsCore` (no `@angular/core`); `OrbitalRelationsService extends OrbitalRelationsCore {}` is only the `@Injectable` wrapper and re-exports the core's types (so `import { CollisionWindow, … } from './orbital-relations.service'` still resolves). The **heavy collision methods run off the main thread** — see *Heavy computation* below.
+  - `orbital-worker.service.ts` + `collision.worker.ts` / `collision-worker-api.ts` / `collision-request.ts` — the Comlink web-worker offload for the heavy collision search. Light methods (Trojan/rosette/anomaly/Lagrange) stay synchronous on the main thread via `OrbitalRelationsService`.
   - `chart-rendering.service.ts` — Roche/Hill/jet canvas charts (takes a canvas + typed data; no DOM lookups of its own).
 
   - `data/pgnames/*.ts` — procedural-name (boxel) codec: `PGSystem`/`PGRegion`/`PGSectors` convert between id64 system addresses and PG names (`PGSystem.fromSystemAddress`, `isPGSystemName`). Pure logic with its own `pgnames.spec.ts`. (Moved here from `assets/`, which had been shipping the raw `.ts` as static files.)
@@ -118,9 +119,45 @@ idioms; don't reintroduce the older patterns.
 - **Big maps / pure logic** go in `src/app/data/` (a data module or an injectable service) with a
   `*.spec.ts`, not inline in a component.
 
+## Heavy computation (off the main thread)
+The UI is **zoneless** and must stay responsive, so CPU-heavy synchronous maths runs in a shared
+**web worker** (via [Comlink](https://github.com/GoogleChromeLabs/comlink)), not on the main thread.
+The first (and currently only) consumer is the orbital/collision engine; the pattern is built to absorb more.
+- **Shape**: the engine is a **framework-free** class/module under `data/` (no `@angular/core`, so no
+  Angular runtime enters the worker bundle). A single shared worker (`collision.worker.ts`)
+  `Comlink.expose`s an API (`collision-worker-api.ts`); the main-thread facade `OrbitalWorkerService`
+  lazily `Comlink.wrap`s it and exposes `async` methods. It has an **inline fallback** (runs the engine
+  on the main thread) for when `Worker` is unavailable — jsdom unit tests, SSR, or a worker that fails to
+  construct — so callers get one uniform async API and tests exercise the real maths without a thread.
+- **Serialization**: never post a live `SystemBody` — its `parent`/`subBodies` back-refs form a cycle
+  that would drag the whole system tree across the wire. Extract the minimal data into a flat,
+  structured-clone-safe DTO (`collision-request.ts`) and rehydrate it worker-side. `bigint`/`Date`
+  survive structured clone; no `Comlink.transfer`/`proxy` needed for plain data.
+- **Consuming results under zoneless**: land the async result in a `signal` (a plain field won't
+  re-render), and drop stale/out-of-order responses with a per-request **generation token** — see
+  `collisionStatus` / `collisionPending` / `collisionRequestId` / `requestCollisionStatus` in
+  `system-body.component.ts`. Bump the token in `DestroyRef.onDestroy` so a late response isn't written
+  to a destroyed component.
+- **To offload another calc**: add a method to a framework-free core → wrap it in
+  `collision-worker-api.ts` (rehydrate a DTO if it needs tree context, else pass flat args) → add an
+  `async` passthrough on `OrbitalWorkerService`. The single worker + Comlink wiring are reused.
+  - **DTO scope caveat**: `serializeCollisionFamily`'s DTO carries only the *immediate* family — the
+    shared parent plus its direct `subBodies` — and prunes everything else (grandparents, each
+    sibling's own sub-tree, the rest of the system; rehydration sets `parent.parent = null` and gives
+    siblings empty `subBodies`). A method that reads wider context must **not** reuse this DTO — e.g. a
+    whole-system walk like `systemAnomalyEpoch` (via `systemRoot`/`flattenSystem`) would silently
+    return wrong results. Build a DTO that carries exactly what the method reads. This is easy to miss
+    because the **inline fallback runs against the live full tree**, so jsdom unit tests (which take
+    the inline path) stay green while the worker path diverges — cover any new offload with an e2e
+    test that exercises the real worker, or assert worker-vs-inline parity.
+- **Bundling**: `@angular/build` auto-bundles the worker from
+  `new Worker(new URL('./x.worker', import.meta.url), { type: 'module' })` — **keep that URL a static
+  literal** (esbuild detects it syntactically); there is no `tsconfig.worker.json`. `comlink` is a runtime
+  dependency in `package.json` (the `pnpm-lock.yaml` is gitignored; CI resolves it from `package.json`).
+
 ## Verifying changes
 Build + test must stay green: `npm run build` (rc=0; only pre-existing budget warnings are acceptable)
-and `ng test --watch=false` (currently 533/533 across 36 spec files). The **Vitest** suite needs no browser — jsdom
+and `ng test --watch=false` (currently 742/742 across 51 spec files). The **Vitest** suite needs no browser — jsdom
 covers it (note: jsdom has no real `<canvas>`, so chart-rendering tests assert "doesn't throw" rather than pixels).
 The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox) and run separately from the unit-test lane.
 

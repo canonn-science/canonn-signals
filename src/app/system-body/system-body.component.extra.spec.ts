@@ -1141,14 +1141,14 @@ describe('SystemBodyComponent (extended coverage)', () => {
   describe('collision dialog', () => {
     it('opens the collision dialog with this body name and the candidate details', async () => {
       render(makeBody({ name: 'X 1 b' }));
-      component.collisionStatus = {
+      component.collisionStatus.set({
         isCandidate: true, partnerName: 'X 1 c', synodicPeriodDays: 8, combinedRadiiKm: 5000,
         upcomingCollisions: [], simultaneousPartners: [],
         nextCollision: {
           start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
           days: 170, minSeparationKm: 1000,
         },
-      };
+      });
       await component.showCollisionDialog();
       expect(lastDialogData().bodyName).toBe('X 1 b');
       expect(lastDialogData().partnerName).toBe('X 1 c');
@@ -1158,7 +1158,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
 
     it('does nothing when the body is not a collision candidate', async () => {
       render(makeBody({}));
-      component.collisionStatus = null;
+      component.collisionStatus.set(null);
       const before = dialogOpenCalls;
       await component.showCollisionDialog();
       expect(dialogOpenCalls).toBe(before);
@@ -1178,7 +1178,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       // Pre-seed the collision cache so ngOnChanges skips detectCollisionStatus and
       // leaves our in-progress status intact when render() calls detectChanges().
       (component as any).collisionBody = body;
-      component.collisionStatus = {
+      component.collisionStatus.set({
         isCandidate: true, partnerName: '1 c', synodicPeriodDays: 6.8, combinedRadiiKm: 1423,
         upcomingCollisions: [], simultaneousPartners: ['1 b'],
         nextCollision: {
@@ -1187,7 +1187,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
           days: -(2 / (24 * 60)),                    // negative → in progress
           minSeparationKm: 400,
         },
-      };
+      });
       render(body); // ngOnChanges: body === collisionBody → skips override → renders with pre-set status
       const badge: HTMLElement = fixture.nativeElement.querySelector('.badge-red');
       expect(badge).not.toBeNull();
