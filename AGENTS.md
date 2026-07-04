@@ -141,6 +141,15 @@ The first (and currently only) consumer is the orbital/collision engine; the pat
 - **To offload another calc**: add a method to a framework-free core → wrap it in
   `collision-worker-api.ts` (rehydrate a DTO if it needs tree context, else pass flat args) → add an
   `async` passthrough on `OrbitalWorkerService`. The single worker + Comlink wiring are reused.
+  - **DTO scope caveat**: `serializeCollisionFamily`'s DTO carries only the *immediate* family — the
+    shared parent plus its direct `subBodies` — and prunes everything else (grandparents, each
+    sibling's own sub-tree, the rest of the system; rehydration sets `parent.parent = null` and gives
+    siblings empty `subBodies`). A method that reads wider context must **not** reuse this DTO — e.g. a
+    whole-system walk like `systemAnomalyEpoch` (via `systemRoot`/`flattenSystem`) would silently
+    return wrong results. Build a DTO that carries exactly what the method reads. This is easy to miss
+    because the **inline fallback runs against the live full tree**, so jsdom unit tests (which take
+    the inline path) stay green while the worker path diverges — cover any new offload with an e2e
+    test that exercises the real worker, or assert worker-vs-inline parity.
 - **Bundling**: `@angular/build` auto-bundles the worker from
   `new Worker(new URL('./x.worker', import.meta.url), { type: 'module' })` — **keep that URL a static
   literal** (esbuild detects it syntactically); there is no `tsconfig.worker.json`. `comlink` is a runtime

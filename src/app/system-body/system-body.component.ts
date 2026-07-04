@@ -14,6 +14,7 @@ import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
 import { OrbitalWorkerService } from '../data/orbital-worker.service';
+import { logger } from '../data/logger';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
@@ -1720,7 +1721,11 @@ export class SystemBodyComponent implements OnChanges {
         this.collisionStatus.set(status);
         this.collisionPending.set(false);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        // A worker/engine failure leaves the badge simply absent (collisionStatus stays null) rather
+        // than crashing the row. Surface it via the logger (silent in production) so a malfunctioning
+        // worker is diagnosable in development instead of being swallowed without trace.
+        logger.error('Collision search failed', err);
         if (requestId !== this.collisionRequestId) { return; }
         clearTimeout(this.collisionPendingTimer);
         this.collisionPending.set(false);
