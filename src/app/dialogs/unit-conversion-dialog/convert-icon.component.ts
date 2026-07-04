@@ -19,6 +19,7 @@ import type { UnitConversionDialogData } from './unit-conversion-dialog.componen
   selector: 'app-convert-icon',
   template: `<fa-icon class="convert-icon clickable"
                       matTooltip="Show in other units"
+                      [attr.aria-label]="'Show ' + label() + ' in other units'"
                       [icon]="faRightLeft"
                       (click)="open($event)"></fa-icon>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
