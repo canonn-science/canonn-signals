@@ -170,6 +170,13 @@ export class SystemBodyComponent implements OnChanges {
 
   public expandable = false;
   public readonly expanded = signal(false);
+  // Auto-expand is a function of body identity, the anchor target and forceExpanded only.
+  // These record the last values it was evaluated for, so ngOnChanges re-fires from
+  // unrelated inputs (the async edGalaxyData/codex updates) don't re-open a body the
+  // user has since collapsed. See the auto-expand block in ngOnChanges.
+  private autoExpandBody: SystemBody | null = null;
+  private autoExpandAnchor: number | null = null;
+  private autoExpandForce = false;
 
   public hoveredIndex: number = -1;
 
@@ -367,7 +374,22 @@ export class SystemBodyComponent implements OnChanges {
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
       this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
     this.expandable = true;
-    if (this.expanded() === false) {
+    // Auto-expansion is driven only by the body itself, the anchor target (a body-link
+    // click) and forceExpanded. Track the last values each was decided for so unrelated
+    // ngOnChanges re-fires (the async edGalaxyData/codex updates) never re-open a body the
+    // user has collapsed. Crucially, "interesting" only auto-expands on first sight of the
+    // body — an anchor/forceExpanded change expands only the body it now targets, so
+    // navigating to one body never re-opens a *different* interesting body the user
+    // collapsed. Manual toggle and ancestor "expand all" (setExpandedState) are untouched.
+    const anchorBodyId = this.anchorBodyId();
+    const forceExpanded = this.forceExpanded();
+    const bodyChanged = this.autoExpandBody !== body;
+    const anchorChanged = this.autoExpandAnchor !== anchorBodyId;
+    const forceChanged = this.autoExpandForce !== forceExpanded;
+    this.autoExpandBody = body;
+    this.autoExpandAnchor = anchorBodyId;
+    this.autoExpandForce = forceExpanded;
+    if (this.expanded() === false && (bodyChanged || anchorChanged || forceChanged)) {
       const isInteresting = this.hasSignals ||
         body.bodyData.subType === 'Earth-like world' ||
         body.bodyData.subType === 'Water world' ||
@@ -378,7 +400,13 @@ export class SystemBodyComponent implements OnChanges {
         body.bodyData.subType?.includes('Wolf-Rayet') ||
         body.bodyData.subType?.includes('Herbig') ||
         !!body.bodyData.isLandable;
-      this.expanded.set(this.forceExpanded() || isInteresting || this.containsAnchorBody(body));
+      const shouldExpand =
+        (bodyChanged && isInteresting) ||
+        ((bodyChanged || forceChanged) && forceExpanded) ||
+        ((bodyChanged || anchorChanged) && this.containsAnchorBody(body));
+      if (shouldExpand) {
+        this.expanded.set(true);
+      }
     }
 
     if (this.isRoot()) {
@@ -1240,7 +1268,7 @@ export class SystemBodyComponent implements OnChanges {
       meanAnomaly = body.bodyData.meanAnomaly;
       orbitalPeriod = body.bodyData.orbitalPeriod;
       timestamp = new Date(body.bodyData.timestamps.meanAnomaly);
-      currentMeanAnomaly = this.orbitalRelations.meanAnomalyNow(meanAnomaly, orbitalPeriod, body.bodyData.timestamps.meanAnomaly);
+      currentMeanAnomaly = this.orbitalRelations.meanAnomalyNow(meanAnomaly, orbitalPeriod, body.bodyData.timestamps.meanAnomaly, this.appService.nowOverride() ?? Date.now());
       degreesToEvent = this.orbitalRelations.degreesToEvent(currentMeanAnomaly, type);
     }
 
@@ -1916,11 +1944,11 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
-    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'peri');
+    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'peri', this.appService.nowOverride() ?? Date.now());
   }
 
   private calculateNextApoapsis(): { date: Date, days: number } | null {
-    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo');
+    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo', this.appService.nowOverride() ?? Date.now());
   }
 
   private computeMaterialBadges(): void {

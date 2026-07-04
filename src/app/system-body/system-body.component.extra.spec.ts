@@ -138,6 +138,44 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.expanded()).toBe(true);
     });
 
+    it('does not re-expand a collapsed body when ngOnChanges re-fires for unrelated inputs', () => {
+      // A landable body auto-expands on first render.
+      render(makeBody({ isLandable: true }));
+      expect(component.expanded()).toBe(true);
+
+      // The user collapses it.
+      component.setExpandedState(false);
+
+      // An unrelated async input (edGalaxyData/codex) propagating re-fires ngOnChanges with
+      // the same body/anchor/forceExpanded — it must not re-open the collapsed body.
+      component.ngOnChanges();
+      expect(component.expanded()).toBe(false);
+    });
+
+    it('still auto-expands when the anchor target changes to this body (body-link navigation)', () => {
+      // A plain body with nothing interesting stays collapsed on first render.
+      render(makeBody({ bodyId: 7 }));
+      expect(component.expanded()).toBe(false);
+
+      // A body-link click sets the anchor to this body's id → auto-expand re-evaluates.
+      fixture.componentRef.setInput('anchorBodyId', 7);
+      fixture.detectChanges();
+      expect(component.expanded()).toBe(true);
+    });
+
+    it('does not re-expand a collapsed interesting body when the anchor moves to a different body', () => {
+      // A landable body auto-expands, then the user collapses it.
+      render(makeBody({ bodyId: 3, isLandable: true }));
+      expect(component.expanded()).toBe(true);
+      component.setExpandedState(false);
+
+      // Navigating to an unrelated body changes the global anchor input for every body —
+      // "interesting" must not re-trigger; only the targeted body should re-open.
+      fixture.componentRef.setInput('anchorBodyId', 99);
+      fixture.detectChanges();
+      expect(component.expanded()).toBe(false);
+    });
+
     it('reports children presence', () => {
       const parent = makeBody({ bodyId: 1 });
       parent.subBodies = [makeBody({ bodyId: 2 }, parent)];
@@ -196,6 +234,28 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(makeBody({ meanAnomaly: 90, orbitalPeriod: 100, orbitalEccentricity: 0 }));
       expect(component.getNextPeriapsis()).toBeNull();
       expect(component.getNextApoapsis()).toBeNull();
+    });
+
+    it('honours the ?t= time override when computing the next apoapsis', () => {
+      const svc = TestBed.inject(AppService) as any;
+      const body = makeBody({
+        meanAnomaly: 90, orbitalPeriod: 100, orbitalEccentricity: 0.2,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      });
+
+      svc.nowOverride.set(new Date('2026-03-01T00:00:00Z').getTime());
+      render(body);
+      const atMarch1 = component.getNextApoapsis();
+
+      // Advancing the override moves the countdown; without honouring nowOverride both
+      // computations would use the unchanged Date.now() and be identical.
+      svc.nowOverride.set(new Date('2026-03-20T00:00:00Z').getTime());
+      component.ngOnChanges();
+      const atMarch20 = component.getNextApoapsis();
+
+      expect(atMarch1).not.toBeNull();
+      expect(atMarch20).not.toBeNull();
+      expect(atMarch20!.days).not.toBe(atMarch1!.days);
     });
   });
 
