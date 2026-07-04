@@ -302,8 +302,7 @@
           <div class="system-data-section">
             <div class="system-data-section-header">Galactic Exploration Catalog</div>
             <div class="gec-image-panel">
-              <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image" (error)="onGecImageError($event)"
-                #gecImage />
+              <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image" (error)="onGecImageError($event)" />
               @if (edastro.description) {
               <div class="gec-description">{{
                 edastro.description }}
@@ -354,7 +353,7 @@
       <div class="credits-title">
         <span class="credits-title-text">Credits</span>
         <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
-          rel="noopener noreferrer" aria-label="Donate via PayPal (fallback)">
+          aria-label="Donate via PayPal (fallback)">
           <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
         </a>
       </div>

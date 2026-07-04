@@ -40,18 +40,18 @@ body tree. No backend in this repo.
 - `npm run e2e` → `playwright test` (Playwright). End-to-end/functional + responsive + cross-browser checks in `e2e/` (desktop/tablet/mobile × Chromium/Firefox). It boots the dev server itself; deterministic specs stub the APIs with saved payloads in `e2e/fixtures/` (helpers in `e2e/support/`). **Playwright is for functional/UI correctness only — we do NOT use it for stress/load/performance testing.** This sandbox's single dev server can deadlock under heavy parallelism; cap workers (`npx playwright test --workers=6`) if needed.
 
 ## Architecture
-- `src/app/app.component.*` — shell (router outlet, background image via async pipe).
+- `src/app/app.component.*` — shell (router outlet, background image via a `backgroundImage()` signal).
 - `src/app/home/home.component.*` — search + system overview; **large** (~1150 lines), holds search/region-map/markers logic and the Nearest-Nebulae panel.
 - `src/app/system-body/system-body.component.*` — recursive body renderer; still **large (~1430 lines)** but the heavy pure logic (orbital relations, physics, neutron-star classification, canvas charts, temperature lookup) has been extracted into `data/` services. Still the most complex component — **treat with care; prefer extracting more pure logic into a `data/` service over adding to it.**
 - `src/app/region-map/region-map.component.*` — interactive SVG galaxy region map: highlights the current system's region and overlays system / known-system / DSSA / Gnosis markers.
 - `src/app/dialogs/*` — the standalone dialog components (each in its own folder): `roche-limit`, `hill-limit`, `apo-peri`, `orbital-diagram`, `hr-diagram`, `white-dwarf-types`, `on-foot-safety`, `tidal-lock`, `invisible-ring`, `json` (raw-data viewer + copy), plus the shared `dialog-shell`. Open them via `MatDialog` — each opener `await import()`s its dialog so it ships as a lazy chunk, not in the initial bundle.
-- `src/app/app.service.ts` — shared state (BehaviorSubjects) + HTTP; use its `resilientGet()` (timeout + retry) for new API calls.
+- `src/app/app.service.ts` — shared state (signals) + HTTP; use its `resilientGet()` (timeout + retry) for new API calls.
 - `src/app/data/*.ts` — pure data/lookup tables + pure functions (e.g. `temperature-estimation.ts` with `estimateTempRange`/`lookupTempDelta`, `body-images.ts`, `mining-resources.ts`, `materials.ts`, `body-types.ts`, `genus.ts`, `nebulae.ts`, `white-dwarf.ts`, `stellar-reference.ts`, `hr-diagram.ts`, `orbital-diagrams.ts`, `html-entities.ts`, `json-bigint.ts`) **and** the pure injectable services that back the body renderer:
   - `body-physics.service.ts` — densities, Roche limits, Hill spheres, ring-shepherding.
-  - `stellar-physics.service.ts` — spin resonance, tangential velocity, jet-cone angle, neutron-star classification.
+  - `stellar-physics.service.ts` — spin resonance, tangential velocity, neutron-star classification.
   - `orbital-relations.core.ts` / `orbital-relations.service.ts` — the orbital engine: Trojan/Lagrange (L1–L5) and rosette detection **and** collision prediction (3D orbit-proximity + contact-window search) from co-orbital siblings. The maths lives in the framework-free `OrbitalRelationsCore` (no `@angular/core`); `OrbitalRelationsService extends OrbitalRelationsCore {}` is only the `@Injectable` wrapper and re-exports the core's types (so `import { CollisionWindow, … } from './orbital-relations.service'` still resolves). The **heavy collision methods run off the main thread** — see *Heavy computation* below.
   - `orbital-worker.service.ts` + `collision.worker.ts` / `collision-worker-api.ts` / `collision-request.ts` — the Comlink web-worker offload for the heavy collision search. Light methods (Trojan/rosette/anomaly/Lagrange) stay synchronous on the main thread via `OrbitalRelationsService`.
-  - `chart-rendering.service.ts` — Roche/Hill/jet canvas charts (takes a canvas + typed data; no DOM lookups of its own).
+  - `chart-rendering.service.ts` — Roche/Hill canvas charts (takes a canvas + typed data; no DOM lookups of its own).
 
   - `data/pgnames/*.ts` — procedural-name (boxel) codec: `PGSystem`/`PGRegion`/`PGSectors` convert between id64 system addresses and PG names (`PGSystem.fromSystemAddress`, `isPGSystemName`). Pure logic with its own `pgnames.spec.ts`. (Moved here from `assets/`, which had been shipping the raw `.ts` as static files.)
 
@@ -157,7 +157,7 @@ The first (and currently only) consumer is the orbital/collision engine; the pat
 
 ## Verifying changes
 Build + test must stay green: `npm run build` (rc=0; only pre-existing budget warnings are acceptable)
-and `ng test --watch=false` (currently 742/742 across 51 spec files). The **Vitest** suite needs no browser — jsdom
+and `ng test --watch=false` (currently 778/778 across 53 spec files). The **Vitest** suite needs no browser — jsdom
 covers it (note: jsdom has no real `<canvas>`, so chart-rendering tests assert "doesn't throw" rather than pixels).
 The **Playwright** e2e suite (`npm run e2e`) is browser-based (Chromium/Firefox) and run separately from the unit-test lane.
 
