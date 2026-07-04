@@ -61,11 +61,6 @@ describe('HomeComponent', () => {
     expect(component.formatDEJ2000(-1).startsWith('-')).toBe(true);
   });
 
-  it('strips a leading @ from a SIMBAD ident', () => {
-    expect(component.formatSimbadId('@Sol')).toBe('Sol');
-    expect(component.formatSimbadId('Sol')).toBe('Sol');
-  });
-
   it('defers a marker/query request while a search is already in flight', () => {
     // Simulate an in-flight search without driving the HTTP path.
     (component as any)._searching.set(true);

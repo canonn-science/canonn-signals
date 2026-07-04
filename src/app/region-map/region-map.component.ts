@@ -269,9 +269,6 @@ export class RegionMapComponent implements OnChanges {
     setTimeout(() => {
       this.updateMarkerScales(svgElement, scaleFactor);
     }, 50);
-
-    // Add a reset button or double-click handler to zoom out
-    svgElement.style.transition = 'viewBox 0.3s ease';
   }
 
   private updateMarkerScales(svgElement: SVGSVGElement, scaleFactor: number): void {

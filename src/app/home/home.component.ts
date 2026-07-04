@@ -48,11 +48,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!ident) return;
     window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank', 'noopener,noreferrer');
   }
-  openSimbadPage(ident: string) {
-    if (!ident) return;
-    const id = this.formatSimbadId(ident);
-    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(id)}`, '_blank', 'noopener,noreferrer');
-  }
 
   // Format RAJ2000 (degrees) to '19h 21m 45.0s' (rounded to 0.1s, padded)
   formatRAJ2000(ra: number): string {
@@ -88,10 +83,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     return `${sign}${degrees}° ${pad(arcminutes)}′ ${arcseconds.toFixed(1).padStart(4, '0')}″`;
   }
 
-  // Remove leading @ from Ident for SIMBAD ID
-  formatSimbadId(ident: string): string {
-    return ident ? ident.replace(/^@/, '') : '';
-  }
   public readonly edGalaxyData = signal<EdGalaxyData | null>(null);
   // Simbad cache and file loading logic removed (now using API)
 

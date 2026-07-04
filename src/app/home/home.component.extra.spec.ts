@@ -402,11 +402,10 @@ describe('HomeComponent (extended coverage)', () => {
 
     it('opens SIMBAD and signals pages in a new tab', () => {
       component.openSimbadPageRaw('NGC 1');
-      component.openSimbadPage('@NGC 1');
       component.openSignalsPage('Sol');
-      expect(openSpy).toHaveBeenCalledTimes(3);
-      component.openSimbadPage('');
-      expect(openSpy).toHaveBeenCalledTimes(3); // empty ident is a no-op
+      expect(openSpy).toHaveBeenCalledTimes(2);
+      component.openSimbadPageRaw('');
+      expect(openSpy).toHaveBeenCalledTimes(2); // empty ident is a no-op
     });
 
     it('encodes URI components', () => {
