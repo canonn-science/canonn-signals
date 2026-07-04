@@ -26,6 +26,7 @@ const TAYLOR_DATA: RingClassificationDialogData = {
   narrowThresholdKm: 12500,
   pauperInnerEdgeThresholdKm: 700000,
   pauperMaxSpanKm: 100000,
+  hasVisibleGap: false,
 };
 
 const PAUPER_DATA: RingClassificationDialogData = {
@@ -40,6 +41,7 @@ const PAUPER_DATA: RingClassificationDialogData = {
   narrowThresholdKm: 12500,
   pauperInnerEdgeThresholdKm: 700000,
   pauperMaxSpanKm: 100000,
+  hasVisibleGap: false,
 };
 
 describe('RingClassificationDialogComponent', () => {
@@ -83,5 +85,16 @@ describe('RingClassificationDialogComponent', () => {
   it('renders body-radius multiples via ratio()', () => {
     const fixture = setup(PAUPER_DATA);
     expect(fixture.componentInstance.ratio(750000)).toBe('15.0');
+  });
+
+  it('does not show the gap note when hasVisibleGap is false', () => {
+    const el: HTMLElement = setup(TAYLOR_DATA).nativeElement;
+    expect(el.querySelector('.gap-note')).toBeFalsy();
+  });
+
+  it('shows the gap note when hasVisibleGap is true', () => {
+    const el: HTMLElement = setup({ ...TAYLOR_DATA, hasVisibleGap: true }).nativeElement;
+    expect(el.querySelector('.gap-note')).toBeTruthy();
+    expect(el.textContent).toContain('may be visible in-game');
   });
 });

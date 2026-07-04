@@ -994,6 +994,36 @@ describe('SystemBodyComponent (extended coverage)', () => {
         expect(data.pauperMaxSpanKm).toBe(100000);
       });
 
+      it('flags no visible gap for the real two-ring Taylor system (gap of 10 km is well under 2% of the span)', async () => {
+        const parent = makeBody({ name: 'Dryao Phylio AA-A h662 BC 2', type: 'Planet', radius: 67890.304 });
+        const ringA = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 104180, outerRadius: 104920, mass: 50125000000,
+        }, parent);
+        const ringB = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 B Ring', type: 'Ring', subType: 'Icy',
+          innerRadius: 104930, outerRadius: 117400, mass: 1240700000000,
+        }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        await component.showRingClassificationDialog('taylor');
+        expect(lastDialogData().hasVisibleGap).toBe(false);
+      });
+
+      it('flags a visible gap when the space between two rings exceeds 2% of the total span', async () => {
+        const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 50000 });
+        // span = 90 000 − 60 000 = 30 000; gap between the rings = 85 000 − 65 000 = 20 000,
+        // far more than 2% of the span (600 km).
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60000, outerRadius: 65000, mass: 1e15 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 85000, outerRadius: 90000, mass: 1e15 }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        await component.showRingClassificationDialog('taylor');
+        expect(lastDialogData().hasVisibleGap).toBe(true);
+      });
+
       it('does not open a dialog when the ring no longer qualifies for either badge', async () => {
         const before = dialogOpenCalls;
         render(makeBody({ type: 'Planet', subType: 'Rocky body' }));

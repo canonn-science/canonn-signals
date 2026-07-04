@@ -89,6 +89,13 @@
       </ul>
     </div>
 
+    @if (data.hasVisibleGap) {
+    <p class="gap-note">
+      <strong>Note:</strong> The gap between two of the visible rings is wider than 2% of the total span, so it
+      may be visible in-game as a break between the rings rather than reading as one continuous ring.
+    </p>
+    }
+
     <p class="disclaimer">
       <strong>Disclaimer:</strong> The classification is based on the visible and observable structure of the
       ring system rather than its total physical extent — a {{ data.kind === 'taylor' ? 'Taylor' : 'Pauper' }}

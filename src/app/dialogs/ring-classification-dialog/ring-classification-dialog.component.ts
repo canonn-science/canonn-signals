@@ -34,6 +34,8 @@ export interface RingClassificationDialogData {
   pauperInnerEdgeThresholdKm: number;
   /** 2R in km — the Pauper badge's maximum span. */
   pauperMaxSpanKm: number;
+  /** True when the gap between two adjacent visible rings exceeds 2% of the total span. */
+  hasVisibleGap: boolean;
 }
 
 /**

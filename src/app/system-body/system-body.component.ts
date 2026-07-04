@@ -96,6 +96,8 @@ const NARROW_RING_SPAN_RADII = 0.25;
 const PAUPER_RING_MIN_INNER_EDGE_RADII = 14;
 /** Maximum span (body radii) for the Pauper ring badge — no wider than one body diameter. */
 const PAUPER_RING_MAX_SPAN_RADII = 2;
+/** Fraction of the total span above which a gap between two adjacent visible rings is called out as potentially visible. */
+const VISIBLE_GAP_SPAN_FRACTION = 0.02;
 
 @Component({
   selector: 'app-system-body',
@@ -1088,6 +1090,7 @@ export class SystemBodyComponent implements OnChanges {
         narrowThresholdKm: NARROW_RING_SPAN_RADII * ringClass.parentRadius,
         pauperInnerEdgeThresholdKm: PAUPER_RING_MIN_INNER_EDGE_RADII * ringClass.parentRadius,
         pauperMaxSpanKm: PAUPER_RING_MAX_SPAN_RADII * ringClass.parentRadius,
+        hasVisibleGap: ringClass.hasVisibleGap,
       } satisfies RingClassificationDialogData,
     });
   }
@@ -1547,7 +1550,7 @@ export class SystemBodyComponent implements OnChanges {
    */
   private classifyRingSystem(body: SystemBody): {
     isTaylor: boolean; isPauper: boolean; span: number; innermostInner: number; outermostOuter: number;
-    parentRadius: number; rings: RingClassificationRingInfo[];
+    parentRadius: number; rings: RingClassificationRingInfo[]; hasVisibleGap: boolean;
   } | null {
     const bd = body.bodyData;
     if (bd.type !== BODY_TYPE.Ring || !body.parent || this.isInvisibleRing(bd)) { return null; }
@@ -1577,7 +1580,15 @@ export class SystemBodyComponent implements OnChanges {
       outerRadius: r.bodyData.outerRadius ?? 0,
     }));
 
-    return { isTaylor, isPauper, span, innermostInner, outermostOuter, parentRadius, rings };
+    // Gap between each ring's outer edge and the next ring's inner edge — a gap wide enough
+    // relative to the total span may show up as a visible break in an otherwise "single ring".
+    const hasVisibleGap = span > 0 && rings.some((r, i) => {
+      const next = rings[i + 1];
+      if (!next) { return false; }
+      return (next.innerRadius - r.outerRadius) > VISIBLE_GAP_SPAN_FRACTION * span;
+    });
+
+    return { isTaylor, isPauper, span, innermostInner, outermostOuter, parentRadius, rings, hasVisibleGap };
   }
 
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
