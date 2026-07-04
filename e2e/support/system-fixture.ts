@@ -85,6 +85,21 @@ export interface FixtureOptions {
 export async function loadFixtureSystem(page: Page, opts: FixtureOptions): Promise<void> {
   const fixturePath = path.join(FIXTURES_DIR, opts.fixture);
 
+  // Fail-closed catch-all: block any request to a non-local host that isn't explicitly
+  // stubbed below. Registered first so the specific stubs (added after) take precedence —
+  // Playwright checks route handlers in reverse registration order. This keeps the
+  // "deterministic and offline" contract real: a newly-added remote endpoint surfaces as
+  // a broken test instead of silently reaching the live internet (Canonn/EDAstro/SIMBAD/
+  // analytics) and making specs pass or fail on live data. Same-origin requests — the dev
+  // server, its JS chunks and local assets — pass through untouched.
+  await page.route('**/*', (route) => {
+    const { hostname } = new URL(route.request().url());
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return route.continue();
+    }
+    return route.abort();
+  });
+
   await page.route('**/query/codex/biostats*', (route) => route.fulfill({ path: fixturePath }));
   await page.route('**/query/typeahead*', (route) =>
     route.fulfill({ json: { min_max: [{ name: opts.systemName, id64: opts.id64 }] } }),
