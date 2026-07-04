@@ -209,6 +209,12 @@ export class BodyPhysicsService {
     return { primaryRadius, primaryDensity };
   }
 
+  /** Radius (km) of a body's parent primary, or null when the parent exposes no radius. */
+  getParentRadiusKm(body: SystemBody): number | null {
+    if (!body.parent) { return null; }
+    return this.parentRadiusKmOrNull(body.parent.bodyData);
+  }
+
   /**
    * Samples the rigid (1.26×) and fluid (2.456×) Roche-limit curves across particle
    * densities of 500–8000 kg/m³ for plotting against ring/body positions.

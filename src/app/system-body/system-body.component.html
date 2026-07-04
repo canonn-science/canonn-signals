@@ -29,6 +29,18 @@
       @if (isRacingRings()) {
       <span class="badge badge-orange" [matTooltip]="racingRingsTooltip()" matTooltipClass="multiline-tooltip">Racing Rings</span>
       }
+      @if (isTaylorRing()) {
+      <span class="badge badge-blue clickable" [matTooltip]="taylorRingTooltip() + ' — click for an explanation'"
+        matTooltipClass="multiline-tooltip" (click)="showRingClassificationDialog('taylor')">
+        <img alt="" src="assets/icons/taylor-ring.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
+      </span>
+      }
+      @if (isPauperRing()) {
+      <span class="badge badge-blue clickable" [matTooltip]="pauperRingTooltip() + ' — click for an explanation'"
+        matTooltipClass="multiline-tooltip" (click)="showRingClassificationDialog('pauper')">
+        <img alt="" src="assets/icons/pauper-ring.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
+      </span>
+      }
       @if (isActualShepherd()) {
       <span class="badge badge-blue clickable"
         [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"

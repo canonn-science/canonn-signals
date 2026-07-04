@@ -23,6 +23,7 @@ import { GENUS_NAMES } from '../data/genus';
 import type { OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
 import type { TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
+import type { RingClassificationDialogData, RingClassificationRingInfo } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
 import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
 import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
 import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
@@ -66,7 +67,7 @@ const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
  */
 const COLLISION_DIAGRAM_SAMPLES = 1000;
 
-/** Rings below this surface density (kg/km²) are considered invisible. */
+/** Rings below this surface density (Mt/km²) are considered invisible. */
 const INVISIBLE_RING_MAX_DENSITY = 0.1;
 /** Rings wider than this (km) are considered invisible when density is also low. */
 const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
@@ -84,6 +85,19 @@ const RACING_RINGS_MAX_GAP_KM = 50;
  * may be adjusted after in-game observations.
  */
 const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
+
+/**
+ * Body-radius multiple below which a ring system's total span counts as narrow. Used
+ * as the Taylor ring badge's upper threshold, and as the Pauper ring badge's lower
+ * bound (a span this narrow is a Taylor ring, not a Pauper ring).
+ */
+const NARROW_RING_SPAN_RADII = 0.25;
+/** Body-radii the innermost visible ring edge must clear for the Pauper ring badge (unusually distant). */
+const PAUPER_RING_MIN_INNER_EDGE_RADII = 14;
+/** Maximum span (body radii) for the Pauper ring badge — no wider than one body diameter. */
+const PAUPER_RING_MAX_SPAN_RADII = 2;
+/** Fraction of the total span above which a gap between two adjacent visible rings is called out as potentially visible. */
+const VISIBLE_GAP_SPAN_FRACTION = 0.02;
 
 @Component({
   selector: 'app-system-body',
@@ -184,6 +198,10 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getRingVelocityDiffTooltip = signal('');
   public readonly isRacingRings = signal(false);
   public readonly racingRingsTooltip = signal('');
+  public readonly isTaylorRing = signal(false);
+  public readonly taylorRingTooltip = signal('');
+  public readonly isPauperRing = signal(false);
+  public readonly pauperRingTooltip = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -457,6 +475,19 @@ export class SystemBodyComponent implements OnChanges {
     } else {
       this.racingRingsTooltip.set('');
     }
+
+    // Taylor (unusually narrow) / Pauper (unusually wide and distant) ring badges.
+    const ringClass = this.classifyRingSystem(body);
+    this.isTaylorRing.set(ringClass?.isTaylor ?? false);
+    this.isPauperRing.set(ringClass?.isPauper ?? false);
+    this.taylorRingTooltip.set(ringClass?.isTaylor
+      ? `Taylor ring: total ring span is ${ringClass.span.toFixed(0)} km, under 25% of the body's radius `
+        + `(${(NARROW_RING_SPAN_RADII * ringClass.parentRadius).toFixed(0)} km) — unusually narrow`
+      : '');
+    this.pauperRingTooltip.set(ringClass?.isPauper
+      ? `Pauper ring: innermost edge sits ${(ringClass.innermostInner / ringClass.parentRadius).toFixed(1)}× the body's radius out, `
+        + `spanning only ${ringClass.span.toFixed(0)} km — unusually wide and distant`
+      : '');
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -1034,6 +1065,38 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
+  /** Opens the explanation dialog for the Taylor (narrow) or Pauper (wide, distant) ring badge. */
+  public async showRingClassificationDialog(kind: 'taylor' | 'pauper'): Promise<void> {
+    const body = this.body();
+    const ringClass = this.classifyRingSystem(body);
+    if (!ringClass) { return; }
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/ring-classification-dialog/ring-classification-dialog.component').then(m => m.RingClassificationDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        kind,
+        bodyName: body.parent?.bodyData.name ?? '',
+        // `body` is one of the visible rings classifyRingSystem requires to compute `ringClass`
+        // (see its early returns above), so it is guaranteed to appear in `ringClass.rings`.
+        ringName: ringClass.rings.find(r => r.innerRadius === (body.bodyData.innerRadius ?? 0))!.name,
+        parentRadius: ringClass.parentRadius,
+        rings: ringClass.rings,
+        span: ringClass.span,
+        innermostInner: ringClass.innermostInner,
+        outermostOuter: ringClass.outermostOuter,
+        narrowThresholdKm: NARROW_RING_SPAN_RADII * ringClass.parentRadius,
+        pauperInnerEdgeThresholdKm: PAUPER_RING_MIN_INNER_EDGE_RADII * ringClass.parentRadius,
+        pauperMaxSpanKm: PAUPER_RING_MAX_SPAN_RADII * ringClass.parentRadius,
+        hasVisibleGap: ringClass.hasVisibleGap,
+      } satisfies RingClassificationDialogData,
+    });
+  }
+
   /** Opens the Roche-limit chart dialog with the prepared chart data. */
   private async openRocheLimitDialog(data: RocheChartData): Promise<void> {
     openLazyDialog(this.dialog, {
@@ -1480,22 +1543,82 @@ export class SystemBodyComponent implements OnChanges {
     return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
   }
 
+  /** `parent`'s ring-type sub-bodies, sorted by inner radius ascending. Includes invisible rings — callers filter those out themselves when they don't want them. */
+  private sortedRingSiblings(parent: SystemBody): SystemBody[] {
+    return parent.subBodies
+      .filter(s => s.bodyData.type === BODY_TYPE.Ring)
+      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+  }
+
+  /** Strips the " Ring" suffix from a ring body's name, leaving just its letter designation (e.g. "A"). */
+  private stripRingSuffix(name: string): string {
+    return name.replace('Ring', '').trim();
+  }
+
+  /**
+   * Classifies `body`'s ring system as Taylor (unusually narrow) and/or Pauper (unusually
+   * wide and distant), or null when `body` isn't a visible ring or the classification can't
+   * be computed. Both badges are derived from the same "span" of the body's *visible* rings
+   * (invisible rings — see {@link isInvisibleRing} — are stripped first), so the result is
+   * identical for every ring belonging to the same parent and the badge shows on all of them.
+   */
+  private classifyRingSystem(body: SystemBody): {
+    isTaylor: boolean; isPauper: boolean; span: number; innermostInner: number; outermostOuter: number;
+    parentRadius: number; rings: RingClassificationRingInfo[]; hasVisibleGap: boolean;
+  } | null {
+    const bd = body.bodyData;
+    if (bd.type !== BODY_TYPE.Ring || !body.parent || this.isInvisibleRing(bd)) { return null; }
+
+    const parentRadius = this.physics.getParentRadiusKm(body);
+    if (!parentRadius) { return null; }
+
+    const visibleRings = this.sortedRingSiblings(body.parent)
+      .filter(s => !this.isInvisibleRing(s.bodyData));
+    if (visibleRings.length === 0) { return null; }
+
+    // Already sorted by inner radius ascending, so the first entry is the innermost inner edge.
+    const innermostInner = visibleRings[0].bodyData.innerRadius ?? 0;
+    const outermostOuter = Math.max(...visibleRings.map(r => r.bodyData.outerRadius ?? 0));
+    const span = outermostOuter - innermostInner;
+
+    const isTaylor = span < NARROW_RING_SPAN_RADII * parentRadius;
+    // `span > NARROW_RING_SPAN_RADII * parentRadius` here is what keeps this mutually
+    // exclusive with isTaylor above (span < the same threshold).
+    const isPauper = innermostInner >= PAUPER_RING_MIN_INNER_EDGE_RADII * parentRadius
+      && span <= PAUPER_RING_MAX_SPAN_RADII * parentRadius
+      && span > NARROW_RING_SPAN_RADII * parentRadius;
+
+    const rings = visibleRings.map(r => ({
+      name: this.stripRingSuffix(r.bodyData.name),
+      innerRadius: r.bodyData.innerRadius ?? 0,
+      outerRadius: r.bodyData.outerRadius ?? 0,
+    }));
+
+    // Gap between each ring's outer edge and the next ring's inner edge — a gap wide enough
+    // relative to the total span may show up as a visible break in an otherwise "single ring".
+    const hasVisibleGap = span > 0 && rings.some((r, i) => {
+      const next = rings[i + 1];
+      if (!next) { return false; }
+      return (next.innerRadius - r.outerRadius) > VISIBLE_GAP_SPAN_FRACTION * span;
+    });
+
+    return { isTaylor, isPauper, span, innermostInner, outermostOuter, parentRadius, rings, hasVisibleGap };
+  }
+
   private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
     const bd = body.bodyData;
     if (bd.type !== BODY_TYPE.Ring || !body.parent) {
       return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
     }
-    const siblings = body.parent.subBodies
-      .filter(s => s.bodyData.name.includes('Ring'))
-      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+    const siblings = this.sortedRingSiblings(body.parent);
     const idx = siblings.indexOf(body);
     if (idx < 0 || idx === siblings.length - 1) {
       return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
     }
     const next = siblings[idx + 1];
     const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
-    const thisLabel = bd.name.replace('Ring', '').trim();
-    const nextLabel = next.bodyData.name.replace('Ring', '').trim();
+    const thisLabel = this.stripRingSuffix(bd.name);
+    const nextLabel = this.stripRingSuffix(next.bodyData.name);
     const currentDynamics = this.physics.ringDynamics(body);
     const nextDynamics = this.physics.ringDynamics(next);
     const velocityDiff = (currentDynamics !== null && nextDynamics !== null)

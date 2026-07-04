@@ -729,6 +729,308 @@ describe('SystemBodyComponent (extended coverage)', () => {
         expect(component.isRacingRings()).toBe(false);               // invisible guard fires
       });
     });
+
+    describe('Taylor / Pauper ring badges', () => {
+      // Parent radius R = 50 000 km throughout, so:
+      // Taylor threshold (span < 0.25R)         = 12 500 km
+      // Pauper inner-edge threshold (≥ 14R)     = 700 000 km
+      // Pauper max span (≤ 2R)                  = 100 000 km
+      function makeRingSet(defs: Array<{ name: string; inner: number; outer: number; mass?: number }>) {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const rings = defs.map(d => makeBody(
+          { name: d.name, type: 'Ring', subType: 'Rocky', innerRadius: d.inner, outerRadius: d.outer, mass: d.mass ?? 1e15 },
+          parent,
+        ));
+        parent.subBodies.push(...rings);
+        return { parent, rings };
+      }
+
+      it('marks a single narrow ring as Taylor', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 70000 }]); // width 10 000 < 12 500
+        render(ringA);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
+        expect(component.taylorRingTooltip()).toContain('Taylor ring');
+      });
+
+      it('classifies a real body\'s ring as Taylor, not Pauper, even though its inner edge alone clears the Pauper distance bar', () => {
+        // Real Canonn data: Byeia Eurk FB-X e1-4 B 3 (Planet, radius 4 381.512 km) with a
+        // single "A Ring" — raw innerRadius/outerRadius are in metres (71 831 000–72 786 000 m
+        // = 71 831–72 786 km once converted, same as the app's own ring loader), mass in Mt.
+        //   R = 4381.512 km        0.25R = 1 095.378 km   14R = 61 341.168 km   2R = 8 763.024 km
+        //   width = 72 786 − 71 831 = 955 km
+        // 955 km < 0.25R -> Taylor. Its inner edge (71 831 km) is also ≥ 14R — which alone would
+        // satisfy the Pauper badge's distance condition — but the span is *narrower* than 0.25R,
+        // so condition 3 (span > 0.25R) correctly keeps this Taylor-only, not Pauper too.
+        const parent = makeBody({ name: 'Byeia Eurk FB-X e1-4 B 3', type: 'Planet', radius: 4381.512 });
+        const ringA = makeBody({
+          name: 'Byeia Eurk FB-X e1-4 B 3 A Ring', type: 'Ring', subType: 'Metal Rich',
+          innerRadius: 71831, outerRadius: 72786, mass: 3949300000,
+        }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('classifies a real body\'s ring as neither Taylor nor Pauper (ordinary width, and just short of the Pauper distance bar)', () => {
+        // Real Canonn data: Eord Flyue BA-A g56 BC 1 (Planet, radius 5 402.809 km) with a
+        // single "A Ring" — raw innerRadius/outerRadius in metres (75 398 000–78 848 000 m =
+        // 75 398–78 848 km once converted), mass in Mt.
+        //   R = 5402.809 km        0.25R = 1 350.70225 km   14R = 75 639.326 km   2R = 10 805.618 km
+        //   width = 78 848 − 75 398 = 3 450 km
+        // 3 450 km > 0.25R -> not Taylor. For Pauper, span (3 450) and inner edge alone would
+        // clear the max-span and "not narrow" bars, but the inner edge (75 398 km) falls just
+        // short of 14R (75 639.326 km) — a ~241 km miss — so the distance condition fails and
+        // this is neither badge.
+        const parent = makeBody({ name: 'Eord Flyue BA-A g56 BC 1', type: 'Planet', radius: 5402.809 });
+        const ringA = makeBody({
+          name: 'Eord Flyue BA-A g56 BC 1 A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 75398, outerRadius: 78848, mass: 16261000000,
+        }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('classifies a real body\'s ring as Pauper', () => {
+        // Real Canonn data: Oochoxt NO-H d10-1 2 (Planet, radius 4 333.2615 km) with a single
+        // "A Ring" — raw innerRadius/outerRadius in metres (63 670 000–65 539 000 m =
+        // 63 670–65 539 km once converted), mass in Mt.
+        //   R = 4333.2615 km       0.25R = 1 083.315375 km   14R = 60 665.661 km   2R = 8 666.523 km
+        //   span = 65 539 − 63 670 = 1 869 km
+        // Inner edge 63 670 km ≥ 14R, span 1 869 km ≤ 2R, and span > 0.25R (wide enough to not
+        // also be Taylor) — all three Pauper conditions hold.
+        const parent = makeBody({ name: 'Oochoxt NO-H d10-1 2', type: 'Planet', radius: 4333.2615 });
+        const ringA = makeBody({
+          name: 'Oochoxt NO-H d10-1 2 A Ring', type: 'Ring', subType: 'Metallic',
+          innerRadius: 63670, outerRadius: 65539, mass: 6745100000,
+        }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(true);
+        expect(component.pauperRingTooltip()).toContain('Pauper ring');
+      });
+
+      it('classifies a real body\'s two-ring system as Pauper on both rings', () => {
+        // Real Canonn data: Nuekuae ZG-K d9-268 C 3 a (Planet, radius 3 163.639 km) with two
+        // visible rings — raw innerRadius/outerRadius in metres, converted to km the same way
+        // the app's own ring loader does:
+        //   A Ring: 59 133 000–60 317 000 m -> 59 133–60 317 km
+        //   B Ring: 60 417 000–65 344 000 m -> 60 417–65 344 km
+        //   R = 3163.639 km   0.25R = 790.90975 km   14R = 44 290.946 km   2R = 6 327.278 km
+        //   span = outermost outer edge (65 344) − innermost inner edge (59 133) = 6 211 km
+        // Inner edge 59 133 km ≥ 14R, span 6 211 km ≤ 2R (just ~116 km under), and span > 0.25R
+        // — all three Pauper conditions hold, and the badge shows on both rings.
+        const parent = makeBody({ name: 'Nuekuae ZG-K d9-268 C 3 a', type: 'Planet', radius: 3163.639 });
+        const ringA = makeBody({
+          name: 'Nuekuae ZG-K d9-268 C 3 a A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 59133, outerRadius: 60317, mass: 4432900000,
+        }, parent);
+        const ringB = makeBody({
+          name: 'Nuekuae ZG-K d9-268 C 3 a B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60417, outerRadius: 65344, mass: 19801000000,
+        }, parent);
+        parent.subBodies.push(ringA, ringB);
+
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(true);
+
+        render(ringB);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(true);
+      });
+
+      it('does not mark a single mid-width ring as Taylor or Pauper', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 90000 }]); // width 30 000
+        render(ringA);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('marks every ring in a tight multi-ring system as Taylor (total span < 0.25R)', () => {
+        const { rings: [a, b, c] } = makeRingSet([
+          { name: 'A Ring', inner: 60000, outer: 63000 },
+          { name: 'B Ring', inner: 63500, outer: 66000 },
+          { name: 'C Ring', inner: 66500, outer: 70000 }, // span = 70 000 − 60 000 = 10 000 < 12 500
+        ]);
+        render(a); expect(component.isTaylorRing()).toBe(true);
+        render(b); expect(component.isTaylorRing()).toBe(true);
+        render(c); expect(component.isTaylorRing()).toBe(true);
+      });
+
+      it('classifies a real body\'s two-ring system as Taylor on both rings (exactly the "2 or more visible rings" case)', () => {
+        // Real Canonn data: Dryao Phylio AA-A h662 BC 2 (gas giant, radius 67 890.304 km) with
+        // two visible rings — raw innerRadius/outerRadius in metres, converted to km the same
+        // way the app's own ring loader does:
+        //   A Ring: 104 180 000–104 920 000 m -> 104 180–104 920 km
+        //   B Ring: 104 930 000–117 400 000 m -> 104 930–117 400 km
+        //   R = 67 890.304 km   0.25R = 16 972.576 km
+        //   span = outermost outer edge (117 400) − innermost inner edge (104 180) = 13 220 km
+        // 13 220 km < 0.25R -> Taylor, and since the span (not either ring's own width) drives
+        // the "2 or more visible rings" rule, the badge shows on both A and B.
+        const parent = makeBody({ name: 'Dryao Phylio AA-A h662 BC 2', type: 'Planet', radius: 67890.304 });
+        const ringA = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 104180, outerRadius: 104920, mass: 50125000000,
+        }, parent);
+        const ringB = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 B Ring', type: 'Ring', subType: 'Icy',
+          innerRadius: 104930, outerRadius: 117400, mass: 1240700000000,
+        }, parent);
+        parent.subBodies.push(ringA, ringB);
+
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
+
+        render(ringB);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('marks a single wide, distant ring as Pauper', () => {
+        // inner 750 000 ≥ 700 000, span 50 000 (≤ 100 000, > 12 500)
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 750000, outer: 800000, mass: 1e18 }]);
+        render(ringA);
+        expect(component.isPauperRing()).toBe(true);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.pauperRingTooltip()).toContain('Pauper ring');
+      });
+
+      it('does not mark a ring as Pauper when its span exceeds 2R', () => {
+        // inner 750 000 ≥ 700 000, but span 150 000 > 100 000
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 750000, outer: 900000, mass: 1e18 }]);
+        render(ringA);
+        expect(component.isPauperRing()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+      });
+
+      it('does not mark a ring as Pauper when its inner edge is under 14R', () => {
+        // inner 600 000 < 700 000, span 50 000 (≤ 100 000, > 12 500)
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 600000, outer: 650000, mass: 1e18 }]);
+        render(ringA);
+        expect(component.isPauperRing()).toBe(false);
+        expect(component.isTaylorRing()).toBe(false);
+      });
+
+      it('treats a span of exactly 0.25R as neither Taylor nor Pauper (both thresholds are strict)', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 700000, outer: 712500, mass: 1e18 }]); // span = 12 500 exactly
+        render(ringA);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('strips an invisible outer ring before computing the span, so the inner ring still qualifies as Taylor', () => {
+        const parent = makeBody({ name: 'Star', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60000, outerRadius: 70000, mass: 1e15 }, parent); // width 10 000 < 12 500, visible
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 2000000, outerRadius: 5000000, mass: 1 }, parent); // wide + low density → invisible
+        parent.subBodies.push(ringA, ringB);
+
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(false);
+        expect(component.isTaylorRing()).toBe(true);
+
+        render(ringB);
+        expect(component.isRingNotVisible()).toBe(true);
+        expect(component.isTaylorRing()).toBe(false); // invisible rings don't carry the badge themselves
+      });
+
+      it('does not classify a body whose only ring is invisible', () => {
+        const { rings: [ringA] } = makeRingSet([{ name: 'A Ring', inner: 60000, outer: 5000000, mass: 1 }]); // wide + low density
+        render(ringA);
+        expect(component.isRingNotVisible()).toBe(true);
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('does not classify a non-ring body', () => {
+        render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
+        expect(component.isTaylorRing()).toBe(false);
+        expect(component.isPauperRing()).toBe(false);
+      });
+
+      it('opens the Taylor ring explanation dialog with the classification values', async () => {
+        const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60000, outerRadius: 70000, mass: 1e15 }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        await component.showRingClassificationDialog('taylor');
+        const data = lastDialogData();
+        expect(data.kind).toBe('taylor');
+        expect(data.bodyName).toBe('Gas Giant');
+        expect(data.ringName).toBe('A');
+        expect(data.parentRadius).toBe(50000);
+        expect(data.span).toBe(10000);
+        expect(data.rings).toEqual([{ name: 'A', innerRadius: 60000, outerRadius: 70000 }]);
+        expect(data.narrowThresholdKm).toBe(12500);
+      });
+
+      it('opens the Pauper ring explanation dialog with the classification values', async () => {
+        const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 50000 });
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 750000, outerRadius: 800000, mass: 1e18 }, parent);
+        parent.subBodies.push(ringA);
+        render(ringA);
+        await component.showRingClassificationDialog('pauper');
+        const data = lastDialogData();
+        expect(data.kind).toBe('pauper');
+        expect(data.innermostInner).toBe(750000);
+        expect(data.outermostOuter).toBe(800000);
+        expect(data.pauperInnerEdgeThresholdKm).toBe(700000);
+        expect(data.pauperMaxSpanKm).toBe(100000);
+      });
+
+      it('flags no visible gap for the real two-ring Taylor system (gap of 10 km is well under 2% of the span)', async () => {
+        const parent = makeBody({ name: 'Dryao Phylio AA-A h662 BC 2', type: 'Planet', radius: 67890.304 });
+        const ringA = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 104180, outerRadius: 104920, mass: 50125000000,
+        }, parent);
+        const ringB = makeBody({
+          name: 'Dryao Phylio AA-A h662 BC 2 B Ring', type: 'Ring', subType: 'Icy',
+          innerRadius: 104930, outerRadius: 117400, mass: 1240700000000,
+        }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        await component.showRingClassificationDialog('taylor');
+        expect(lastDialogData().hasVisibleGap).toBe(false);
+      });
+
+      it('flags a visible gap when the space between two rings exceeds 2% of the total span', async () => {
+        const parent = makeBody({ name: 'Gas Giant', earthMasses: 100, radius: 50000 });
+        // span = 90 000 − 60 000 = 30 000; gap between the rings = 85 000 − 65 000 = 20 000,
+        // far more than 2% of the span (600 km).
+        const ringA = makeBody({ name: 'A Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 60000, outerRadius: 65000, mass: 1e15 }, parent);
+        const ringB = makeBody({ name: 'B Ring', type: 'Ring', subType: 'Rocky',
+          innerRadius: 85000, outerRadius: 90000, mass: 1e15 }, parent);
+        parent.subBodies.push(ringA, ringB);
+        render(ringA);
+        await component.showRingClassificationDialog('taylor');
+        expect(lastDialogData().hasVisibleGap).toBe(true);
+      });
+
+      it('does not open a dialog when the ring no longer qualifies for either badge', async () => {
+        const before = dialogOpenCalls;
+        render(makeBody({ type: 'Planet', subType: 'Rocky body' }));
+        await component.showRingClassificationDialog('taylor');
+        expect(dialogOpenCalls).toBe(before);
+      });
+    });
   });
 
   describe('Roche / shepherding for a moon', () => {
