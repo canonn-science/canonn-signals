@@ -247,8 +247,13 @@ export async function assertBody(page: Page, spec: BodySpec): Promise<void> {
         .filter({ has: page.getByText(label, { exact: true }) })
         .locator('> div')
         .last();
-      await valueCell.scrollIntoViewIfNeeded();
-      await valueCell.hover();
+      // Hover the value text itself (the `<span>` that carries the matTooltip), not the cell wrapper.
+      // At narrow widths a wrapped label makes the flex row tall; the value cell stretches to that
+      // height while its single-line text stays at the top, so the cell's geometric centre — where
+      // `.hover()` aims — falls into empty space below the text and never fires the span's mouseenter.
+      const tooltipTarget = valueCell.locator('> span').first();
+      await tooltipTarget.scrollIntoViewIfNeeded();
+      await tooltipTarget.hover();
       // Scope to the *shown* tooltip — Material keeps hidden tooltips in the DOM
       // (toggling -show/-hide classes), so `.mat-mdc-tooltip` alone is ambiguous.
       await expect(
