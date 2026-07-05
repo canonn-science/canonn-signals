@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { loadFixtureSystem } from './support/system-fixture';
+import { loadFixtureSystem, clickToOpenDialog } from './support/system-fixture';
 
 /**
  * E2E coverage for the tidal-lock dialog (`app-tidal-lock-dialog`).
@@ -20,9 +20,8 @@ const FIXTURE = { fixture: 'alpha-centauri.json', systemName: 'Alpha Centauri', 
 /** Opens the tidal-lock dialog from a body's header badge and returns the dialog locator. */
 async function openTidalLockDialog(page: Page, bodyId: number) {
   // Scope to the body's OWN header (direct child) so a nested child body's badge can't match.
-  await page.locator(`#body-${bodyId} > .body-title .badge-purple`).click();
   const dialog = page.locator('app-tidal-lock-dialog');
-  await expect(dialog).toBeVisible();
+  await clickToOpenDialog(page.locator(`#body-${bodyId} > .body-title .badge-purple`), dialog);
   await expect(dialog.getByRole('heading', { name: 'Tidal Locking & Synchronous Rotation' })).toBeVisible();
   return dialog;
 }

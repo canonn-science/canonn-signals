@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { loadFixtureSystem, type FixtureOptions } from './support/system-fixture';
+import { loadFixtureSystem, clickToOpenDialog, type FixtureOptions } from './support/system-fixture';
 
 /**
  * Trojan / Lagrange badge rendering, end-to-end, from saved biostats payloads.
@@ -176,7 +176,10 @@ test.describe('Lagrange points dialog', () => {
   test('Host badge opens the diagram with the host highlighted and L4/L5 companions', async ({ page }) => {
     await loadFixtureSystem(page, byName('Eorld Byio AA-A h539'));
 
-    await page.locator('#body-35 > .body-title .badge.badge-blue', { hasText: 'Host' }).click();
+    await clickToOpenDialog(
+      page.locator('#body-35 > .body-title .badge.badge-blue', { hasText: 'Host' }),
+      page.locator('app-lagrange-dialog'),
+    );
 
     const svg = page.locator('app-lagrange-dialog svg');
     await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
@@ -199,7 +202,10 @@ test.describe('Lagrange points dialog', () => {
     await loadFixtureSystem(page, byName('Pro Eurl JF-A d88'));
 
     // Body 33 (B 3) is labelled L4; clicking it focuses it in the diagram.
-    await page.locator('#body-33 > .body-title .badge.badge-blue', { hasText: 'L4' }).click();
+    await clickToOpenDialog(
+      page.locator('#body-33 > .body-title .badge.badge-blue', { hasText: 'L4' }),
+      page.locator('app-lagrange-dialog'),
+    );
 
     const svg = page.locator('app-lagrange-dialog svg');
     await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
@@ -217,7 +223,10 @@ test.describe('Lagrange points dialog', () => {
     await loadFixtureSystem(page, byName('Pro Eurl HW-W e1-1'));
 
     // B 3 a (body 31) is one half of the L3 pair; clicking its badge focuses it in the diagram.
-    await page.locator('#body-31 > .body-title .badge.badge-blue', { hasText: 'L3' }).click();
+    await clickToOpenDialog(
+      page.locator('#body-31 > .body-title .badge.badge-blue', { hasText: 'L3' }),
+      page.locator('app-lagrange-dialog'),
+    );
 
     const svg = page.locator('app-lagrange-dialog svg');
     await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
@@ -256,7 +265,10 @@ test.describe('Lagrange points dialog', () => {
 
     // AB 2 (body 13) hosts AB 3 / AB 4 at ±60° around barycentre 1 → it is badged Host, and
     // clicking opens the diagram centred on the barycentre as the primary.
-    await page.locator('#body-13 > .body-title .badge.badge-blue', { hasText: 'Host' }).click();
+    await clickToOpenDialog(
+      page.locator('#body-13 > .body-title .badge.badge-blue', { hasText: 'Host' }),
+      page.locator('app-lagrange-dialog'),
+    );
     const svg = page.locator('app-lagrange-dialog svg');
     await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
     await expect(svg).toContainText('AB 2');
@@ -293,7 +305,10 @@ test.describe('Lagrange points dialog', () => {
     test(`opens the AB 2/3/4 barycentre Trojan diagram from ${name} (${badge})`, async ({ page }) => {
       await loadFixtureSystem(page, byName('Hyuqoae GH-V f2-368'));
 
-      await page.locator(`#body-${bodyId} > .body-title .badge.badge-blue`, { hasText: badge }).click();
+      await clickToOpenDialog(
+        page.locator(`#body-${bodyId} > .body-title .badge.badge-blue`, { hasText: badge }),
+        page.locator('app-lagrange-dialog'),
+      );
 
       const svg = page.locator('app-lagrange-dialog svg');
       await expect(page.locator('app-lagrange-dialog').getByRole('heading', { name: 'Lagrange points' })).toBeVisible();
