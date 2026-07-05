@@ -52,6 +52,37 @@ describe('HomeComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('renders the loading shell (real chrome + value-only shimmer) with an accessible status while searching', () => {
+    // Drive the `@else if (searching)` branch: no system data yet, a search in flight.
+    fixture.detectChanges();
+    (component as unknown as { _searching: { set(v: boolean): void } })._searching.set(true);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const shell = el.querySelector('.system-loading');
+    expect(shell).not.toBeNull();
+
+    // Accessible loading status for assistive tech; the decorative shell is hidden from AT.
+    expect(shell!.querySelector('[role="status"]')?.textContent).toContain('Loading');
+    expect(shell!.querySelector('.system-info-box')?.getAttribute('aria-hidden')).toBe('true');
+
+    // Static section headers render as real text (identical for every system) and in order.
+    const headers = Array.from(shell!.querySelectorAll('.system-data-section-header')).map((h) =>
+      h.textContent?.trim(),
+    );
+    expect(headers).toEqual(['Location', 'Society', 'Distances', 'Nearest DSSA', 'Nearest Nebulae']);
+
+    // A labelled row: the label cell is real text, only the value cell to its right shimmers.
+    const firstEntry = shell!.querySelector('.system-data-entry') as HTMLElement;
+    const cells = firstEntry.querySelectorAll(':scope > div');
+    expect(cells[0].textContent?.trim()).toBe('PG Name');
+    expect(cells[0].querySelector('.skeleton')).toBeNull();
+    expect(cells[1].querySelector('.skeleton')).not.toBeNull();
+
+    // Bodies are unknown until data arrives, so the body tree stays a fixed set of generic rows.
+    expect(shell!.querySelectorAll('.loading-body-row').length).toBe(6);
+  });
+
   it('formats RAJ2000 degrees into an h/m/s string', () => {
     expect(component.formatRAJ2000(0)).toBe('0h 00m 00.0s');
   });

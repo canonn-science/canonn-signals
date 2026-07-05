@@ -33,7 +33,7 @@
 @if (data(); as data) {
 @let edastro = edastroData();
 @let edGalaxy = edGalaxyData();
-<div class="system-container" animate.enter="system-container--enter" animate.leave="system-container--leave">
+<div class="system-container">
   <div class="system-container-data">
     <div class="system-info-box">
       <div class="system-title">
@@ -365,5 +365,72 @@
 </div>
 }
 @else if (searching) {
-<app-system-skeleton />
+<!-- Loading shell: reuses the real system chrome classes below (.system-container, .system-data,
+     .system-data-section, .system-completeness, .bodies …) so layout, spacing and the responsive
+     breakpoints come from one place — only the shimmer tuning is loading-specific (see .system-loading
+     in the SCSS). Static section headers and row labels render as real text; per-system value cells
+     shimmer. The map reuses RegionMapComponent's own reserved-space skeleton (mounted with no system),
+     and the body tree stays generic because bodies are unknown until the data arrives. -->
+<div class="system-container system-loading" [animate.enter]="fadeInPanel() ? 'system-container--enter' : ''">
+  <div class="system-container-data">
+    <span class="sr-only" role="status">Loading system data…</span>
+    <div class="system-info-box" aria-hidden="true">
+      <div class="system-title">
+        <span class="skeleton skeleton-w40"></span>
+      </div>
+      <div class="system-data">
+        <app-region-map />
+        <div class="system-data-columns">
+          <!-- Labelled sections (Location, Society): the static label renders as real text; only the
+               value cell shimmers. -->
+          @for (section of loadingLabelledSections; track section.header) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">{{ section.header }}</div>
+            @for (row of section.rows; track row.label) {
+            <div class="system-data-entry">
+              <div>{{ row.label }}</div>
+              <div><span class="skeleton" [style.width.px]="row.value"></span></div>
+            </div>
+            }
+          </div>
+          }
+          <!-- Shimmer sections (Distances, DSSA, Nebulae): no static label (the system name is
+               per-system too), so both cells shimmer. -->
+          @for (section of loadingShimmerSections; track section.header) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">{{ section.header }}</div>
+            @for (row of section.rows; track $index) {
+            <div class="system-data-entry">
+              <div><span class="skeleton" [style.width.px]="row.name"></span></div>
+              <div><span class="skeleton" [style.width.px]="row.value"></span></div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="system-completeness" aria-hidden="true">
+      <div class="system-completeness-header">
+        <span class="system-completeness-label">System Completeness</span>
+        <span class="skeleton system-completeness-count-loading"></span>
+        <span class="skeleton system-completeness-value-loading"></span>
+      </div>
+      <div class="system-completeness-track">
+        <span class="skeleton"></span>
+      </div>
+    </div>
+
+    <div class="bodies" aria-hidden="true">
+      @for (row of loadingBodyRows; track row) {
+      <div class="loading-body-row">
+        <span class="skeleton loading-body-name"></span>
+        <span class="skeleton loading-body-chip"></span>
+        <span class="skeleton loading-body-chip"></span>
+      </div>
+      }
+    </div>
+  </div>
+</div>
 }

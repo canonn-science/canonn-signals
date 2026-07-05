@@ -245,24 +245,17 @@
     justify-content: center
 }
 
-// Enter/leave animations for the results panel (replaces the legacy
-// `trigger('visibilityTrigger')` animation, removed in favour of animate.enter/leave).
+// Fade the results panel in when it first materialises. Applied to the loading shell only, and
+// only when no panel was already on screen (see HomeComponent.fadeInPanel) — the shell→loaded
+// hand-over is an instant swap, because the reserved-space chrome is identical and fading the
+// loaded view in over the shell would flash the background through the panel.
 .system-container--enter {
     animation: system-container-enter 400ms ease;
-}
-
-.system-container--leave {
-    animation: system-container-leave 200ms ease;
 }
 
 @keyframes system-container-enter {
     from { opacity: 0; }
     to { opacity: 1; }
-}
-
-@keyframes system-container-leave {
-    from { opacity: 1; }
-    to { opacity: 0; }
 }
 
 .system-container .system-container-data {
