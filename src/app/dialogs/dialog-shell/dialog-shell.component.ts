@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostBinding, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import {
   MatDialogActions,
@@ -28,15 +28,16 @@ import { MatButton } from '@angular/material/button';
   templateUrl: './dialog-shell.component.html',
   styleUrls: ['./dialog-shell.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.fit-content]': 'fitContent()' },
   imports: [MatDialogTitle, CdkScrollable, MatDialogContent, MatDialogActions, MatButton, MatDialogClose],
 })
 export class DialogShellComponent {
   /** Heading shown in the dialog title bar. */
-  @Input({ required: true }) heading!: string;
+  readonly heading = input.required<string>();
 
   /**
    * When true, the shell sizes to its content (auto height, capped at the shared
    * max-height) instead of the default fixed height. Reflected to the host as a class.
    */
-  @Input() @HostBinding('class.fit-content') fitContent = false;
+  readonly fitContent = input(false);
 }
