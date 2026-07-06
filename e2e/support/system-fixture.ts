@@ -166,13 +166,47 @@ export async function expectMassStabilityWarning(
   }
 }
 
-/** Expands a body's detail panel if it isn't already open. */
+/**
+ * Expands a body's detail panel if it isn't already open.
+ *
+ * Idempotent and resilient to the component auto-expanding the body on its own: the panel
+ * auto-opens once its async inputs settle, so a plain "click the expand caret, then assert"
+ * races that — a click landing just after the body auto-opens toggles the panel shut again.
+ * Instead, retry, clicking only while the panel is still collapsed (expand caret present) and
+ * settling once the collapse caret — the animation-free signal that `expanded()` is true — is
+ * shown. Any click that races auto-expansion is corrected on the next iteration.
+ */
 export async function ensureBodyExpanded(page: Page, bodyId: number): Promise<void> {
-  const expand = ownHeader(page, bodyId).getByLabel('Expand body details');
-  if ((await expand.count()) > 0 && (await expand.first().isVisible())) {
-    await expand.first().click();
-  }
+  const header = ownHeader(page, bodyId);
+  const expandCaret = header.getByLabel('Expand body details');
+  const collapseCaret = header.getByLabel('Collapse body details');
+  await expect(async () => {
+    if ((await expandCaret.count()) > 0) {
+      await expandCaret.first().click({ timeout: 2000 });
+    }
+    await expect(collapseCaret).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10000 });
   await expect(ownContent(page, bodyId)).toBeVisible();
+}
+
+/**
+ * Clicks a control that opens a dialog and waits for the dialog to appear, re-clicking if the
+ * first click was lost.
+ *
+ * Fixture pages keep re-rendering body headers as async data settles (codex enrichment,
+ * worker-computed Lagrange/collision badges), so a click can land on a header node that is
+ * swapped out a frame later — the event is dropped and the dialog never opens (an intermittent
+ * Firefox flake where the page just sits there). Re-clicking the freshly-resolved trigger until
+ * the dialog is shown makes it deterministic; the visibility guard means an already-open dialog
+ * is never re-clicked (which would hit the backdrop or toggle it shut).
+ */
+export async function clickToOpenDialog(trigger: Locator, dialog: Locator): Promise<void> {
+  await expect(async () => {
+    if (!(await dialog.isVisible())) {
+      await trigger.click({ timeout: 2000 });
+    }
+    await expect(dialog).toBeVisible({ timeout: 3000 });
+  }).toPass({ timeout: 15000 });
 }
 
 /**

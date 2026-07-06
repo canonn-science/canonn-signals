@@ -52,7 +52,9 @@ function parseCsv(csv) {
   for (const line of rows) {
     const [name, system, x, y, z, type] = parseCsvLine(line);
     const nx = Number(x), ny = Number(y), nz = Number(z);
-    if (!name || Number.isNaN(nx) || Number.isNaN(ny) || Number.isNaN(nz)) {
+    // isFinite (not isNaN): a value like "1e999" parses to Infinity, which passes an
+    // isNaN check but serialises as bare `Infinity` — invalid JSON that breaks the load.
+    if (!name || !Number.isFinite(nx) || !Number.isFinite(ny) || !Number.isFinite(nz)) {
       continue; // skip malformed rows
     }
     nebulae.push({ name: name.trim(), system: (system || '').trim(), x: nx, y: ny, z: nz, type: (type || '').trim() });
