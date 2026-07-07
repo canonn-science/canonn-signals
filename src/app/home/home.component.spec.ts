@@ -52,6 +52,37 @@ describe('HomeComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('renders the loading shell (real chrome + value-only shimmer) with an accessible status while searching', () => {
+    // Drive the `@else if (searching)` branch: no system data yet, a search in flight.
+    fixture.detectChanges();
+    (component as unknown as { _searching: { set(v: boolean): void } })._searching.set(true);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const shell = el.querySelector('.system-loading');
+    expect(shell).not.toBeNull();
+
+    // Accessible loading status for assistive tech; the decorative shell is hidden from AT.
+    expect(shell!.querySelector('[role="status"]')?.textContent).toContain('Loading');
+    expect(shell!.querySelector('.system-info-box')?.getAttribute('aria-hidden')).toBe('true');
+
+    // Static section headers render as real text (identical for every system) and in order.
+    const headers = Array.from(shell!.querySelectorAll('.system-data-section-header')).map((h) =>
+      h.textContent?.trim(),
+    );
+    expect(headers).toEqual(['Location', 'Society', 'Distances', 'Nearest DSSA', 'Nearest Nebulae']);
+
+    // A labelled row: the label cell is real text, only the value cell to its right shimmers.
+    const firstEntry = shell!.querySelector('.system-data-entry') as HTMLElement;
+    const cells = firstEntry.querySelectorAll(':scope > div');
+    expect(cells[0].textContent?.trim()).toBe('PG Name');
+    expect(cells[0].querySelector('.skeleton')).toBeNull();
+    expect(cells[1].querySelector('.skeleton')).not.toBeNull();
+
+    // Bodies are unknown until data arrives, so the body tree stays a fixed set of generic rows.
+    expect(shell!.querySelectorAll('.loading-body-row').length).toBe(6);
+  });
+
   it('formats RAJ2000 degrees into an h/m/s string', () => {
     expect(component.formatRAJ2000(0)).toBe('0h 00m 00.0s');
   });
@@ -59,6 +90,34 @@ describe('HomeComponent', () => {
   it('formats DEJ2000 degrees with a sign', () => {
     expect(component.formatDEJ2000(0)).toContain('+0°');
     expect(component.formatDEJ2000(-1).startsWith('-')).toBe(true);
+  });
+
+  it('publishes the PGName synchronously so its row never blanks while Simbad loads', async () => {
+    // Merope is a hand-named system, so it routes through the async Simbad lookup rather than the
+    // synchronous PG-system fallback. Hold the Simbad promise open to observe the pre-resolve state.
+    const id64 = 396316991853421732n;
+    let resolveSimbad!: (v: unknown) => void;
+    const appService = TestBed.inject(AppService) as unknown as {
+      getSimbad: (...args: unknown[]) => Promise<unknown>;
+    };
+    appService.getSimbad = () => new Promise((res) => { resolveSimbad = res; });
+
+    component.fetchEdGalaxyData('Merope', id64);
+
+    // Before Simbad settles, edGalaxyData already carries the PGName (previously it stayed null for
+    // the whole request, which blanked the "PG Name" row after the skeleton handed over).
+    const pending = component.edGalaxyData();
+    expect(pending).not.toBeNull();
+    expect(pending!.PGName).toBeTruthy();
+    expect(pending!.Simbad).toBeUndefined();
+
+    // Once Simbad resolves it merges in, without ever clearing the PGName row.
+    resolveSimbad({ name: 'Merope', system_address: id64, simbad_name: '23 Tau', ra_j2000: 10, dec_j2000: 20 });
+    await Promise.resolve();
+    await Promise.resolve();
+    const resolved = component.edGalaxyData();
+    expect(resolved!.PGName).toBe(pending!.PGName);
+    expect(resolved!.Simbad?.Name).toBe('23 Tau');
   });
 
   it('defers a marker/query request while a search is already in flight', () => {

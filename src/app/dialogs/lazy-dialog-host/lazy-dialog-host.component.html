@@ -12,21 +12,21 @@
   </mat-dialog-actions>
 } @else if (showSkeleton()) {
   <h2 mat-dialog-title>
-    <span class="lazy-dialog__sr-only">Loading…</span>
-    <span class="lazy-skeleton lazy-skeleton--title" aria-hidden="true"></span>
+    <span class="sr-only">Loading…</span>
+    <span class="skeleton skeleton-title" aria-hidden="true"></span>
   </h2>
   <mat-dialog-content>
     @switch (config.skeleton ?? 'text') {
       @case ('diagram') {
-        <div class="lazy-skeleton lazy-skeleton--diagram" aria-hidden="true"></div>
-        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w70" aria-hidden="true"></div>
-        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w50" aria-hidden="true"></div>
+        <div class="skeleton skeleton-diagram" aria-hidden="true"></div>
+        <div class="skeleton skeleton-line skeleton-w70" aria-hidden="true"></div>
+        <div class="skeleton skeleton-line skeleton-w50" aria-hidden="true"></div>
       }
       @default {
-        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w90" aria-hidden="true"></div>
-        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w80" aria-hidden="true"></div>
-        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w85" aria-hidden="true"></div>
-        <div class="lazy-skeleton lazy-skeleton--line lazy-skeleton--w60" aria-hidden="true"></div>
+        <div class="skeleton skeleton-line skeleton-w90" aria-hidden="true"></div>
+        <div class="skeleton skeleton-line skeleton-w80" aria-hidden="true"></div>
+        <div class="skeleton skeleton-line skeleton-w85" aria-hidden="true"></div>
+        <div class="skeleton skeleton-line skeleton-w60" aria-hidden="true"></div>
       }
     }
   </mat-dialog-content>

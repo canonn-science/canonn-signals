@@ -161,11 +161,144 @@ body {
   to { background-position: 0 0; }
 }
 
+// --- Loading skeletons ---------------------------------------------------------------------
+// Shared shimmer primitive for loading placeholders — used by the lazy-dialog host and the
+// system-view loading skeleton. A neutral slate tint reads on both dark and light backgrounds.
+// Compose `.skeleton` (the shimmer) with a shape helper and a width utility, e.g.
+// `<span class="skeleton skeleton-line skeleton-w80">`.
+// Retint presets: a surface sets `--skeleton-base`/`--skeleton-highlight` from these so its nested
+// `.skeleton` placeholders stay visible — a darker tone on the light-grey system panels (used by the
+// home loading shell, `.system-loading` below), and a near-black tone for the region-map placeholder
+// (which resembles the map; used by region-map.component.scss).
+:root {
+  --skeleton-tone-on-light-base: rgba(40, 48, 62, 0.20);
+  --skeleton-tone-on-light-highlight: rgba(40, 48, 62, 0.38);
+  --skeleton-tone-map-base: rgba(28, 34, 44, 0.55);
+  --skeleton-tone-map-highlight: rgba(70, 80, 96, 0.55);
+}
+
+// The tone reads `--skeleton-base`/`--skeleton-highlight` with a light-slate fallback (good on dark
+// surfaces). A surface can override those two custom properties to retint the shimmer — e.g. a
+// darker tone so placeholders stay visible on a light panel — and every nested `.skeleton` inherits it.
+.skeleton {
+  border-radius: 4px;
+  background-color: var(--skeleton-base, rgba(148, 163, 184, 0.16));
+  background-image: linear-gradient(
+    90deg,
+    var(--skeleton-base, rgba(148, 163, 184, 0.16)) 25%,
+    var(--skeleton-highlight, rgba(148, 163, 184, 0.34)) 37%,
+    var(--skeleton-base, rgba(148, 163, 184, 0.16)) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+// Generic shapes — height/width tuned by the caller or the width utilities below.
+.skeleton-line { height: 0.85rem; }
+.skeleton-block { border-radius: 6px; }
+.skeleton-circle { border-radius: 50%; }
+
+.skeleton-w95 { width: 95%; }
+.skeleton-w90 { width: 90%; }
+.skeleton-w85 { width: 85%; }
+.skeleton-w80 { width: 80%; }
+.skeleton-w70 { width: 70%; }
+.skeleton-w60 { width: 60%; }
+.skeleton-w50 { width: 50%; }
+.skeleton-w40 { width: 40%; }
+
+@keyframes skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
 // Honour reduced-motion: keep the placeholder, drop the sweep.
 @media (prefers-reduced-motion: reduce) {
-  .badge-skeleton {
+  .badge-skeleton,
+  .skeleton {
     animation: none;
   }
+}
+
+// Visually-hidden text — present for assistive tech, off-screen for sighted users. Used to give
+// otherwise decorative (aria-hidden) shimmer placeholders an accessible loading label.
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// --- System loading shell -------------------------------------------------------------------
+// The home view's `@else if (searching)` branch renders the REAL system chrome (same .system-*
+// classes as the loaded view — see home.component.html/scss), so the layout, spacing and responsive
+// breakpoints come from one place and can't drift. Only the loading-specific shimmer tuning lives
+// here, and it's global (not in home.component.scss) both to sit beside the shared `.skeleton`
+// primitive it composes with and to keep that component's stylesheet under the per-component budget.
+.system-loading {
+  // Retint so placeholders read over the light-grey .system-data / .system-completeness panels.
+  .system-data,
+  .system-completeness {
+    --skeleton-base: var(--skeleton-tone-on-light-base);
+    --skeleton-highlight: var(--skeleton-tone-on-light-highlight);
+  }
+
+  // Reserve each row at the real text-row height so the label-less Distances/DSSA/Nebulae rows
+  // (both cells shimmer, no real text to set the height) don't collapse to the shimmer height and
+  // jump the page up when their real text lands. Centre the short shimmer in the reserved row.
+  .system-data-entry {
+    min-height: 1.2rem;
+    align-items: center;
+  }
+
+  // Per-system value cell: inline-block so the per-row width (set inline in the template) is honoured.
+  .system-data-entry .skeleton {
+    display: inline-block;
+    height: 0.72rem;
+    vertical-align: middle;
+  }
+
+  // System-name bar: sized so the title bar matches the real one's height exactly (its 150%-font
+  // text line is ~28px, and the bar adds 8px padding top+bottom → 44px), avoiding a small vertical
+  // jump on hand-over. Width comes from the shared `.skeleton-w40` utility on the element.
+  .system-title .skeleton {
+    display: block;
+    height: 1.75rem;
+    max-width: 340px;
+  }
+
+  // Completeness header count/percent placeholders (mirror the real label | count | % layout).
+  .system-completeness-count-loading { display: inline-block; width: 84px; height: 0.7rem; }
+  .system-completeness-value-loading { display: inline-block; width: 32px; height: 0.9rem; }
+
+  // The completeness fill sits on the dark track, so reset to the default light-slate shimmer.
+  .system-completeness-track .skeleton {
+    display: block;
+    width: 45%;
+    height: 100%;
+    --skeleton-base: rgba(148, 163, 184, 0.16);
+    --skeleton-highlight: rgba(148, 163, 184, 0.34);
+  }
+
+  // Generic body rows (bodies are unknown until data arrives) — dark rows like the real body titles,
+  // so their placeholders keep the default light-slate shimmer.
+  .loading-body-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 22px;
+    padding: 8px;
+    background-color: var(--color-surface);
+    border-radius: 4px;
+  }
+  .loading-body-row + .loading-body-row { margin-top: 6px; }
+  .loading-body-name { display: block; height: 0.85rem; width: 180px; max-width: 40%; }
+  .loading-body-chip { display: block; height: 14px; width: 52px; flex-shrink: 0; }
 }
 
 a {

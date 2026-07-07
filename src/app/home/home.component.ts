@@ -130,10 +130,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     // async result is discarded rather than clobbering the newer system's data.
     const generation = ++this.edGalaxyGeneration;
 
-    // Fallback used whenever we don't (or can't) resolve Simbad data.
-    const setFallback = () => {
-      this.edGalaxyData.set({ PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined });
-    };
+    // The PGName is derived synchronously from the id64, so publish it immediately. Previously we
+    // waited for the async Simbad lookup before setting edGalaxyData at all, which left the "PG Name"
+    // row absent (edGalaxyData === null) for the whole request — so it flashed out and back in as the
+    // reserved-space skeleton handed over to the real view. Simbad (when present) is merged in later,
+    // and the PGName row stays put throughout.
+    const pgOnly = { PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined };
+    this.edGalaxyData.set(pgOnly);
 
     // Skip the Simbad lookup for procedurally-generated systems: when the
     // PGName matches the system name, the name is a valid PG name, or it
@@ -141,11 +144,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (pgName.toLowerCase() === systemName.toLowerCase()
       || PGSystem.isPGSystemName(systemName)
       || systemName.toLowerCase().includes('sector')) {
-      setFallback();
       return;
     }
 
-    // Call the API for Simbad data
+    // Call the API for Simbad data and merge it in when it resolves.
     this.appService.getSimbad(id64, systemName, coords)
       .then(result => {
         // Drop the response if the user has since navigated to another system.
@@ -167,11 +169,11 @@ export class HomeComponent implements OnInit, OnDestroy {
           } : undefined
         });
       })
-      // Even if the Simbad API fails, still populate edGalaxyData with PGName —
-      // but only while this request is still the current one.
+      // On failure the synchronously-published PGName-only data already stands; reaffirm it only
+      // while this request is still the current one.
       .catch(() => {
         if (generation === this.edGalaxyGeneration) {
-          setFallback();
+          this.edGalaxyData.set(pgOnly);
         }
       });
   }
@@ -196,6 +198,72 @@ export class HomeComponent implements OnInit, OnDestroy {
     const url = `?system=${encodeURIComponent(systemName)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }
+  // --- Loading-shell placeholders (the `@else if (searching)` branch in the template) ------------
+  // Reserved-space rows for the system chrome while the biostats payload is in flight. Grouped into
+  // two shapes so the template drives each with one loop (no per-section copy-paste):
+  //  - labelled sections (Location, Society): the static row label renders as real text — identical
+  //    for every system — and only the per-system value cell shimmers, with a `value` width (px)
+  //    picked so the column reads naturally.
+  //  - shimmer sections (Distances, Nearest DSSA, Nearest Nebulae): the row has no static label (the
+  //    system name is per-system too), so both the `name` and `value` cells shimmer.
+  // Bodies are unknown until data arrives, so those rows stay fully generic.
+  protected readonly loadingLabelledSections: readonly {
+    header: string, rows: readonly { label: string, value: number }[],
+  }[] = [
+    {
+      header: 'Location',
+      rows: [
+        { label: 'PG Name', value: 96 },
+        { label: 'Region', value: 120 },
+        { label: 'Id64', value: 110 },
+        { label: 'Coordinates', value: 140 },
+        { label: 'Permit required', value: 30 },
+        { label: 'Info updated', value: 100 },
+      ],
+    },
+    {
+      header: 'Society',
+      rows: [
+        { label: 'Economy', value: 96 },
+        { label: 'Government', value: 110 },
+        { label: 'Allegiance', value: 80 },
+        { label: 'Controlling faction', value: 130 },
+        { label: 'Security', value: 60 },
+      ],
+    },
+  ];
+  protected readonly loadingShimmerSections: readonly {
+    header: string, rows: readonly { name: number, value: number }[],
+  }[] = [
+    {
+      header: 'Distances',
+      rows: [
+        { name: 132, value: 58 },
+        { name: 104, value: 54 },
+        { name: 150, value: 64 },
+        { name: 116, value: 50 },
+        { name: 128, value: 60 },
+      ],
+    },
+    {
+      header: 'Nearest DSSA',
+      rows: [
+        { name: 138, value: 60 },
+        { name: 110, value: 54 },
+        { name: 126, value: 64 },
+      ],
+    },
+    {
+      header: 'Nearest Nebulae',
+      rows: [
+        { name: 122, value: 58 },
+        { name: 148, value: 62 },
+        { name: 134, value: 56 },
+      ],
+    },
+  ];
+  protected readonly loadingBodyRows: readonly number[] = [0, 1, 2, 3, 4, 5];
+
   referenceSystems = [
     { name: 'Sol', coords: { x: 0, y: 0, z: 0 } },
     { name: 'Colonia', coords: { x: -9530.5, y: -910.28125, z: 19808.125 } },
@@ -437,6 +505,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
   private readonly _searching = signal(false);
+  /**
+   * Fade the loading shell in only when it first appears with no system panel already on screen
+   * (a fresh search from the landing page). Set in `startSearch`; a re-search over an already-visible
+   * panel leaves it false so the shell swaps in place, and the shell→loaded hand-over is always an
+   * instant swap — the reserved-space chrome means neither needs a fade, and fading the loaded view
+   * in over the shell would flash the background through the panel.
+   */
+  protected readonly fadeInPanel = signal(false);
   /** A system requested (e.g. via query param) while a search was already in flight. */
   private pendingSystemRequest: string | null = null;
 
@@ -481,6 +557,10 @@ export class HomeComponent implements OnInit, OnDestroy {
    * and a search can't be started while another is running.
    */
   private startSearch(): void {
+    // Fade the loading shell in only when no system panel is currently on screen; a re-search over
+    // an already-visible panel (loaded, or a still-running search) swaps in place without a fade.
+    // Capture this before clearing the state below.
+    this.fadeInPanel.set(this.data() === null && !this._searching());
     this.data.set(null);
     this.bodies.set([]);
     this.searching = true;
