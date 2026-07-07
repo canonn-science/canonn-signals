@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
 import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { faChartColumn, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faChartColumn, faDownload, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { MatDialog } from '@angular/material/dialog';
 import { openLazyDialog } from '../dialogs/lazy-dialog';
 import type { HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
@@ -23,6 +23,8 @@ import { decodeHtmlEntities } from '../data/html-entities';
 import { CREDITS_HTML } from '../data/credits.generated';
 import { findNearestNebulae, NearestNebula } from '../data/nebulae';
 import { isPermitLockedSystem } from '../data/permit-locked-systems';
+import { BodyEnrichmentService } from '../data/body-enrichment.service';
+import { buildSystemExport, downloadJson, serializeSystemExport, systemExportFilename } from '../data/system-export';
 
 @Component({
   selector: 'app-home',
@@ -35,6 +37,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly enrichment = inject(BodyEnrichmentService);
 
   private lastSimbadSystemName: string | null = null;
   private lastSimbadId64: bigint | null = null;
@@ -478,10 +481,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!data?.system?.id64) return;
     this.copyToClipboard(`${data.system.id64}`);
   }
+
+  /**
+   * Downloads the whole system as a Spansh-shaped JSON dump with each body (and ring/belt)
+   * enriched with a `calculated` block. Uses a single `now` epoch so every body's
+   * time-dependent values share one reproducible instant.
+   */
+  public exportSystem(data: CanonnBiostats): void {
+    // Honour the app clock override (used by the `?t=` param and frozen-clock e2e fixtures) so
+    // the export's time-dependent values match what the UI shows.
+    const now = this.appService.nowOverride() ?? Date.now();
+    const exportData = buildSystemExport(data, this.bodies(), this.enrichment, now);
+    downloadJson(systemExportFilename(data.system.name), serializeSystemExport(exportData));
+  }
   public encodeURIComponent(value: string): string {
     return encodeURIComponent(value);
   }
   public readonly faFileCode = faFileCode;
+  public readonly faDownload = faDownload;
   public readonly faMagnifyingGlass = faMagnifyingGlass;
   public readonly faChartColumn = faChartColumn;
   private readonly dialog = inject(MatDialog);

@@ -37,7 +37,7 @@
   <div class="system-container-data">
     <div class="system-info-box">
       <div class="system-title">
-        <span style="display: flex; align-items: center; gap: 4px;">
+        <span style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
           <span>{{ data.system.name }}@if (edastro?.name) {
             <span> ({{ edastro.name }})</span>
             }</span>
@@ -96,6 +96,13 @@
               style="max-height: 1.1em; width: 1.1em; display: block; pointer-events: auto; cursor: pointer;" />
           </a>
           }
+          <button type="button" class="title-link title-link-button system-export-button"
+            (click)="exportSystem(data)"
+            title="Download the full system JSON, enriched with calculated values"
+            aria-label="Export system JSON with calculated values">
+            <fa-icon [icon]="faDownload" aria-hidden="true"></fa-icon>
+            <span class="system-export-button__label">Export</span>
+          </button>
         </span>
         @if (data.system.population !== null && data.system.population !== undefined) {
         <span class="population">Population: {{ data.system.population | number }}</span>

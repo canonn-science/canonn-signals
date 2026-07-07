@@ -4,11 +4,14 @@ import { MatButton } from '@angular/material/button';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { SystemBody, EdGalaxyData } from '../../home/home.component';
 import { formatBodyJson } from './format-body-json';
+import { BodyEnrichmentService } from '../../data/body-enrichment.service';
 
 /** Data passed to the body-JSON dialog when it is opened. */
 export interface JsonDialogData {
   body: SystemBody;
   edGalaxyData: EdGalaxyData | null;
+  /** Epoch (ms) the calculated values are computed against — the host's clock override or now. */
+  now: number;
 }
 
 /**
@@ -25,11 +28,15 @@ export interface JsonDialogData {
 })
 export class JsonDialogComponent {
   private readonly data = inject<JsonDialogData>(MAT_DIALOG_DATA);
+  private readonly enrichment = inject(BodyEnrichmentService);
 
   public readonly bodyJsonCopied = signal(false);
 
-  /** Pretty-printed body JSON, cached so the template binding doesn't re-stringify per CD pass. */
-  public readonly formattedBodyJson = formatBodyJson(this.data.body.bodyData);
+  /**
+   * Pretty-printed body JSON — the raw Spansh body plus a `calculated` block of derived values —
+   * cached so the template binding doesn't re-stringify (or re-enrich) on every CD pass.
+   */
+  public readonly formattedBodyJson = formatBodyJson(this.enrichment.enrichBody(this.data.body, this.data.now));
 
   /** Deep link into the EDGalaxyData journal lookup for this body. */
   public readonly edGalaxyHref = this.buildEdGalaxyHref();
