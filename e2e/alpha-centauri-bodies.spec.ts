@@ -34,21 +34,10 @@ const BODY_SPECS: BodySpec[] = [
           'Semi-major axis': '2,311.74 ls',
           'Orbital eccentricity': '0.5179 Eccentric',
           Apoapsis: '3,508.99 ls',
-          // Day-count to the next apsis. Wall-clock-dependent, but deterministic because
-          // the fixture loader pins `now` to 2026-06-14T00:00:00Z (see loadFixtureSystem).
-          'Next apoapsis': '3,721.9 days',
           Periapsis: '1,114.49 ls',
-          'Next periapsis': '8,396.3 days',
           'Orbital inclination': '79.21°',
           'Argument of periapsis': '116.66°',
           'Ascending node': '-155.15°',
-        },
-        // The day-count above changes with `now`; the tooltip is the fixed event *date*
-        // (now-independent). Timezone is pinned to UTC in playwright.config.ts, so
-        // 2036-08-21 20:55 UTC (= 22:55 CEST) renders verbatim.
-        tooltips: {
-          'Next apoapsis': '2036-08-21 20:55',
-          'Next periapsis': '2049-06-09 07:48',
         },
       },
       {
@@ -62,7 +51,29 @@ const BODY_SPECS: BodySpec[] = [
         },
       },
       { header: 'Atmosphere & Environment', rows: { 'Surface Temperature': '6,557.00 K' } },
-      { header: 'Dynamics', rows: { 'Rotational period': '4.16 days', 'Distance to arrival': '0.00 ls' } },
+      {
+        header: 'Dynamics',
+        rows: {
+          'Rotational period': '4.16 days',
+          'Distance to arrival': '0.00 ls',
+          // Live "right now" distance from the parent (r = a(1 − e²)/(1 + e·cos ν)), propagated
+          // from the recorded mean anomaly to the fixture's pinned `now` — deterministic for the
+          // same reason as the day-counts below. Sits between Periapsis (1,114.49 ls) and
+          // Apoapsis (3,508.99 ls) in the Orbit section above, as it must.
+          'Parent distance': '1,771.13 ls',
+          // Day-count to the next apsis. Wall-clock-dependent, but deterministic because
+          // the fixture loader pins `now` to 2026-06-14T00:00:00Z (see loadFixtureSystem).
+          'Next apoapsis': '3,721.9 days',
+          'Next periapsis': '8,396.3 days',
+        },
+        // The day-count above changes with `now`; the tooltip is the fixed event *date*
+        // (now-independent). Timezone is pinned to UTC in playwright.config.ts, so
+        // 2036-08-21 20:55 UTC (= 22:55 CEST) renders verbatim.
+        tooltips: {
+          'Next apoapsis': '2036-08-21 20:55',
+          'Next periapsis': '2049-06-09 07:48',
+        },
+      },
       {
         header: 'Stellar Properties',
         rows: { 'Spectral class': 'G2', 'Luminosity class': 'V', 'Absolute magnitude': '4.36' },
