@@ -21,6 +21,8 @@ export interface ParentDistanceDialogData {
   recordedTimestamp: Date;
   orbitalPeriodDays: number;
   argOfPeriapsisDeg?: number;
+  /** Fixed "now" override (ms since epoch), e.g. from the app's ?t= query param. */
+  nowOverrideMs?: number;
 }
 
 /**
@@ -44,13 +46,15 @@ export class ParentDistanceDialogComponent {
 
   /** Current wall-clock time, ticked by the animation loop to drive the live value/marker. */
   private readonly now = signal(Date.now());
+  /** Mirrors the body row's time basis: ?t= override when present, otherwise the live wall clock. */
+  private readonly effectiveNow = computed(() => this.data.nowOverrideMs ?? this.now());
 
   /** One shared length unit for a/periapsis/apoapsis/live-r, chosen from the semi-major axis. */
   public readonly unit: InlineLengthUnit = pickInlineLengthUnit(this.data.semiMajorAxisKm);
 
   public readonly meanAnomalyLive = computed(() =>
     this.orbital.meanAnomalyNow(
-      this.data.recordedMeanAnomaly, this.data.orbitalPeriodDays, this.data.recordedTimestamp.toISOString(), this.now(),
+      this.data.recordedMeanAnomaly, this.data.orbitalPeriodDays, this.data.recordedTimestamp.toISOString(), this.effectiveNow(),
     ),
   );
 

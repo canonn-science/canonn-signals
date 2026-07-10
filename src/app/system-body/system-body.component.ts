@@ -1347,6 +1347,7 @@ export class SystemBodyComponent implements OnChanges {
         recordedTimestamp: new Date(bd.timestamps.meanAnomaly),
         orbitalPeriodDays: bd.orbitalPeriod,
         argOfPeriapsisDeg: bd.argOfPeriapsis ?? 0,
+        nowOverrideMs: this.appService.nowOverride() ?? undefined,
       } satisfies ParentDistanceDialogData,
     });
   }

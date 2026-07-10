@@ -1301,6 +1301,17 @@ describe('SystemBodyComponent (extended coverage)', () => {
       await component.showParentDistanceDialog();
       expect(dialogOpenCalls).toBe(before);
     });
+
+    it('passes the app-level time override through to the dialog so it matches the row value', async () => {
+      const svc = TestBed.inject(AppService) as any;
+      svc.nowOverride.set(new Date('2026-03-01T00:00:00Z').getTime());
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 45, orbitalPeriod: 200,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      }));
+      await component.showParentDistanceDialog();
+      expect(lastDialogData().nowOverrideMs).toBe(svc.nowOverride());
+    });
   });
 
   describe('collision dialog', () => {

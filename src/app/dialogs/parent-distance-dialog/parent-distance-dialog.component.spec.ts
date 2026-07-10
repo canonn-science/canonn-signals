@@ -77,4 +77,22 @@ describe('ParentDistanceDialogComponent', () => {
     expect(el.textContent).toContain('This body');
     expect(el.textContent).toContain('the parent body');
   });
+
+  it('uses the provided now override instead of the live wall clock', () => {
+    const overrideData: ParentDistanceDialogData = {
+      ...baseData,
+      nowOverrideMs: new Date('2026-07-01T00:00:00Z').getTime(),
+    };
+    const fixture = setup(overrideData);
+    const orbital = new OrbitalRelationsService();
+    const c = fixture.componentInstance;
+
+    const expectedMean = orbital.meanAnomalyNow(45, 200, '2026-06-01T00:00:00.000Z', overrideData.nowOverrideMs!);
+    const expectedTrue = orbital.meanToTrueAnomaly(expectedMean, 0.3);
+    const expectedR = (baseData.semiMajorAxisKm * (1 - 0.3 * 0.3)) / (1 + 0.3 * Math.cos(expectedTrue * Math.PI / 180));
+
+    expect(c.meanAnomalyLive()).toBeCloseTo(expectedMean, 6);
+    expect(c.trueAnomalyLive()).toBeCloseTo(expectedTrue, 6);
+    expect(c.parentDistanceLiveKm()).toBeCloseTo(expectedR, 6);
+  });
 });
