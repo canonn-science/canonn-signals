@@ -5,6 +5,7 @@ import {
   axialTiltDiagram,
   inclinationDiagram,
   lagrangeDiagram,
+  parentDistanceDiagram,
   periapsisDiagram,
 } from './orbital-diagrams';
 
@@ -236,6 +237,58 @@ describe('orbital-diagrams', () => {
       // periapsis carries it to 180° absolute — the far side of the circle from the unrotated case.
       expect(dist(unrotated.focus, unrotated.meanPoint)).toBeCloseTo(dist(rotated.focus, rotated.meanPoint), 3);
       expect(rotated.meanPoint.x).toBeLessThan(unrotated.meanPoint.x);
+    });
+  });
+
+  describe('parentDistanceDiagram', () => {
+    it('places the body at the periapsis marker when ν = 0', () => {
+      const d = parentDistanceDiagram(0, 0.5);
+      expect(dist(d.bodyPoint, d.periapsisPoint)).toBeCloseTo(0, 2);
+    });
+
+    it('places the body at the apoapsis marker when ν = 180', () => {
+      const d = parentDistanceDiagram(180, 0.5);
+      expect(dist(d.bodyPoint, d.apoapsisPoint)).toBeCloseTo(0, 2);
+    });
+
+    it('matches r = a(1 − e²) / (1 + e·cos ν) at an arbitrary true anomaly', () => {
+      // maxApo = 46, e = 0.5 => a = 46 / 1.5; at ν = 90° the formula reduces to a·(1 − e²) = 23.
+      const d = parentDistanceDiagram(90, 0.5);
+      expect(dist(d.focus, d.bodyPoint)).toBeCloseTo(23, 1);
+    });
+
+    it('holds the body at a constant radius (= a) for a circular orbit regardless of ν', () => {
+      const atZero = parentDistanceDiagram(0, 0);
+      const atNinety = parentDistanceDiagram(90, 0);
+      expect(dist(atZero.focus, atZero.bodyPoint)).toBeCloseTo(dist(atNinety.focus, atNinety.bodyPoint), 2);
+    });
+
+    it('orients the ellipse and markers by the body\'s own argument of periapsis, like periapsisDiagram/anomalyDiagram', () => {
+      const unrotated = parentDistanceDiagram(0, 0.5);
+      const rotated = parentDistanceDiagram(0, 0.5, 90);
+
+      expect(rotated.ellipse.rotation).toBe(-90);
+      expect(dist(rotated.focus, rotated.bodyPoint)).toBeCloseTo(dist(unrotated.focus, unrotated.bodyPoint), 3);
+
+      // Unrotated periapsis sits along +x from the focus (screen y unchanged).
+      expect(unrotated.bodyPoint.y).toBeCloseTo(unrotated.focus.y, 2);
+      expect(unrotated.bodyPoint.x).toBeGreaterThan(unrotated.focus.x);
+
+      // A 90° argument of periapsis rotates periapsis to screen "up" (x unchanged, y decreases).
+      expect(rotated.bodyPoint.x).toBeCloseTo(rotated.focus.x, 2);
+      expect(rotated.bodyPoint.y).toBeLessThan(rotated.focus.y);
+    });
+
+    it('draws the distance line from the focus to the body point', () => {
+      const d = parentDistanceDiagram(90, 0.5);
+      expect(d.distanceLine).toEqual({ x1: d.focus.x, y1: d.focus.y, x2: d.bodyPoint.x, y2: d.bodyPoint.y });
+    });
+
+    it('preserves high eccentricities instead of clamping them down to a different orbit', () => {
+      const e = 0.95;
+      const d = parentDistanceDiagram(0, e);
+      const expectedPeriapsis = 46 * (1 - e) / (1 + e);
+      expect(dist(d.focus, d.periapsisPoint)).toBeCloseTo(expectedPeriapsis, 2);
     });
   });
 

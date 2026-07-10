@@ -28,6 +28,7 @@ import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/i
 import type { RingClassificationDialogData, RingClassificationRingInfo } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
 import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
 import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
+import type { ParentDistanceDialogData } from '../dialogs/parent-distance-dialog/parent-distance-dialog.component';
 import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
 import type { SynodicDiagramInput } from '../data/collision-diagram';
 import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
@@ -57,6 +58,7 @@ import {
   KG_PER_EARTH_MASS,
   KG_PER_MEGATONNE,
   KG_PER_SOLAR_MASS,
+  RADIANS_PER_DEGREE,
 } from '../data/unit-conversions';
 
 /**
@@ -284,6 +286,7 @@ export class SystemBodyComponent implements OnChanges {
     }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
+    this.getParentDistanceKm.set(this.calculateParentDistanceKm());
     this.getRocheExcess.set(this.calculateRocheExcess());
     this.getStellarAgeAssessment.set(this.computeStellarAgeAssessment());
 
@@ -1319,6 +1322,38 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
+  /** Opens the Parent Distance dialog with this body's live distance and its orbital elements. */
+  public async showParentDistanceDialog(): Promise<void> {
+    const body = this.body();
+    const bd = body.bodyData;
+    const aKm = this.getSemiMajorAxisKm();
+    if (aKm == null || bd.orbitalEccentricity == null || bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) return;
+    const recordedTimestampMs = Date.parse(bd.timestamps.meanAnomaly);
+    if (!Number.isFinite(recordedTimestampMs)) return;
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/parent-distance-dialog/parent-distance-dialog.component').then(m => m.ParentDistanceDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        bodyName: this.getBodyDisplayName(bd.name),
+        parentName: body.parent ? this.getBodyDisplayName(body.parent.bodyData.name) : undefined,
+        semiMajorAxisKm: aKm,
+        eccentricity: bd.orbitalEccentricity,
+        apoapsisKm: this.getApoapsis(),
+        periapsisKm: this.getPeriapsis(),
+        recordedMeanAnomaly: bd.meanAnomaly,
+        recordedTimestamp: new Date(recordedTimestampMs),
+        orbitalPeriodDays: bd.orbitalPeriod,
+        argOfPeriapsisDeg: bd.argOfPeriapsis ?? 0,
+        nowOverrideMs: this.appService.nowOverride() ?? undefined,
+      } satisfies ParentDistanceDialogData,
+    });
+  }
+
   /** Opens the collision dialog with this body's collision-candidate details. */
   public async showCollisionDialog(): Promise<void> {
     const status = this.collisionStatus();
@@ -1922,6 +1957,7 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getLandableTooltip = signal('');
   public readonly getNextPeriapsis = signal<{ date: Date, days: number } | null>(null);
   public readonly getNextApoapsis = signal<{ date: Date, days: number } | null>(null);
+  public readonly getParentDistanceKm = signal<number | null>(null);
   public readonly getChildrenExpandedState = signal<boolean>(false);
   public readonly getRocheExcess = signal<number | null>(null);
   public readonly getStellarAgeAssessment = signal<StellarAgeAssessment | null>(null);
@@ -1947,6 +1983,29 @@ export class SystemBodyComponent implements OnChanges {
 
   private calculateNextApoapsis(): { date: Date, days: number } | null {
     return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo', this.appService.nowOverride() ?? Date.now());
+  }
+
+  /**
+   * Current straight-line distance (km) from the parent body — the orbital radius at the
+   * body's true anomaly right now — via the polar orbit equation r = a(1 − e²) / (1 + e·cos ν).
+   * Propagates the recorded mean anomaly to the same wall-clock "now" (or `?t=` override) that
+   * Next Apoapsis/Periapsis use, rather than the shared system-epoch snapshot Mean/True Anomaly
+   * show, so it reads as a genuinely live value. Null when the semi-major axis, eccentricity,
+   * or recorded mean anomaly + timestamp needed to propagate it is unavailable. Also null for
+   * an eccentricity outside [0, 1) (parabolic/hyperbolic escape trajectory, or corrupt data) —
+   * there's no recurring, bound orbit to place a "current distance" on — matching the same
+   * bound {@link OrbitalRelationsCore.orbitalRadialRange} enforces before computing extents.
+   */
+  private calculateParentDistanceKm(): number | null {
+    const bd = this.body().bodyData;
+    const aKm = this.getSemiMajorAxisKm();
+    const e = bd.orbitalEccentricity;
+    if (aKm == null || e == null || !(e >= 0) || e >= 1 || bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) { return null; }
+    const now = this.appService.nowOverride() ?? Date.now();
+    const meanNow = this.orbitalRelations.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);
+    if (!Number.isFinite(meanNow)) { return null; }
+    const nu = this.orbitalRelations.meanToTrueAnomaly(meanNow, e) * RADIANS_PER_DEGREE;
+    return (aKm * (1 - e * e)) / (1 + e * Math.cos(nu));
   }
 
   private computeMaterialBadges(): void {

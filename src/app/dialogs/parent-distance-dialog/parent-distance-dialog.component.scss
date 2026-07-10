@@ -1,0 +1,133 @@
+.parent-distance-dialog {
+    .values ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0 0 20px;
+    }
+
+    .values ul li {
+        padding: 4px 0;
+        line-height: 1.5;
+    }
+
+    .diagram {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .parent-distance-diagram {
+        width: 320px;
+        max-width: 100%;
+        height: auto;
+        background: var(--color-surface-2);
+        border-radius: 8px;
+        padding: 20px;
+        overflow: visible;
+
+        line,
+        ellipse,
+        circle {
+            vector-effect: non-scaling-stroke;
+        }
+
+        .orbit-plane {
+            fill: none;
+            stroke: var(--color-accent);
+            stroke-width: 2;
+        }
+
+        .distance-line {
+            stroke: var(--color-badge-cyan);
+            stroke-width: 1.5;
+            stroke-dasharray: 4 3;
+        }
+
+        .planet {
+            fill: var(--color-info);
+            stroke: var(--color-text-bright);
+            stroke-width: 1;
+        }
+
+        .marker {
+            fill: var(--color-warning);
+            stroke: var(--color-text-bright);
+            stroke-width: 1;
+        }
+
+        .marker-periapsis {
+            fill: var(--color-success);
+            stroke: var(--color-text-bright);
+            stroke-width: 0.75;
+        }
+
+        .marker-apoapsis {
+            fill: var(--color-badge-red);
+            stroke: var(--color-text-bright);
+            stroke-width: 0.75;
+        }
+
+        .label {
+            fill: var(--color-text-bright);
+            font-size: 7px;
+            font-weight: 600;
+            paint-order: stroke;
+            stroke: var(--color-surface-2);
+            stroke-width: 2.5px;
+            stroke-linejoin: round;
+        }
+
+        .value-label {
+            fill: var(--color-badge-cyan);
+            font-size: 6px;
+            font-weight: 600;
+            paint-order: stroke;
+            stroke: var(--color-surface-2);
+            stroke-width: 2.5px;
+            stroke-linejoin: round;
+        }
+    }
+
+    .legend {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.85em;
+        color: var(--color-text-muted);
+    }
+
+    .legend-entry {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .swatch {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .swatch-periapsis {
+        background: var(--color-success);
+    }
+
+    .swatch-apoapsis {
+        background: var(--color-badge-red);
+    }
+
+    .swatch-current {
+        background: var(--color-warning);
+    }
+
+    .explanation {
+        line-height: 1.6;
+
+        p {
+            margin-bottom: 8px;
+        }
+    }
+}

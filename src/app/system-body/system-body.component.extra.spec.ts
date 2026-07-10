@@ -257,6 +257,72 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(atMarch20).not.toBeNull();
       expect(atMarch20!.days).not.toBe(atMarch1!.days);
     });
+
+    it('computes parent distance right now, matching periapsis/apoapsis when M = 0/180', () => {
+      // Mean and true anomaly always coincide exactly at 0° and 180°, and with a timestamp
+      // matching the (faked) "now" there's no propagation drift, so parent distance should
+      // land on periapsis/apoapsis exactly.
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 0, orbitalPeriod: 100,
+        timestamps: { distanceToArrival: '', meanAnomaly: new Date().toISOString() },
+      }));
+      expect(component.getParentDistanceKm()).toBeCloseTo(component.getPeriapsis(), 0);
+
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 180, orbitalPeriod: 100,
+        timestamps: { distanceToArrival: '', meanAnomaly: new Date().toISOString() },
+      }));
+      expect(component.getParentDistanceKm()).toBeCloseTo(component.getApoapsis(), 0);
+    });
+
+    it('returns a constant parent distance for a circular orbit (e = 0)', () => {
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0, meanAnomaly: 45, orbitalPeriod: 100,
+        timestamps: { distanceToArrival: '', meanAnomaly: new Date().toISOString() },
+      }));
+      expect(component.getParentDistanceKm()).toBeCloseTo(KM_PER_AU, 0);
+    });
+
+    it('returns null parent distance when the recorded mean anomaly/timestamp are missing', () => {
+      render(makeBody({ semiMajorAxis: 1, orbitalEccentricity: 0.3 }));
+      expect(component.getParentDistanceKm()).toBeNull();
+    });
+
+    it('returns null parent distance for an unbound (e >= 1) or negative eccentricity', () => {
+      const base = {
+        semiMajorAxis: 1, meanAnomaly: 45, orbitalPeriod: 100,
+        timestamps: { distanceToArrival: '', meanAnomaly: new Date().toISOString() },
+      };
+      render(makeBody({ ...base, orbitalEccentricity: 1 }));
+      expect(component.getParentDistanceKm()).toBeNull();
+
+      render(makeBody({ ...base, orbitalEccentricity: 1.2 }));
+      expect(component.getParentDistanceKm()).toBeNull();
+
+      render(makeBody({ ...base, orbitalEccentricity: -0.1 }));
+      expect(component.getParentDistanceKm()).toBeNull();
+    });
+
+    it('honours the ?t= time override when computing parent distance', () => {
+      const svc = TestBed.inject(AppService) as any;
+      const body = makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 90, orbitalPeriod: 100,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      });
+
+      svc.nowOverride.set(new Date('2026-01-01T00:00:00Z').getTime());
+      render(body);
+      const at0Days = component.getParentDistanceKm();
+
+      // A quarter of the 100-day period later, moved well along the orbit.
+      svc.nowOverride.set(new Date('2026-01-26T00:00:00Z').getTime());
+      component.ngOnChanges();
+      const atQuarterPeriod = component.getParentDistanceKm();
+
+      expect(at0Days).not.toBeNull();
+      expect(atQuarterPeriod).not.toBeNull();
+      expect(atQuarterPeriod).not.toBeCloseTo(at0Days!, 0);
+    });
   });
 
   describe('rings', () => {
@@ -1195,6 +1261,67 @@ describe('SystemBodyComponent (extended coverage)', () => {
 
       render(newer);
       expect(component.getSystemAnomalyEpoch()?.toISOString()).toBe(new Date('2026-04-01T00:00:00Z').toISOString());
+    });
+  });
+
+  describe('parent distance dialog', () => {
+    it('opens with the body/parent names and the orbital elements needed to derive a live value', async () => {
+      const parent = makeBody({ name: 'Star A' });
+      const body = makeBody({
+        name: 'Star A 1', semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 45, orbitalPeriod: 200,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      }, parent);
+      parent.subBodies = [body];
+
+      render(body);
+      await component.showParentDistanceDialog();
+
+      expect(lastDialogData().bodyName).toBe('Star A 1!');
+      expect(lastDialogData().parentName).toBe('Star A!');
+      expect(lastDialogData().semiMajorAxisKm).toBe(component.getSemiMajorAxisKm());
+      expect(lastDialogData().eccentricity).toBe(0.3);
+      expect(lastDialogData().apoapsisKm).toBe(component.getApoapsis());
+      expect(lastDialogData().periapsisKm).toBe(component.getPeriapsis());
+      expect(lastDialogData().recordedMeanAnomaly).toBe(45);
+      expect(lastDialogData().orbitalPeriodDays).toBe(200);
+    });
+
+    it('leaves parentName undefined for a body with no parent', async () => {
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 45, orbitalPeriod: 200,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      }));
+      await component.showParentDistanceDialog();
+      expect(lastDialogData().parentName).toBeUndefined();
+    });
+
+    it('does nothing when the orbital elements needed for parent distance are missing', async () => {
+      render(makeBody({ semiMajorAxis: 1, orbitalEccentricity: 0.3 }));
+      const before = dialogOpenCalls;
+      await component.showParentDistanceDialog();
+      expect(dialogOpenCalls).toBe(before);
+    });
+
+    it('does not show a parent distance or open the dialog for an invalid mean-anomaly timestamp', async () => {
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 45, orbitalPeriod: 200,
+        timestamps: { distanceToArrival: '', meanAnomaly: 'not-a-date' },
+      }));
+      expect(component.getParentDistanceKm()).toBeNull();
+      const before = dialogOpenCalls;
+      await component.showParentDistanceDialog();
+      expect(dialogOpenCalls).toBe(before);
+    });
+
+    it('passes the app-level time override through to the dialog so it matches the row value', async () => {
+      const svc = TestBed.inject(AppService) as any;
+      svc.nowOverride.set(new Date('2026-03-01T00:00:00Z').getTime());
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 45, orbitalPeriod: 200,
+        timestamps: { distanceToArrival: '', meanAnomaly: '2026-01-01T00:00:00Z' },
+      }));
+      await component.showParentDistanceDialog();
+      expect(lastDialogData().nowOverrideMs).toBe(svc.nowOverride());
     });
   });
 

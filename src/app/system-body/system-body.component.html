@@ -206,7 +206,7 @@
           <!-- Orbit Section -->
           @if (body().bodyData.orbitalPeriod || body().bodyData.semiMajorAxis || body().bodyData.orbitalEccentricity !==
           undefined || body().bodyData.orbitalInclination || body().bodyData.argOfPeriapsis ||
-          body().bodyData.ascendingNode || getNextPeriapsis() || getNextApoapsis()) {
+          body().bodyData.ascendingNode) {
           <div class="body-data-section">
             <div class="body-data-section-header">Orbit</div>
             @if (body().bodyData.orbitalPeriod) {
@@ -251,16 +251,6 @@
               </div>
             </div>
             }
-            @if (getNextApoapsis()) {
-            <div class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
-              <div>
-                Next apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
-              </div>
-              <div>
-                <span [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextApoapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextApoapsis()!.days" label="Next apoapsis" uiUnit="Days" />
-              </div>
-            </div>
-            }
             @if (body().bodyData.semiMajorAxis && body().bodyData.orbitalEccentricity !== undefined &&
             body().bodyData.orbitalEccentricity !== null && body().bodyData.orbitalEccentricity !== 0) {
             <div class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
@@ -269,16 +259,6 @@
               </div>
               <div>
                 <span [matTooltip]="getPeriapsis() + ' km'">{{ formatOrbitDistance(getPeriapsis()) }}</span><app-convert-icon [kind]="'length'" [value]="getPeriapsis()" label="Periapsis" [uiUnit]="orbitDistanceUnitLabel()" />
-              </div>
-            </div>
-            }
-            @if (getNextPeriapsis()) {
-            <div class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
-              <div>
-                Next periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
-              </div>
-              <div>
-                <span [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextPeriapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextPeriapsis()!.days" label="Next periapsis" uiUnit="Days" />
               </div>
             </div>
             }
@@ -752,6 +732,36 @@
             </div>
             <div>
               <span [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">{{ getTrueAnomaly() | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="getTrueAnomaly()" label="True anomaly" uiUnit="Degrees" />
+            </div>
+          </div>
+          }
+          @if (getParentDistanceKm(); as parentDistanceKm) {
+          <div class="body-data-entry clickable" (click)="showParentDistanceDialog()">
+            <div>
+              Parent distance<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="parentDistanceKm + ' km'">{{ formatOrbitDistance(parentDistanceKm) }}</span><app-convert-icon [kind]="'length'" [value]="parentDistanceKm" label="Parent distance" [uiUnit]="orbitDistanceUnitLabel()" />
+            </div>
+          </div>
+          }
+          @if (getNextApoapsis()) {
+          <div class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
+            <div>
+              Next apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextApoapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextApoapsis()!.days" label="Next apoapsis" uiUnit="Days" />
+            </div>
+          </div>
+          }
+          @if (getNextPeriapsis()) {
+          <div class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
+            <div>
+              Next periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextPeriapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextPeriapsis()!.days" label="Next periapsis" uiUnit="Days" />
             </div>
           </div>
           }

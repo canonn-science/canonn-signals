@@ -1,0 +1,72 @@
+<app-dialog-shell heading="Parent Distance">
+  <div class="parent-distance-dialog">
+    <div class="values">
+      <ul>
+        <li><strong>Body:</strong> {{ data.bodyName || 'This body' }}</li>
+        <li><strong>Parent:</strong> {{ data.parentName || 'the parent body' }}</li>
+        <li><strong>Semi-major axis (a):</strong> {{ formatKm(data.semiMajorAxisKm) }}</li>
+        <li><strong>Eccentricity (e):</strong> {{ data.eccentricity | number:'0.4-4' }}</li>
+        <li><strong>Periapsis distance:</strong> {{ formatKm(data.periapsisKm) }}</li>
+        <li><strong>Apoapsis distance:</strong> {{ formatKm(data.apoapsisKm) }}</li>
+        <li><strong>Recorded mean anomaly (M₀):</strong> {{ data.recordedMeanAnomaly | number:'0.1-1' }}° at
+          {{ data.recordedTimestamp | date:'yyyy-MM-dd HH:mm' }} UTC</li>
+        <li><strong>Live, right now:</strong>
+          M = {{ meanAnomalyLive() | number:'0.1-1' }}°,
+          ν = {{ trueAnomalyLive() | number:'0.1-1' }}°,
+          r = {{ formatKm(parentDistanceLiveKm()) }}
+        </li>
+      </ul>
+    </div>
+
+    @if (diagram(); as d) {
+    <div class="diagram">
+      <svg viewBox="0 0 120 120" class="parent-distance-diagram" role="img" aria-label="Parent distance diagram">
+        <!-- The real orbit -->
+        <ellipse class="orbit-plane" [attr.cx]="d.ellipse.cx" [attr.cy]="d.ellipse.cy"
+          [attr.rx]="d.ellipse.rx" [attr.ry]="d.ellipse.ry"
+          [attr.transform]="'rotate(' + d.ellipse.rotation + ' ' + d.ellipse.cx + ' ' + d.ellipse.cy + ')'" />
+        <!-- Distance line: parent (focus) to the body's current position -->
+        <line class="distance-line" [attr.x1]="d.distanceLine.x1" [attr.y1]="d.distanceLine.y1"
+          [attr.x2]="d.distanceLine.x2" [attr.y2]="d.distanceLine.y2" />
+        <!-- Parent body at the focus -->
+        <circle class="planet" [attr.cx]="d.focus.x" [attr.cy]="d.focus.y" [attr.r]="d.focusRadius" />
+        <!-- Periapsis / apoapsis reference points -->
+        <circle class="marker-periapsis" [attr.cx]="d.periapsisPoint.x" [attr.cy]="d.periapsisPoint.y" r="2.5" />
+        <circle class="marker-apoapsis" [attr.cx]="d.apoapsisPoint.x" [attr.cy]="d.apoapsisPoint.y" r="2.5" />
+        <!-- The body's current, live position -->
+        <circle class="marker" [attr.cx]="d.bodyPoint.x" [attr.cy]="d.bodyPoint.y" r="3.5" />
+        <text class="value-label" [attr.x]="d.distanceLabel.x" [attr.y]="d.distanceLabel.y - 4"
+          text-anchor="middle">{{ formatKm(parentDistanceLiveKm()) }}</text>
+        @if (data.parentName) {
+        <text class="label" [attr.x]="d.parentLabel.x" [attr.y]="d.parentLabel.y" text-anchor="middle">{{ data.parentName }}</text>
+        }
+        @if (data.bodyName) {
+        <text class="label" [attr.x]="d.bodyLabel.x" [attr.y]="d.bodyLabel.y" text-anchor="middle">{{ data.bodyName }}</text>
+        }
+      </svg>
+      <div class="legend">
+        <span class="legend-entry"><span class="swatch swatch-periapsis"></span> Periapsis — closest approach</span>
+        <span class="legend-entry"><span class="swatch swatch-apoapsis"></span> Apoapsis — farthest point</span>
+        <span class="legend-entry"><span class="swatch swatch-current"></span> Current position — live</span>
+      </div>
+    </div>
+    }
+
+    <div class="explanation">
+      <p>
+        The straight-line distance from a body to its parent varies continuously along an elliptical orbit: it is
+        shortest at periapsis and longest at apoapsis. At any other point it's given by
+        <strong>r = a(1 − e²) / (1 + e·cos ν)</strong>, where <strong>a</strong> is the semi-major axis,
+        <strong>e</strong> is the eccentricity, and <strong>ν</strong> (true anomaly) is the body's current angle
+        from periapsis.
+      </p>
+      <p>
+        The value is recalculated here from the recorded mean anomaly (M₀) and its timestamp: elapsed time since
+        that timestamp, divided by the orbital period, gives the number of orbits completed, which advances M₀ to
+        right now; that mean anomaly is then converted to true anomaly (ν) and plugged into the formula above.
+        This tracks live, wall-clock time — the same basis the Next Apoapsis/Periapsis rows use — rather than the
+        shared system-epoch snapshot the Mean/True Anomaly rows show elsewhere.
+      </p>
+    </div>
+  </div>
+</app-dialog-shell>

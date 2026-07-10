@@ -309,6 +309,64 @@ function roundPoint(p: Point): Point {
   return { x: r(p.x), y: r(p.y) };
 }
 
+export interface ParentDistanceDiagram {
+  focus: Point;            // parent body, sits at a focus of the ellipse
+  focusRadius: number;
+  ellipse: EllipseShape;   // the orbit — an ellipse, never a circle
+  periapsisPoint: Point;   // closest approach, for reference
+  apoapsisPoint: Point;    // farthest point, for reference
+  bodyPoint: Point;        // the body's current position, at true anomaly ν
+  distanceLine: Line;      // focus -> bodyPoint, the straight-line distance (r) being explained
+  distanceLabel: Point;    // anchor for the live "r = …" text, near the line's midpoint
+  parentLabel: Point;
+  bodyLabel: Point;
+}
+
+/**
+ * Current parent distance: the body's position on its elliptical orbit at true anomaly
+ * `trueAnomalyDeg`, and the straight-line distance from the parent (at a focus) to that
+ * point — r = a(1 − e²) / (1 + e·cos ν). Shares its ellipse construction with
+ * {@link periapsisDiagram}/{@link anomalyDiagram} (focus offset `c = a·e` from the ellipse
+ * centre toward periapsis), oriented by `argOfPeriapsisDeg` on the same shared 0° reference
+ * convention as those diagrams.
+ */
+export function parentDistanceDiagram(trueAnomalyDeg: number, eccentricity: number, argOfPeriapsisDeg?: number): ParentDistanceDiagram {
+  const nu = Number.isFinite(trueAnomalyDeg) ? trueAnomalyDeg : 0;
+  // e = 0 is a valid and useful case here (a circular orbit — constant r = a). Unlike
+  // anomaly/periapsis diagrams this one should stay numerically faithful to the body's real
+  // bound orbit, so accept the full elliptical range right up to (but not including) 1.
+  const e = clamp(Number.isFinite(eccentricity) ? eccentricity : 0.5, 0, 0.999);
+  const arg = Number.isFinite(argOfPeriapsisDeg as number) ? (argOfPeriapsisDeg as number) : 0;
+
+  const maxApo = 46;            // apoapsis distance from the focus
+  const a = maxApo / (1 + e);   // semi-major axis
+  const b = a * Math.sqrt(1 - e * e);
+  const c = a * e;              // focus offset from the ellipse centre
+
+  const focus = { x: CENTER, y: CENTER };
+  const phi = arg * DEG;
+  const u = { x: Math.cos(phi), y: -Math.sin(phi) }; // periapsis direction (screen)
+
+  const ellipse: EllipseShape = {
+    cx: r(focus.x - c * u.x), cy: r(focus.y - c * u.y), rx: r(a), ry: r(b), rotation: r(-arg),
+  };
+
+  const periapsisPoint = roundPoint({ x: focus.x + a * (1 - e) * u.x, y: focus.y + a * (1 - e) * u.y });
+  const apoapsisPoint = roundPoint({ x: focus.x - a * (1 + e) * u.x, y: focus.y - a * (1 + e) * u.y });
+
+  const nuRad = nu * DEG;
+  const rNu = (a * (1 - e * e)) / (1 + e * Math.cos(nuRad));
+  const absNu = (arg + nu) * DEG;
+  const bodyPoint = roundPoint({ x: focus.x + rNu * Math.cos(absNu), y: focus.y - rNu * Math.sin(absNu) });
+
+  const distanceLine: Line = { x1: focus.x, y1: focus.y, x2: bodyPoint.x, y2: bodyPoint.y };
+  const distanceLabel: Point = { x: r((focus.x + bodyPoint.x) / 2), y: r((focus.y + bodyPoint.y) / 2) };
+
+  const { parentLabel, bodyLabel } = labelAnchors(focus, bodyPoint);
+
+  return { focus, focusRadius: 4, ellipse, periapsisPoint, apoapsisPoint, bodyPoint, distanceLine, distanceLabel, parentLabel, bodyLabel };
+}
+
 /**
  * The canonical five-point Lagrange schematic of a two-body system: a primary at the
  * centre, a secondary on a circular reference orbit to the right (angle 0), and the five
