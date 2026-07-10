@@ -332,10 +332,10 @@ export interface ParentDistanceDiagram {
  */
 export function parentDistanceDiagram(trueAnomalyDeg: number, eccentricity: number, argOfPeriapsisDeg?: number): ParentDistanceDiagram {
   const nu = Number.isFinite(trueAnomalyDeg) ? trueAnomalyDeg : 0;
-  // e = 0 is a valid and useful case here (a circular orbit — constant r = a), unlike
-  // periapsisDiagram's 0.45 floor, which exists only to keep that diagram's ellipse visibly
-  // elliptical; matches anomalyDiagram's clamp for the same reason.
-  const e = clamp(Number.isFinite(eccentricity) ? eccentricity : 0.5, 0, 0.85);
+  // e = 0 is a valid and useful case here (a circular orbit — constant r = a). Unlike
+  // anomaly/periapsis diagrams this one should stay numerically faithful to the body's real
+  // bound orbit, so accept the full elliptical range right up to (but not including) 1.
+  const e = clamp(Number.isFinite(eccentricity) ? eccentricity : 0.5, 0, 0.999);
   const arg = Number.isFinite(argOfPeriapsisDeg as number) ? (argOfPeriapsisDeg as number) : 0;
 
   const maxApo = 46;            // apoapsis distance from the focus

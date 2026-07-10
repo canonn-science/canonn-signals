@@ -1328,6 +1328,8 @@ export class SystemBodyComponent implements OnChanges {
     const bd = body.bodyData;
     const aKm = this.getSemiMajorAxisKm();
     if (aKm == null || bd.orbitalEccentricity == null || bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) return;
+    const recordedTimestampMs = Date.parse(bd.timestamps.meanAnomaly);
+    if (!Number.isFinite(recordedTimestampMs)) return;
 
     openLazyDialog(this.dialog, {
       loader: () => import('../dialogs/parent-distance-dialog/parent-distance-dialog.component').then(m => m.ParentDistanceDialogComponent),
@@ -1344,7 +1346,7 @@ export class SystemBodyComponent implements OnChanges {
         apoapsisKm: this.getApoapsis(),
         periapsisKm: this.getPeriapsis(),
         recordedMeanAnomaly: bd.meanAnomaly,
-        recordedTimestamp: new Date(bd.timestamps.meanAnomaly),
+        recordedTimestamp: new Date(recordedTimestampMs),
         orbitalPeriodDays: bd.orbitalPeriod,
         argOfPeriapsisDeg: bd.argOfPeriapsis ?? 0,
         nowOverrideMs: this.appService.nowOverride() ?? undefined,
@@ -2001,6 +2003,7 @@ export class SystemBodyComponent implements OnChanges {
     if (aKm == null || e == null || !(e >= 0) || e >= 1 || bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) { return null; }
     const now = this.appService.nowOverride() ?? Date.now();
     const meanNow = this.orbitalRelations.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);
+    if (!Number.isFinite(meanNow)) { return null; }
     const nu = this.orbitalRelations.meanToTrueAnomaly(meanNow, e) * RADIANS_PER_DEGREE;
     return (aKm * (1 - e * e)) / (1 + e * Math.cos(nu));
   }

@@ -1302,6 +1302,17 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(dialogOpenCalls).toBe(before);
     });
 
+    it('does not show a parent distance or open the dialog for an invalid mean-anomaly timestamp', async () => {
+      render(makeBody({
+        semiMajorAxis: 1, orbitalEccentricity: 0.3, meanAnomaly: 45, orbitalPeriod: 200,
+        timestamps: { distanceToArrival: '', meanAnomaly: 'not-a-date' },
+      }));
+      expect(component.getParentDistanceKm()).toBeNull();
+      const before = dialogOpenCalls;
+      await component.showParentDistanceDialog();
+      expect(dialogOpenCalls).toBe(before);
+    });
+
     it('passes the app-level time override through to the dialog so it matches the row value', async () => {
       const svc = TestBed.inject(AppService) as any;
       svc.nowOverride.set(new Date('2026-03-01T00:00:00Z').getTime());

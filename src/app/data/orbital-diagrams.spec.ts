@@ -283,6 +283,13 @@ describe('orbital-diagrams', () => {
       const d = parentDistanceDiagram(90, 0.5);
       expect(d.distanceLine).toEqual({ x1: d.focus.x, y1: d.focus.y, x2: d.bodyPoint.x, y2: d.bodyPoint.y });
     });
+
+    it('preserves high eccentricities instead of clamping them down to a different orbit', () => {
+      const e = 0.95;
+      const d = parentDistanceDiagram(0, e);
+      const expectedPeriapsis = 46 * (1 - e) / (1 + e);
+      expect(dist(d.focus, d.periapsisPoint)).toBeCloseTo(expectedPeriapsis, 2);
+    });
   });
 
   describe('lagrangeDiagram', () => {
