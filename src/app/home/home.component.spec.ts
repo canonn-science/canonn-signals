@@ -35,6 +35,12 @@ describe('HomeComponent', () => {
             getBiostats: () => Promise.resolve(null),
             typeahead: () => Promise.resolve({}),
             galMapSearch: () => Promise.resolve({ min_max: [] }),
+            megashipSchedule: signal(null),
+            ensureMegaships: () => {},
+            systemNames: signal(new Map()),
+            requestSystemName: vi.fn(),
+            resolveSystemName: () => Promise.resolve(''),
+            nowOverride: signal(null),
           },
         },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
@@ -70,7 +76,7 @@ describe('HomeComponent', () => {
     const headers = Array.from(shell!.querySelectorAll('.system-data-section-header')).map((h) =>
       h.textContent?.trim(),
     );
-    expect(headers).toEqual(['Location', 'Society', 'Distances', 'Nearest DSSA', 'Nearest Nebulae']);
+    expect(headers).toEqual(['Location', 'Society', 'Distances', 'Nearest DSSA', 'Nearest Nebulae', 'Megaships']);
 
     // A labelled row: the label cell is real text, only the value cell to its right shimmers.
     const firstEntry = shell!.querySelector('.system-data-entry') as HTMLElement;
@@ -350,6 +356,99 @@ describe('HomeComponent', () => {
       // defaults focus to the dialog container so it survives the skeleton-to-body swap.
       expect((config?.data as { data: unknown }).data).toEqual({ systemName: 'Sol', bodies, totalBodyCount: 8 });
       expect(config?.autoFocus).toBe('dialog');
+    });
+  });
+
+  describe('Megaships panel (issue #114)', () => {
+    const SYSTEM_A = 1000;
+    const SYSTEM_B = 2000;
+    const ANCHOR = '2023-12-28T07:00:00+00:00'; // slot 0
+
+    const schedule = {
+      anchor: ANCHOR,
+      week_seconds: 604800,
+      generated_at: 'x',
+      ships: [
+        {
+          signal_name: 'CYCLER I', ship_name: 'Test-class Cycler', type: 'cycle' as const,
+          route_len: 2, confirmed: true, positions: { '0': SYSTEM_A, '1': SYSTEM_B }, last_seen: '2026-07-01',
+        },
+      ],
+    };
+
+    function appService() {
+      return TestBed.inject(AppService) as unknown as {
+        megashipSchedule: { set(v: unknown): void };
+        systemNames: { set(v: ReadonlyMap<string, string>): void };
+        nowOverride: { set(v: number | null): void };
+        requestSystemName: ReturnType<typeof vi.fn>;
+      };
+    }
+
+    it('shows "Present" for a ship currently at the loaded system', () => {
+      appService().nowOverride.set(Date.parse(ANCHOR)); // slot 0 -> CYCLER I is at SYSTEM_A
+      appService().megashipSchedule.set(schedule);
+      component.data.set({ system: { id64: SYSTEM_A, coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+
+      const rows = component.megashipRows();
+      expect(rows).toEqual([{ signalName: 'CYCLER I', shipName: 'Test-class Cycler', locationLabel: 'Present' }]);
+    });
+
+    it('requests and displays the resolved current-location name for a ship due elsewhere', () => {
+      appService().nowOverride.set(Date.parse(ANCHOR)); // slot 0 -> ship is at SYSTEM_A, not SYSTEM_B
+      appService().megashipSchedule.set(schedule);
+      component.data.set({ system: { id64: SYSTEM_B, coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      fixture.detectChanges(); // flushes the reactive name-request effect
+
+      // Reactive lookup requested for the ship's actual current location.
+      expect(appService().requestSystemName).toHaveBeenCalledWith(SYSTEM_A);
+      expect(component.megashipRows()[0].locationLabel).toBe('…');
+
+      appService().systemNames.set(new Map([[String(SYSTEM_A), 'Croatigae']]));
+      expect(component.megashipRows()[0].locationLabel).toBe('Croatigae');
+    });
+
+    it('returns no rows for a system no tracked ship visits', () => {
+      appService().megashipSchedule.set(schedule);
+      component.data.set({ system: { id64: 9999, coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      expect(component.megashipRows()).toEqual([]);
+    });
+
+    it('opens the route dialog with the ship\'s full route on click', () => {
+      appService().nowOverride.set(Date.parse(ANCHOR));
+      appService().megashipSchedule.set(schedule);
+      component.data.set({ system: { id64: SYSTEM_A, coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open').mockReturnValue({} as never);
+
+      component.openMegashipRouteDialog('CYCLER I');
+
+      expect(open).toHaveBeenCalledTimes(1);
+      const [, config] = open.mock.calls[0];
+      const data = (config?.data as { data: unknown }).data as {
+        signalName: string; shipName: string; type: string; routeLen: number;
+        stops: { position: number; systemId64: number; presentNow: boolean }[];
+      };
+      expect(data.signalName).toBe('CYCLER I');
+      expect(data.shipName).toBe('Test-class Cycler');
+      expect(data.type).toBe('cycle');
+      expect(data.routeLen).toBe(2);
+      expect(data.stops).toEqual([
+        { position: 0, systemId64: SYSTEM_A, dueDate: expect.any(String), presentNow: true },
+        { position: 1, systemId64: SYSTEM_B, dueDate: expect.any(String), presentNow: false },
+      ]);
+    });
+
+    it('does nothing when the signal name has no match in the loaded schedule', () => {
+      appService().megashipSchedule.set(schedule);
+      component.data.set({ system: { id64: SYSTEM_A, coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open');
+
+      component.openMegashipRouteDialog('NO SUCH SHIP');
+
+      expect(open).not.toHaveBeenCalled();
     });
   });
 });

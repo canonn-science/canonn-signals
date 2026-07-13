@@ -25,6 +25,8 @@ describe('HomeComponent (extended coverage)', () => {
   let edastroSystems$: WritableSignal<any[]>;
   let independentOutposts$: WritableSignal<any[]>;
   let nebulae$: WritableSignal<any[]>;
+  let megashipSchedule$: WritableSignal<any>;
+  let systemNames$: WritableSignal<ReadonlyMap<string, string>>;
   let setBackgroundImage: ReturnType<typeof vi.fn>;
   let getEdastroData: ReturnType<typeof vi.fn>;
 
@@ -59,6 +61,8 @@ describe('HomeComponent (extended coverage)', () => {
     edastroSystems$ = signal<any[]>([]);
     independentOutposts$ = signal<any[]>([]);
     nebulae$ = signal<any[]>([]);
+    megashipSchedule$ = signal<any>(null);
+    systemNames$ = signal<ReadonlyMap<string, string>>(new Map());
     setBackgroundImage = vi.fn();
     getEdastroData = vi.fn(() => Promise.resolve(null));
 
@@ -83,6 +87,12 @@ describe('HomeComponent (extended coverage)', () => {
             typeahead: vi.fn((q: string) => httpGet(`/typeahead?q=${q}`)),
             getBiostats: vi.fn((id: number) => httpGet(`/codex/biostats?id=${id}&caller=Signals`)),
             getSimbad: vi.fn((id: number, name: string) => httpGet(`/simbad?system_address=${id}&name=${name}`)),
+            megashipSchedule: megashipSchedule$,
+            ensureMegaships: vi.fn(),
+            systemNames: systemNames$,
+            requestSystemName: vi.fn(),
+            resolveSystemName: vi.fn(() => Promise.resolve('')),
+            nowOverride: signal<number | null>(null),
           },
         },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },

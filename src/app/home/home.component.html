@@ -276,6 +276,22 @@
             }
           </div>
           }
+          @if (megashipRows().length) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Megaships</div>
+            @for (row of megashipRows(); track row.signalName) {
+            <div class="system-data-entry">
+              <div class="distance-system-link" role="button" tabindex="0" (click)="openMegashipRouteDialog(row.signalName)"
+                (keydown.enter)="openMegashipRouteDialog(row.signalName)"
+                (keydown.space)="$event.preventDefault(); openMegashipRouteDialog(row.signalName)"
+                title="Show route for {{ row.signalName }}">
+                {{ row.signalName }}
+              </div>
+              <div>{{ row.locationLabel }}</div>
+            </div>
+            }
+          </div>
+          }
           @if (data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length) {
           <div class="system-data-section">
             <div class="system-data-section-header">Signals</div>

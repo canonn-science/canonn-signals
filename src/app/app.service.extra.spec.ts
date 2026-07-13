@@ -190,4 +190,91 @@ describe('AppService (HTTP-driven coverage)', () => {
       vi.useRealTimers();
     }
   });
+
+  it('lazily loads the megaship schedule asset and memoises the fetch', async () => {
+    await init();
+    let scheduleCalls = 0;
+    const schedule = { anchor: '2023-12-28T07:00:00+00:00', week_seconds: 604800, generated_at: 'x', ships: [] };
+    route = (url: string) => {
+      if (url.includes('megaship-schedule.json')) {
+        scheduleCalls++;
+        return ok(schedule);
+      }
+      return ok({});
+    };
+    expect(service.megashipSchedule()).toBeNull();
+    service.ensureMegaships();
+    service.ensureMegaships(); // second call before the first resolves must not fire a second fetch
+    await flush();
+    expect(scheduleCalls).toBe(1);
+    expect(service.megashipSchedule()).toEqual(schedule);
+  });
+
+  it('leaves the megaship schedule null and retryable when the asset fetch fails', async () => {
+    await init();
+    let scheduleCalls = 0;
+    route = (url: string) => {
+      if (url.includes('megaship-schedule.json')) {
+        scheduleCalls++;
+        return fail(500, 'boom');
+      }
+      return ok({});
+    };
+    service.ensureMegaships();
+    await flush();
+    expect(service.megashipSchedule()).toBeNull();
+    expect(scheduleCalls).toBeGreaterThanOrEqual(1);
+  });
+
+  it('resolves a system name via biostats and caches it in systemNames', async () => {
+    await init();
+    let biostatsCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/codex/biostats?id=555')) {
+        biostatsCalls++;
+        return ok({ system: { name: 'Croatigae' } });
+      }
+      return ok({});
+    };
+    expect(service.systemNames().get('555')).toBeUndefined();
+    service.requestSystemName(555);
+    service.requestSystemName(555); // deduped: must not fire a second request
+    await flush();
+    expect(biostatsCalls).toBe(1);
+    expect(service.systemNames().get('555')).toBe('Croatigae');
+  });
+
+  it('caches a failed lookup as the raw id64 fallback (not retried)', async () => {
+    await init();
+    let biostatsCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/codex/biostats?id=777')) {
+        biostatsCalls++;
+        return fail(404, 'not found');
+      }
+      return ok({});
+    };
+    service.requestSystemName(777);
+    await flush();
+    service.requestSystemName(777);
+    await flush();
+    expect(biostatsCalls).toBe(1); // failure is cached too; no retry storm
+    expect(service.systemNames().get('777')).toBe('777');
+  });
+
+  it('resolveSystemName dedupes concurrent in-flight lookups for the same id64', async () => {
+    await init();
+    let biostatsCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/codex/biostats?id=888')) {
+        biostatsCalls++;
+        return ok({ system: { name: 'Varati' } });
+      }
+      return ok({});
+    };
+    const [a, b] = await Promise.all([service.resolveSystemName(888), service.resolveSystemName(888)]);
+    expect(biostatsCalls).toBe(1);
+    expect(a).toBe('Varati');
+    expect(b).toBe('Varati');
+  });
 });

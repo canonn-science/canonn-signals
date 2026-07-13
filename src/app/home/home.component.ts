@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed, effect } from '@angular/core';
 import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { faChartColumn, faDownload, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
@@ -25,6 +25,15 @@ import { findNearestNebulae, NearestNebula } from '../data/nebulae';
 import { isPermitLockedSystem } from '../data/permit-locked-systems';
 import { BodyEnrichmentService } from '../data/body-enrichment.service';
 import { buildSystemExport, downloadJson, serializeSystemExport, systemExportFilename } from '../data/system-export';
+import { buildMegashipIndex, megashipRoute, megashipsAtSystem, MegashipSystemEntry } from '../data/megaships';
+import type { MegashipRouteDialogData } from '../dialogs/megaship-route-dialog/megaship-route-dialog.component';
+
+/** A Megaships-table row: the ship plus its resolved current-location display label. */
+interface MegashipRow {
+  signalName: string;
+  shipName: string;
+  locationLabel: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -264,6 +273,13 @@ export class HomeComponent implements OnInit, OnDestroy {
         { name: 134, value: 56 },
       ],
     },
+    {
+      header: 'Megaships',
+      rows: [
+        { name: 140, value: 60 },
+        { name: 116, value: 56 },
+      ],
+    },
   ];
   protected readonly loadingBodyRows: readonly number[] = [0, 1, 2, 3, 4, 5];
 
@@ -346,6 +362,91 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
     return findNearestNebulae(coords, nebulae, 3);
   });
+
+  // --- Megaships (issue #114) --------------------------------------------------------------
+  // Rebuilt only when the schedule itself changes (a one-shot asset load), not on every
+  // system search — megashipEntries below is the one that recomputes per system.
+  private readonly megashipIndex = computed(() => {
+    const schedule = this.appService.megashipSchedule();
+    return schedule ? buildMegashipIndex(schedule) : null;
+  });
+
+  readonly megashipEntries = computed<MegashipSystemEntry[]>(() => {
+    const schedule = this.appService.megashipSchedule();
+    const index = this.megashipIndex();
+    const system = this.data()?.system;
+    if (!schedule || !index || !system) {
+      return [];
+    }
+    // The schedule stores system addresses as plain JSON numbers, not the bigint-upgraded
+    // id64/system_address fields json-bigint.ts recognises — anything above 2^53 would
+    // already have lost precision in the source file, an accepted limit of that data.
+    const systemId64 = Number(system.id64);
+    if (!Number.isSafeInteger(systemId64)) {
+      return [];
+    }
+    const asOf = new Date(this.appService.nowOverride() ?? Date.now());
+    return megashipsAtSystem(systemId64, asOf, schedule, index);
+  });
+
+  readonly megashipRows = computed<MegashipRow[]>(() => {
+    const names = this.appService.systemNames();
+    return this.megashipEntries().map(entry => ({
+      signalName: entry.signalName,
+      shipName: entry.shipName,
+      locationLabel: this.megashipLocationLabel(entry, names),
+    }));
+  });
+
+  private megashipLocationLabel(entry: MegashipSystemEntry, names: ReadonlyMap<string, string>): string {
+    if (entry.presentNow) {
+      return 'Present';
+    }
+    if (entry.currentSystemId64 === null) {
+      return 'Unknown';
+    }
+    return names.get(String(entry.currentSystemId64)) ?? '…';
+  }
+
+  /** Best-effort name lookup for every megaship's current location not already shown as "Present". */
+  private readonly requestMegashipLocationNames = effect(() => {
+    for (const entry of this.megashipEntries()) {
+      if (!entry.presentNow && entry.currentSystemId64 !== null) {
+        this.appService.requestSystemName(entry.currentSystemId64);
+      }
+    }
+  });
+
+  /** Opens the route-detail dialog for a Megaships table row, showing every stop and its due date. */
+  public openMegashipRouteDialog(signalName: string): void {
+    const schedule = this.appService.megashipSchedule();
+    const ship = schedule?.ships.find(s => s.signal_name === signalName);
+    if (!schedule || !ship) {
+      return;
+    }
+    const asOf = new Date(this.appService.nowOverride() ?? Date.now());
+    const stops = megashipRoute(ship, asOf, schedule);
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/megaship-route-dialog/megaship-route-dialog.component').then(m => m.MegashipRouteDialogComponent),
+      skeleton: 'text',
+      width: '700px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        signalName: ship.signal_name,
+        shipName: ship.ship_name,
+        type: ship.type,
+        confirmed: ship.type === 'cycle' ? ship.confirmed : true,
+        lastSeen: ship.last_seen,
+        firstSeen: ship.type === 'static' ? ship.first_seen : undefined,
+        weeksConfirmed: ship.type === 'static' ? ship.weeks_confirmed : undefined,
+        routeLen: ship.type === 'cycle' ? ship.route_len : undefined,
+        stops,
+      } satisfies MegashipRouteDialogData,
+    });
+  }
 
   readonly getTotalBodyCount = computed<number>(() => this.countBodies(this.bodies()));
 
@@ -827,6 +928,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.updateEdGalaxyData();
     // Kick off the lazy nebula-catalogue load so the "Nearest Nebulae" panel can populate.
     this.appService.ensureNebulae();
+    // Kick off the lazy megaship-schedule load so the "Megaships" panel can populate.
+    this.appService.ensureMegaships();
 
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {
