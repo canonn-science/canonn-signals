@@ -112,7 +112,7 @@ function dueInfo(
   return {
     dueDate: isoDate(slotStart(currentSlot + delta, schedule)),
     presentNow: delta === 0,
-    daysUntilDue: delta * 7,
+    daysUntilDue: delta * (schedule.week_seconds / (24 * 60 * 60)),
   };
 }
 
