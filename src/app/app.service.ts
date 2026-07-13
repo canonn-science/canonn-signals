@@ -4,6 +4,7 @@ import { parseJsonWithBigIntIds } from './data/json-bigint';
 import type { CanonnBiostats, SimbadApiResponse } from './home/home.component';
 import type { GnosisData } from './region-map/region-map.component';
 import type { Nebula } from './data/nebulae';
+import type { MegashipScheduleFile } from './data/megaships';
 
 /** Default per-request timeout for remote API calls (ms). */
 const HTTP_TIMEOUT_MS = 20000;
@@ -116,6 +117,18 @@ export class AppService {
   public readonly nowOverride: Signal<number | null> = this._nowOverride.asReadonly();
   public setNowOverride(ms: number | null): void { this._nowOverride.set(ms); }
 
+  private readonly _megashipSchedule = signal<MegashipScheduleFile | null>(null);
+  /** The megaship route schedule; null until {@link ensureMegaships} has loaded the asset. */
+  public readonly megashipSchedule: Signal<MegashipScheduleFile | null> = this._megashipSchedule.asReadonly();
+  /** Memoises the one-shot schedule asset load so concurrent callers share a single fetch. */
+  private megashipScheduleLoad?: Promise<void>;
+
+  /** system address (as a string key) -> resolved system name, for megaship route display. */
+  private readonly _systemNames = signal<ReadonlyMap<string, string>>(new Map());
+  public readonly systemNames: Signal<ReadonlyMap<string, string>> = this._systemNames.asReadonly();
+  /** In-flight name lookups, keyed by id64 string, so concurrent callers share one fetch. */
+  private readonly systemNameLookups = new Map<string, Promise<string>>();
+
   constructor() {
     void this.loadCodexEntries();
     void this.loadEdastroSystems();
@@ -176,6 +189,61 @@ export class AppService {
         // Clear the memo so a later call can retry the load.
         this.nebulaeLoad = undefined;
       });
+  }
+
+  /**
+   * Lazily loads the megaship route schedule asset the first time it's needed (it's ~2.2MB, so
+   * it's kept off the startup critical path). The fetch runs at most once; failures leave the
+   * schedule null and are retried on the next call. See `src/app/data/megaships.ts` for the
+   * lookup logic that consumes it.
+   */
+  public ensureMegaships(): void {
+    if (this.megashipScheduleLoad) {
+      return;
+    }
+    this.megashipScheduleLoad = this.resilientGet<MegashipScheduleFile>('assets/megaship-schedule.json', 60000)
+      .then(schedule => { this._megashipSchedule.set(schedule); })
+      .catch(() => {
+        this._megashipSchedule.set(null);
+        // Clear the memo so a later call can retry the load.
+        this.megashipScheduleLoad = undefined;
+      });
+  }
+
+  /**
+   * Resolves a system's display name from its address, for megaship route display (there's no
+   * reverse id64->name endpoint, so this piggybacks on the biostats API). Every id64 is resolved
+   * at most once per session — success *or* failure both cache permanently (a failed lookup
+   * caches the id64 itself, stringified, as the display fallback) — so a reactive caller that
+   * re-reads an unresolved entry every change-detection pass can't retry it in a loop.
+   */
+  public resolveSystemName(id64: number): Promise<string> {
+    const key = String(id64);
+    const cached = this._systemNames().get(key);
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    const inFlight = this.systemNameLookups.get(key);
+    if (inFlight) {
+      return inFlight;
+    }
+    const promise = this.getBiostats(id64)
+      .then(biostats => biostats?.system?.name || key)
+      .catch(() => key)
+      .then(name => {
+        const next = new Map(this._systemNames());
+        next.set(key, name);
+        this._systemNames.set(next);
+        this.systemNameLookups.delete(key);
+        return name;
+      });
+    this.systemNameLookups.set(key, promise);
+    return promise;
+  }
+
+  /** Fire-and-forget {@link resolveSystemName}, for reactive callers that just need the signal to update. */
+  public requestSystemName(id64: number): void {
+    void this.resolveSystemName(id64);
   }
 
   public getEdastroData(id64: number | bigint): Promise<EdastroData> {
