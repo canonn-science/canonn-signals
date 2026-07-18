@@ -794,7 +794,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     const next = new Set(this.selectedMaterials());
     if (next.has(material)) { next.delete(material); } else { next.add(material); }
     this.selectedMaterials.set(next);
-    if (next.size === 0) { return; }
+    if (next.size === 0) {
+      if (this.activeFilterCategory() === 'materials') {
+        this.activeFilterCategory.set(null);
+        this.filterCommand.set(null);
+      }
+      return;
+    }
     this.applyFilter('materials', collectMatchingBodies(this.bodies(), body => getBodyMaterialKeys(body).some(key => next.has(key))));
   }
 
