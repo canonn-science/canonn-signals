@@ -1,6 +1,6 @@
 import { estimateTempRange, isTempSafe, lookupTempDelta } from '../data/temperature-estimation';
 import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked, DestroyRef } from '@angular/core';
-import { SystemBody, EdGalaxyData, CanonnBiostatsBody } from '../home/home.component';
+import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
@@ -10,7 +10,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
-import { BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT } from '../data/body-physics.service';
+import {
+  BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT,
+  NARROW_RING_SPAN_RADII, PAUPER_RING_MIN_INNER_EDGE_RADII, PAUPER_RING_MAX_SPAN_RADII,
+} from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
 import { OrbitalWorkerService } from '../data/orbital-worker.service';
@@ -25,7 +28,7 @@ import { GENUS_NAMES } from '../data/genus';
 import type { OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
 import type { TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
-import type { RingClassificationDialogData, RingClassificationRingInfo } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
+import type { RingClassificationDialogData } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
 import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
 import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
 import type { ParentDistanceDialogData } from '../dialogs/parent-distance-dialog/parent-distance-dialog.component';
@@ -37,6 +40,8 @@ import { BodyEnrichmentService } from '../data/body-enrichment.service';
 import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dialog.component';
 import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
+import { resolveBodySignalsMap, FilterCommand } from '../data/body-filters';
+import { BodyInterestRegistryService } from '../data/body-interest-registry.service';
 import { ConvertIconComponent } from '../dialogs/unit-conversion-dialog/convert-icon.component';
 import {
   dynamicArealDensityUnitLabel,
@@ -80,33 +85,6 @@ const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
  */
 const COLLISION_DIAGRAM_SAMPLES = 1000;
 
-/**
- * Maximum gap between adjacent rings (km) for the Racing Rings badge.
- * Set so that both ring edges are likely to be simultaneously visible when
- * flying nearby. The value is intentionally generous and may be tightened
- * once in-game observations are collected.
- */
-const RACING_RINGS_MAX_GAP_KM = 50;
-/**
- * Minimum outer-to-inner velocity difference (km/s) for the Racing Rings badge.
- * Chosen as a speed differential large enough to be noticeable in-game;
- * may be adjusted after in-game observations.
- */
-const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
-
-/**
- * Body-radius multiple below which a ring system's total span counts as narrow. Used
- * as the Taylor ring badge's upper threshold, and as the Pauper ring badge's lower
- * bound (a span this narrow is a Taylor ring, not a Pauper ring).
- */
-const NARROW_RING_SPAN_RADII = 0.25;
-/** Body-radii the innermost visible ring edge must clear for the Pauper ring badge (unusually distant). */
-const PAUPER_RING_MIN_INNER_EDGE_RADII = 14;
-/** Maximum span (body radii) for the Pauper ring badge — no wider than one body diameter. */
-const PAUPER_RING_MAX_SPAN_RADII = 2;
-/** Fraction of the total span above which a gap between two adjacent visible rings is called out as potentially visible. */
-const VISIBLE_GAP_SPAN_FRACTION = 0.02;
-
 @Component({
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
@@ -123,6 +101,7 @@ export class SystemBodyComponent implements OnChanges {
   private readonly orbitalWorker = inject(OrbitalWorkerService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly enrichment = inject(BodyEnrichmentService);
+  private readonly interestRegistry = inject(BodyInterestRegistryService);
 
   // Expose Math.abs for template use
   abs(value: number): number {
@@ -144,6 +123,8 @@ export class SystemBodyComponent implements OnChanges {
   readonly forceExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
   readonly systemPopulation = input<number>(0);
+  readonly filterCommand = input<FilterCommand | null>(null);
+  readonly systemKey = input<string | number | bigint | null>(null);
   readonly childComponents = viewChildren(SystemBodyComponent);
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
@@ -175,6 +156,8 @@ export class SystemBodyComponent implements OnChanges {
   // user has since collapsed. See the auto-expand block in ngOnChanges.
   private autoExpandBody: SystemBody | null = null;
   private autoExpandAnchor: number | null = null;
+  /** Last-applied quick-filter token (see {@link FilterCommand}), so a repeat ngOnChanges from an unrelated input doesn't reapply it. */
+  private lastAppliedFilterToken: number | null = null;
   private autoExpandForce = false;
 
   public hoveredIndex: number = -1;
@@ -409,6 +392,14 @@ export class SystemBodyComponent implements OnChanges {
       }
     }
 
+    // Quick-filter command (see FilterCommand): applies unconditionally, overriding whatever
+    // expanded() currently holds, so a click both expands matching bodies and collapses the rest.
+    const filterCommand = this.filterCommand();
+    if (filterCommand && filterCommand.token !== this.lastAppliedFilterToken) {
+      this.lastAppliedFilterToken = filterCommand.token;
+      this.expanded.set(filterCommand.bodies === 'all' || filterCommand.bodies.has(body));
+    }
+
     if (this.isRoot()) {
       this.styleClass = "";
     }
@@ -486,7 +477,7 @@ export class SystemBodyComponent implements OnChanges {
     this.applyRingDynamics(this.physics.ringDynamics(body));
 
     // Distance to the next ring/belt sibling (by innerRadius order).
-    const { distance: neighbourDist, label: neighbourLabel, velocityDiff, eitherRingInvisible } = this.computeRingNeighbourDistance(body);
+    const { distance: neighbourDist, label: neighbourLabel, velocityDiff, eitherRingInvisible } = this.physics.ringNeighbourDistance(body);
     // Suppress gap/velocity display when either ring in the pair is invisible — the values
     // are physically real but the invisible ring cannot be observed in-game.
     const displayDist = eitherRingInvisible ? null : neighbourDist;
@@ -499,8 +490,7 @@ export class SystemBodyComponent implements OnChanges {
 
     // Racing Rings badge: gap between adjacent rings below threshold AND speed
     // differential above threshold, and neither ring in the pair is invisible.
-    const racingRings = neighbourDist !== null && velocityDiff !== null
-      && neighbourDist < RACING_RINGS_MAX_GAP_KM && velocityDiff > RACING_RINGS_MIN_SPEED_DIFF_KMS && !eitherRingInvisible;
+    const racingRings = this.physics.isRacingRings(body);
     this.isRacingRings.set(racingRings);
     if (racingRings) {
       const dashIdx = neighbourLabel.indexOf('-');
@@ -514,7 +504,7 @@ export class SystemBodyComponent implements OnChanges {
     }
 
     // Taylor (unusually narrow) / Pauper (unusually wide and distant) ring badges.
-    const ringClass = this.classifyRingSystem(body);
+    const ringClass = this.physics.classifyRingSystem(body);
     this.isTaylorRing.set(ringClass?.isTaylor ?? false);
     this.isPauperRing.set(ringClass?.isPauper ?? false);
     this.taylorRingTooltip.set(ringClass?.isTaylor
@@ -876,20 +866,11 @@ export class SystemBodyComponent implements OnChanges {
 
   /**
    * The hotspot/signal map for this body: its own `signals.signals`, or — for a ring
-   * body — the matching entry in the parent's `rings` array. Single source of truth for
-   * the signal-count, hotspot-list and signal-tooltip lookups, which previously each
-   * reimplemented this resolution.
+   * body — the matching entry in the parent's `rings` array. Delegates to the shared
+   * {@link resolveBodySignalsMap}, also used by the home page's Mining quick filter.
    */
   private resolveSignalsMap(): { [key: string]: number } | undefined {
-    const body = this.body();
-    if (body.bodyData.signals?.signals) {
-      return body.bodyData.signals.signals;
-    }
-    if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
-      const ringData = body.parent.bodyData.rings.find(r => r.name === body.bodyData.name);
-      return ringData?.signals?.signals;
-    }
-    return undefined;
+    return resolveBodySignalsMap(this.body());
   }
 
   private computeSignalsCount(): number {
@@ -1115,7 +1096,7 @@ export class SystemBodyComponent implements OnChanges {
   /** Opens the explanation dialog for the Taylor (narrow) or Pauper (wide, distant) ring badge. */
   public async showRingClassificationDialog(kind: 'taylor' | 'pauper'): Promise<void> {
     const body = this.body();
-    const ringClass = this.classifyRingSystem(body);
+    const ringClass = this.physics.classifyRingSystem(body);
     if (!ringClass) { return; }
 
     openLazyDialog(this.dialog, {
@@ -1622,104 +1603,9 @@ export class SystemBodyComponent implements OnChanges {
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
   }
 
-  private isInvisibleRing(bd: CanonnBiostatsBody): boolean {
-    if (bd.type !== BODY_TYPE.Ring) { return false; }
-    const outer = bd.outerRadius ?? 0;
-    const inner = bd.innerRadius ?? 0;
-    const width = outer - inner;
-    const area = Math.PI * (outer * outer - inner * inner);
-    const density = area > 0 ? (bd.mass ?? 0) / area : 0;
-    return this.isLowDensityWideRing(width, density);
-  }
-
   /** Shared invisibility heuristic used for ring stats, badges, and dialog explanations. */
   private isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
     return this.physics.isLowDensityWideRing(widthKm, densityKgPerKm2);
-  }
-
-  /** `parent`'s ring-type sub-bodies, sorted by inner radius ascending. Includes invisible rings — callers filter those out themselves when they don't want them. */
-  private sortedRingSiblings(parent: SystemBody): SystemBody[] {
-    return parent.subBodies
-      .filter(s => s.bodyData.type === BODY_TYPE.Ring)
-      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
-  }
-
-  /** Strips the " Ring" suffix from a ring body's name, leaving just its letter designation (e.g. "A"). */
-  private stripRingSuffix(name: string): string {
-    return name.replace('Ring', '').trim();
-  }
-
-  /**
-   * Classifies `body`'s ring system as Taylor (unusually narrow) and/or Pauper (unusually
-   * wide and distant), or null when `body` isn't a visible ring or the classification can't
-   * be computed. Both badges are derived from the same "span" of the body's *visible* rings
-   * (invisible rings — see {@link isInvisibleRing} — are stripped first), so the result is
-   * identical for every ring belonging to the same parent and the badge shows on all of them.
-   */
-  private classifyRingSystem(body: SystemBody): {
-    isTaylor: boolean; isPauper: boolean; span: number; innermostInner: number; outermostOuter: number;
-    parentRadius: number; rings: RingClassificationRingInfo[]; hasVisibleGap: boolean;
-  } | null {
-    const bd = body.bodyData;
-    if (bd.type !== BODY_TYPE.Ring || !body.parent || this.isInvisibleRing(bd)) { return null; }
-
-    const parentRadius = this.physics.getParentRadiusKm(body);
-    if (!parentRadius) { return null; }
-
-    const visibleRings = this.sortedRingSiblings(body.parent)
-      .filter(s => !this.isInvisibleRing(s.bodyData));
-    if (visibleRings.length === 0) { return null; }
-
-    // Already sorted by inner radius ascending, so the first entry is the innermost inner edge.
-    const innermostInner = visibleRings[0].bodyData.innerRadius ?? 0;
-    const outermostOuter = Math.max(...visibleRings.map(r => r.bodyData.outerRadius ?? 0));
-    const span = outermostOuter - innermostInner;
-
-    const isTaylor = span < NARROW_RING_SPAN_RADII * parentRadius;
-    // `span > NARROW_RING_SPAN_RADII * parentRadius` here is what keeps this mutually
-    // exclusive with isTaylor above (span < the same threshold).
-    const isPauper = innermostInner >= PAUPER_RING_MIN_INNER_EDGE_RADII * parentRadius
-      && span <= PAUPER_RING_MAX_SPAN_RADII * parentRadius
-      && span > NARROW_RING_SPAN_RADII * parentRadius;
-
-    const rings = visibleRings.map(r => ({
-      name: this.stripRingSuffix(r.bodyData.name),
-      innerRadius: r.bodyData.innerRadius ?? 0,
-      outerRadius: r.bodyData.outerRadius ?? 0,
-    }));
-
-    // Gap between each ring's outer edge and the next ring's inner edge — a gap wide enough
-    // relative to the total span may show up as a visible break in an otherwise "single ring".
-    const hasVisibleGap = span > 0 && rings.some((r, i) => {
-      const next = rings[i + 1];
-      if (!next) { return false; }
-      return (next.innerRadius - r.outerRadius) > VISIBLE_GAP_SPAN_FRACTION * span;
-    });
-
-    return { isTaylor, isPauper, span, innermostInner, outermostOuter, parentRadius, rings, hasVisibleGap };
-  }
-
-  private computeRingNeighbourDistance(body: SystemBody): { distance: number | null; label: string; velocityDiff: number | null; eitherRingInvisible: boolean } {
-    const bd = body.bodyData;
-    if (bd.type !== BODY_TYPE.Ring || !body.parent) {
-      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
-    }
-    const siblings = this.sortedRingSiblings(body.parent);
-    const idx = siblings.indexOf(body);
-    if (idx < 0 || idx === siblings.length - 1) {
-      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
-    }
-    const next = siblings[idx + 1];
-    const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
-    const thisLabel = this.stripRingSuffix(bd.name);
-    const nextLabel = this.stripRingSuffix(next.bodyData.name);
-    const currentDynamics = this.physics.ringDynamics(body);
-    const nextDynamics = this.physics.ringDynamics(next);
-    const velocityDiff = (currentDynamics !== null && nextDynamics !== null)
-      ? currentDynamics.maxVelocityKms - nextDynamics.minVelocityKms
-      : null;
-    const eitherRingInvisible = this.isInvisibleRing(bd) || this.isInvisibleRing(next.bodyData);
-    return { distance, label: `${thisLabel}-${nextLabel}`, velocityDiff, eitherRingInvisible };
   }
 
   private applyRingDynamics(dynamics: RingDynamics | null): void {
@@ -1905,6 +1791,7 @@ export class SystemBodyComponent implements OnChanges {
         clearTimeout(this.collisionPendingTimer);
         this.collisionStatus.set(status);
         this.collisionPending.set(false);
+        this.reportCollisionCandidate(body, status.isCandidate);
       })
       .catch((err: unknown) => {
         // A worker/engine failure leaves the badge simply absent (collisionStatus stays null) rather
@@ -1914,7 +1801,19 @@ export class SystemBodyComponent implements OnChanges {
         if (requestId !== this.collisionRequestId) { return; }
         clearTimeout(this.collisionPendingTimer);
         this.collisionPending.set(false);
+        this.reportCollisionCandidate(body, false);
       });
+  }
+
+  /**
+   * Surfaces this body's resolved collision-candidate status to the shared registry so the
+   * "Tourist" quick filter (computed eagerly in HomeComponent from synchronous body data) can
+   * pick it up once the off-thread search finishes, without re-running collision detection itself.
+   */
+  private reportCollisionCandidate(body: SystemBody, isCandidate: boolean): void {
+    const key = this.systemKey();
+    if (key === null) { return; }
+    this.interestRegistry.reportCollisionCandidate(key, body, isCandidate);
   }
 
   /**

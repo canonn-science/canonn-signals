@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { CanonnBiostatsBody, SystemBody } from '../home/home.component';
 import { BODY_TYPE } from './body-types';
 import { KM_PER_AU, KM_PER_SOLAR_RADIUS, KG_PER_EARTH_MASS, KG_PER_SOLAR_MASS, KG_PER_MEGATONNE } from './unit-conversions';
+import type { RingClassificationRingInfo } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
 
 /** Approximate Earth masses per solar mass, used for parent-mass conversions. */
 const EARTH_MASSES_PER_SOLAR_MASS = 332950;
@@ -14,6 +15,33 @@ export const SPEED_OF_LIGHT = 299792458;
 export const INVISIBLE_RING_MAX_DENSITY = 0.1;
 /** Rings wider than this (km) are considered invisible when density is also low. */
 export const INVISIBLE_RING_MIN_WIDTH = 1_000_000;
+
+/**
+ * Maximum gap between adjacent rings (km) for the Racing Rings badge.
+ * Set so that both ring edges are likely to be simultaneously visible when
+ * flying nearby. The value is intentionally generous and may be tightened
+ * once in-game observations are collected.
+ */
+export const RACING_RINGS_MAX_GAP_KM = 50;
+/**
+ * Minimum outer-to-inner velocity difference (km/s) for the Racing Rings badge.
+ * Chosen as a speed differential large enough to be noticeable in-game;
+ * may be adjusted after in-game observations.
+ */
+export const RACING_RINGS_MIN_SPEED_DIFF_KMS = 5;
+
+/**
+ * Body-radius multiple below which a ring system's total span counts as narrow. Used
+ * as the Taylor ring badge's upper threshold, and as the Pauper ring badge's lower
+ * bound (a span this narrow is a Taylor ring, not a Pauper ring).
+ */
+export const NARROW_RING_SPAN_RADII = 0.25;
+/** Body-radii the innermost visible ring edge must clear for the Pauper ring badge (unusually distant). */
+export const PAUPER_RING_MIN_INNER_EDGE_RADII = 14;
+/** Maximum span (body radii) for the Pauper ring badge — no wider than one body diameter. */
+export const PAUPER_RING_MAX_SPAN_RADII = 2;
+/** Fraction of the total span above which a gap between two adjacent visible rings is called out as potentially visible. */
+export const VISIBLE_GAP_SPAN_FRACTION = 0.02;
 
 /**
  * Degenerate-matter stability limits (solar masses). The Chandrasekhar limit caps a
@@ -96,6 +124,26 @@ export interface RingDynamics {
   maxVelocityKms: number;
 }
 
+/** Taylor/Pauper ring classification, shared by every visible ring belonging to the same parent. */
+export interface RingClassification {
+  isTaylor: boolean;
+  isPauper: boolean;
+  span: number;
+  innermostInner: number;
+  outermostOuter: number;
+  parentRadius: number;
+  rings: RingClassificationRingInfo[];
+  hasVisibleGap: boolean;
+}
+
+/** Gap and relative velocity to a ring's next-outward sibling, for the Racing Rings badge. */
+export interface RingNeighbourDistance {
+  distance: number | null;
+  label: string;
+  velocityDiff: number | null;
+  eitherRingInvisible: boolean;
+}
+
 /**
  * Pure astrophysics for a body and its parent: densities, Roche limits, Hill
  * spheres and ring-shepherding analysis. Extracted from SystemBodyComponent so
@@ -139,6 +187,111 @@ export class BodyPhysicsService {
    */
   isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
     return densityKgPerKm2 < INVISIBLE_RING_MAX_DENSITY && widthKm > INVISIBLE_RING_MIN_WIDTH;
+  }
+
+  /** Whether `bd` (a ring) is invisible in-game — see {@link isLowDensityWideRing}. */
+  isInvisibleRing(bd: CanonnBiostatsBody): boolean {
+    if (bd.type !== BODY_TYPE.Ring) { return false; }
+    const outer = bd.outerRadius ?? 0;
+    const inner = bd.innerRadius ?? 0;
+    const width = outer - inner;
+    const area = Math.PI * (outer * outer - inner * inner);
+    const density = area > 0 ? (bd.mass ?? 0) / area : 0;
+    return this.isLowDensityWideRing(width, density);
+  }
+
+  /** `parent`'s ring-type sub-bodies, sorted by inner radius ascending. Includes invisible rings — callers filter those out themselves when they don't want them. */
+  sortedRingSiblings(parent: SystemBody): SystemBody[] {
+    return parent.subBodies
+      .filter(s => s.bodyData.type === BODY_TYPE.Ring)
+      .sort((a, b) => (a.bodyData.innerRadius ?? 0) - (b.bodyData.innerRadius ?? 0));
+  }
+
+  /** Strips the " Ring" suffix from a ring body's name, leaving just its letter designation (e.g. "A"). */
+  private stripRingSuffix(name: string): string {
+    return name.replace('Ring', '').trim();
+  }
+
+  /**
+   * Classifies `body`'s ring system as Taylor (unusually narrow) and/or Pauper (unusually
+   * wide and distant), or null when `body` isn't a visible ring or the classification can't
+   * be computed. Both badges are derived from the same "span" of the body's *visible* rings
+   * (invisible rings — see {@link isInvisibleRing} — are stripped first), so the result is
+   * identical for every ring belonging to the same parent and the badge shows on all of them.
+   */
+  classifyRingSystem(body: SystemBody): RingClassification | null {
+    const bd = body.bodyData;
+    if (bd.type !== BODY_TYPE.Ring || !body.parent || this.isInvisibleRing(bd)) { return null; }
+
+    const parentRadius = this.getParentRadiusKm(body);
+    if (!parentRadius) { return null; }
+
+    const visibleRings = this.sortedRingSiblings(body.parent)
+      .filter(s => !this.isInvisibleRing(s.bodyData));
+    if (visibleRings.length === 0) { return null; }
+
+    // Already sorted by inner radius ascending, so the first entry is the innermost inner edge.
+    const innermostInner = visibleRings[0].bodyData.innerRadius ?? 0;
+    const outermostOuter = Math.max(...visibleRings.map(r => r.bodyData.outerRadius ?? 0));
+    const span = outermostOuter - innermostInner;
+
+    const isTaylor = span < NARROW_RING_SPAN_RADII * parentRadius;
+    // `span > NARROW_RING_SPAN_RADII * parentRadius` here is what keeps this mutually
+    // exclusive with isTaylor above (span < the same threshold).
+    const isPauper = innermostInner >= PAUPER_RING_MIN_INNER_EDGE_RADII * parentRadius
+      && span <= PAUPER_RING_MAX_SPAN_RADII * parentRadius
+      && span > NARROW_RING_SPAN_RADII * parentRadius;
+
+    const rings = visibleRings.map(r => ({
+      name: this.stripRingSuffix(r.bodyData.name),
+      innerRadius: r.bodyData.innerRadius ?? 0,
+      outerRadius: r.bodyData.outerRadius ?? 0,
+    }));
+
+    // Gap between each ring's outer edge and the next ring's inner edge — a gap wide enough
+    // relative to the total span may show up as a visible break in an otherwise "single ring".
+    const hasVisibleGap = span > 0 && rings.some((r, i) => {
+      const next = rings[i + 1];
+      if (!next) { return false; }
+      return (next.innerRadius - r.outerRadius) > VISIBLE_GAP_SPAN_FRACTION * span;
+    });
+
+    return { isTaylor, isPauper, span, innermostInner, outermostOuter, parentRadius, rings, hasVisibleGap };
+  }
+
+  /** Gap and relative velocity between `body` (a ring) and its next-outward sibling, for the Racing Rings badge. */
+  ringNeighbourDistance(body: SystemBody): RingNeighbourDistance {
+    const bd = body.bodyData;
+    if (bd.type !== BODY_TYPE.Ring || !body.parent) {
+      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
+    }
+    const siblings = this.sortedRingSiblings(body.parent);
+    const idx = siblings.indexOf(body);
+    if (idx < 0 || idx === siblings.length - 1) {
+      return { distance: null, label: '', velocityDiff: null, eitherRingInvisible: false };
+    }
+    const next = siblings[idx + 1];
+    const distance = (next.bodyData.innerRadius ?? 0) - (bd.outerRadius ?? 0);
+    const thisLabel = this.stripRingSuffix(bd.name);
+    const nextLabel = this.stripRingSuffix(next.bodyData.name);
+    const currentDynamics = this.ringDynamics(body);
+    const nextDynamics = this.ringDynamics(next);
+    const velocityDiff = (currentDynamics !== null && nextDynamics !== null)
+      ? currentDynamics.maxVelocityKms - nextDynamics.minVelocityKms
+      : null;
+    const eitherRingInvisible = this.isInvisibleRing(bd) || this.isInvisibleRing(next.bodyData);
+    return { distance, label: `${thisLabel}-${nextLabel}`, velocityDiff, eitherRingInvisible };
+  }
+
+  /**
+   * Racing Rings badge: `body` (a ring) sits within {@link RACING_RINGS_MAX_GAP_KM} of its
+   * next-outward sibling with a velocity differential above {@link RACING_RINGS_MIN_SPEED_DIFF_KMS},
+   * and neither ring in the pair is invisible.
+   */
+  isRacingRings(body: SystemBody): boolean {
+    const { distance, velocityDiff, eitherRingInvisible } = this.ringNeighbourDistance(body);
+    return distance !== null && velocityDiff !== null
+      && distance < RACING_RINGS_MAX_GAP_KM && velocityDiff > RACING_RINGS_MIN_SPEED_DIFF_KMS && !eitherRingInvisible;
   }
 
   /** Parent radius in km, or null when the parent exposes no radius. */

@@ -364,11 +364,114 @@
     </div>
     }
     @if (bodies().length) {
+    <div class="quick-filters">
+      @if (biologyMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'biology'"
+        (click)="onBiologyFilterClick()" title="Expand only bodies with biological signals"
+        aria-label="Expand only bodies with biological signals">
+        <img alt="" src="assets/icons/Biology.svg" />
+        <span>Biology</span>
+      </button>
+      }
+      @if (geologyMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'geology'"
+        (click)="onGeologyFilterClick()" title="Expand only bodies with geological signals"
+        aria-label="Expand only bodies with geological signals">
+        <img alt="" src="assets/icons/Geology.svg" />
+        <span>Geology</span>
+      </button>
+      }
+      @if (guardianMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'guardian'"
+        (click)="onGuardianFilterClick()" title="Expand only bodies with Guardian sites"
+        aria-label="Expand only bodies with Guardian sites">
+        <img alt="" src="assets/icons/Guardian.svg" />
+        <span>Guardian</span>
+      </button>
+      }
+      @if (thargoidMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'thargoid'"
+        (click)="onThargoidFilterClick()" title="Expand only bodies with Thargoid sites"
+        aria-label="Expand only bodies with Thargoid sites">
+        <img alt="" src="assets/icons/Thargoid.svg" />
+        <span>Thargoid</span>
+      </button>
+      }
+      @if (humanMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'human'"
+        (click)="onHumanFilterClick()" title="Expand only bodies with human sites"
+        aria-label="Expand only bodies with human sites">
+        <img alt="" src="assets/icons/Human.svg" />
+        <span>Human</span>
+      </button>
+      }
+      @if (landableMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'landable'"
+        (click)="onLandableFilterClick()" title="Expand only landable bodies"
+        aria-label="Expand only landable bodies">
+        <img alt="" src="assets/icons/footprint.svg" style="filter: brightness(0) invert(1);" />
+        <span>Landable</span>
+      </button>
+      }
+      @if (availableMaterialKeys().length) {
+      <div class="quick-filter-dropdown" (click)="$event.stopPropagation()">
+        <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'materials'"
+          (click)="toggleMaterialsMenu()" aria-haspopup="true" [attr.aria-expanded]="materialsMenuOpen()"
+          title="Expand only bodies containing selected materials">
+          <span>Materials{{ selectedMaterials().size ? ' (' + selectedMaterials().size + ')' : '' }}</span>
+          <fa-icon [icon]="faChevronDown" aria-hidden="true"></fa-icon>
+        </button>
+        @if (materialsMenuOpen()) {
+        <div class="quick-filter-menu">
+          @for (material of availableMaterialKeys(); track material) {
+          <label class="quick-filter-menu-item">
+            <input type="checkbox" [checked]="selectedMaterials().has(material)"
+              (change)="toggleMaterialSelection(material)" />
+            {{ material }}
+          </label>
+          }
+        </div>
+        }
+      </div>
+      }
+      @if (availableHotspotKeys().length) {
+      <div class="quick-filter-dropdown" (click)="$event.stopPropagation()">
+        <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'mining'"
+          (click)="toggleMiningMenu()" aria-haspopup="true" [attr.aria-expanded]="miningMenuOpen()"
+          title="Expand only bodies containing selected mining hotspots">
+          <span>Mining{{ selectedHotspots().size ? ' (' + selectedHotspots().size + ')' : '' }}</span>
+          <fa-icon [icon]="faChevronDown" aria-hidden="true"></fa-icon>
+        </button>
+        @if (miningMenuOpen()) {
+        <div class="quick-filter-menu">
+          @for (resource of availableHotspotKeys(); track resource) {
+          <label class="quick-filter-menu-item">
+            <input type="checkbox" [checked]="selectedHotspots().has(resource)"
+              (change)="toggleHotspotSelection(resource)" />
+            {{ hotspotDisplayName(resource) }}
+          </label>
+          }
+        </div>
+        }
+      </div>
+      }
+      @if (touristMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'tourist'"
+        (click)="onTouristFilterClick()" title="Expand only bodies with special badges"
+        aria-label="Expand only bodies with special badges">
+        <span>Tourist</span>
+      </button>
+      }
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'everything'"
+        (click)="onEverythingFilterClick()" title="Expand every body" aria-label="Expand every body">
+        <span>Everything</span>
+      </button>
+    </div>
     <div class="bodies">
       @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
       <app-system-body [body]="body" [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
-        [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"
-        [systemPopulation]="data.system.population"></app-system-body>
+        [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy" [filterCommand]="filterCommand()"
+        [systemKey]="systemKey()" [systemPopulation]="data.system.population"></app-system-body>
       }
     </div>
     }
