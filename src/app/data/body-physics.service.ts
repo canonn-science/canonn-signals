@@ -438,7 +438,7 @@ export class BodyPhysicsService {
 
   /**
    * Angular diameter (degrees) the parent body subtends in `body`'s sky, i.e. how large the
-   * parent looks when standing on `body`'s surface. Computed exactly as
+   * parent appears from `body` at its orbital distance (centre-to-centre). Computed exactly as
    * `2 * atan(parentRadius / distance)` — CCFE's original Lua script instead uses the
    * small-angle approximation `57.3 * (2 * radius / distance)`, which diverges by a few
    * percent at the angles this badge cares about (see AGENTS.md's "physical accuracy" rule).
