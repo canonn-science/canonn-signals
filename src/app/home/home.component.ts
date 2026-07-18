@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, HostListener, inject, viewChild, signal, computed, effect } from '@angular/core';
 import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { faChartColumn, faDownload, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faChartColumn, faChevronDown, faDownload, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { MatDialog } from '@angular/material/dialog';
 import { openLazyDialog } from '../dialogs/lazy-dialog';
 import type { HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
@@ -27,6 +27,15 @@ import { BodyEnrichmentService } from '../data/body-enrichment.service';
 import { buildSystemExport, downloadJson, serializeSystemExport, systemExportFilename } from '../data/system-export';
 import { buildMegashipIndex, megashipRoute, megashipsAtSystem, MegashipSystemEntry } from '../data/megaships';
 import type { MegashipRouteDialogData } from '../dialogs/megaship-route-dialog/megaship-route-dialog.component';
+import { BodyPhysicsService } from '../data/body-physics.service';
+import { OrbitalRelationsService } from '../data/orbital-relations.service';
+import { BodyInterestRegistryService } from '../data/body-interest-registry.service';
+import {
+  FilterCategory, FilterCommand, walkBodies, collectMatchingBodies,
+  hasBiologySignals, hasGeologySignals, hasGuardianSignals, hasThargoidSignals, hasHumanSignals, isLandable,
+  getBodyMaterialKeys, getBodyHotspotKeys, isTouristInteresting,
+} from '../data/body-filters';
+import { MINING_RESOURCES } from '../data/mining-resources';
 
 /** A Megaships-table row: the ship plus its resolved current-location display label. */
 interface MegashipRow {
@@ -47,6 +56,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly enrichment = inject(BodyEnrichmentService);
+  private readonly physics = inject(BodyPhysicsService);
+  private readonly orbitalRelations = inject(OrbitalRelationsService);
+  private readonly interestRegistry = inject(BodyInterestRegistryService);
 
   private lastSimbadSystemName: string | null = null;
   private lastSimbadId64: bigint | null = null;
@@ -602,6 +614,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   public readonly faDownload = faDownload;
   public readonly faMagnifyingGlass = faMagnifyingGlass;
   public readonly faChartColumn = faChartColumn;
+  public readonly faChevronDown = faChevronDown;
   private readonly dialog = inject(MatDialog);
 
   /** Opens the body-type histogram for the current system. */
@@ -695,6 +708,109 @@ export class HomeComponent implements OnInit, OnDestroy {
   public readonly data = signal<CanonnBiostats | null>(null);
   public readonly bodies = signal<SystemBody[]>([]);
   public readonly anchorBodyId = signal<number | null>(null);
+
+  /** id64 of the loaded system, threaded down to every SystemBodyComponent as a key for the async collision registry. */
+  public readonly systemKey = computed<bigint | null>(() => this.data()?.system?.id64 ?? null);
+
+  // --- Quick filters (see body-filters.ts) ---
+  public readonly activeFilterCategory = signal<FilterCategory | null>(null);
+  public readonly filterCommand = signal<FilterCommand | null>(null);
+  private filterTokenSeq = 0;
+  public readonly selectedMaterials = signal<Set<string>>(new Set());
+  public readonly selectedHotspots = signal<Set<string>>(new Set());
+  public readonly materialsMenuOpen = signal(false);
+  public readonly miningMenuOpen = signal(false);
+
+  public readonly biologyMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasBiologySignals));
+  public readonly geologyMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasGeologySignals));
+  public readonly guardianMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasGuardianSignals));
+  public readonly thargoidMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasThargoidSignals));
+  public readonly humanMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasHumanSignals));
+  public readonly landableMatchIds = computed(() => collectMatchingBodies(this.bodies(), isLandable));
+
+  /**
+   * Synchronous "special badge" criteria only (see {@link isTouristInteresting}). Orbital
+   * collision candidates resolve later, off the main thread, and are folded in separately by
+   * {@link touristMatchIds} so the Tourist filter (and its visibility) can still catch up once
+   * those results land.
+   */
+  private readonly touristSyncMatchIds = computed(() =>
+    collectMatchingBodies(this.bodies(), body => isTouristInteresting(body, this.physics, this.orbitalRelations)));
+  public readonly touristMatchIds = computed(() => {
+    const collisionBodies = this.interestRegistry.collisionCandidateBodies();
+    if (collisionBodies.size === 0) { return this.touristSyncMatchIds(); }
+    const merged = new Set(this.touristSyncMatchIds());
+    for (const body of collisionBodies) { merged.add(body); }
+    return merged;
+  });
+
+  /** Material keys present anywhere in the system, for populating the Materials dropdown (and hiding it when empty). */
+  public readonly availableMaterialKeys = computed(() => {
+    const keys = new Set<string>();
+    walkBodies(this.bodies(), body => { for (const key of getBodyMaterialKeys(body)) { keys.add(key); } });
+    return Array.from(keys).sort((a, b) => a.localeCompare(b));
+  });
+  /** Mining-hotspot resource keys present anywhere in the system, for the Mining dropdown. */
+  public readonly availableHotspotKeys = computed(() => {
+    const keys = new Set<string>();
+    walkBodies(this.bodies(), body => { for (const key of getBodyHotspotKeys(body)) { keys.add(key); } });
+    return Array.from(keys).sort((a, b) => a.localeCompare(b));
+  });
+
+  /** Collapses every body except those in `bodies` (or every body, for `'all'`) and marks `category` as the active filter. */
+  private applyFilter(category: FilterCategory, bodies: Set<SystemBody> | 'all'): void {
+    this.activeFilterCategory.set(category);
+    this.filterCommand.set({ token: ++this.filterTokenSeq, bodies });
+  }
+
+  public onBiologyFilterClick(): void { this.applyFilter('biology', this.biologyMatchIds()); }
+  public onGeologyFilterClick(): void { this.applyFilter('geology', this.geologyMatchIds()); }
+  public onGuardianFilterClick(): void { this.applyFilter('guardian', this.guardianMatchIds()); }
+  public onThargoidFilterClick(): void { this.applyFilter('thargoid', this.thargoidMatchIds()); }
+  public onHumanFilterClick(): void { this.applyFilter('human', this.humanMatchIds()); }
+  public onLandableFilterClick(): void { this.applyFilter('landable', this.landableMatchIds()); }
+  public onTouristFilterClick(): void { this.applyFilter('tourist', this.touristMatchIds()); }
+  public onEverythingFilterClick(): void { this.applyFilter('everything', 'all'); }
+
+  public toggleMaterialsMenu(): void {
+    this.miningMenuOpen.set(false);
+    this.materialsMenuOpen.set(!this.materialsMenuOpen());
+  }
+
+  public toggleMiningMenu(): void {
+    this.materialsMenuOpen.set(false);
+    this.miningMenuOpen.set(!this.miningMenuOpen());
+  }
+
+  /** Closes the Materials/Mining dropdown menus on any click outside them (the menus themselves stop propagation). */
+  @HostListener('document:click')
+  public closeFilterMenus(): void {
+    this.materialsMenuOpen.set(false);
+    this.miningMenuOpen.set(false);
+  }
+
+  /** Toggles `material` in the selection and immediately re-applies the Materials filter. */
+  public toggleMaterialSelection(material: string): void {
+    const next = new Set(this.selectedMaterials());
+    if (next.has(material)) { next.delete(material); } else { next.add(material); }
+    this.selectedMaterials.set(next);
+    if (next.size === 0) { return; }
+    this.applyFilter('materials', collectMatchingBodies(this.bodies(), body => getBodyMaterialKeys(body).some(key => next.has(key))));
+  }
+
+  public hotspotDisplayName(resourceKey: string): string {
+    return MINING_RESOURCES[resourceKey]?.name ?? resourceKey;
+  }
+
+  /** Toggles `resource` in the selection and immediately re-applies the Mining filter. */
+  public toggleHotspotSelection(resource: string): void {
+    const next = new Set(this.selectedHotspots());
+    if (next.has(resource)) { next.delete(resource); } else { next.add(resource); }
+    this.selectedHotspots.set(next);
+    if (next.size === 0) { return; }
+    this.applyFilter('mining', collectMatchingBodies(this.bodies(), body => getBodyHotspotKeys(body).some(key => next.has(key))));
+  }
+
   public searchControl = new FormControl('');
   public readonly filteredSystems = signal<string[]>([]);
   private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
@@ -921,6 +1037,15 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     // Check if we're loading a different system
     const isDifferentSystem = !previousData || previousData.system.id64 !== data.system.id64;
+
+    if (isDifferentSystem) {
+      this.interestRegistry.resetForSystem(data.system.id64);
+      this.activeFilterCategory.set(null);
+      this.filterCommand.set(null);
+      this.selectedMaterials.set(new Set());
+      this.selectedHotspots.set(new Set());
+      this.closeFilterMenus();
+    }
 
     this.data.set(data);
     this.bodies.set([]);

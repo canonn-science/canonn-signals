@@ -1011,6 +1011,7 @@
   @for (body of body().subBodies; track $index; let isLast = $last) {
   <app-system-body [body]="body" [isLast]="isLast" [forceExpanded]="forceExpanded() || isAnchorBody"
     [anchorBodyId]="anchorBodyId()" [systemPopulation]="systemPopulation()"
+    [filterCommand]="filterCommand()" [systemKey]="systemKey()"
     [edGalaxyData]="edGalaxyData()"></app-system-body>
   }
 </div>
