@@ -330,4 +330,78 @@ describe('BodyPhysicsService', () => {
       expect(service.isLowDensityWideRing(500_000, 0.05)).toBe(false); // too narrow
     });
   });
+
+  describe('angularDiameterDegrees', () => {
+    it('returns 90° when the parent radius equals the orbital distance', () => {
+      // atan(1) = 45°; the full angular diameter is twice the half-angle.
+      const parent = body({ radius: KM_PER_AU, type: 'Planet' });
+      const b = body({ semiMajorAxis: 1 }, parent);
+      expect(service.angularDiameterDegrees(b)).toBeCloseTo(90, 6);
+    });
+
+    it('returns null without a parent, orbit distance, or parent radius', () => {
+      expect(service.angularDiameterDegrees(body({ semiMajorAxis: 1 }))).toBeNull();
+      const parent = body({ radius: 70000, type: 'Planet' });
+      expect(service.angularDiameterDegrees(body({}, parent))).toBeNull();
+      const radiuslessParent = body({ type: 'Barycentre' });
+      expect(service.angularDiameterDegrees(body({ semiMajorAxis: 1 }, radiuslessParent))).toBeNull();
+    });
+  });
+
+  describe('highAngularDiameterAssessment', () => {
+    it('flags a landable planet whose parent star fills more than 25° of its sky', () => {
+      const star = body({ type: 'Star', subType: 'K (Yellow-Orange) Star', solarRadius: 1 });
+      // ratio ≈ 0.233 → angular diameter ≈ 26.2°, just above the 25° star threshold.
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.02 }, star);
+      const result = service.highAngularDiameterAssessment(moon);
+      expect(result).not.toBeNull();
+      expect(result!.parentType).toBe('Star');
+      expect(result!.parentLabel).toBe('K (Yellow-Orange) Star');
+      expect(result!.angularDiameterDegrees).toBeGreaterThan(25);
+    });
+
+    it('does not flag a landable planet whose parent star falls under the 25° threshold', () => {
+      const star = body({ type: 'Star', subType: 'K (Yellow-Orange) Star', solarRadius: 1 });
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.05 }, star);
+      expect(service.highAngularDiameterAssessment(moon)).toBeNull();
+    });
+
+    it('uses the higher 45° threshold for a landable moon of a parent planet', () => {
+      const gasGiant = body({ type: 'Planet', subType: 'Sudarsky class I gas giant', radius: 70000 });
+      // ratio ≈ 0.468 → angular diameter ≈ 50.2°, above the 45° planet threshold.
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.001 }, gasGiant);
+      const result = service.highAngularDiameterAssessment(moon);
+      expect(result).not.toBeNull();
+      expect(result!.parentType).toBe('Planet');
+      expect(result!.angularDiameterDegrees).toBeGreaterThan(45);
+
+      const distantMoon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.003 }, gasGiant);
+      expect(service.highAngularDiameterAssessment(distantMoon)).toBeNull();
+    });
+
+    it('does not flag a body that is not landable', () => {
+      const star = body({ type: 'Star', solarRadius: 1 });
+      const nonLandable = body({ type: 'Planet', isLandable: false, semiMajorAxis: 0.02 }, star);
+      expect(service.highAngularDiameterAssessment(nonLandable)).toBeNull();
+    });
+
+    it('does not flag a body whose immediate parent is a barycentre', () => {
+      const barycentre = body({ type: 'Barycentre' });
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.02 }, barycentre);
+      expect(service.highAngularDiameterAssessment(moon)).toBeNull();
+    });
+
+    it('returns null for a body with no parent', () => {
+      expect(service.highAngularDiameterAssessment(body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.02 }))).toBeNull();
+    });
+
+    it('flags a real system verified against issue #118 (Dryipoo YE-A g1 AB 2 b a)', () => {
+      const parentPlanet = body({ type: 'Planet', subType: 'Rocky body', radius: 2034.269125 });
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 2.83479139500078e-05 }, parentPlanet);
+      const result = service.highAngularDiameterAssessment(moon);
+      expect(result).not.toBeNull();
+      expect(result!.parentType).toBe('Planet');
+      expect(result!.angularDiameterDegrees).toBeCloseTo(51.25, 1);
+    });
+  });
 });
