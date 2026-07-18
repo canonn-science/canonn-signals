@@ -44,6 +44,19 @@ export const PAUPER_RING_MAX_SPAN_RADII = 2;
 export const VISIBLE_GAP_SPAN_FRACTION = 0.02;
 
 /**
+ * Minimum angular diameter (degrees) a landable body's parent *star* must subtend in its
+ * sky for the High Angular Diameter badge. Ported from Custom Criteria for Everyone's
+ * `starDiameterThreshold` (CCFE default: 25°).
+ */
+export const HIGH_ANGULAR_DIAMETER_STAR_THRESHOLD_DEGREES = 25;
+/**
+ * Minimum angular diameter (degrees) a landable body's parent *planet* must subtend in its
+ * sky for the High Angular Diameter badge. Ported from CCFE's `planetDiameterThreshold`
+ * (CCFE default: 45°).
+ */
+export const HIGH_ANGULAR_DIAMETER_PLANET_THRESHOLD_DEGREES = 45;
+
+/**
  * Degenerate-matter stability limits (solar masses). The Chandrasekhar limit caps a
  * white dwarf supported by electron degeneracy pressure; the Tolman–Oppenheimer–Volkoff
  * (TOV) limit caps a neutron star supported by neutron degeneracy pressure.
@@ -142,6 +155,14 @@ export interface RingNeighbourDistance {
   label: string;
   velocityDiff: number | null;
   eitherRingInvisible: boolean;
+}
+
+/** High Angular Diameter badge assessment: the parent's apparent size dominates the sky. */
+export interface HighAngularDiameterAssessment {
+  angularDiameterDegrees: number;
+  parentType: typeof BODY_TYPE.Star | typeof BODY_TYPE.Planet;
+  /** The parent's subtype (star class or planet class), for the badge tooltip. */
+  parentLabel: string;
 }
 
 /**
@@ -413,6 +434,50 @@ export class BodyPhysicsService {
   getParentRadiusKm(body: SystemBody): number | null {
     if (!body.parent) { return null; }
     return this.parentRadiusKmOrNull(body.parent.bodyData);
+  }
+
+  /**
+   * Angular diameter (degrees) the parent body subtends in `body`'s sky, i.e. how large the
+   * parent looks when standing on `body`'s surface. Computed exactly as
+   * `2 * atan(parentRadius / distance)` — CCFE's original Lua script instead uses the
+   * small-angle approximation `57.3 * (2 * radius / distance)`, which diverges by a few
+   * percent at the angles this badge cares about (see AGENTS.md's "physical accuracy" rule).
+   * `distance` is `body`'s own orbital semi-major axis (its average distance from the parent
+   * it orbits). Returns null when the parent or orbit data is unavailable.
+   */
+  angularDiameterDegrees(body: SystemBody): number | null {
+    if (!body.parent || !body.bodyData.semiMajorAxis) { return null; }
+    const parentRadiusKm = this.parentRadiusKmOrNull(body.parent.bodyData);
+    if (parentRadiusKm === null) { return null; }
+    const distanceKm = body.bodyData.semiMajorAxis * KM_PER_AU;
+    if (distanceKm <= 0) { return null; }
+    return 2 * Math.atan(parentRadiusKm / distanceKm) * (180 / Math.PI);
+  }
+
+  /**
+   * High Angular Diameter badge (ported from CCFE's Complex 4.7): a landable body whose
+   * parent star or planet visibly dominates its sky — angular diameter above
+   * {@link HIGH_ANGULAR_DIAMETER_STAR_THRESHOLD_DEGREES} for a star parent, or
+   * {@link HIGH_ANGULAR_DIAMETER_PLANET_THRESHOLD_DEGREES} for a planet parent. Returns null
+   * when `body` isn't landable, has no eligible parent, or falls under the threshold.
+   */
+  highAngularDiameterAssessment(body: SystemBody): HighAngularDiameterAssessment | null {
+    if (!body.bodyData.isLandable || !body.parent) { return null; }
+
+    const isStarParent = body.parent.bodyData.type === BODY_TYPE.Star;
+    const isPlanetParent = body.parent.bodyData.type === BODY_TYPE.Planet;
+    if (!isStarParent && !isPlanetParent) { return null; }
+
+    const angularDiameterDegrees = this.angularDiameterDegrees(body);
+    if (angularDiameterDegrees === null) { return null; }
+
+    const threshold = isStarParent
+      ? HIGH_ANGULAR_DIAMETER_STAR_THRESHOLD_DEGREES
+      : HIGH_ANGULAR_DIAMETER_PLANET_THRESHOLD_DEGREES;
+    if (angularDiameterDegrees <= threshold) { return null; }
+
+    const parentType = isStarParent ? BODY_TYPE.Star : BODY_TYPE.Planet;
+    return { angularDiameterDegrees, parentType, parentLabel: body.parent.bodyData.subType };
   }
 
   /**

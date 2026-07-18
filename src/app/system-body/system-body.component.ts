@@ -12,7 +12,7 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
 import {
   BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT,
-  NARROW_RING_SPAN_RADII, PAUPER_RING_MIN_INNER_EDGE_RADII, PAUPER_RING_MAX_SPAN_RADII,
+  NARROW_RING_SPAN_RADII, PAUPER_RING_MIN_INNER_EDGE_RADII, PAUPER_RING_MAX_SPAN_RADII, HighAngularDiameterAssessment,
 } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
@@ -210,6 +210,8 @@ export class SystemBodyComponent implements OnChanges {
   public readonly calculateShepherdingHillLimit = signal<ShepherdingHillLimit | null>(null);
   public readonly isActualShepherd = signal(false);
   public readonly isShepherdingCandidate = signal(false);
+  public readonly highAngularDiameterAssessment = signal<HighAngularDiameterAssessment | null>(null);
+  public readonly highAngularDiameterTooltip = signal('');
   public readonly isBodyWithinParentRings = signal(false);
   public readonly getSignalsCount = signal(0);
   public readonly getAtmosphereCompositionTooltip = signal('');
@@ -525,6 +527,14 @@ export class SystemBodyComponent implements OnChanges {
     this.isShepherdingCandidate.set(this.physics.isShepherdingCandidate(body));
     this.isActualShepherd.set(this.physics.isActualShepherd(body));
     this.isBodyWithinParentRings.set(this.physics.isBodyWithinParentRings(body));
+
+    // High Angular Diameter badge: parent star/planet visibly dominates this landable body's sky.
+    const angularDiameter = this.physics.highAngularDiameterAssessment(body);
+    this.highAngularDiameterAssessment.set(angularDiameter);
+    this.highAngularDiameterTooltip.set(angularDiameter
+      ? `High angular diameter parent (${angularDiameter.parentType}: ${angularDiameter.parentLabel})\n`
+        + `Landable — parent spans ${angularDiameter.angularDiameterDegrees.toFixed(0)}° across the sky`
+      : '');
 
     // Signals and tooltips.
     this.getSignalsCount.set(this.computeSignalsCount());

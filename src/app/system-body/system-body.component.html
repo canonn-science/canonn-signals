@@ -52,6 +52,12 @@
         <img alt="" src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
       </span>
       }
+      @if (highAngularDiameterAssessment()) {
+      <div [matTooltip]="highAngularDiameterTooltip()" matTooltipClass="multiline-tooltip"
+        [attr.aria-label]="highAngularDiameterTooltip()">
+        <img alt="High angular diameter parent" src="assets/icons/high-angular-diameter.svg" />
+      </div>
+      }
       @if (getSpinResonance() !== 'none' || body().bodyData.rotationalPeriodTidallyLocked) {
       <span class="badge badge-purple clickable"
         [matTooltip]="getSpinResonanceTooltip() + ' — click for tidal locking explanation'"
