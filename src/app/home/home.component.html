@@ -365,7 +365,7 @@
     }
     @if (bodies().length) {
     <div class="quick-filters">
-      @if (biologyMatchIds().size) {
+      @if (biologyMatches().size) {
       <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'biology'"
         (click)="onBiologyFilterClick()" title="Expand only bodies with biological signals"
         aria-label="Expand only bodies with biological signals">
@@ -373,7 +373,7 @@
         <span>Biology</span>
       </button>
       }
-      @if (geologyMatchIds().size) {
+      @if (geologyMatches().size) {
       <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'geology'"
         (click)="onGeologyFilterClick()" title="Expand only bodies with geological signals"
         aria-label="Expand only bodies with geological signals">
@@ -381,7 +381,7 @@
         <span>Geology</span>
       </button>
       }
-      @if (guardianMatchIds().size) {
+      @if (guardianMatches().size) {
       <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'guardian'"
         (click)="onGuardianFilterClick()" title="Expand only bodies with Guardian sites"
         aria-label="Expand only bodies with Guardian sites">
@@ -389,7 +389,7 @@
         <span>Guardian</span>
       </button>
       }
-      @if (thargoidMatchIds().size) {
+      @if (thargoidMatches().size) {
       <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'thargoid'"
         (click)="onThargoidFilterClick()" title="Expand only bodies with Thargoid sites"
         aria-label="Expand only bodies with Thargoid sites">
@@ -397,7 +397,7 @@
         <span>Thargoid</span>
       </button>
       }
-      @if (humanMatchIds().size) {
+      @if (humanMatches().size) {
       <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'human'"
         (click)="onHumanFilterClick()" title="Expand only bodies with human sites"
         aria-label="Expand only bodies with human sites">
@@ -405,7 +405,7 @@
         <span>Human</span>
       </button>
       }
-      @if (landableMatchIds().size) {
+      @if (landableMatches().size) {
       <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'landable'"
         (click)="onLandableFilterClick()" title="Expand only landable bodies"
         aria-label="Expand only landable bodies">
@@ -455,7 +455,7 @@
         }
       </div>
       }
-      @if (touristMatchIds().size) {
+      @if (touristMatches().size) {
       <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'tourist'"
         (click)="onTouristFilterClick()" title="Expand only bodies with special badges"
         aria-label="Expand only bodies with special badges">

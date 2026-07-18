@@ -721,25 +721,25 @@ export class HomeComponent implements OnInit, OnDestroy {
   public readonly materialsMenuOpen = signal(false);
   public readonly miningMenuOpen = signal(false);
 
-  public readonly biologyMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasBiologySignals));
-  public readonly geologyMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasGeologySignals));
-  public readonly guardianMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasGuardianSignals));
-  public readonly thargoidMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasThargoidSignals));
-  public readonly humanMatchIds = computed(() => collectMatchingBodies(this.bodies(), hasHumanSignals));
-  public readonly landableMatchIds = computed(() => collectMatchingBodies(this.bodies(), isLandable));
+  public readonly biologyMatches = computed(() => collectMatchingBodies(this.bodies(), hasBiologySignals));
+  public readonly geologyMatches = computed(() => collectMatchingBodies(this.bodies(), hasGeologySignals));
+  public readonly guardianMatches = computed(() => collectMatchingBodies(this.bodies(), hasGuardianSignals));
+  public readonly thargoidMatches = computed(() => collectMatchingBodies(this.bodies(), hasThargoidSignals));
+  public readonly humanMatches = computed(() => collectMatchingBodies(this.bodies(), hasHumanSignals));
+  public readonly landableMatches = computed(() => collectMatchingBodies(this.bodies(), isLandable));
 
   /**
    * Synchronous "special badge" criteria only (see {@link isTouristInteresting}). Orbital
    * collision candidates resolve later, off the main thread, and are folded in separately by
-   * {@link touristMatchIds} so the Tourist filter (and its visibility) can still catch up once
+   * {@link touristMatches} so the Tourist filter (and its visibility) can still catch up once
    * those results land.
    */
-  private readonly touristSyncMatchIds = computed(() =>
+  private readonly touristSyncMatches = computed(() =>
     collectMatchingBodies(this.bodies(), body => isTouristInteresting(body, this.physics, this.orbitalRelations)));
-  public readonly touristMatchIds = computed(() => {
+  public readonly touristMatches = computed(() => {
     const collisionBodies = this.interestRegistry.collisionCandidateBodies();
-    if (collisionBodies.size === 0) { return this.touristSyncMatchIds(); }
-    const merged = new Set(this.touristSyncMatchIds());
+    if (collisionBodies.size === 0) { return this.touristSyncMatches(); }
+    const merged = new Set(this.touristSyncMatches());
     for (const body of collisionBodies) { merged.add(body); }
     return merged;
   });
@@ -763,13 +763,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.filterCommand.set({ token: ++this.filterTokenSeq, bodies });
   }
 
-  public onBiologyFilterClick(): void { this.applyFilter('biology', this.biologyMatchIds()); }
-  public onGeologyFilterClick(): void { this.applyFilter('geology', this.geologyMatchIds()); }
-  public onGuardianFilterClick(): void { this.applyFilter('guardian', this.guardianMatchIds()); }
-  public onThargoidFilterClick(): void { this.applyFilter('thargoid', this.thargoidMatchIds()); }
-  public onHumanFilterClick(): void { this.applyFilter('human', this.humanMatchIds()); }
-  public onLandableFilterClick(): void { this.applyFilter('landable', this.landableMatchIds()); }
-  public onTouristFilterClick(): void { this.applyFilter('tourist', this.touristMatchIds()); }
+  public onBiologyFilterClick(): void { this.applyFilter('biology', this.biologyMatches()); }
+  public onGeologyFilterClick(): void { this.applyFilter('geology', this.geologyMatches()); }
+  public onGuardianFilterClick(): void { this.applyFilter('guardian', this.guardianMatches()); }
+  public onThargoidFilterClick(): void { this.applyFilter('thargoid', this.thargoidMatches()); }
+  public onHumanFilterClick(): void { this.applyFilter('human', this.humanMatches()); }
+  public onLandableFilterClick(): void { this.applyFilter('landable', this.landableMatches()); }
+  public onTouristFilterClick(): void { this.applyFilter('tourist', this.touristMatches()); }
   public onEverythingFilterClick(): void { this.applyFilter('everything', 'all'); }
 
   public toggleMaterialsMenu(): void {
