@@ -813,7 +813,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     const next = new Set(this.selectedHotspots());
     if (next.has(resource)) { next.delete(resource); } else { next.add(resource); }
     this.selectedHotspots.set(next);
-    if (next.size === 0) { return; }
+    if (next.size === 0) {
+      if (this.activeFilterCategory() === 'mining') {
+        this.activeFilterCategory.set(null);
+        this.filterCommand.set(null);
+      }
+      return;
+    }
     this.applyFilter('mining', collectMatchingBodies(this.bodies(), body => getBodyHotspotKeys(body).some(key => next.has(key))));
   }
 
