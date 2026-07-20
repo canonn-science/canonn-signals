@@ -145,6 +145,11 @@
     position: absolute
 }
 
+.system-body .body-image .speculative-body-icon {
+    font-size: 48px;
+    color: var(--color-text-muted);
+}
+
 .system-body .body-content {
     flex-grow: 1;
     padding: 8px;
@@ -215,6 +220,16 @@
    in one column whether or not it is convertible. */
 .system-body .body-data-entry > div:last-child:not(:has(.convert-icon)):not(:has(.unit-select-field)) {
     padding-right: 20px;
+}
+
+/* Speculative body (or speculative-values-only body, e.g. Col 70 Sector FY-N c21-3's main
+   star — see `speculative`/`speculativeValues` on CanonnBiostatsBody): every displayed
+   detail value is a guess, so flag each one with a trailing "?" rather than editing every
+   individual field binding. `.confirmed-value` opts a specific value out (e.g. the star's
+   spectral class/luminosity, which are known for certain even though its other properties
+   aren't — see the Stellar Properties section). */
+.system-body.speculative-values .body-data-entry > div:last-child:not(.confirmed-value)::after {
+    content: " ?";
 }
 
 /* ---------------------------------------------------------------------------

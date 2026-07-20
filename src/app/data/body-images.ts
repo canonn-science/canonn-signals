@@ -47,6 +47,17 @@ export class BodyImage {
             solarMasses: (value: number) => value < 0.6,
         },
         {
+            // T Tauri stars are pre-main-sequence and don't get a spectral letter of their
+            // own in the "OBAFGKM(LTY)" scheme; their reported spectralClass (e.g. "TTS3")
+            // shares a first letter with T-dwarfs, so this is matched by subType (ahead of
+            // the "T" brown-dwarf entry below) and reuses the M-class art as the closest
+            // visual match for a cool, young star.
+            path: "M",
+            spectralClass: null,
+            subType: "T Tauri Star",
+            coronaPath: "Corona_M",
+        },
+        {
             path: "F",
             spectralClass: "F",
             coronaPath: "Corona_F",

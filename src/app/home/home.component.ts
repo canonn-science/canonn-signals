@@ -23,6 +23,7 @@ import { decodeHtmlEntities } from '../data/html-entities';
 import { CREDITS_HTML } from '../data/credits.generated';
 import { findNearestNebulae, NearestNebula } from '../data/nebulae';
 import { isPermitLockedSystem } from '../data/permit-locked-systems';
+import { applySpeculativeBodies, getSpeculativeSystemCompleteness, getSpeculativeSystemInfo, getSystemMapImage, isSpeculativeBodySystem, SystemMapImage } from '../data/speculative-systems';
 import { BodyEnrichmentService } from '../data/body-enrichment.service';
 import { buildSystemExport, downloadJson, serializeSystemExport, systemExportFilename } from '../data/system-export';
 import { buildMegashipIndex, megashipRoute, megashipsAtSystem, MegashipSystemEntry } from '../data/megaships';
@@ -477,6 +478,10 @@ export class HomeComponent implements OnInit, OnDestroy {
    */
   readonly systemCompleteness = computed<{ known: number; total: number | null; percent: number | null }>(() => {
     const system = this.data()?.system;
+    const override = system ? getSpeculativeSystemCompleteness(system.id64) : null;
+    if (override) {
+      return override;
+    }
     const known = (system?.bodies ?? []).filter(body =>
       body.type !== BODY_TYPE.Belt &&
       body.type !== BODY_TYPE.Ring &&
@@ -485,6 +490,33 @@ export class HomeComponent implements OnInit, OnDestroy {
     const total = system?.bodyCount ?? null;
     const percent = total ? Math.min(100, Math.round((known / total) * 100)) : null;
     return { known, total, percent };
+  });
+
+  /**
+   * Info-panel paragraphs for a system with a Thargoid-map tie-in (currently Col 70 Sector
+   * FY-N c21-3 and Merope, see data/speculative-systems.ts), or `null` for every other
+   * system. Shown between System Completeness and the quick-filter toolbar.
+   */
+  readonly speculativeSystemInfo = computed<readonly string[] | null>(() => {
+    const id64 = this.data()?.system?.id64;
+    return id64 !== undefined ? getSpeculativeSystemInfo(id64) : null;
+  });
+
+  /** The info panel's right-hand map image for the loaded system, or `null`. */
+  readonly systemMapImage = computed<SystemMapImage | null>(() => {
+    const id64 = this.data()?.system?.id64;
+    return id64 !== undefined ? getSystemMapImage(id64) : null;
+  });
+
+  /**
+   * True only for a system whose body list is itself a speculative reconstruction
+   * (currently just Col 70 Sector FY-N c21-3) — unlike Merope, which also gets an info
+   * panel but has real body data. Drives defaulting the root body to only its main star
+   * expanded, so the page doesn't open onto a wall of speculative detail.
+   */
+  readonly defaultExpandStarOnly = computed<boolean>(() => {
+    const id64 = this.data()?.system?.id64;
+    return id64 !== undefined && isSpeculativeBodySystem(id64);
   });
 
   /**
@@ -1031,6 +1063,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Decode HTML entities in system name
     data.system.name = this.decodeHtmlEntities(data.system.name);
 
+    applySpeculativeBodies(data.system);
+
     const queryParams: Params = { system: data.system.name };
 
     // Only update query params if not already set
@@ -1130,7 +1164,8 @@ export class HomeComponent implements OnInit, OnDestroy {
               type: BODY_TYPE.Belt,
               innerRadius: belt.innerRadius / 1000, // Convert m to km
               outerRadius: belt.outerRadius / 1000, // Convert m to km
-              mass: belt.mass
+              mass: belt.mass,
+              speculative: systemBody.speculative,
             },
             subBodies: [],
             parent: body
@@ -1155,7 +1190,8 @@ export class HomeComponent implements OnInit, OnDestroy {
               signals: ring.signals ? {
                 signals: ring.signals.signals,
                 updateTime: ring.signals.updateTime || ''
-              } : undefined
+              } : undefined,
+              speculative: systemBody.speculative,
             },
             subBodies: [],
             parent: body
@@ -1541,10 +1577,14 @@ export interface CanonnBiostatsBody {
   orbitalInclination?: number;
   orbitalPeriod?: number;
   outerRadius?: number;
+  // All three keys are optional: a parent chain link identifies exactly one of a
+  // Null (barycentre)/Planet/Star ancestor by bodyId — e.g. real dumps report bare
+  // `{ Null: 2 }` links with no `Star` key at all (see Beta Sculptoris body 3's
+  // `[{ Null: 2 }, { Null: 0 }]` chain, which never mentions a Star).
   parents?: {
     Null?: number;
     Planet?: number;
-    Star: number;
+    Star?: number;
   }[];
   radius?: number;
   reserveLevel?: string;
@@ -1570,6 +1610,16 @@ export interface CanonnBiostatsBody {
     Metal: number;
     Rock: number;
   },
+  // True only for the synthesized bodies of a special-cased system (currently just Col 70
+  // Sector FY-N c21-3, see data/speculative-systems.ts) whose classification is an inferred
+  // guess rather than sourced scan data. Never set for real Spansh bodies. The renderer uses
+  // it to mark the subtype/image as unconfirmed, and (like speculativeValues) to flag every
+  // displayed value in the body panel with a "?".
+  speculative?: boolean;
+  // Like `speculative`, but for a body whose classification is real/confirmed (so its
+  // subtype/image stay unmarked) while its other displayed values are still guesses — used
+  // for Col 70 Sector FY-N c21-3's main star (see data/speculative-systems.ts).
+  speculativeValues?: boolean;
   spectralClass?: string;
   stations?: {
     /* */

@@ -169,6 +169,72 @@
     transition: width 0.4s ease, background-color 0.4s ease;
 }
 
+/* Info panel for a special-cased system with a speculative body layout (e.g. Col 70
+   Sector FY-N c21-3 — see data/speculative-systems.ts). Sits between System
+   Completeness and the quick-filter toolbar. */
+.system-info-panel {
+    margin-top: 8px;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    background-color: rgba(150, 150, 150, 0.7);
+    backdrop-filter: blur(6px);
+    padding: 10px 12px;
+    border-radius: 4px;
+    border-left: 4px solid var(--color-callout-info-border);
+    color: var(--color-white);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.system-info-text {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+/* Inline links to the source article (e.g. "the map") need an underline to read as
+   clickable within body text — the global `a` rule relies on colour alone, which doesn't
+   stand out enough against this panel's own text colour. */
+.system-info-text a {
+    text-decoration: underline;
+}
+
+.system-info-text p {
+    margin: 0;
+}
+
+.system-info-text p + p {
+    margin-top: 8px;
+}
+
+/* Map images flanking the description text; each shrinks to fit on narrow/mobile
+   layouts (the panel wraps to image / text / image stacked). */
+.system-info-image {
+    flex: 0 1 140px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.system-info-image img {
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    border-radius: 4px;
+    background-color: var(--color-black);
+}
+
+.system-info-image figcaption {
+    font-size: 11px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+}
+
 /* Quick-filter toolbar: collapses every body except those matching the pressed
    category. Sits between System Completeness and the body list. Buttons for
    categories with no matching body in the current system are omitted entirely

@@ -10,9 +10,9 @@
       }
       @if (body().bodyData.subType) {
       <span [class.clickable]="getWhiteDwarfSpectralCode()"
-        [matTooltip]="getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip()"
+        [matTooltip]="body().bodyData.speculative ? speculativeBodyTooltip : (getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip())"
         matTooltipClass="multiline-tooltip" (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{
-        body().bodyData.subType }}@if (classifyNeutronStar()) {
+        body().bodyData.subType }}{{ body().bodyData.speculative ? '?' : '' }}@if (classifyNeutronStar()) {
         <span> ({{
           classifyNeutronStar() }})</span>
         }</span>
@@ -22,6 +22,9 @@
         class="atmosphere-type">
         - {{ getAtmosphereDisplay() }}
       </span>
+      }
+      @if (body().bodyData.speculative) {
+      <span class="badge badge-red" [matTooltip]="speculativeBodyTooltip" matTooltipClass="multiline-tooltip">Speculation</span>
       }
       @if (isRingNotVisible()) {
       <span class="badge badge-red clickable" (click)="showInvisibleRingExplanation()">Invisible</span>
@@ -197,14 +200,19 @@
   </div>
   @if (expanded()) {
   <div class="system-body-grow" animate.enter="grow--enter" animate.leave="grow--leave">
-    <div class="system-body">
+    <div class="system-body" [class.speculative-values]="body().bodyData.speculative || body().bodyData.speculativeValues">
       <div class="body-image">
+        @if (body().bodyData.speculative) {
+        <fa-icon [icon]="faCircleQuestion" class="speculative-body-icon" [matTooltip]="speculativeBodyTooltip"
+          matTooltipClass="multiline-tooltip" aria-label="Unconfirmed body — extrapolated data"></fa-icon>
+        } @else {
         @if (bodyCoronaImage) {
         <img alt="" src="assets/{{ bodyCoronaImage }}" class="body-image-corona" (error)="bodyCoronaImage = ''"
           loading="lazy" />
         }
         @if (bodyImage) {
         <img alt="" src="assets/{{ bodyImage }}" (error)="bodyImage = ''" loading="lazy" />
+        }
         }
       </div>
       <div class="body-content">
@@ -783,7 +791,7 @@
             <div>
               Spectral class
             </div>
-            <div>
+            <div class="confirmed-value">
               {{ body().bodyData.spectralClass }}
             </div>
           </div>
@@ -793,7 +801,7 @@
             <div>
               Luminosity class
             </div>
-            <div>
+            <div class="confirmed-value">
               {{ body().bodyData.luminosity }}
             </div>
           </div>
