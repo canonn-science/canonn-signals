@@ -325,7 +325,14 @@
           <div class="system-data-section">
             <div class="system-data-section-header">Galactic Exploration Catalog</div>
             <div class="gec-image-panel">
+              @if (edastro.poiUrl) {
+              <a [href]="edastro.poiUrl" target="_blank" rel="noopener noreferrer" class="gec-image-link"
+                title="View on the Galactic Exploration Catalog">
+                <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image" (error)="onGecImageError($event)" />
+              </a>
+              } @else {
               <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image" (error)="onGecImageError($event)" />
+              }
               @if (edastro.description) {
               <div class="gec-description">{{
                 edastro.description }}
