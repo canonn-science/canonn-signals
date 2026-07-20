@@ -326,10 +326,11 @@
             <div class="system-data-section-header">Galactic Exploration Catalog</div>
             <div class="gec-image-panel">
               @if (edastro.poiUrl) {
-              <a [href]="edastro.poiUrl" target="_blank" rel="noopener noreferrer" class="gec-image-link"
-                title="View on the Galactic Exploration Catalog">
-                <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image" (error)="onGecImageError($event)" />
-              </a>
+<a [href]="edastro.poiUrl" target="_blank" rel="noopener noreferrer" class="gec-image-link"
+  title="View on the Galactic Exploration Catalog"
+  aria-label="View on the Galactic Exploration Catalog (opens in a new tab)">
+  <img [src]="edastro.mainImage" alt="" class="gec-main-image" (error)="onGecImageError($event)" />
+</a>
               } @else {
               <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image" (error)="onGecImageError($event)" />
               }
