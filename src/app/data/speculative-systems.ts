@@ -1,4 +1,4 @@
-import { CanonnBiostatsBody } from '../home/home.component';
+import type { CanonnBiostatsBody } from '../home/home.component';
 import { BODY_TYPE } from './body-types';
 
 /**
