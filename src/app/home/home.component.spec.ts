@@ -198,10 +198,10 @@ describe('HomeComponent', () => {
   });
 
   describe('systemCompleteness', () => {
-    function loadSystem(bodyCount: number | undefined, bodies: any[]) {
+    function loadSystem(bodyCount: number | undefined, bodies: any[], id64: number | bigint = 1) {
       const data = {
         system: {
-          name: 'Test System', id64: 1, coords: { x: 0, y: 0, z: 0 },
+          name: 'Test System', id64, coords: { x: 0, y: 0, z: 0 },
           region: { name: 'Inner Orion Spur', region: 18 }, population: 0,
           bodyCount, bodies,
         },
@@ -241,6 +241,16 @@ describe('HomeComponent', () => {
       ]);
       // Only the star and planet are real bodies → 2 of 4 → 50%.
       expect(component.systemCompleteness()).toEqual({ known: 2, total: 4, percent: 50 });
+    });
+
+    it('hardcodes 0/10 for Col 70 Sector FY-N c21-3 regardless of bodies/bodyCount', () => {
+      // Real bodyCount + known bodies that would otherwise compute a very different
+      // ratio (2 known / 21 reported ≈ 10%), to prove the override wins outright.
+      loadSystem(21, [
+        { bodyId: 0, name: 'Star', type: 'Star', subType: '', id64: 1 },
+        { bodyId: 1, name: 'Planet', type: 'Planet', subType: '', id64: 2, semiMajorAxis: 1, parents: [{ Star: 0 }] },
+      ], 909626806858n);
+      expect(component.systemCompleteness()).toEqual({ known: 0, total: 10, percent: 0 });
     });
   });
 
