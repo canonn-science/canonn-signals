@@ -14,9 +14,11 @@ export interface RegionMapSystem {
 }
 
 export interface GnosisData {
-  arrival: string;
+  // The live endpoint (query/gnosis) currently returns only `coords`, `desc` and `system` — no
+  // jump/arrival timestamp — so these are optional rather than assumed present.
+  arrival?: string;
   coords: [number, number, number];
-  departure: string;
+  departure?: string;
   desc: string;
   system: string;
 }

@@ -1,0 +1,200 @@
+:host {
+    display: block;
+}
+
+/* Same solid dark-charcoal panel as each body's header bar (.body-title in
+   system-body.component.scss), rather than the translucent grey used elsewhere. */
+.gnosis-route {
+    margin-top: 32px;
+    background-color: var(--color-surface);
+    padding: 10px 12px;
+    border-radius: 4px;
+}
+
+.gnosis-route-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.gnosis-route-label {
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-accent);
+}
+
+.gnosis-route-title {
+    font-size: 12px;
+    color: var(--color-white);
+    opacity: 0.85;
+}
+
+.gnosis-route-track {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    row-gap: 16px;
+}
+
+.gnosis-stop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.gnosis-stop:hover,
+.gnosis-stop:focus-visible {
+    background: var(--color-surface-hover);
+}
+
+.gnosis-stop:focus-visible {
+    outline: 2px solid var(--color-link-hover);
+    outline-offset: 2px;
+}
+
+.gnosis-stop-node {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 2px solid var(--color-accent);
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.gnosis-stop-label {
+    font-size: 12px;
+    color: var(--color-text-2);
+    text-align: center;
+    line-height: 1.25;
+    max-width: 100px;
+}
+
+.gnosis-stop-tag {
+    font-size: 9px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+    border-radius: 999px;
+    padding: 1px 6px;
+    white-space: nowrap;
+}
+
+/* The current stop reads as a distinct filled red node (var(--color-danger)) with its label/tag
+   in the site's orange accent — flat, no glow, so it stays legible rather than garish. */
+.gnosis-stop--current .gnosis-stop-node {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+}
+
+.gnosis-stop--current .gnosis-stop-label {
+    color: var(--color-accent);
+    font-weight: bold;
+}
+
+/* A thin track segment between adjacent stops, with an arrowhead showing travel direction.
+   `align-self: flex-start` (inherited from the track's own `align-items: flex-start`) plus this
+   margin centers it on the 14px node regardless of how many lines a neighboring stop's label
+   wraps to. */
+.gnosis-connector {
+    position: relative;
+    flex: 1 1 20px;
+    min-width: 10px;
+    height: 3px;
+    margin-top: 6px;
+    background: var(--color-accent);
+}
+
+/* Right-pointing arrowhead (a CSS border-triangle) at the connector's leading edge. */
+.gnosis-connector::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 5px 0 5px 7px;
+    border-color: transparent transparent transparent var(--color-accent);
+}
+
+.gnosis-loop-note {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--color-text-2);
+    opacity: 0.85;
+}
+
+.gnosis-loop-icon {
+    color: var(--color-accent);
+    font-size: 13px;
+    line-height: 1;
+}
+
+/* Progressively shrink node spacing and label size before the track would otherwise overflow. */
+@media (max-width: 900px) {
+    .gnosis-stop-label {
+        font-size: 11px;
+        max-width: 76px;
+    }
+
+    .gnosis-connector {
+        flex-basis: 10px;
+    }
+}
+
+/* Collapse to a vertical tube map, consistent with how the System Panel's own two-column
+   layout reflows to a single column at the same breakpoint (home.component.scss). */
+@media (max-width: 600px) {
+    .gnosis-route-track {
+        flex-direction: column;
+        align-items: flex-start;
+        row-gap: 8px;
+    }
+
+    .gnosis-stop {
+        flex-direction: row;
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .gnosis-stop-label {
+        max-width: none;
+        text-align: left;
+    }
+
+    .gnosis-connector {
+        width: 3px;
+        height: 16px;
+        min-width: 0;
+        flex: 0 0 auto;
+        margin-top: 0;
+        margin-left: 6px;
+    }
+
+    /* Down-pointing arrowhead, matching the vertical track direction. */
+    .gnosis-connector::after {
+        right: auto;
+        top: auto;
+        left: 50%;
+        bottom: -1px;
+        transform: translateX(-50%);
+        border-width: 7px 5px 0 5px;
+        border-color: var(--color-accent) transparent transparent transparent;
+    }
+}

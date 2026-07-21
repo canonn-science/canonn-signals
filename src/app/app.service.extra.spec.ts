@@ -226,6 +226,76 @@ describe('AppService (HTTP-driven coverage)', () => {
     expect(scheduleCalls).toBeGreaterThanOrEqual(1);
   });
 
+  it('lazily loads the Gnosis position and memoises the fetch within the cache window', async () => {
+    await init();
+    let gnosisCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/gnosis')) {
+        gnosisCalls++;
+        return ok({ arrival: '2026-07-10', coords: [1, 2, 3], departure: '2026-07-17', desc: 'x', system: 'Varati' });
+      }
+      return ok({});
+    };
+    expect(service.gnosisData()).toBeNull();
+    service.ensureGnosis();
+    service.ensureGnosis(); // second call before the first resolves must not fire a second fetch
+    await flush();
+    expect(gnosisCalls).toBe(1);
+    expect(service.gnosisData()?.system).toBe('Varati');
+
+    // Still within the cache window: a further call doesn't refetch.
+    service.ensureGnosis();
+    await flush();
+    expect(gnosisCalls).toBe(1);
+  });
+
+  it('refetches the Gnosis position once the cache window has elapsed', async () => {
+    vi.useFakeTimers();
+    try {
+      await init();
+      let gnosisCalls = 0;
+      route = (url: string) => {
+        if (url.includes('/gnosis')) {
+          gnosisCalls++;
+          return ok({ arrival: 'x', coords: [0, 0, 0], departure: 'x', desc: '', system: gnosisCalls === 1 ? 'Varati' : 'HIP 17862' });
+        }
+        return ok({});
+      };
+      service.ensureGnosis();
+      await flush();
+      expect(service.gnosisData()?.system).toBe('Varati');
+
+      await vi.advanceTimersByTimeAsync(3600001); // just past the 1-hour cache window
+      service.ensureGnosis();
+      await flush();
+      expect(gnosisCalls).toBe(2);
+      expect(service.gnosisData()?.system).toBe('HIP 17862');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('leaves the Gnosis position unchanged and retryable when the fetch fails', async () => {
+    await init();
+    let gnosisCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/gnosis')) {
+        gnosisCalls++;
+        return fail(404, 'nope'); // a 4xx isn't retried internally, keeping this test fast
+      }
+      return ok({});
+    };
+    service.ensureGnosis();
+    await flush();
+    expect(service.gnosisData()).toBeNull();
+    expect(gnosisCalls).toBe(1);
+
+    // The failed fetch cleared the memo, so an immediate retry (within the cache window) fires again.
+    service.ensureGnosis();
+    await flush();
+    expect(gnosisCalls).toBe(2);
+  });
+
   it('resolves a system name via biostats and caches it in systemNames', async () => {
     await init();
     let biostatsCalls = 0;
