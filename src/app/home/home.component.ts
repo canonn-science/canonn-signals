@@ -1182,7 +1182,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Kick off the lazy megaship-schedule load so the "Megaships" panel can populate.
     this.appService.ensureMegaships();
     // Kick off the Gnosis position fetch so the route card/Megaships row can highlight its stop.
-    this.appService.ensureGnosis();
+    // Only relevant on the Gnosis's 8 route stops — the region map fetches independently (via
+    // its own ensureGnosis() call) when it needs the marker, so this doesn't gate that.
+    if (this.showGnosisRoute()) {
+      this.appService.ensureGnosis();
+    }
 
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {

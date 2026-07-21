@@ -42,7 +42,7 @@ describe('HomeComponent', () => {
             resolveSystemName: () => Promise.resolve(''),
             nowOverride: signal(null),
             gnosisData: signal(null),
-            ensureGnosis: () => {},
+            ensureGnosis: vi.fn(),
           },
         },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
@@ -513,6 +513,7 @@ describe('HomeComponent', () => {
       return TestBed.inject(AppService) as unknown as {
         gnosisData: { set(v: unknown): void };
         nowOverride: { set(v: number | null): void };
+        ensureGnosis: ReturnType<typeof vi.fn>;
       };
     }
 
@@ -594,6 +595,29 @@ describe('HomeComponent', () => {
 
       expect(() => component.openMegashipRouteDialog('The Gnosis')).not.toThrow();
       expect(open).toHaveBeenCalledTimes(1);
+    });
+
+    describe('ensureGnosis gating on system load', () => {
+      function systemWith(name: string) {
+        return {
+          system: {
+            name, id64: 1, coords: { x: 0, y: 0, z: 0 },
+            region: { name: 'Inner Orion Spur', region: 18 },
+            population: 0,
+            bodies: [],
+          },
+        };
+      }
+
+      it('kicks off the Gnosis fetch when the loaded system is one of its 8 route stops', () => {
+        (component as any).processBodies(systemWith('Varati'));
+        expect(appService().ensureGnosis).toHaveBeenCalled();
+      });
+
+      it('does not fetch Gnosis data for a system it never visits (the region map fetches it independently if needed)', () => {
+        (component as any).processBodies(systemWith('Sol'));
+        expect(appService().ensureGnosis).not.toHaveBeenCalled();
+      });
     });
   });
 });
