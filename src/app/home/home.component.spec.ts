@@ -227,7 +227,7 @@ describe('HomeComponent', () => {
       expect(component.bodies()[0].bodyData.bodyId).toBe(0);
       const barycentre = component.bodies()[0].subBodies.find(b => b.bodyData.bodyId === 8);
       expect(barycentre).toBeTruthy();
-      expect(barycentre!.subBodies.map(b => b.bodyData.bodyId).sort()).toEqual([9, 10]);
+      expect(barycentre!.subBodies.map(b => b.bodyData.bodyId).sort((a, b) => a - b)).toEqual([9, 10]);
     });
 
     it('does not overwrite real body data for Col 70 Sector FY-N c21-3', () => {
