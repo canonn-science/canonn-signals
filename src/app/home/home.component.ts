@@ -115,21 +115,27 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Simbad cache and file loading logic removed (now using API)
 
   // Convert id64 to PGName using PGSystem, formatted for Elite Dangerous
-  getPGName(id64: string | number | bigint): string {
+  getPGName(id64: string | number | bigint, coords?: { x: number, y: number, z: number }): string {
     try {
       // Accept id64 as string, number or bigint; BigInt() handles all three. id64
       // should already be a bigint (see parseJsonWithBigIntIds) to retain precision.
       const id64BigInt = BigInt(id64);
 
-      const pgSystem = PGSystem.fromSystemAddress(id64BigInt);
+      // Passing coords lets the decoder recognise hand-authored named sectors
+      // (Pleiades, Coalsack, NGC/IC/M/Col nebulae) that overlay procedural space
+      // and rename the system, e.g. "Pleiades Sector HR-W d1-79".
+      const pgSystem = PGSystem.fromSystemAddress(id64BigInt, coords);
 
       // Format with canonical casing:
-      // Region name: title case
-      // System ID: uppercase letters, lowercase mass code
-      const titleCasedRegion = pgSystem.regionName
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+      // Region name: title case (procedural names arrive lower-cased). Hand-authored
+      // sector names are already canonical ("NGC 2392 Sector", "Col 70 Sector") and
+      // would be mangled by title casing, so keep them verbatim.
+      const titleCasedRegion = pgSystem.isHASector
+        ? pgSystem.regionName
+        : pgSystem.regionName
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
 
       const mid1a = String.fromCharCode('A'.charCodeAt(0) + pgSystem.mid1a);
       const mid1b = String.fromCharCode('A'.charCodeAt(0) + pgSystem.mid1b);
@@ -150,7 +156,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   fetchEdGalaxyData(systemName: string, id64: bigint, coords?: { x: number, y: number, z: number }) {
-    const pgName = this.getPGName(id64);
+    const pgName = this.getPGName(id64, coords);
     // Claim this request's slot; a later fetch bumps the token so this one's
     // async result is discarded rather than clobbering the newer system's data.
     const generation = ++this.edGalaxyGeneration;

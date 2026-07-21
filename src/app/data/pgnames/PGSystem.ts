@@ -1,6 +1,7 @@
 import { PGRegion } from './PGRegion';
 import { PGSectors } from './PGSectors';
 import { ByteXYZ } from './PGSectors';
+import { PGHASectors } from './PGHASectors';
 
 export interface IPGSystem {
     regionName: string;
@@ -20,6 +21,15 @@ export class PGSystem implements IPGSystem {
     mid2: number = 0;
     sizeClass: number = 0;
     mid3: number = 0;
+    /**
+     * True when {@link regionName} is a hand-authored named sector resolved from
+     * galaxy coordinates rather than the procedural name for the boxel. The name
+     * is then already canonically cased (e.g. "NGC 2392 Sector") and must not be
+     * re-cased by callers.
+     */
+    isHASector: boolean = false;
+    /** True when the resolved hand-authored region sits behind a permit lock. */
+    needsPermit: boolean = false;
 
     get region(): PGRegion {
         return PGRegion.getRegion(this.regionName);
@@ -391,7 +401,56 @@ export class PGSystem implements IPGSystem {
         );
     }
 
-    static fromSystemAddress(systemaddress: bigint): PGSystem {
+    /**
+     * When galaxy coordinates fall inside a hand-authored named sector, overwrite
+     * the procedural region name and letter/N1 suffix with the hand-authored ones.
+     *
+     * The letter code and N1 are the boxel's position *relative to the sector
+     * origin*, so a hand-authored sector (whose origin differs from the procedural
+     * sector's) yields different letters for the same physical boxel — this is the
+     * exact inverse of {@link absoluteBoxel}. The mass code and N2 (sequence) are
+     * origin-independent and stay as decoded. Leaves the system untouched when the
+     * coordinates are in procedural space, or when the boxel does not sit within
+     * the resolved region (a coords/id64 mismatch), so the procedural name stands.
+     *
+     * @param abs Absolute boxel indices (from the galaxy origin) decoded from the id64.
+     * @param coords System position in galaxy light-years (Sol at origin), or undefined.
+     */
+    private static applyHASectorName(
+        sys: PGSystem,
+        abs: { x: number; y: number; z: number },
+        coords?: { x: number; y: number; z: number }
+    ): void {
+        if (!coords) return;
+        const region = PGHASectors.regionForCoords(coords.x, coords.y, coords.z);
+        if (region === null) return;
+
+        const reg = PGRegion.getRegion(region.name);
+        if (reg.x0 < 0 || reg.y0 < 0 || reg.z0 < 0) return; // origin unknown; keep procedural
+
+        const boxelSize = 320 << sys.sizeClass; // internal units per boxel edge
+        const bx = abs.x - Math.floor(reg.x0 / boxelSize);
+        const by = abs.y - Math.floor(reg.y0 / boxelSize);
+        const bz = abs.z - Math.floor(reg.z0 / boxelSize);
+        // Each axis occupies 7 bits of the packed letter code; a boxel outside the
+        // region (only possible when coords and id64 disagree) would corrupt the
+        // adjacent field, so bail and let the procedural name stand.
+        if (bx < 0 || bx > 0x7f || by < 0 || by > 0x7f || bz < 0 || bz > 0x7f) return;
+
+        const mid = bx | (by << 7) | (bz << 14);
+        sys.regionName = region.name;
+        sys.isHASector = true;
+        sys.needsPermit = region.needsPermit;
+        sys.mid1a = mid % 26;
+        sys.mid1b = Math.trunc(mid / 26) % 26;
+        sys.mid2 = Math.trunc(mid / (26 * 26)) % 26;
+        sys.mid3 = Math.trunc(mid / (26 * 26 * 26));
+    }
+
+    static fromSystemAddress(
+        systemaddress: bigint,
+        coords?: { x: number; y: number; z: number }
+    ): PGSystem {
         const addr = systemaddress; // Keep as BigInt to preserve precision
         const sizeclass = Number(addr & BigInt(7));
         const z0 = Number((addr >> BigInt(3)) & BigInt(0x3fff >> sizeclass));
@@ -426,10 +485,14 @@ export class PGSystem implements IPGSystem {
         sys.mid3 = mid3;
         sys.sizeClass = sizeclass;
         sys.sequence = seq;
+        PGSystem.applyHASectorName(sys, { x: x0, y: y0, z: z0 }, coords);
         return sys;
     }
 
-    static fromModSystemAddress(systemaddress: bigint): PGSystem {
+    static fromModSystemAddress(
+        systemaddress: bigint,
+        coords?: { x: number; y: number; z: number }
+    ): PGSystem {
         const addr = systemaddress; // Keep as BigInt to preserve precision
         const seq = Number(addr & BigInt(0x7fff));
         const mid = Number((addr >> BigInt(16)) & BigInt(0x1fffff));
@@ -446,6 +509,14 @@ export class PGSystem implements IPGSystem {
         const mid2 = Math.trunc(mid / (26 * 26)) % 26;
         const mid3 = Math.trunc(mid / (26 * 26 * 26));
 
+        // Reconstruct absolute boxel indices: sector coordinate (x2/y2/z2) shifted
+        // above the within-sector boxel bits, plus the low bits carried in `mid`.
+        const bps = 7 - sizeclass; // boxels per sector edge = 2^bps
+        const boxelMask = 0x7f >> sizeclass;
+        const absX = (x2 << bps) | (mid & boxelMask);
+        const absY = (y2 << bps) | ((mid >> 7) & boxelMask);
+        const absZ = (z2 << bps) | ((mid >> 14) & boxelMask);
+
         const sys = new PGSystem();
         sys.regionName = regionname;
         sys.mid1a = mid1a;
@@ -454,6 +525,7 @@ export class PGSystem implements IPGSystem {
         sys.mid3 = mid3;
         sys.sizeClass = sizeclass;
         sys.sequence = seq;
+        PGSystem.applyHASectorName(sys, { x: absX, y: absY, z: absZ }, coords);
         return sys;
     }
 }
