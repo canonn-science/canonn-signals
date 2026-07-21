@@ -12,7 +12,7 @@
       <span [class.clickable]="getWhiteDwarfSpectralCode()"
         [matTooltip]="body().bodyData.speculative ? speculativeBodyTooltip : (getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip())"
         matTooltipClass="multiline-tooltip" (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{
-        body().bodyData.subType }}{{ body().bodyData.speculative ? '?' : '' }}@if (classifyNeutronStar()) {
+        getDisplaySubType() }}{{ body().bodyData.speculative ? '?' : '' }}@if (classifyNeutronStar()) {
         <span> ({{
           classifyNeutronStar() }})</span>
         }</span>

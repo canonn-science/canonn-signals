@@ -31,6 +31,7 @@ export const GREEN_GAS_GIANTS: readonly GreenGasGiant[] = [
   { system: "Wembaei UM-A b57-4", body: "Wembaei UM-A b57-4 1" },
   { system: "Byoomao LY-G d11-9374", body: "Byoomao LY-G d11-9374" },
   { system: "Nyuena AC-B d14-245", body: "Nyuena AC-B d14-245 7" },
+  { system: "Systimbu WJ-R e4-720", body: "Systimbu WJ-R e4-720 10" },
   { system: "Dryoea Prao FH-S d5-3063", body: "Dryoea Prao FH-S d5-3063 9" },
   { system: "Shrogaae CW-L c8-87", body: "Shrogaae CW-L c8-87 5" },
   { system: "Aemonz UT-R d4-36", body: "Aemonz UT-R d4-36" },

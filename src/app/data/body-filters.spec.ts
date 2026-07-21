@@ -166,6 +166,11 @@ describe('body-filters', () => {
       expect(isTouristInteresting(body, physics, orbitalRelations)).toBe(true);
     });
 
+    it('matches a catalogued Green Gas Giant', () => {
+      const body = node(makeBody({ bodyId: 1, name: 'Systimbu WJ-R e4-720 10', subType: 'Class I gas giant' }));
+      expect(isTouristInteresting(body, physics, orbitalRelations)).toBe(true);
+    });
+
     it('does not match a tidally-locked (synchronised) body on its own', () => {
       const body = node(makeBody({ bodyId: 1, subType: 'Rocky body', rotationalPeriodTidallyLocked: true }));
       expect(isTouristInteresting(body, physics, orbitalRelations)).toBe(false);
