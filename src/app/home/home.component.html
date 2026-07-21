@@ -371,6 +371,25 @@
       </div>
     </div>
     }
+    @if (speculativeSystemInfo(); as infoParagraphs) {
+    <div class="system-info-panel">
+      <figure class="system-info-image">
+        <img src="assets/thargoid-map.png" alt="Thargoid map" loading="lazy" />
+        <figcaption>Thargoid Map</figcaption>
+      </figure>
+      <div class="system-info-text">
+        @for (paragraph of infoParagraphs; track paragraph) {
+        <p [innerHTML]="paragraph"></p>
+        }
+      </div>
+      @if (systemMapImage(); as mapImage) {
+      <figure class="system-info-image">
+        <img [src]="mapImage.path" [alt]="mapImage.caption" loading="lazy" />
+        <figcaption>{{ mapImage.caption }}</figcaption>
+      </figure>
+      }
+    </div>
+    }
     @if (bodies().length) {
     <div class="quick-filters">
       @if (biologyMatches().size) {
@@ -478,8 +497,9 @@
     <div class="bodies">
       @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
       <app-system-body [body]="body" [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
-        [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy" [filterCommand]="filterCommand()"
-        [systemKey]="systemKey()" [systemPopulation]="data.system.population"></app-system-body>
+        [defaultExpanded]="defaultExpandStarOnly()" [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"
+        [filterCommand]="filterCommand()" [systemKey]="systemKey()"
+        [systemPopulation]="data.system.population"></app-system-body>
       }
     </div>
     }

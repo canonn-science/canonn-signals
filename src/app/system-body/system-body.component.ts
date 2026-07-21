@@ -41,6 +41,8 @@ import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dia
 import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 import { resolveBodySignalsMap, FilterCommand } from '../data/body-filters';
+import { SPECULATIVE_BODY_TOOLTIP } from '../data/speculative-systems';
+import { SpeculativeValueTooltipDirective } from './speculative-value-tooltip.directive';
 import { BodyInterestRegistryService } from '../data/body-interest-registry.service';
 import { ConvertIconComponent } from '../dialogs/unit-conversion-dialog/convert-icon.component';
 import {
@@ -90,7 +92,7 @@ const COLLISION_DIAGRAM_SAMPLES = 1000;
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective, ConvertIconComponent]
+  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective, ConvertIconComponent, SpeculativeValueTooltipDirective]
 })
 export class SystemBodyComponent implements OnChanges {
   private readonly appService = inject(AppService);
@@ -116,11 +118,17 @@ export class SystemBodyComponent implements OnChanges {
   public readonly faCode = faCode;
   public readonly faLock = faLock;
   public readonly faLink = faLink;
+  public readonly speculativeBodyTooltip = SPECULATIVE_BODY_TOOLTIP;
   readonly body = input.required<SystemBody>();
   readonly edGalaxyData = input<EdGalaxyData | null>(null);
   readonly isRoot = input<boolean>(false);
   readonly isLast = input<boolean>(false);
   readonly forceExpanded = input<boolean>(false);
+  // Unlike forceExpanded, this is deliberately NOT propagated to subBodies (see the
+  // recursive @for in the template) — it only auto-expands the exact body it's bound to,
+  // e.g. home.component.html sets it on the root call so a special-cased system (see
+  // data/speculative-systems.ts) can default to just its main star open, children collapsed.
+  readonly defaultExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
   readonly systemPopulation = input<number>(0);
   readonly filterCommand = input<FilterCommand | null>(null);
@@ -388,7 +396,8 @@ export class SystemBodyComponent implements OnChanges {
       const shouldExpand =
         (bodyChanged && isInteresting) ||
         ((bodyChanged || forceChanged) && forceExpanded) ||
-        ((bodyChanged || anchorChanged) && this.containsAnchorBody(body));
+        ((bodyChanged || anchorChanged) && this.containsAnchorBody(body)) ||
+        (bodyChanged && this.defaultExpanded());
       if (shouldExpand) {
         this.expanded.set(true);
       }

@@ -197,11 +197,54 @@ describe('HomeComponent', () => {
     });
   });
 
+  describe('processBodies applying the Col 70 Sector FY-N c21-3 speculative override', () => {
+    const COL_70_ID64 = 909626806858n;
+
+    function systemNamed(id64: bigint, bodies: any[]) {
+      return {
+        system: {
+          name: 'Col 70 Sector FY-N c21-3',
+          id64,
+          coords: { x: 0, y: 0, z: 0 },
+          population: 0,
+          bodies,
+        },
+      };
+    }
+
+    it('fills in the speculative body list and region when Spansh reports no bodies', () => {
+      const data = systemNamed(COL_70_ID64, []);
+
+      (component as any).processBodies(data);
+
+      // 11 synthesized bodies (star + 7 direct planets + barycentre + binary pair).
+      expect(data.system.bodies.length).toBe(11);
+      expect((data.system as any).region).toEqual({ name: 'Inner Orion Spur', region: 18 });
+      // The tree still builds correctly off the synthesized list: only the star is a
+      // root, and the barycentre (attached indirectly via the binary pair's ancestor
+      // chain) ends up nested under it rather than as a stray second root.
+      expect(component.bodies().length).toBe(1);
+      expect(component.bodies()[0].bodyData.bodyId).toBe(0);
+      const barycentre = component.bodies()[0].subBodies.find(b => b.bodyData.bodyId === 8);
+      expect(barycentre).toBeTruthy();
+      expect(barycentre!.subBodies.map(b => b.bodyData.bodyId).sort((a, b) => a - b)).toEqual([9, 10]);
+    });
+
+    it('does not overwrite real body data for Col 70 Sector FY-N c21-3', () => {
+      const realBody = { bodyId: 0, name: 'Col 70 Sector FY-N c21-3', type: 'Star', subType: '', id64: 1 };
+      const data = systemNamed(COL_70_ID64, [realBody]);
+
+      (component as any).processBodies(data);
+
+      expect(data.system.bodies).toEqual([realBody]);
+    });
+  });
+
   describe('systemCompleteness', () => {
-    function loadSystem(bodyCount: number | undefined, bodies: any[]) {
+    function loadSystem(bodyCount: number | undefined, bodies: any[], id64: number | bigint = 1) {
       const data = {
         system: {
-          name: 'Test System', id64: 1, coords: { x: 0, y: 0, z: 0 },
+          name: 'Test System', id64, coords: { x: 0, y: 0, z: 0 },
           region: { name: 'Inner Orion Spur', region: 18 }, population: 0,
           bodyCount, bodies,
         },
@@ -241,6 +284,16 @@ describe('HomeComponent', () => {
       ]);
       // Only the star and planet are real bodies → 2 of 4 → 50%.
       expect(component.systemCompleteness()).toEqual({ known: 2, total: 4, percent: 50 });
+    });
+
+    it('hardcodes 0/10 for Col 70 Sector FY-N c21-3 regardless of bodies/bodyCount', () => {
+      // Real bodyCount + known bodies that would otherwise compute a very different
+      // ratio (2 known / 21 reported ≈ 10%), to prove the override wins outright.
+      loadSystem(21, [
+        { bodyId: 0, name: 'Star', type: 'Star', subType: '', id64: 1 },
+        { bodyId: 1, name: 'Planet', type: 'Planet', subType: '', id64: 2, semiMajorAxis: 1, parents: [{ Star: 0 }] },
+      ], 909626806858n);
+      expect(component.systemCompleteness()).toEqual({ known: 0, total: 10, percent: 0 });
     });
   });
 

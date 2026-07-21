@@ -10,9 +10,9 @@
       }
       @if (body().bodyData.subType) {
       <span [class.clickable]="getWhiteDwarfSpectralCode()"
-        [matTooltip]="getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip()"
+        [matTooltip]="body().bodyData.speculative ? speculativeBodyTooltip : (getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip())"
         matTooltipClass="multiline-tooltip" (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{
-        body().bodyData.subType }}@if (classifyNeutronStar()) {
+        body().bodyData.subType }}{{ body().bodyData.speculative ? '?' : '' }}@if (classifyNeutronStar()) {
         <span> ({{
           classifyNeutronStar() }})</span>
         }</span>
@@ -22,6 +22,9 @@
         class="atmosphere-type">
         - {{ getAtmosphereDisplay() }}
       </span>
+      }
+      @if (body().bodyData.speculative) {
+      <span class="badge badge-red" [matTooltip]="speculativeBodyTooltip" matTooltipClass="multiline-tooltip">Speculation</span>
       }
       @if (isRingNotVisible()) {
       <span class="badge badge-red clickable" (click)="showInvisibleRingExplanation()">Invisible</span>
@@ -197,14 +200,19 @@
   </div>
   @if (expanded()) {
   <div class="system-body-grow" animate.enter="grow--enter" animate.leave="grow--leave">
-    <div class="system-body">
+    <div class="system-body" [class.speculative-values]="body().bodyData.speculative || body().bodyData.speculativeValues">
       <div class="body-image">
+        @if (body().bodyData.speculative) {
+        <fa-icon [icon]="faCircleQuestion" class="speculative-body-icon" [matTooltip]="speculativeBodyTooltip"
+          matTooltipClass="multiline-tooltip" aria-label="Unconfirmed body — extrapolated data"></fa-icon>
+        } @else {
         @if (bodyCoronaImage) {
         <img alt="" src="assets/{{ bodyCoronaImage }}" class="body-image-corona" (error)="bodyCoronaImage = ''"
           loading="lazy" />
         }
         @if (bodyImage) {
         <img alt="" src="assets/{{ bodyImage }}" (error)="bodyImage = ''" loading="lazy" />
+        }
         }
       </div>
       <div class="body-content">
@@ -387,7 +395,7 @@
         <!-- Physical Properties Section -->
         @if (body().bodyData.radius || body().bodyData.earthMasses || body().bodyData.solarMasses ||
         body().bodyData.solarRadius || body().bodyData.gravity || body().bodyData.axialTilt || body().bodyData.age ||
-        body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
+        body().bodyData.ageDisplay || body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
         <div class="body-data-section">
           <div class="body-data-section-header">Physical Properties</div>
           @if (body().bodyData.radius) {
@@ -475,7 +483,7 @@
             </div>
           </div>
           }
-          @if (body().bodyData.age) {
+          @if (body().bodyData.age || body().bodyData.ageDisplay) {
           <div class="body-data-entry" [class.clickable]="showStarAgeFeature()"
             (click)="showStarAgeFeature() && showHrDiagram()">
             <div>
@@ -484,9 +492,9 @@
               <fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               }
             </div>
-            <div class="age-cell">
+            <div class="age-cell" [class.no-speculative-mark]="!!body().bodyData.ageDisplay">
               <div [matTooltip]="showStarAgeFeature() ? 'Click for the H–R diagram' : ''">
-                {{ body().bodyData.age }} million years
+                {{ body().bodyData.ageDisplay || body().bodyData.age }} million years
               </div>
               @if (getStellarAgeAssessment(); as ageAssessment) {
               @if (ageAssessment.barFraction !== null) {
@@ -696,8 +704,9 @@
         </div>
         }
         <!-- Dynamics Section -->
-        @if (body().bodyData.rotationalPeriod || body().bodyData.distanceToArrival !== undefined ||
-        getMeanAnomaly() !== undefined) {
+        @if (body().bodyData.rotationalPeriod || (body().bodyData.distanceToArrival !== undefined &&
+        body().bodyData.distanceToArrival !== null && (body().bodyData.bodyId !== 0 ||
+        body().bodyData.distanceToArrival! > 0)) || getMeanAnomaly() !== undefined) {
         <div class="body-data-section">
           <div class="body-data-section-header">Dynamics</div>
           @if (body().bodyData.rotationalPeriod) {
@@ -783,7 +792,7 @@
             <div>
               Spectral class
             </div>
-            <div>
+            <div class="no-speculative-mark">
               {{ body().bodyData.spectralClass }}
             </div>
           </div>
@@ -793,7 +802,7 @@
             <div>
               Luminosity class
             </div>
-            <div>
+            <div class="no-speculative-mark">
               {{ body().bodyData.luminosity }}
             </div>
           </div>
