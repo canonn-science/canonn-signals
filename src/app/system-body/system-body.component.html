@@ -492,7 +492,7 @@
               <fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               }
             </div>
-            <div class="age-cell">
+            <div class="age-cell" [class.no-speculative-mark]="!!body().bodyData.ageDisplay">
               <div [matTooltip]="showStarAgeFeature() ? 'Click for the H–R diagram' : ''">
                 {{ body().bodyData.ageDisplay || body().bodyData.age }} million years
               </div>
@@ -792,7 +792,7 @@
             <div>
               Spectral class
             </div>
-            <div class="confirmed-value">
+            <div class="no-speculative-mark">
               {{ body().bodyData.spectralClass }}
             </div>
           </div>
@@ -802,7 +802,7 @@
             <div>
               Luminosity class
             </div>
-            <div class="confirmed-value">
+            <div class="no-speculative-mark">
               {{ body().bodyData.luminosity }}
             </div>
           </div>

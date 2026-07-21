@@ -11,8 +11,8 @@ export const SPECULATIVE_VALUE_TOOLTIP = 'Data extrapolated from Thargoid system
  * hoverable explanation without adding a binding to every individual value in the template.
  * Uses a native `title` rather than `matTooltip` so it needs no dependency on the host
  * component — it reads the ancestor's `.speculative-values` class directly off the DOM.
- * Skips rows marked `.confirmed-value` (e.g. the star's spectral class/luminosity, which
- * are known for certain and so carry no "?").
+ * Skips rows marked `.no-speculative-mark` — either known for certain (the star's spectral
+ * class/luminosity) or already self-qualified as a guess (the star's age range).
  */
 @Directive({
   selector: '.body-data-entry',
@@ -24,7 +24,7 @@ export class SpeculativeValueTooltipDirective implements AfterViewInit {
 
   ngAfterViewInit(): void {
     const valueCell = this.el.nativeElement.querySelector<HTMLElement>(':scope > div:last-child');
-    if (!valueCell || valueCell.classList.contains('confirmed-value')) {
+    if (!valueCell || valueCell.classList.contains('no-speculative-mark')) {
       return;
     }
     if (this.el.nativeElement.closest('.speculative-values')) {

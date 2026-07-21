@@ -225,10 +225,11 @@
 /* Speculative body (or speculative-values-only body, e.g. Col 70 Sector FY-N c21-3's main
    star — see `speculative`/`speculativeValues` on CanonnBiostatsBody): every displayed
    detail value is a guess, so flag each one with a trailing "?" rather than editing every
-   individual field binding. `.confirmed-value` opts a specific value out (e.g. the star's
-   spectral class/luminosity, which are known for certain even though its other properties
-   aren't — see the Stellar Properties section). */
-.system-body.speculative-values .body-data-entry > div:last-child:not(.confirmed-value)::after {
+   individual field binding. `.no-speculative-mark` opts a specific value out — either
+   because it's known for certain (the star's spectral class/luminosity) or because it's
+   already self-qualified as a guess (the star's "5-10" age range doesn't need a "?" on
+   top of being a range). */
+.system-body.speculative-values .body-data-entry > div:last-child:not(.no-speculative-mark)::after {
     content: " ?";
 }
 
