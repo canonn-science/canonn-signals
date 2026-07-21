@@ -193,6 +193,21 @@ describe('BodyPhysicsService (extended coverage)', () => {
       expect(excess!).toBeGreaterThan(0);
     });
 
+    it('breaches when an eccentric periapsis dips inside the limit despite a safe semi-major axis', () => {
+      const parent = node({ solarMasses: 1, solarRadius: 1 });
+      // Semi-major axis sits outside the rigid Roche limit, so a circular orbit reads safe...
+      const circular = node({ earthMasses: 1, radius: 6371, semiMajorAxis: 0.004 }, parent);
+      expect(service.rocheExcess(circular)).toBeNull();
+      // ...but a high-eccentricity orbit with the same semi-major axis swings inside at periapsis.
+      const eccentric = node(
+        { earthMasses: 1, radius: 6371, semiMajorAxis: 0.004, orbitalEccentricity: 0.6 },
+        parent,
+      );
+      const excess = service.rocheExcess(eccentric);
+      expect(excess).not.toBeNull();
+      expect(excess!).toBeGreaterThan(0);
+    });
+
     it('returns null when required mass/radius data is missing', () => {
       expect(service.rocheExcess(node({ semiMajorAxis: 1, radius: 1000 }))).toBeNull(); // no parent
       const parentNoMass = node({ radius: 50000 });
