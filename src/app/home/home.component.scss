@@ -495,6 +495,18 @@
     font-size: 80%
 }
 
+/* The Colony Router link replaces the Population indicator for unpopulated systems, so it
+   should read identically to plain Population text rather than as an external-icon link. */
+.system-container .system-container-data .system-title a.population {
+    color: inherit;
+    font-weight: inherit;
+}
+
+.system-container .system-container-data .system-title a.population:hover {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .system-container .system-container-data .edastro-summary {
     display: flex;
     align-items: center;

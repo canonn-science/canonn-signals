@@ -104,8 +104,12 @@
             <span class="system-export-button__label">Export</span>
           </button>
         </span>
-        @if (data.system.population !== null && data.system.population !== undefined) {
+        @if (data.system.population !== null && data.system.population !== undefined && data.system.population > 0) {
         <span class="population">Population: {{ data.system.population | number }}</span>
+        } @else {
+        <a [href]="'https://spansh.co.uk/colonisation/load?destination=' + encodeURIComponent(data.system.name)"
+          target="_blank" rel="noopener noreferrer" class="population"
+          title="Plan a colonisation route to this system on Spansh">Colony Router</a>
         }
       </div>
       @if (edastro?.summary) {
