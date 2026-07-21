@@ -395,7 +395,7 @@
         <!-- Physical Properties Section -->
         @if (body().bodyData.radius || body().bodyData.earthMasses || body().bodyData.solarMasses ||
         body().bodyData.solarRadius || body().bodyData.gravity || body().bodyData.axialTilt || body().bodyData.age ||
-        body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
+        body().bodyData.ageDisplay || body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
         <div class="body-data-section">
           <div class="body-data-section-header">Physical Properties</div>
           @if (body().bodyData.radius) {
@@ -483,7 +483,7 @@
             </div>
           </div>
           }
-          @if (body().bodyData.age) {
+          @if (body().bodyData.age || body().bodyData.ageDisplay) {
           <div class="body-data-entry" [class.clickable]="showStarAgeFeature()"
             (click)="showStarAgeFeature() && showHrDiagram()">
             <div>
@@ -494,7 +494,7 @@
             </div>
             <div class="age-cell">
               <div [matTooltip]="showStarAgeFeature() ? 'Click for the H–R diagram' : ''">
-                {{ body().bodyData.age }} million years
+                {{ body().bodyData.ageDisplay || body().bodyData.age }} million years
               </div>
               @if (getStellarAgeAssessment(); as ageAssessment) {
               @if (ageAssessment.barFraction !== null) {
@@ -704,8 +704,9 @@
         </div>
         }
         <!-- Dynamics Section -->
-        @if (body().bodyData.rotationalPeriod || body().bodyData.distanceToArrival !== undefined ||
-        getMeanAnomaly() !== undefined) {
+        @if (body().bodyData.rotationalPeriod || (body().bodyData.distanceToArrival !== undefined &&
+        body().bodyData.distanceToArrival !== null && (body().bodyData.bodyId !== 0 ||
+        body().bodyData.distanceToArrival! > 0)) || getMeanAnomaly() !== undefined) {
         <div class="body-data-section">
           <div class="body-data-section-header">Dynamics</div>
           @if (body().bodyData.rotationalPeriod) {

@@ -1522,6 +1522,10 @@ export interface CanonnBiostats {
 export interface CanonnBiostatsBody {
   absoluteMagnitude?: number;
   age?: number;
+  // Display-only override for the Age row (e.g. "5-10") when only a range, not a precise
+  // figure, is known — used instead of `age` so the numeric HR-diagram/age-assessment
+  // machinery (which needs a single value) is untouched and simply sees no age.
+  ageDisplay?: string;
   argOfPeriapsis?: number;
   ascendingNode?: number;
   atmosphereType?: string | null;

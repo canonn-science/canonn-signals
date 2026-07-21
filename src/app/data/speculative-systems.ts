@@ -134,6 +134,9 @@ const COL_70_FY_N_C21_3_BODIES: ((systemName: string) => CanonnBiostatsBody)[] =
     solarMasses: 0.69,
     solarRadius: 2.4,
     distanceToArrival: 0,
+    // A precise age isn't known; the info panel's "young, 1-10 My, but the lack of a
+    // belt suggests older than 5 My" reasoning narrows it to this range.
+    ageDisplay: '5-10',
     speculativeValues: true,
   }),
   speculativeBody(1, ' 1', () => ({
