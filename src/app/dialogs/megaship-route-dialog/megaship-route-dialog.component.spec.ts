@@ -118,4 +118,70 @@ describe('MegashipRouteDialogComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.textContent).toContain('unconfirmed');
   });
+
+  describe('statically-named stops (issue #121, e.g. the Gnosis)', () => {
+    it('shows a stop\'s systemName immediately, without an id64 lookup', async () => {
+      const fixture = await setup({
+        signalName: 'The Gnosis', shipName: 'The Gnosis', type: 'cycle', confirmed: true,
+        lastSeen: '2026-07-10', routeLen: 2,
+        stops: [
+          { position: 0, systemName: 'Varati', dueDate: '2026-07-17', presentNow: true },
+          { position: 1, systemName: 'HIP 17862', dueDate: null, presentNow: false },
+        ],
+      });
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.textContent).toContain('Varati');
+      expect(el.textContent).toContain('HIP 17862');
+      expect(el.textContent).not.toContain('…');
+    });
+
+    it('renders a null dueDate as an em dash and does not request a name lookup', async () => {
+      const requestSystemName = vi.fn();
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(ok({}))));
+      TestBed.configureTestingModule({
+        imports: [MegashipRouteDialogComponent],
+        providers: [
+          provideZonelessChangeDetection(),
+          {
+            provide: MAT_DIALOG_DATA, useValue: {
+              signalName: 'The Gnosis', shipName: 'The Gnosis', type: 'cycle', confirmed: true,
+              lastSeen: '2026-07-10', routeLen: 1,
+              stops: [{ position: 0, systemName: 'Varati', dueDate: null, presentNow: true }],
+            } satisfies MegashipRouteDialogData,
+          },
+          { provide: AppService, useValue: { systemNames: () => new Map(), requestSystemName } },
+        ],
+      });
+      const fixture = TestBed.createComponent(MegashipRouteDialogComponent);
+      fixture.detectChanges();
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('.date')?.textContent?.trim()).toBe('—');
+      expect(requestSystemName).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('overridable route description and disclaimer (issue #121)', () => {
+    it('uses routeDescription in place of the default "N weekly stops" summary', async () => {
+      const fixture = await setup({
+        signalName: 'The Gnosis', shipName: 'The Gnosis', type: 'cycle', confirmed: true,
+        lastSeen: '2026-07-10', routeLen: 8, routeDescription: '8-system retirement loop — confirmed',
+        stops: [{ position: 0, systemName: 'Varati', dueDate: null, presentNow: true }],
+      });
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.textContent).toContain('8-system retirement loop — confirmed');
+      expect(el.textContent).not.toContain('weekly stop');
+    });
+
+    it('uses a custom disclaimer in place of the default community-sightings text', async () => {
+      const fixture = await setup({
+        signalName: 'The Gnosis', shipName: 'The Gnosis', type: 'cycle', confirmed: true,
+        lastSeen: '2026-07-10', routeLen: 8,
+        disclaimer: 'Live-tracked from the Gnosis API, not community sightings.',
+        stops: [{ position: 0, systemName: 'Varati', dueDate: null, presentNow: true }],
+      });
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.textContent).toContain('Live-tracked from the Gnosis API, not community sightings.');
+      expect(el.textContent).not.toContain('community sightings collected since 2022');
+    });
+  });
 });

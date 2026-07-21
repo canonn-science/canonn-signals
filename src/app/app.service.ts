@@ -12,6 +12,9 @@ const HTTP_TIMEOUT_MS = 20000;
 const HTTP_RETRY_COUNT = 2;
 /** Base URL for the Canonn cloud-function query API. */
 const CANONN_QUERY_BASE = 'https://us-central1-canonn-api-236217.cloudfunctions.net/query';
+/** How long a fetched Gnosis position is considered fresh before {@link AppService.ensureGnosis}
+ *  refetches it. Matches the cache window the region map previously kept locally for the same data. */
+const GNOSIS_CACHE_DURATION_MS = 3600000; // 1 hour
 
 /**
  * Error thrown by {@link AppService} HTTP helpers for non-2xx responses. Mirrors the
@@ -129,6 +132,13 @@ export class AppService {
   /** In-flight name lookups, keyed by id64 string, so concurrent callers share one fetch. */
   private readonly systemNameLookups = new Map<string, Promise<string>>();
 
+  private readonly _gnosisData = signal<GnosisData | null>(null);
+  /** The Gnosis megaship's live-tracked current stop; null until {@link ensureGnosis} resolves
+   *  (or on failure). Shared by the Galaxy Region Map marker and the Gnosis route card. */
+  public readonly gnosisData: Signal<GnosisData | null> = this._gnosisData.asReadonly();
+  private gnosisLoad?: Promise<void>;
+  private gnosisFetchedAt = 0;
+
   constructor() {
     void this.loadCodexEntries();
     void this.loadEdastroSystems();
@@ -208,6 +218,28 @@ export class AppService {
         // Clear the memo so a later call can retry the load.
         this.megashipScheduleLoad = undefined;
       });
+  }
+
+  /**
+   * Lazily (re)loads the Gnosis's current position, at most once per {@link GNOSIS_CACHE_DURATION_MS}.
+   * A failed fetch leaves the previous value in place (stale data beats none) and is retried on the
+   * next call rather than waiting out the cache window. Returns the in-flight/cached load promise
+   * so callers that need the resolved value (e.g. {@link RegionMapComponent}) can await it instead
+   * of keeping their own parallel cache.
+   */
+  public ensureGnosis(): Promise<void> {
+    const now = Date.now();
+    if (this.gnosisLoad && now - this.gnosisFetchedAt < GNOSIS_CACHE_DURATION_MS) {
+      return this.gnosisLoad;
+    }
+    this.gnosisFetchedAt = now;
+    this.gnosisLoad = this.getGnosis()
+      .then(data => { this._gnosisData.set(data); })
+      .catch(() => {
+        // Clear the memo so the next call retries immediately instead of waiting out the cache window.
+        this.gnosisLoad = undefined;
+      });
+    return this.gnosisLoad;
   }
 
   /**

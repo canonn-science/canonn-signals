@@ -27,7 +27,9 @@ import { applySpeculativeBodies, getSpeculativeSystemCompleteness, getSpeculativ
 import { BodyEnrichmentService } from '../data/body-enrichment.service';
 import { buildSystemExport, downloadJson, serializeSystemExport, systemExportFilename } from '../data/system-export';
 import { buildMegashipIndex, megashipRoute, megashipsAtSystem, MegashipSystemEntry } from '../data/megaships';
-import type { MegashipRouteDialogData } from '../dialogs/megaship-route-dialog/megaship-route-dialog.component';
+import type { MegashipRouteDialogData, MegashipRouteStopData } from '../dialogs/megaship-route-dialog/megaship-route-dialog.component';
+import { GNOSIS_ROUTE_STOPS, gnosisRouteDueDates, isGnosisRouteSystem, normalizeSystemName } from '../data/gnosis-route';
+import { GnosisRouteComponent } from '../gnosis-route/gnosis-route.component';
 import { BodyPhysicsService } from '../data/body-physics.service';
 import { OrbitalRelationsService } from '../data/orbital-relations.service';
 import { BodyInterestRegistryService } from '../data/body-interest-registry.service';
@@ -45,12 +47,17 @@ interface MegashipRow {
   locationLabel: string;
 }
 
+/** Synthetic `signalName` for the Gnosis's row in the Megaships table (issue #121) — it isn't
+ *  part of the community-sighted schedule in `assets/megaship-schedule.json`, so it's not looked
+ *  up there; `openMegashipRouteDialog` special-cases this value instead. */
+const GNOSIS_SIGNAL_NAME = 'The Gnosis';
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe, MatTooltip]
+  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe, MatTooltip, GnosisRouteComponent]
 })
 export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);
@@ -410,11 +417,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   readonly megashipRows = computed<MegashipRow[]>(() => {
     const names = this.appService.systemNames();
-    return this.megashipEntries().map(entry => ({
+    const rows = this.megashipEntries().map(entry => ({
       signalName: entry.signalName,
       shipName: entry.shipName,
       locationLabel: this.megashipLocationLabel(entry, names),
     }));
+    const gnosisRow = this.gnosisMegashipRow();
+    return gnosisRow ? [gnosisRow, ...rows] : rows;
   });
 
   private megashipLocationLabel(entry: MegashipSystemEntry, names: ReadonlyMap<string, string>): string {
@@ -427,6 +436,30 @@ export class HomeComponent implements OnInit, OnDestroy {
     return names.get(String(entry.currentSystemId64)) ?? '…';
   }
 
+  // --- Gnosis route (issue #121) -----------------------------------------------------------
+  // True whenever the loaded system is one of the Gnosis's 8 permanent stops; gates both the
+  // tube-map card and its synthetic row in the Megaships table below.
+  readonly showGnosisRoute = computed<boolean>(() => {
+    const name = this.data()?.system?.name;
+    return !!name && isGnosisRouteSystem(name);
+  });
+
+  /** A synthetic Megaships-table row for the Gnosis, shown only on its 8 route stops (the
+   *  generic megaship schedule in `assets/megaship-schedule.json` doesn't cover it). */
+  private readonly gnosisMegashipRow = computed<MegashipRow | null>(() => {
+    const systemName = this.data()?.system?.name;
+    if (!systemName || !isGnosisRouteSystem(systemName)) {
+      return null;
+    }
+    const gnosis = this.appService.gnosisData();
+    const locationLabel = !gnosis
+      ? '…'
+      : normalizeSystemName(gnosis.system) === normalizeSystemName(systemName)
+        ? 'Present'
+        : gnosis.system;
+    return { signalName: GNOSIS_SIGNAL_NAME, shipName: 'The Gnosis', locationLabel };
+  });
+
   /** Best-effort name lookup for every megaship's current location not already shown as "Present". */
   private readonly requestMegashipLocationNames = effect(() => {
     for (const entry of this.megashipEntries()) {
@@ -438,6 +471,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   /** Opens the route-detail dialog for a Megaships table row, showing every stop and its due date. */
   public openMegashipRouteDialog(signalName: string): void {
+    if (signalName === GNOSIS_SIGNAL_NAME) {
+      this.openGnosisRouteDialog();
+      return;
+    }
     const schedule = this.appService.megashipSchedule();
     const ship = schedule?.ships.find(s => s.signal_name === signalName);
     if (!schedule || !ship) {
@@ -462,6 +499,49 @@ export class HomeComponent implements OnInit, OnDestroy {
         firstSeen: ship.type === 'static' ? ship.first_seen : undefined,
         weeksConfirmed: ship.type === 'static' ? ship.weeks_confirmed : undefined,
         routeLen: ship.type === 'cycle' ? ship.route_len : undefined,
+        stops,
+      } satisfies MegashipRouteDialogData,
+    });
+  }
+
+  /** Opens the route-detail dialog for the Gnosis's fixed 8-system retirement loop. Every stop's
+   *  date is inferred from the live-tracked current one: the Gnosis jumps on a fixed weekly
+   *  cadence, so the rest of the loop is just that date plus whole weeks (`gnosisRouteDueDates`). */
+  private openGnosisRouteDialog(): void {
+    const gnosis = this.appService.gnosisData();
+    const asOf = new Date(this.appService.nowOverride() ?? Date.now());
+    const dueDates = gnosis ? gnosisRouteDueDates(gnosis.system, asOf) : [];
+    const stops: MegashipRouteStopData[] = GNOSIS_ROUTE_STOPS.map((name, index) => {
+      const due = dueDates[index];
+      return {
+        position: index,
+        systemName: name,
+        dueDate: due?.dueDate ?? null,
+        presentNow: due?.presentNow ?? false,
+      };
+    });
+    // The current stop's own inferred date doubles as "since when" it's been there — the Gnosis
+    // API reports only the current system, not a jump timestamp (see `gnosisRouteDueDates`).
+    const lastSeen = dueDates.find(d => d.presentNow)?.dueDate ?? 'Unknown';
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/megaship-route-dialog/megaship-route-dialog.component').then(m => m.MegashipRouteDialogComponent),
+      skeleton: 'text',
+      width: '700px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        signalName: GNOSIS_SIGNAL_NAME,
+        shipName: 'The Gnosis',
+        type: 'cycle',
+        confirmed: true,
+        lastSeen,
+        routeLen: GNOSIS_ROUTE_STOPS.length,
+        routeDescription: `${GNOSIS_ROUTE_STOPS.length}-system retirement loop — confirmed`,
+        disclaimer: "The Gnosis follows a permanent, confirmed retirement loop, jumping to the next stop " +
+          "on a fixed weekly cadence. Its current position is live-tracked from Canonn's Gnosis API; every " +
+          "other stop's date is inferred from that position, not individually confirmed.",
         stops,
       } satisfies MegashipRouteDialogData,
     });
@@ -1107,6 +1187,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.appService.ensureNebulae();
     // Kick off the lazy megaship-schedule load so the "Megaships" panel can populate.
     this.appService.ensureMegaships();
+    // Kick off the Gnosis position fetch so the route card/Megaships row can highlight its stop.
+    // Only relevant on the Gnosis's 8 route stops — the region map fetches independently (via
+    // its own ensureGnosis() call) when it needs the marker, so this doesn't gate that.
+    if (this.showGnosisRoute()) {
+      this.appService.ensureGnosis();
+    }
 
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {

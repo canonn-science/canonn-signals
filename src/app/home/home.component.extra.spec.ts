@@ -93,6 +93,8 @@ describe('HomeComponent (extended coverage)', () => {
             requestSystemName: vi.fn(),
             resolveSystemName: vi.fn(() => Promise.resolve('')),
             nowOverride: signal<number | null>(null),
+            gnosisData: signal(null),
+            ensureGnosis: vi.fn(),
           },
         },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },

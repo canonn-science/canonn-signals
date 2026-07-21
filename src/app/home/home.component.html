@@ -349,6 +349,9 @@
         </div>
       </div>
     </div>
+    @if (showGnosisRoute()) {
+    <app-gnosis-route (stopSelected)="openSignalsPage($event)"></app-gnosis-route>
+    }
     @if (systemCompleteness(); as completeness) {
     <div class="system-completeness" role="img"
       [attr.aria-label]="completeness.percent === null

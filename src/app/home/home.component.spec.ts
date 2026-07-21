@@ -41,6 +41,8 @@ describe('HomeComponent', () => {
             requestSystemName: vi.fn(),
             resolveSystemName: () => Promise.resolve(''),
             nowOverride: signal(null),
+            gnosisData: signal(null),
+            ensureGnosis: vi.fn(),
           },
         },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
@@ -435,6 +437,7 @@ describe('HomeComponent', () => {
         systemNames: { set(v: ReadonlyMap<string, string>): void };
         nowOverride: { set(v: number | null): void };
         requestSystemName: ReturnType<typeof vi.fn>;
+        gnosisData: { set(v: unknown): void };
       };
     }
 
@@ -502,6 +505,119 @@ describe('HomeComponent', () => {
       component.openMegashipRouteDialog('NO SUCH SHIP');
 
       expect(open).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Gnosis route (issue #121)', () => {
+    function appService() {
+      return TestBed.inject(AppService) as unknown as {
+        gnosisData: { set(v: unknown): void };
+        nowOverride: { set(v: number | null): void };
+        ensureGnosis: ReturnType<typeof vi.fn>;
+      };
+    }
+
+    it('shows the tube-map card only on one of the Gnosis\'s 8 route stops', () => {
+      component.data.set({ system: { id64: 1, name: 'Varati', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      expect(component.showGnosisRoute()).toBe(true);
+
+      component.data.set({ system: { id64: 2, name: 'Sol', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      expect(component.showGnosisRoute()).toBe(false);
+    });
+
+    it('adds a Gnosis row to the Megaships table on a route stop, "…" before position data arrives', () => {
+      component.data.set({ system: { id64: 1, name: 'HIP 17862', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      expect(component.megashipRows()).toEqual([
+        { signalName: 'The Gnosis', shipName: 'The Gnosis', locationLabel: '…' },
+      ]);
+    });
+
+    it('shows "Present" when the live Gnosis position matches the loaded system', () => {
+      component.data.set({ system: { id64: 1, name: 'HIP 17862', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      // The live API returns only { system, coords, desc } — no arrival/departure timestamp.
+      appService().gnosisData.set({ system: 'hip 17862', coords: [0, 0, 0], desc: '' });
+      expect(component.megashipRows()[0].locationLabel).toBe('Present');
+    });
+
+    it('shows the Gnosis\'s actual current stop when it differs from the loaded system', () => {
+      component.data.set({ system: { id64: 1, name: 'HIP 17862', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      appService().gnosisData.set({ system: 'Varati', coords: [0, 0, 0], desc: '' });
+      expect(component.megashipRows()[0].locationLabel).toBe('Varati');
+    });
+
+    it('does not add a Gnosis row for a system it never visits', () => {
+      component.data.set({ system: { id64: 1, name: 'Sol', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      expect(component.megashipRows()).toEqual([]);
+    });
+
+    it('opens the route dialog with all 8 stops, highlighting the live-tracked position', () => {
+      component.data.set({ system: { id64: 1, name: 'Varati', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      // The live API returns only { system, coords, desc } — no jump timestamp (issue: clicking
+      // "The Gnosis" threw when the dialog tried to read a nonexistent `.arrival` field). The
+      // current weekly slot is instead derived from "now", pinned here to a Thursday 07:00 UTC.
+      appService().gnosisData.set({ system: 'Kappa-1 Volantis', coords: [0, 0, 0], desc: '' });
+      appService().nowOverride.set(Date.parse('2026-07-09T07:00:00Z'));
+
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open').mockReturnValue({} as never);
+
+      component.openMegashipRouteDialog('The Gnosis');
+
+      expect(open).toHaveBeenCalledTimes(1);
+      const [, config] = open.mock.calls[0];
+      const data = (config?.data as { data: unknown }).data as {
+        signalName: string; shipName: string; type: string; routeLen: number; disclaimer: string; lastSeen: string;
+        stops: { position: number; systemName: string; dueDate: string | null; presentNow: boolean }[];
+      };
+      expect(data.signalName).toBe('The Gnosis');
+      expect(data.routeLen).toBe(8);
+      expect(data.stops.length).toBe(8);
+      expect(data.stops[0].systemName).toBe('Varati');
+      expect(data.stops[data.stops.length - 1].systemName).toBe('Epsilon Indi');
+      const current = data.stops.find(s => s.presentNow);
+      expect(current?.systemName).toBe('Kappa-1 Volantis');
+      expect(current?.dueDate).toBe('2026-07-09'); // the current weekly slot's start
+      expect(data.lastSeen).toBe('2026-07-09');
+      expect(data.stops.filter(s => s.presentNow).length).toBe(1);
+      // Every other stop's date is inferred from the current one, a whole number of weeks out —
+      // Epsilon Indi is the very next stop after Kappa-1 Volantis, one week later.
+      expect(data.stops.find(s => s.systemName === 'Epsilon Indi')?.dueDate).toBe('2026-07-16');
+      expect(data.stops.every(s => s.dueDate !== null)).toBe(true);
+      expect(data.disclaimer).toContain('live-tracked');
+    });
+
+    it('does not throw when the live Gnosis fetch has not resolved yet (no timestamp to rely on)', () => {
+      component.data.set({ system: { id64: 1, name: 'Varati', coords: { x: 0, y: 0, z: 0 }, bodies: [] } } as never);
+      // gnosisData is still null — regression guard for the crash this triggered when the dialog
+      // builder assumed a `gnosis.arrival` field the live API doesn't actually return.
+      const dialog = TestBed.inject(MatDialog);
+      const open = vi.spyOn(dialog, 'open').mockReturnValue({} as never);
+
+      expect(() => component.openMegashipRouteDialog('The Gnosis')).not.toThrow();
+      expect(open).toHaveBeenCalledTimes(1);
+    });
+
+    describe('ensureGnosis gating on system load', () => {
+      function systemWith(name: string) {
+        return {
+          system: {
+            name, id64: 1, coords: { x: 0, y: 0, z: 0 },
+            region: { name: 'Inner Orion Spur', region: 18 },
+            population: 0,
+            bodies: [],
+          },
+        };
+      }
+
+      it('kicks off the Gnosis fetch when the loaded system is one of its 8 route stops', () => {
+        (component as any).processBodies(systemWith('Varati'));
+        expect(appService().ensureGnosis).toHaveBeenCalled();
+      });
+
+      it('does not fetch Gnosis data for a system it never visits (the region map fetches it independently if needed)', () => {
+        (component as any).processBodies(systemWith('Sol'));
+        expect(appService().ensureGnosis).not.toHaveBeenCalled();
+      });
     });
   });
 });
