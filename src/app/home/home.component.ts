@@ -1,37 +1,78 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, viewChild, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, HostListener, inject, viewChild, signal, computed, effect } from '@angular/core';
 import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faChartColumn, faChevronDown, faDownload, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { MatDialog } from '@angular/material/dialog';
+import { openLazyDialog } from '../dialogs/lazy-dialog';
+import type { HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PGSystem } from 'src/app/data/pgnames/PGSystem';
 import { MatFormField, MatLabel, MatError } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatAutocompleteTrigger, MatAutocomplete, MatOption } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { SystemBodyComponent } from '../system-body/system-body.component';
 import { RegionMapComponent } from '../region-map/region-map.component';
+import { CanonnLogoComponent } from '../canonn-logo/canonn-logo.component';
 import { DecimalPipe } from '@angular/common';
 import { BODY_TYPE } from '../data/body-types';
 import { logger } from '../data/logger';
 import { decodeHtmlEntities } from '../data/html-entities';
 import { CREDITS_HTML } from '../data/credits.generated';
 import { findNearestNebulae, NearestNebula } from '../data/nebulae';
+import { isPermitLockedSystem } from '../data/permit-locked-systems';
+import { applySpeculativeBodies, getSpeculativeSystemCompleteness, getSpeculativeSystemInfo, getSystemMapImage, isSpeculativeBodySystem, SystemMapImage } from '../data/speculative-systems';
+import { BodyEnrichmentService } from '../data/body-enrichment.service';
+import { buildSystemExport, downloadJson, serializeSystemExport, systemExportFilename } from '../data/system-export';
+import { buildMegashipIndex, megashipRoute, megashipsAtSystem, MegashipSystemEntry } from '../data/megaships';
+import type { MegashipRouteDialogData, MegashipRouteStopData } from '../dialogs/megaship-route-dialog/megaship-route-dialog.component';
+import { GNOSIS_ROUTE_STOPS, gnosisRouteDueDates, isGnosisRouteSystem, normalizeSystemName } from '../data/gnosis-route';
+import { GnosisRouteComponent } from '../gnosis-route/gnosis-route.component';
+import { BodyPhysicsService } from '../data/body-physics.service';
+import { OrbitalRelationsService } from '../data/orbital-relations.service';
+import { BodyInterestRegistryService } from '../data/body-interest-registry.service';
+import {
+  FilterCategory, FilterCommand, walkBodies, collectMatchingBodies,
+  hasBiologySignals, hasGeologySignals, hasGuardianSignals, hasThargoidSignals, hasHumanSignals, isLandable,
+  getBodyMaterialKeys, getBodyHotspotKeys, isTouristInteresting,
+} from '../data/body-filters';
+import { MINING_RESOURCES } from '../data/mining-resources';
+
+/** A Megaships-table row: the ship plus its resolved current-location display label. */
+interface MegashipRow {
+  signalName: string;
+  shipName: string;
+  locationLabel: string;
+}
+
+/** Synthetic `signalName` for the Gnosis's row in the Megaships table (issue #121) — it isn't
+ *  part of the community-sighted schedule in `assets/megaship-schedule.json`, so it's not looked
+ *  up there; `openMegashipRouteDialog` special-cases this value instead. */
+const GNOSIS_SIGNAL_NAME = 'The Gnosis';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, DecimalPipe]
+  imports: [MatFormField, MatLabel, MatInput, ReactiveFormsModule, MatAutocompleteTrigger, MatAutocomplete, MatOption, MatError, MatButton, FaIconComponent, SystemBodyComponent, RegionMapComponent, CanonnLogoComponent, DecimalPipe, MatTooltip, GnosisRouteComponent]
 })
 export class HomeComponent implements OnInit, OnDestroy {
   readonly appService = inject(AppService);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly enrichment = inject(BodyEnrichmentService);
+  private readonly physics = inject(BodyPhysicsService);
+  private readonly orbitalRelations = inject(OrbitalRelationsService);
+  private readonly interestRegistry = inject(BodyInterestRegistryService);
 
   private lastSimbadSystemName: string | null = null;
   private lastSimbadId64: bigint | null = null;
+  // Monotonic token so a slow SIMBAD response for a previously-selected system
+  // can't overwrite edGalaxyData after the user has navigated to another one.
+  private edGalaxyGeneration = 0;
   // Credits are extracted from readme.md at build time by scripts/generate-credits.js.
   // Bound via [innerHTML], which Angular sanitizes; the source is a trusted local file.
   public creditsHtml: string = CREDITS_HTML;
@@ -41,11 +82,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   openSimbadPageRaw(ident: string) {
     if (!ident) return;
     window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(ident)}`, '_blank', 'noopener,noreferrer');
-  }
-  openSimbadPage(ident: string) {
-    if (!ident) return;
-    const id = this.formatSimbadId(ident);
-    window.open(`https://simbad.harvard.edu/simbad/sim-id?Ident=@${encodeURIComponent(id)}`, '_blank', 'noopener,noreferrer');
   }
 
   // Format RAJ2000 (degrees) to '19h 21m 45.0s' (rounded to 0.1s, padded)
@@ -82,29 +118,31 @@ export class HomeComponent implements OnInit, OnDestroy {
     return `${sign}${degrees}° ${pad(arcminutes)}′ ${arcseconds.toFixed(1).padStart(4, '0')}″`;
   }
 
-  // Remove leading @ from Ident for SIMBAD ID
-  formatSimbadId(ident: string): string {
-    return ident ? ident.replace(/^@/, '') : '';
-  }
   public readonly edGalaxyData = signal<EdGalaxyData | null>(null);
   // Simbad cache and file loading logic removed (now using API)
 
   // Convert id64 to PGName using PGSystem, formatted for Elite Dangerous
-  getPGName(id64: string | number | bigint): string {
+  getPGName(id64: string | number | bigint, coords?: { x: number, y: number, z: number }): string {
     try {
       // Accept id64 as string, number or bigint; BigInt() handles all three. id64
       // should already be a bigint (see parseJsonWithBigIntIds) to retain precision.
       const id64BigInt = BigInt(id64);
 
-      const pgSystem = PGSystem.fromSystemAddress(id64BigInt);
+      // Passing coords lets the decoder recognise hand-authored named sectors
+      // (Pleiades, Coalsack, NGC/IC/M/Col nebulae) that overlay procedural space
+      // and rename the system, e.g. "Pleiades Sector HR-W d1-79".
+      const pgSystem = PGSystem.fromSystemAddress(id64BigInt, coords);
 
       // Format with canonical casing:
-      // Region name: title case
-      // System ID: uppercase letters, lowercase mass code
-      const titleCasedRegion = pgSystem.regionName
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+      // Region name: title case (procedural names arrive lower-cased). Hand-authored
+      // sector names are already canonical ("NGC 2392 Sector", "Col 70 Sector") and
+      // would be mangled by title casing, so keep them verbatim.
+      const titleCasedRegion = pgSystem.isHASector
+        ? pgSystem.regionName
+        : pgSystem.regionName
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
 
       const mid1a = String.fromCharCode('A'.charCodeAt(0) + pgSystem.mid1a);
       const mid1b = String.fromCharCode('A'.charCodeAt(0) + pgSystem.mid1b);
@@ -113,7 +151,10 @@ export class HomeComponent implements OnInit, OnDestroy {
       const mid3 = Math.trunc(pgSystem.mid3);
       const seq = Math.trunc(pgSystem.sequence);
 
-      const result = `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${mid3}-${seq}`;
+      // Elite Dangerous omits the N1 field (and its hyphen) when it is zero, so
+      // "Synuefe WH-F c0" (N1=0, N2=0) must not render as "Synuefe WH-F c0-0".
+      const index = mid3 !== 0 ? `${mid3}-${seq}` : `${seq}`;
+      const result = `${titleCasedRegion} ${mid1a}${mid1b}-${mid2} ${mcode}${index}`;
       return result;
     } catch (e) {
       logger.error('[getPGName] Error:', e);
@@ -122,12 +163,18 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   fetchEdGalaxyData(systemName: string, id64: bigint, coords?: { x: number, y: number, z: number }) {
-    const pgName = this.getPGName(id64);
+    const pgName = this.getPGName(id64, coords);
+    // Claim this request's slot; a later fetch bumps the token so this one's
+    // async result is discarded rather than clobbering the newer system's data.
+    const generation = ++this.edGalaxyGeneration;
 
-    // Fallback used whenever we don't (or can't) resolve Simbad data.
-    const setFallback = () => {
-      this.edGalaxyData.set({ PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined });
-    };
+    // The PGName is derived synchronously from the id64, so publish it immediately. Previously we
+    // waited for the async Simbad lookup before setting edGalaxyData at all, which left the "PG Name"
+    // row absent (edGalaxyData === null) for the whole request — so it flashed out and back in as the
+    // reserved-space skeleton handed over to the real view. Simbad (when present) is merged in later,
+    // and the PGName row stays put throughout.
+    const pgOnly = { PGName: pgName, SystemAddress: id64, Name: systemName, Simbad: undefined };
+    this.edGalaxyData.set(pgOnly);
 
     // Skip the Simbad lookup for procedurally-generated systems: when the
     // PGName matches the system name, the name is a valid PG name, or it
@@ -135,13 +182,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (pgName.toLowerCase() === systemName.toLowerCase()
       || PGSystem.isPGSystemName(systemName)
       || systemName.toLowerCase().includes('sector')) {
-      setFallback();
       return;
     }
 
-    // Call the API for Simbad data
+    // Call the API for Simbad data and merge it in when it resolves.
     this.appService.getSimbad(id64, systemName, coords)
       .then(result => {
+        // Drop the response if the user has since navigated to another system.
+        if (generation !== this.edGalaxyGeneration) {
+          return;
+        }
         // Remap API response to expected structure for edGalaxyData
         const hasSimbad = result.simbad_name || result.simbad_ident
           || result.ra_j2000 !== undefined || result.dec_j2000 !== undefined;
@@ -157,8 +207,13 @@ export class HomeComponent implements OnInit, OnDestroy {
           } : undefined
         });
       })
-      // Even if the Simbad API fails, still populate edGalaxyData with PGName.
-      .catch(() => setFallback());
+      // On failure the synchronously-published PGName-only data already stands; reaffirm it only
+      // while this request is still the current one.
+      .catch(() => {
+        if (generation === this.edGalaxyGeneration) {
+          this.edGalaxyData.set(pgOnly);
+        }
+      });
   }
 
   updateEdGalaxyData() {
@@ -181,6 +236,79 @@ export class HomeComponent implements OnInit, OnDestroy {
     const url = `?system=${encodeURIComponent(systemName)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }
+  // --- Loading-shell placeholders (the `@else if (searching)` branch in the template) ------------
+  // Reserved-space rows for the system chrome while the biostats payload is in flight. Grouped into
+  // two shapes so the template drives each with one loop (no per-section copy-paste):
+  //  - labelled sections (Location, Society): the static row label renders as real text — identical
+  //    for every system — and only the per-system value cell shimmers, with a `value` width (px)
+  //    picked so the column reads naturally.
+  //  - shimmer sections (Distances, Nearest DSSA, Nearest Nebulae): the row has no static label (the
+  //    system name is per-system too), so both the `name` and `value` cells shimmer.
+  // Bodies are unknown until data arrives, so those rows stay fully generic.
+  protected readonly loadingLabelledSections: readonly {
+    header: string, rows: readonly { label: string, value: number }[],
+  }[] = [
+    {
+      header: 'Location',
+      rows: [
+        { label: 'PG Name', value: 96 },
+        { label: 'Region', value: 120 },
+        { label: 'Id64', value: 110 },
+        { label: 'Coordinates', value: 140 },
+        { label: 'Permit required', value: 30 },
+        { label: 'Info updated', value: 100 },
+      ],
+    },
+    {
+      header: 'Society',
+      rows: [
+        { label: 'Economy', value: 96 },
+        { label: 'Government', value: 110 },
+        { label: 'Allegiance', value: 80 },
+        { label: 'Controlling faction', value: 130 },
+        { label: 'Security', value: 60 },
+      ],
+    },
+  ];
+  protected readonly loadingShimmerSections: readonly {
+    header: string, rows: readonly { name: number, value: number }[],
+  }[] = [
+    {
+      header: 'Distances',
+      rows: [
+        { name: 132, value: 58 },
+        { name: 104, value: 54 },
+        { name: 150, value: 64 },
+        { name: 116, value: 50 },
+        { name: 128, value: 60 },
+      ],
+    },
+    {
+      header: 'Nearest DSSA',
+      rows: [
+        { name: 138, value: 60 },
+        { name: 110, value: 54 },
+        { name: 126, value: 64 },
+      ],
+    },
+    {
+      header: 'Nearest Nebulae',
+      rows: [
+        { name: 122, value: 58 },
+        { name: 148, value: 62 },
+        { name: 134, value: 56 },
+      ],
+    },
+    {
+      header: 'Megaships',
+      rows: [
+        { name: 140, value: 60 },
+        { name: 116, value: 56 },
+      ],
+    },
+  ];
+  protected readonly loadingBodyRows: readonly number[] = [0, 1, 2, 3, 4, 5];
+
   referenceSystems = [
     { name: 'Sol', coords: { x: 0, y: 0, z: 0 } },
     { name: 'Colonia', coords: { x: -9530.5, y: -910.28125, z: 19808.125 } },
@@ -261,6 +389,164 @@ export class HomeComponent implements OnInit, OnDestroy {
     return findNearestNebulae(coords, nebulae, 3);
   });
 
+  // --- Megaships (issue #114) --------------------------------------------------------------
+  // Rebuilt only when the schedule itself changes (a one-shot asset load), not on every
+  // system search — megashipEntries below is the one that recomputes per system.
+  private readonly megashipIndex = computed(() => {
+    const schedule = this.appService.megashipSchedule();
+    return schedule ? buildMegashipIndex(schedule) : null;
+  });
+
+  readonly megashipEntries = computed<MegashipSystemEntry[]>(() => {
+    const schedule = this.appService.megashipSchedule();
+    const index = this.megashipIndex();
+    const system = this.data()?.system;
+    if (!schedule || !index || !system) {
+      return [];
+    }
+    // The schedule stores system addresses as plain JSON numbers, not the bigint-upgraded
+    // id64/system_address fields json-bigint.ts recognises — anything above 2^53 would
+    // already have lost precision in the source file, an accepted limit of that data.
+    const systemId64 = Number(system.id64);
+    if (!Number.isSafeInteger(systemId64)) {
+      return [];
+    }
+    const asOf = new Date(this.appService.nowOverride() ?? Date.now());
+    return megashipsAtSystem(systemId64, asOf, schedule, index);
+  });
+
+  readonly megashipRows = computed<MegashipRow[]>(() => {
+    const names = this.appService.systemNames();
+    const rows = this.megashipEntries().map(entry => ({
+      signalName: entry.signalName,
+      shipName: entry.shipName,
+      locationLabel: this.megashipLocationLabel(entry, names),
+    }));
+    const gnosisRow = this.gnosisMegashipRow();
+    return gnosisRow ? [gnosisRow, ...rows] : rows;
+  });
+
+  private megashipLocationLabel(entry: MegashipSystemEntry, names: ReadonlyMap<string, string>): string {
+    if (entry.presentNow) {
+      return 'Present';
+    }
+    if (entry.currentSystemId64 === null) {
+      return 'Unknown';
+    }
+    return names.get(String(entry.currentSystemId64)) ?? '…';
+  }
+
+  // --- Gnosis route (issue #121) -----------------------------------------------------------
+  // True whenever the loaded system is one of the Gnosis's 8 permanent stops; gates both the
+  // tube-map card and its synthetic row in the Megaships table below.
+  readonly showGnosisRoute = computed<boolean>(() => {
+    const name = this.data()?.system?.name;
+    return !!name && isGnosisRouteSystem(name);
+  });
+
+  /** A synthetic Megaships-table row for the Gnosis, shown only on its 8 route stops (the
+   *  generic megaship schedule in `assets/megaship-schedule.json` doesn't cover it). */
+  private readonly gnosisMegashipRow = computed<MegashipRow | null>(() => {
+    const systemName = this.data()?.system?.name;
+    if (!systemName || !isGnosisRouteSystem(systemName)) {
+      return null;
+    }
+    const gnosis = this.appService.gnosisData();
+    const locationLabel = !gnosis
+      ? '…'
+      : normalizeSystemName(gnosis.system) === normalizeSystemName(systemName)
+        ? 'Present'
+        : gnosis.system;
+    return { signalName: GNOSIS_SIGNAL_NAME, shipName: 'The Gnosis', locationLabel };
+  });
+
+  /** Best-effort name lookup for every megaship's current location not already shown as "Present". */
+  private readonly requestMegashipLocationNames = effect(() => {
+    for (const entry of this.megashipEntries()) {
+      if (!entry.presentNow && entry.currentSystemId64 !== null) {
+        this.appService.requestSystemName(entry.currentSystemId64);
+      }
+    }
+  });
+
+  /** Opens the route-detail dialog for a Megaships table row, showing every stop and its due date. */
+  public openMegashipRouteDialog(signalName: string): void {
+    if (signalName === GNOSIS_SIGNAL_NAME) {
+      this.openGnosisRouteDialog();
+      return;
+    }
+    const schedule = this.appService.megashipSchedule();
+    const ship = schedule?.ships.find(s => s.signal_name === signalName);
+    if (!schedule || !ship) {
+      return;
+    }
+    const asOf = new Date(this.appService.nowOverride() ?? Date.now());
+    const stops = megashipRoute(ship, asOf, schedule);
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/megaship-route-dialog/megaship-route-dialog.component').then(m => m.MegashipRouteDialogComponent),
+      skeleton: 'text',
+      width: '700px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        signalName: ship.signal_name,
+        shipName: ship.ship_name,
+        type: ship.type,
+        confirmed: ship.type === 'cycle' ? ship.confirmed : true,
+        lastSeen: ship.last_seen,
+        firstSeen: ship.type === 'static' ? ship.first_seen : undefined,
+        weeksConfirmed: ship.type === 'static' ? ship.weeks_confirmed : undefined,
+        routeLen: ship.type === 'cycle' ? ship.route_len : undefined,
+        stops,
+      } satisfies MegashipRouteDialogData,
+    });
+  }
+
+  /** Opens the route-detail dialog for the Gnosis's fixed 8-system retirement loop. Every stop's
+   *  date is inferred from the live-tracked current one: the Gnosis jumps on a fixed weekly
+   *  cadence, so the rest of the loop is just that date plus whole weeks (`gnosisRouteDueDates`). */
+  private openGnosisRouteDialog(): void {
+    const gnosis = this.appService.gnosisData();
+    const asOf = new Date(this.appService.nowOverride() ?? Date.now());
+    const dueDates = gnosis ? gnosisRouteDueDates(gnosis.system, asOf) : [];
+    const stops: MegashipRouteStopData[] = GNOSIS_ROUTE_STOPS.map((name, index) => {
+      const due = dueDates[index];
+      return {
+        position: index,
+        systemName: name,
+        dueDate: due?.dueDate ?? null,
+        presentNow: due?.presentNow ?? false,
+      };
+    });
+    // The current stop's own inferred date doubles as "since when" it's been there — the Gnosis
+    // API reports only the current system, not a jump timestamp (see `gnosisRouteDueDates`).
+    const lastSeen = dueDates.find(d => d.presentNow)?.dueDate ?? 'Unknown';
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/megaship-route-dialog/megaship-route-dialog.component').then(m => m.MegashipRouteDialogComponent),
+      skeleton: 'text',
+      width: '700px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        signalName: GNOSIS_SIGNAL_NAME,
+        shipName: 'The Gnosis',
+        type: 'cycle',
+        confirmed: true,
+        lastSeen,
+        routeLen: GNOSIS_ROUTE_STOPS.length,
+        routeDescription: `${GNOSIS_ROUTE_STOPS.length}-system retirement loop — confirmed`,
+        disclaimer: "The Gnosis follows a permanent, confirmed retirement loop, jumping to the next stop " +
+          "on a fixed weekly cadence. Its current position is live-tracked from Canonn's Gnosis API; every " +
+          "other stop's date is inferred from that position, not individually confirmed.",
+        stops,
+      } satisfies MegashipRouteDialogData,
+    });
+  }
+
   readonly getTotalBodyCount = computed<number>(() => this.countBodies(this.bodies()));
 
   /**
@@ -278,6 +564,10 @@ export class HomeComponent implements OnInit, OnDestroy {
    */
   readonly systemCompleteness = computed<{ known: number; total: number | null; percent: number | null }>(() => {
     const system = this.data()?.system;
+    const override = system ? getSpeculativeSystemCompleteness(system.id64) : null;
+    if (override) {
+      return override;
+    }
     const known = (system?.bodies ?? []).filter(body =>
       body.type !== BODY_TYPE.Belt &&
       body.type !== BODY_TYPE.Ring &&
@@ -287,6 +577,106 @@ export class HomeComponent implements OnInit, OnDestroy {
     const percent = total ? Math.min(100, Math.round((known / total) * 100)) : null;
     return { known, total, percent };
   });
+
+  /**
+   * Info-panel paragraphs for a system with a Thargoid-map tie-in (currently Col 70 Sector
+   * FY-N c21-3 and Merope, see data/speculative-systems.ts), or `null` for every other
+   * system. Shown between System Completeness and the quick-filter toolbar.
+   */
+  readonly speculativeSystemInfo = computed<readonly string[] | null>(() => {
+    const id64 = this.data()?.system?.id64;
+    return id64 !== undefined ? getSpeculativeSystemInfo(id64) : null;
+  });
+
+  /** The info panel's right-hand map image for the loaded system, or `null`. */
+  readonly systemMapImage = computed<SystemMapImage | null>(() => {
+    const id64 = this.data()?.system?.id64;
+    return id64 !== undefined ? getSystemMapImage(id64) : null;
+  });
+
+  /**
+   * True only for a system whose body list is itself a speculative reconstruction
+   * (currently just Col 70 Sector FY-N c21-3) — unlike Merope, which also gets an info
+   * panel but has real body data. Drives defaulting the root body to only its main star
+   * expanded, so the page doesn't open onto a wall of speculative detail.
+   */
+  readonly defaultExpandStarOnly = computed<boolean>(() => {
+    const id64 = this.data()?.system?.id64;
+    return id64 !== undefined && isSpeculativeBodySystem(id64);
+  });
+
+  /**
+   * Whether the loaded system requires a permit. The biostats API carries no
+   * permit field, so this is matched against a hand-maintained static list
+   * (see permit-locked-systems.ts).
+   */
+  readonly isPermitLocked = computed<boolean>(() => {
+    const system = this.data()?.system;
+    return !!system && isPermitLockedSystem(system.name);
+  });
+
+  /**
+   * Combined economy label, e.g. "Refinery / Service". Drops the placeholder
+   * "None" and any null/duplicate so a single-economy system shows just one name
+   * and an unpopulated system shows nothing.
+   */
+  systemEconomyDisplay(system: CanonnBiostats['system']): string {
+    const seen = new Set<string>();
+    const parts: string[] = [];
+    for (const economy of [system.primaryEconomy, system.secondaryEconomy]) {
+      if (!economy || economy === 'None') continue;
+      if (seen.has(economy)) continue;
+      seen.add(economy);
+      parts.push(economy);
+    }
+    return parts.join(' / ');
+  }
+
+  /**
+   * Formats the system's update timestamp — a UTC value like "2026-06-19 16:46:17+00"
+   * — as wall-clock time in the browser's local time zone (e.g. "2026-06-19 18:46" for
+   * a UTC+2 viewer). The layout is fixed ("YYYY-MM-DD HH:mm") and locale-independent;
+   * only the zone offset varies. Uses the timestamp's own offset, not the current
+   * clock, so it stays deterministic under the e2e timezone pin. Returns '' for a
+   * missing date and the raw string if it can't be parsed.
+   */
+  formatUpdated(date: string | null | undefined): string {
+    if (!date) return '';
+    // Normalise the API's "YYYY-MM-DD HH:mm:ss+00" into a parseable ISO instant
+    // (space → 'T', bare "+00" hour offset → "+00:00"), then render local components.
+    const iso = date.trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+    const instant = new Date(iso);
+    if (isNaN(instant.getTime())) return date;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())} `
+      + `${pad(instant.getHours())}:${pad(instant.getMinutes())}`;
+  }
+
+  /**
+   * Tooltip companion to {@link formatUpdated}: repeats the update timestamp on two lines,
+   * first as the viewer's local time (with the zone offset that applied on that date, so
+   * DST is honoured) and then as UTC. Both lines carry seconds for precision. Uses the
+   * timestamp's own offset rather than the current clock, so it stays deterministic under
+   * the e2e timezone pin. Returns '' for a missing date and the raw string if unparseable.
+   */
+  formatUpdatedTooltip(date: string | null | undefined): string {
+    if (!date) return '';
+    const iso = date.trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+    const instant = new Date(iso);
+    if (isNaN(instant.getTime())) return date;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const local = `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())} `
+      + `${pad(instant.getHours())}:${pad(instant.getMinutes())}:${pad(instant.getSeconds())}`;
+    const utc = `${instant.getUTCFullYear()}-${pad(instant.getUTCMonth() + 1)}-${pad(instant.getUTCDate())} `
+      + `${pad(instant.getUTCHours())}:${pad(instant.getUTCMinutes())}:${pad(instant.getUTCSeconds())}`;
+    // getTimezoneOffset() is minutes *behind* UTC, so negate to get the conventional
+    // "minutes east of UTC" used in the "UTC±HH:MM" label.
+    const offsetMin = -instant.getTimezoneOffset();
+    const sign = offsetMin >= 0 ? '+' : '-';
+    const absMin = Math.abs(offsetMin);
+    const offset = `UTC${sign}${pad(Math.floor(absMin / 60))}:${pad(absMin % 60)}`;
+    return `${local} local time (${offset})\n${utc} UTC`;
+  }
 
   private distance3d(a: { x: number, y: number, z: number }, b: { x: number, y: number, z: number }): number {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
@@ -322,12 +712,56 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!data?.system?.id64) return;
     this.copyToClipboard(`${data.system.id64}`);
   }
+
+  /**
+   * Downloads the whole system as a Spansh-shaped JSON dump with each body (and ring/belt)
+   * enriched with a `calculated` block. Uses a single `now` epoch so every body's
+   * time-dependent values share one reproducible instant.
+   */
+  public exportSystem(data: CanonnBiostats): void {
+    // Honour the app clock override (used by the `?t=` param and frozen-clock e2e fixtures) so
+    // the export's time-dependent values match what the UI shows.
+    const now = this.appService.nowOverride() ?? Date.now();
+    const exportData = buildSystemExport(data, this.bodies(), this.enrichment, now);
+    downloadJson(systemExportFilename(data.system.name), serializeSystemExport(exportData));
+  }
   public encodeURIComponent(value: string): string {
     return encodeURIComponent(value);
   }
   public readonly faFileCode = faFileCode;
+  public readonly faDownload = faDownload;
   public readonly faMagnifyingGlass = faMagnifyingGlass;
+  public readonly faChartColumn = faChartColumn;
+  public readonly faChevronDown = faChevronDown;
+  private readonly dialog = inject(MatDialog);
+
+  /** Opens the body-type histogram for the current system. */
+  public async showBodyHistogram(): Promise<void> {
+    const data = this.data();
+    if (!data) return;
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/histogram-dialog/histogram-dialog.component').then(m => m.HistogramDialogComponent),
+      skeleton: 'diagram',
+      width: '640px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        systemName: data.system.name,
+        bodies: data.system.bodies,
+        totalBodyCount: data.system.bodyCount ?? null,
+      } satisfies HistogramDialogData,
+    });
+  }
   private readonly _searching = signal(false);
+  /**
+   * Fade the loading shell in only when it first appears with no system panel already on screen
+   * (a fresh search from the landing page). Set in `startSearch`; a re-search over an already-visible
+   * panel leaves it false so the shell swaps in place, and the shell→loaded hand-over is always an
+   * instant swap — the reserved-space chrome means neither needs a fade, and fading the loaded view
+   * in over the shell would flash the background through the panel.
+   */
+  protected readonly fadeInPanel = signal(false);
   /** A system requested (e.g. via query param) while a search was already in flight. */
   private pendingSystemRequest: string | null = null;
 
@@ -372,6 +806,10 @@ export class HomeComponent implements OnInit, OnDestroy {
    * and a search can't be started while another is running.
    */
   private startSearch(): void {
+    // Fade the loading shell in only when no system panel is currently on screen; a re-search over
+    // an already-visible panel (loaded, or a still-running search) swaps in place without a fade.
+    // Capture this before clearing the state below.
+    this.fadeInPanel.set(this.data() === null && !this._searching());
     this.data.set(null);
     this.bodies.set([]);
     this.searching = true;
@@ -388,6 +826,121 @@ export class HomeComponent implements OnInit, OnDestroy {
   public readonly data = signal<CanonnBiostats | null>(null);
   public readonly bodies = signal<SystemBody[]>([]);
   public readonly anchorBodyId = signal<number | null>(null);
+
+  /** id64 of the loaded system, threaded down to every SystemBodyComponent as a key for the async collision registry. */
+  public readonly systemKey = computed<bigint | null>(() => this.data()?.system?.id64 ?? null);
+
+  // --- Quick filters (see body-filters.ts) ---
+  public readonly activeFilterCategory = signal<FilterCategory | null>(null);
+  public readonly filterCommand = signal<FilterCommand | null>(null);
+  private filterTokenSeq = 0;
+  public readonly selectedMaterials = signal<Set<string>>(new Set());
+  public readonly selectedHotspots = signal<Set<string>>(new Set());
+  public readonly materialsMenuOpen = signal(false);
+  public readonly miningMenuOpen = signal(false);
+
+  public readonly biologyMatches = computed(() => collectMatchingBodies(this.bodies(), hasBiologySignals));
+  public readonly geologyMatches = computed(() => collectMatchingBodies(this.bodies(), hasGeologySignals));
+  public readonly guardianMatches = computed(() => collectMatchingBodies(this.bodies(), hasGuardianSignals));
+  public readonly thargoidMatches = computed(() => collectMatchingBodies(this.bodies(), hasThargoidSignals));
+  public readonly humanMatches = computed(() => collectMatchingBodies(this.bodies(), hasHumanSignals));
+  public readonly landableMatches = computed(() => collectMatchingBodies(this.bodies(), isLandable));
+
+  /**
+   * Synchronous "special badge" criteria only (see {@link isTouristInteresting}). Orbital
+   * collision candidates resolve later, off the main thread, and are folded in separately by
+   * {@link touristMatches} so the Tourist filter (and its visibility) can still catch up once
+   * those results land.
+   */
+  private readonly touristSyncMatches = computed(() =>
+    collectMatchingBodies(this.bodies(), body => isTouristInteresting(body, this.physics, this.orbitalRelations)));
+  public readonly touristMatches = computed(() => {
+    const collisionBodies = this.interestRegistry.collisionCandidateBodies();
+    if (collisionBodies.size === 0) { return this.touristSyncMatches(); }
+    const merged = new Set(this.touristSyncMatches());
+    for (const body of collisionBodies) { merged.add(body); }
+    return merged;
+  });
+
+  /** Material keys present anywhere in the system, for populating the Materials dropdown (and hiding it when empty). */
+  public readonly availableMaterialKeys = computed(() => {
+    const keys = new Set<string>();
+    walkBodies(this.bodies(), body => { for (const key of getBodyMaterialKeys(body)) { keys.add(key); } });
+    return Array.from(keys).sort((a, b) => a.localeCompare(b));
+  });
+  /** Mining-hotspot resource keys present anywhere in the system, for the Mining dropdown. */
+  public readonly availableHotspotKeys = computed(() => {
+    const keys = new Set<string>();
+    walkBodies(this.bodies(), body => { for (const key of getBodyHotspotKeys(body)) { keys.add(key); } });
+    return Array.from(keys).sort((a, b) => a.localeCompare(b));
+  });
+
+  /** Collapses every body except those in `bodies` (or every body, for `'all'`) and marks `category` as the active filter. */
+  private applyFilter(category: FilterCategory, bodies: Set<SystemBody> | 'all'): void {
+    this.activeFilterCategory.set(category);
+    this.filterCommand.set({ token: ++this.filterTokenSeq, bodies });
+  }
+
+  public onBiologyFilterClick(): void { this.applyFilter('biology', this.biologyMatches()); }
+  public onGeologyFilterClick(): void { this.applyFilter('geology', this.geologyMatches()); }
+  public onGuardianFilterClick(): void { this.applyFilter('guardian', this.guardianMatches()); }
+  public onThargoidFilterClick(): void { this.applyFilter('thargoid', this.thargoidMatches()); }
+  public onHumanFilterClick(): void { this.applyFilter('human', this.humanMatches()); }
+  public onLandableFilterClick(): void { this.applyFilter('landable', this.landableMatches()); }
+  public onTouristFilterClick(): void { this.applyFilter('tourist', this.touristMatches()); }
+  public onEverythingFilterClick(): void { this.applyFilter('everything', 'all'); }
+
+  public toggleMaterialsMenu(): void {
+    this.miningMenuOpen.set(false);
+    this.materialsMenuOpen.set(!this.materialsMenuOpen());
+  }
+
+  public toggleMiningMenu(): void {
+    this.materialsMenuOpen.set(false);
+    this.miningMenuOpen.set(!this.miningMenuOpen());
+  }
+
+  /** Closes the Materials/Mining dropdown menus on any click outside them (the menus themselves stop propagation). */
+  @HostListener('document:click')
+  public closeFilterMenus(): void {
+    this.materialsMenuOpen.set(false);
+    this.miningMenuOpen.set(false);
+  }
+
+  /** Toggles `material` in the selection and immediately re-applies the Materials filter. */
+  public toggleMaterialSelection(material: string): void {
+    const next = new Set(this.selectedMaterials());
+    if (next.has(material)) { next.delete(material); } else { next.add(material); }
+    this.selectedMaterials.set(next);
+    if (next.size === 0) {
+      if (this.activeFilterCategory() === 'materials') {
+        this.activeFilterCategory.set(null);
+        this.filterCommand.set(null);
+      }
+      return;
+    }
+    this.applyFilter('materials', collectMatchingBodies(this.bodies(), body => getBodyMaterialKeys(body).some(key => next.has(key))));
+  }
+
+  public hotspotDisplayName(resourceKey: string): string {
+    return MINING_RESOURCES[resourceKey]?.name ?? resourceKey;
+  }
+
+  /** Toggles `resource` in the selection and immediately re-applies the Mining filter. */
+  public toggleHotspotSelection(resource: string): void {
+    const next = new Set(this.selectedHotspots());
+    if (next.has(resource)) { next.delete(resource); } else { next.add(resource); }
+    this.selectedHotspots.set(next);
+    if (next.size === 0) {
+      if (this.activeFilterCategory() === 'mining') {
+        this.activeFilterCategory.set(null);
+        this.filterCommand.set(null);
+      }
+      return;
+    }
+    this.applyFilter('mining', collectMatchingBodies(this.bodies(), body => getBodyHotspotKeys(body).some(key => next.has(key))));
+  }
+
   public searchControl = new FormControl('');
   public readonly filteredSystems = signal<string[]>([]);
   private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
@@ -409,6 +962,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   });
 
   public ngOnInit(): void {
+    // Apply optional ?t= timestamp override (ISO-8601 or ms since epoch) for debugging.
+    const tParam = this.activatedRoute.snapshot.queryParamMap.get('t');
+    if (tParam) {
+      const ms = Date.parse(tParam);
+      if (Number.isFinite(ms)) { this.appService.setNowOverride(ms); }
+    }
     // Handle the initial deep-link (?system=…) from the route snapshot…
     this.handleSystemParam(this.activatedRoute.snapshot.queryParamMap.get('system') ?? undefined);
     // …and browser back/forward. In-app navigations (from processBodies) are guarded by
@@ -590,6 +1149,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Decode HTML entities in system name
     data.system.name = this.decodeHtmlEntities(data.system.name);
 
+    applySpeculativeBodies(data.system);
+
     const queryParams: Params = { system: data.system.name };
 
     // Only update query params if not already set
@@ -609,12 +1170,29 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Check if we're loading a different system
     const isDifferentSystem = !previousData || previousData.system.id64 !== data.system.id64;
 
+    if (isDifferentSystem) {
+      this.interestRegistry.resetForSystem(data.system.id64);
+      this.activeFilterCategory.set(null);
+      this.filterCommand.set(null);
+      this.selectedMaterials.set(new Set());
+      this.selectedHotspots.set(new Set());
+      this.closeFilterMenus();
+    }
+
     this.data.set(data);
     this.bodies.set([]);
     // Ensure edGalaxyData is updated/fetched when system changes
     this.updateEdGalaxyData();
     // Kick off the lazy nebula-catalogue load so the "Nearest Nebulae" panel can populate.
     this.appService.ensureNebulae();
+    // Kick off the lazy megaship-schedule load so the "Megaships" panel can populate.
+    this.appService.ensureMegaships();
+    // Kick off the Gnosis position fetch so the route card/Megaships row can highlight its stop.
+    // Only relevant on the Gnosis's 8 route stops — the region map fetches independently (via
+    // its own ensureGnosis() call) when it needs the marker, so this doesn't gate that.
+    if (this.showGnosisRoute()) {
+      this.appService.ensureGnosis();
+    }
 
     // Only reset edastroData if loading a different system
     if (isDifferentSystem) {
@@ -632,6 +1210,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (isDifferentSystem || !this.edastroData()) {
       this.appService.getEdastroData(data.system.id64)
         .then(edastroData => {
+          // Ignore a late response once the user has loaded a different system,
+          // or it would show this system's summary/image/background on another.
+          if (this.data()?.system?.id64 !== data.system.id64) {
+            return;
+          }
           if (edastroData && (edastroData.name || edastroData.summary || edastroData.mainImage)) {
             // Sanitize the untrusted EDAstro URLs: the image flows into both an
             // <img src> and the page-background `url(...)` (which bypasses Angular's
@@ -673,7 +1256,8 @@ export class HomeComponent implements OnInit, OnDestroy {
               type: BODY_TYPE.Belt,
               innerRadius: belt.innerRadius / 1000, // Convert m to km
               outerRadius: belt.outerRadius / 1000, // Convert m to km
-              mass: belt.mass
+              mass: belt.mass,
+              speculative: systemBody.speculative,
             },
             subBodies: [],
             parent: body
@@ -698,7 +1282,8 @@ export class HomeComponent implements OnInit, OnDestroy {
               signals: ring.signals ? {
                 signals: ring.signals.signals,
                 updateTime: ring.signals.updateTime || ''
-              } : undefined
+              } : undefined,
+              speculative: systemBody.speculative,
             },
             subBodies: [],
             parent: body
@@ -988,11 +1573,17 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 export interface CanonnBiostats {
   system: {
-    allegiance: string;
+    // Null on unpopulated systems (the API reports no allegiance for those).
+    allegiance: string | null;
     bodies: CanonnBiostatsBody[];
     // Optional: some systems (e.g. unsurveyed ones) omit this in the API payload.
     bodyCount?: number;
-    // controllingFaction
+    controllingFaction?: {
+      name: string;
+      allegiance?: string;
+      government?: string;
+      state?: string;
+    };
     coords: {
       x: number;
       y: number;
@@ -1005,8 +1596,9 @@ export interface CanonnBiostats {
     population: number;
     // powerState
     // powers
-    // primaryEconomy
-    region: {
+    primaryEconomy?: string | null;
+    // Absent for some systems (e.g. uninhabited deep-space systems served by Spansh), so optional.
+    region?: {
       name: string;
       region: number;
     };
@@ -1014,14 +1606,18 @@ export interface CanonnBiostats {
       anomaly?: string[];
       cloud?: string[];
     };
-    // secondaryEconomy
-    // security
+    secondaryEconomy?: string | null;
+    security?: string | null;
   }
 }
 
 export interface CanonnBiostatsBody {
   absoluteMagnitude?: number;
   age?: number;
+  // Display-only override for the Age row (e.g. "5-10") when only a range, not a precise
+  // figure, is known — used instead of `age` so the numeric HR-diagram/age-assessment
+  // machinery (which needs a single value) is untouched and simply sees no age.
+  ageDisplay?: string;
   argOfPeriapsis?: number;
   ascendingNode?: number;
   atmosphereType?: string | null;
@@ -1077,10 +1673,14 @@ export interface CanonnBiostatsBody {
   orbitalInclination?: number;
   orbitalPeriod?: number;
   outerRadius?: number;
+  // All three keys are optional: a parent chain link identifies exactly one of a
+  // Null (barycentre)/Planet/Star ancestor by bodyId — e.g. real dumps report bare
+  // `{ Null: 2 }` links with no `Star` key at all (see Beta Sculptoris body 3's
+  // `[{ Null: 2 }, { Null: 0 }]` chain, which never mentions a Star).
   parents?: {
     Null?: number;
     Planet?: number;
-    Star: number;
+    Star?: number;
   }[];
   radius?: number;
   reserveLevel?: string;
@@ -1106,6 +1706,16 @@ export interface CanonnBiostatsBody {
     Metal: number;
     Rock: number;
   },
+  // True only for the synthesized bodies of a special-cased system (currently just Col 70
+  // Sector FY-N c21-3, see data/speculative-systems.ts) whose classification is an inferred
+  // guess rather than sourced scan data. Never set for real Spansh bodies. The renderer uses
+  // it to mark the subtype/image as unconfirmed, and (like speculativeValues) to flag every
+  // displayed value in the body panel with a "?".
+  speculative?: boolean;
+  // Like `speculative`, but for a body whose classification is real/confirmed (so its
+  // subtype/image stay unmarked) while its other displayed values are still guesses — used
+  // for Col 70 Sector FY-N c21-3's main star (see data/speculative-systems.ts).
+  speculativeValues?: boolean;
   spectralClass?: string;
   stations?: {
     /* */

@@ -1,0 +1,53 @@
+// Mirror the shared dialog-shell chrome so the skeleton frame lines up with the real body
+// that replaces it (same header/content/actions layout, capped at the viewport height).
+:host {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+h2[mat-dialog-title] {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 24px 24px 0;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+}
+
+mat-dialog-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 24px;
+  color: var(--color-text);
+}
+
+mat-dialog-actions {
+  flex: 0 0 auto;
+}
+
+.lazy-dialog__error {
+  margin: 0;
+  color: var(--color-text);
+}
+
+// Dialog-specific skeleton shapes. The shimmer itself is the global `.skeleton` primitive in
+// src/styles.scss; these just size the title bar, stack the text lines, and set the diagram block.
+.skeleton-title {
+  display: inline-block;
+  height: 1.4rem;
+  width: 45%;
+}
+
+.skeleton-line {
+  margin-bottom: 0.85rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.skeleton-diagram {
+  height: 260px;
+  margin-bottom: 1.1rem;
+}

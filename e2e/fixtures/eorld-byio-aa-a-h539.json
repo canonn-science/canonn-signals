@@ -1,0 +1,1465 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "absoluteMagnitude": 7.025696, 
+        "age": 2, 
+        "argOfPeriapsis": 178.34768, 
+        "ascendingNode": 33.174061, 
+        "axialTilt": 0.0, 
+        "belts": [
+          {
+            "innerRadius": 626940000.0, 
+            "mass": 2173100000000000.0, 
+            "name": "Eorld Byio AA-A h539 A A Belt", 
+            "outerRadius": 8352900000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "bodyId": 1, 
+        "distanceToArrival": 0.0, 
+        "id64": 36028801543339351, 
+        "luminosity": "VI", 
+        "mainStar": true, 
+        "meanAnomaly": 96.415855, 
+        "name": "Eorld Byio AA-A h539 A", 
+        "orbitalEccentricity": 0.203984, 
+        "orbitalInclination": -18.989309, 
+        "orbitalPeriod": 1784.10154249933, 
+        "parents": [
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.165947049918981, 
+        "semiMajorAxis": 4.87010992883075, 
+        "solarMasses": 41.476563, 
+        "solarRadius": 0.487701348670022, 
+        "spectralClass": "AeBe1", 
+        "stations": [], 
+        "subType": "Herbig Ae/Be Star", 
+        "surfaceTemperature": 4991.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:10:48Z", 
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "argOfPeriapsis": 358.347675, 
+        "ascendingNode": 33.174061, 
+        "bodyId": 2, 
+        "id64": 72057598562303319, 
+        "meanAnomaly": 96.415856, 
+        "name": "Eorld Byio AA-A h539 barycentre 2", 
+        "orbitalEccentricity": 0.203984, 
+        "orbitalInclination": -18.989309, 
+        "orbitalPeriod": 1784.10154249933, 
+        "semiMajorAxis": 7.0291351614226, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "absoluteMagnitude": -6.723648, 
+        "age": 2, 
+        "argOfPeriapsis": 122.74522, 
+        "ascendingNode": 113.172454, 
+        "axialTilt": 0.0, 
+        "bodyId": 3, 
+        "distanceToArrival": 6299.206565, 
+        "id64": 108086395581267287, 
+        "luminosity": "Vz", 
+        "mainStar": false, 
+        "meanAnomaly": 94.538782, 
+        "name": "Eorld Byio AA-A h539 B", 
+        "orbitalEccentricity": 0.004026, 
+        "orbitalInclination": -53.528667, 
+        "orbitalPeriod": 1.24039714811343, 
+        "parents": [
+          {
+            "Null": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 2.40849376584491, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0240235135076417, 
+        "solarMasses": 18.882813, 
+        "solarRadius": 5.98629737455068, 
+        "spectralClass": "O0", 
+        "stations": [], 
+        "subType": "O (Blue-White) Star", 
+        "surfaceTemperature": 33751.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:10:48Z", 
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "absoluteMagnitude": -4.136719, 
+        "age": 2, 
+        "argOfPeriapsis": 302.745215, 
+        "ascendingNode": 113.172454, 
+        "axialTilt": 0.0, 
+        "bodyId": 4, 
+        "distanceToArrival": 6310.741566, 
+        "id64": 144115192600231255, 
+        "luminosity": "Vz", 
+        "mainStar": false, 
+        "meanAnomaly": 94.538782, 
+        "name": "Eorld Byio AA-A h539 C", 
+        "orbitalEccentricity": 0.004026, 
+        "orbitalInclination": -53.528667, 
+        "orbitalPeriod": 1.24039714811343, 
+        "parents": [
+          {
+            "Null": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 1.51657711134259, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0453100758459223, 
+        "solarMasses": 10.011719, 
+        "solarRadius": 3.91583231631919, 
+        "spectralClass": "B0", 
+        "stations": [], 
+        "subType": "B (Blue-White) Star", 
+        "surfaceTemperature": 23005.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:10:48Z", 
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "argOfPeriapsis": 268.625507, 
+        "ascendingNode": -28.103592, 
+        "atmosphereComposition": {
+          "Silicates": 100.0
+        }, 
+        "atmosphereType": "Hot thin Silicate vapour", 
+        "axialTilt": -0.078213, 
+        "bodyId": 14, 
+        "distanceToArrival": 64.57055, 
+        "earthMasses": 0.958881, 
+        "gravity": 1.57774059345366, 
+        "id64": 504403162789870935, 
+        "isLandable": false, 
+        "meanAnomaly": 176.95025, 
+        "name": "Eorld Byio AA-A h539 A 1", 
+        "orbitalEccentricity": 0.000479, 
+        "orbitalInclination": -0.236219, 
+        "orbitalPeriod": 2.63046528453704, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 4969.9395, 
+        "rotationalPeriod": 2.6377587553588, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.129336828054516, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 98.9858, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 0.00326079682210708, 
+        "surfaceTemperature": 1481.246826, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:03Z", 
+          "meanAnomaly": "2026-03-06T20:12:03Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:03+00", 
+        "volcanismType": "Major Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 129.039246, 
+        "ascendingNode": -168.087687, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 0.321688, 
+          "Silicates": 99.665924
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": 0.074333, 
+        "bodyId": 15, 
+        "distanceToArrival": 86.631233, 
+        "earthMasses": 5.372301, 
+        "gravity": 2.20270898337922, 
+        "id64": 540431959808834903, 
+        "isLandable": false, 
+        "meanAnomaly": 100.560703, 
+        "name": "Eorld Byio AA-A h539 A 2", 
+        "orbitalEccentricity": 0.000347, 
+        "orbitalInclination": -0.092369, 
+        "orbitalPeriod": 4.09036992048611, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 9956.076, 
+        "rotationalPeriod": 4.10171070072917, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.173596974653819, 
+        "solidComposition": {
+          "Ice": 0.0044, 
+          "Metal": 32.9466, 
+          "Rock": 66.3855
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 53813.5622995312, 
+        "surfaceTemperature": 4642.165039, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:19Z", 
+          "meanAnomaly": "2026-03-06T20:12:19Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:19+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 132.137885, 
+        "ascendingNode": -179.940371, 
+        "bodyId": 16, 
+        "id64": 576460756827798871, 
+        "meanAnomaly": 284.92253, 
+        "name": "Eorld Byio AA-A h539 barycentre 16", 
+        "orbitalEccentricity": 0.00011, 
+        "orbitalInclination": -0.042571, 
+        "orbitalPeriod": 5.12783891625, 
+        "semiMajorAxis": 0.201831985201485, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:12:35Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:12:35+00"
+      }, 
+      {
+        "argOfPeriapsis": 117.039478, 
+        "ascendingNode": -48.508284, 
+        "atmosphereComposition": {
+          "Iron": 1.47592, 
+          "Silicates": 98.507355
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": -1.196857, 
+        "bodyId": 17, 
+        "distanceToArrival": 100.722016, 
+        "earthMasses": 14.902105, 
+        "gravity": 3.52887355970225, 
+        "id64": 612489553846762839, 
+        "isLandable": false, 
+        "meanAnomaly": 285.066653, 
+        "name": "Eorld Byio AA-A h539 A 3", 
+        "orbitalEccentricity": 0.077644, 
+        "orbitalInclination": -0.277049, 
+        "orbitalPeriod": 1.14130926215278, 
+        "parents": [
+          {
+            "Null": 16
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 13100.635, 
+        "rotationalPeriod": 1.93923601467593, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 8.89012185180454e-05, 
+        "solidComposition": {
+          "Ice": 0.0096, 
+          "Metal": 32.69, 
+          "Rock": 65.8686
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 9159039.70818653, 
+        "surfaceTemperature": 6735.407227, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:35Z", 
+          "meanAnomaly": "2026-03-06T20:12:35Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:35+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 297.039473, 
+        "ascendingNode": -48.508284, 
+        "atmosphereComposition": {
+          "Silicates": 0.207135, 
+          "Sulphur dioxide": 99.792877
+        }, 
+        "atmosphereType": "Hot Sulphur dioxide", 
+        "axialTilt": 0.018734, 
+        "bodyId": 18, 
+        "distanceToArrival": 100.636159, 
+        "earthMasses": 1.890519, 
+        "gravity": 1.60260885082084, 
+        "id64": 648518350865726807, 
+        "isLandable": false, 
+        "meanAnomaly": 285.079645, 
+        "name": "Eorld Byio AA-A h539 A 4", 
+        "orbitalEccentricity": 0.077644, 
+        "orbitalInclination": -0.277049, 
+        "orbitalPeriod": 1.14130926215278, 
+        "parents": [
+          {
+            "Null": 16
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 6924.101, 
+        "rotationalPeriod": 1.21154336685185, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000700768037134542, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 57.1802, 
+          "Rock": 42.1557
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 2.19833795953615, 
+        "surfaceTemperature": 1507.299805, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:38Z", 
+          "meanAnomaly": "2026-03-06T20:12:38Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:38+00", 
+        "volcanismType": "Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 163.542794, 
+        "ascendingNode": -85.409931, 
+        "atmosphereComposition": {
+          "Iron": 1.47598, 
+          "Silicates": 98.511383
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": 0.808363, 
+        "bodyId": 19, 
+        "distanceToArrival": 121.341956, 
+        "earthMasses": 12.87923, 
+        "gravity": 3.48562791883349, 
+        "id64": 684547147884690775, 
+        "isLandable": false, 
+        "meanAnomaly": 65.059133, 
+        "name": "Eorld Byio AA-A h539 A 5", 
+        "orbitalEccentricity": 0.001642, 
+        "orbitalInclination": -0.000694, 
+        "orbitalPeriod": 6.78826171767361, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 12254.372, 
+        "rotationalPeriod": 6.80708184586806, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.243335867814152, 
+        "solidComposition": {
+          "Ice": 0.0089, 
+          "Metal": 33.7888, 
+          "Rock": 65.9522
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 8946915.86210708, 
+        "surfaceTemperature": 6460.387207, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:31Z", 
+          "meanAnomaly": "2026-03-06T20:12:31Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:31+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 161.414261, 
+        "ascendingNode": 8.680061, 
+        "atmosphereComposition": {
+          "Helium": 25.992887, 
+          "Hydrogen": 74.007118
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.155585, 
+        "bodyId": 20, 
+        "distanceToArrival": 158.065307, 
+        "earthMasses": 46.881561, 
+        "gravity": 1.43074558988478, 
+        "id64": 720575944903654743, 
+        "isLandable": false, 
+        "meanAnomaly": 76.940716, 
+        "name": "Eorld Byio AA-A h539 A 6", 
+        "orbitalEccentricity": 0.00135, 
+        "orbitalInclination": 0.002979, 
+        "orbitalPeriod": 10.086600082338, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 36492.736, 
+        "rotationalPeriod": 10.1145643858449, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.316857235524533, 
+        "stations": [], 
+        "subType": "Class IV gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 1312.931519, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:11:52Z", 
+          "meanAnomaly": "2026-03-06T20:11:52Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:11:52+00"
+      }, 
+      {
+        "argOfPeriapsis": 277.231177, 
+        "ascendingNode": 167.057592, 
+        "atmosphereType": null, 
+        "axialTilt": 0.101368, 
+        "bodyId": 21, 
+        "distanceToArrival": 158.26851, 
+        "earthMasses": 0.078535, 
+        "gravity": 0.649567247884164, 
+        "id64": 756604741922618711, 
+        "isLandable": true, 
+        "materials": {
+          "Iron": 37.313633, 
+          "Manganese": 15.410151, 
+          "Molybdenum": 2.436559, 
+          "Nickel": 28.222469, 
+          "Niobium": 2.550188, 
+          "Ruthenium": 2.304355, 
+          "Selenium": 2.599716, 
+          "Vanadium": 9.16293
+        }, 
+        "meanAnomaly": 98.224608, 
+        "name": "Eorld Byio AA-A h539 A 6 a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": -71.99071, 
+        "orbitalPeriod": 0.879404935300926, 
+        "parents": [
+          {
+            "Planet": 20
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 2216.69075, 
+        "rotationalPeriod": 0.880141213136574, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000935058823158243, 
+        "signals": {
+          "biology": [
+            "Prasinum Bioluminescent Anemone"
+          ], 
+          "genuses": [
+            "$Codex_Ent_Sphere_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-03-06 20:18:29+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 100.0, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 1329.059692, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:18:30Z", 
+          "meanAnomaly": "2026-03-06T20:18:30Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:18:30+00", 
+        "volcanismType": "Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 64.904388, 
+        "ascendingNode": -170.235608, 
+        "bodyId": 22, 
+        "id64": 792633538941582679, 
+        "meanAnomaly": 295.751482, 
+        "name": "Eorld Byio AA-A h539 barycentre 22", 
+        "orbitalEccentricity": 0.00025, 
+        "orbitalInclination": 0.017173, 
+        "orbitalPeriod": 12.9442662000694, 
+        "semiMajorAxis": 0.37418415331752, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:12:25Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:12:25+00"
+      }, 
+      {
+        "argOfPeriapsis": 185.401131, 
+        "ascendingNode": 18.659766, 
+        "atmosphereComposition": {
+          "Iron": 1.475827, 
+          "Silicates": 98.501129
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": 0.74839, 
+        "bodyId": 23, 
+        "distanceToArrival": 186.609089, 
+        "earthMasses": 24.8232, 
+        "gravity": 3.59012888752932, 
+        "id64": 828662335960546647, 
+        "isLandable": false, 
+        "meanAnomaly": 344.404102, 
+        "name": "Eorld Byio AA-A h539 A 7", 
+        "orbitalEccentricity": 0.081612, 
+        "orbitalInclination": 3.206312, 
+        "orbitalPeriod": 1.6191091250463, 
+        "parents": [
+          {
+            "Null": 22
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 16763.338, 
+        "rotationalPeriod": 3.87367703145833, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000211531826959346, 
+        "solidComposition": {
+          "Ice": 0.0551, 
+          "Metal": 31.1183, 
+          "Rock": 61.6899
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 8878939.52331606, 
+        "surfaceTemperature": 6412.671387, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:26Z", 
+          "meanAnomaly": "2026-03-06T20:12:26Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:26+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 5.401136, 
+        "ascendingNode": 18.659766, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 0.721859, 
+          "Silicates": 99.270164
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": -0.188899, 
+        "bodyId": 24, 
+        "distanceToArrival": 187.126006, 
+        "earthMasses": 5.254774, 
+        "gravity": 2.11439879677781, 
+        "id64": 864691132979510615, 
+        "isLandable": false, 
+        "meanAnomaly": 344.399985, 
+        "name": "Eorld Byio AA-A h539 A 8", 
+        "orbitalEccentricity": 0.081612, 
+        "orbitalInclination": 3.206312, 
+        "orbitalPeriod": 1.6191091250463, 
+        "parents": [
+          {
+            "Null": 22
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 10050.095, 
+        "rotationalPeriod": 1.78226199576389, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000999262425899956, 
+        "solidComposition": {
+          "Ice": 0.0085, 
+          "Metal": 32.7422, 
+          "Rock": 65.9739
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 78084.9191413768, 
+        "surfaceTemperature": 4858.674805, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:25Z", 
+          "meanAnomaly": "2026-03-06T20:12:25Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:25+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 157.940198, 
+        "ascendingNode": 119.653067, 
+        "bodyId": 25, 
+        "id64": 900719929998474583, 
+        "meanAnomaly": 259.925957, 
+        "name": "Eorld Byio AA-A h539 barycentre 25", 
+        "orbitalEccentricity": 0.005445, 
+        "orbitalInclination": 0.053229, 
+        "orbitalPeriod": 17.295342490625, 
+        "semiMajorAxis": 0.453927541632996, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:11:19Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:11:19+00"
+      }, 
+      {
+        "argOfPeriapsis": 99.362221, 
+        "ascendingNode": -73.553221, 
+        "atmosphereComposition": {
+          "Helium": 25.992882, 
+          "Hydrogen": 74.007111
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.227222, 
+        "bodyId": 26, 
+        "distanceToArrival": 226.635301, 
+        "earthMasses": 49.455814, 
+        "gravity": 1.78588814112369, 
+        "id64": 936748727017438551, 
+        "isLandable": false, 
+        "meanAnomaly": 169.956865, 
+        "name": "Eorld Byio AA-A h539 A 9", 
+        "orbitalEccentricity": 0.108991, 
+        "orbitalInclination": -2.064032, 
+        "orbitalPeriod": 6.22059618709491, 
+        "parents": [
+          {
+            "Null": 25
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 33548.12, 
+        "rotationalPeriod": 17.6671835573843, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000454207364720559, 
+        "stations": [], 
+        "subType": "Class IV gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 1268.963623, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:11:19Z", 
+          "meanAnomaly": "2026-03-06T20:11:19Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:11:19+00"
+      }, 
+      {
+        "argOfPeriapsis": 279.362216, 
+        "ascendingNode": -73.553221, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 0.841768, 
+          "Silicates": 99.149704
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": -0.390091, 
+        "bodyId": 27, 
+        "distanceToArrival": 227.440073, 
+        "earthMasses": 6.998897, 
+        "gravity": 2.11694208218619, 
+        "id64": 972777524036402519, 
+        "isLandable": false, 
+        "meanAnomaly": 169.958539, 
+        "name": "Eorld Byio AA-A h539 A 10", 
+        "orbitalEccentricity": 0.108991, 
+        "orbitalInclination": -2.064032, 
+        "orbitalPeriod": 6.22059618709491, 
+        "parents": [
+          {
+            "Null": 25
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 11591.694, 
+        "rotationalPeriod": 6.64620038480324, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00320953383982324, 
+        "solidComposition": {
+          "Ice": 0.0275, 
+          "Metal": 31.7951, 
+          "Rock": 64.0656
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 77589.8417962003, 
+        "surfaceTemperature": 4851.617188, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:11:22Z", 
+          "meanAnomaly": "2026-03-06T20:11:22Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:11:22+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 322.382316, 
+        "ascendingNode": -52.847417, 
+        "bodyId": 28, 
+        "id64": 1008806321055366487, 
+        "meanAnomaly": 61.725751, 
+        "name": "Eorld Byio AA-A h539 barycentre 28", 
+        "orbitalEccentricity": 0.003237, 
+        "orbitalInclination": 0.134686, 
+        "orbitalPeriod": 24.9546676598264, 
+        "semiMajorAxis": 0.579608847666105, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:12:14Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:12:14+00"
+      }, 
+      {
+        "argOfPeriapsis": 191.945767, 
+        "ascendingNode": 69.491776, 
+        "atmosphereType": null, 
+        "axialTilt": -2.030487, 
+        "bodyId": 29, 
+        "distanceToArrival": 288.633132, 
+        "earthMasses": 13.179326, 
+        "gravity": 5.89151748750892, 
+        "id64": 1044835118074330455, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 2.561601, 
+          "Chromium": 14.835414, 
+          "Iron": 32.987144, 
+          "Manganese": 13.623354, 
+          "Nickel": 24.950092, 
+          "Niobium": 2.254495, 
+          "Tellurium": 0.687405, 
+          "Vanadium": 8.100494
+        }, 
+        "meanAnomaly": 102.962002, 
+        "name": "Eorld Byio AA-A h539 A 11", 
+        "orbitalEccentricity": 0.113247, 
+        "orbitalInclination": 5.509088, 
+        "orbitalPeriod": 9.06689333971065, 
+        "parents": [
+          {
+            "Null": 28
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 9534.976, 
+        "rotationalPeriod": -14.8993363498148, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000338133237012537, 
+        "signals": {
+          "genuses": [
+            "$Codex_Ent_Sphere_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 2, 
+            "$SAA_SignalType_Human;": 1
+          }, 
+          "updateTime": "2026-03-06 20:12:16+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 100.0, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 1258.068848, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:17Z", 
+          "meanAnomaly": "2026-03-06T20:12:17Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:17+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 11.945772, 
+        "ascendingNode": 69.491776, 
+        "atmosphereType": null, 
+        "axialTilt": -0.407185, 
+        "bodyId": 30, 
+        "distanceToArrival": 290.002575, 
+        "earthMasses": 1.663364, 
+        "gravity": 2.14636830835118, 
+        "id64": 1080863915093294423, 
+        "isLandable": false, 
+        "meanAnomaly": 102.960999, 
+        "name": "Eorld Byio AA-A h539 A 12", 
+        "orbitalEccentricity": 0.113247, 
+        "orbitalInclination": 5.509088, 
+        "orbitalPeriod": 9.06689333971065, 
+        "parents": [
+          {
+            "Null": 28
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 5612.135, 
+        "rotationalPeriod": 9.62206323679398, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00267913017541982, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 100.0, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 3.75554305452751e-05, 
+        "surfaceTemperature": 1258.216919, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:14Z", 
+          "meanAnomaly": "2026-03-06T20:12:14Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:14+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 119.167332, 
+        "ascendingNode": -109.742681, 
+        "atmosphereComposition": {
+          "Sulphur dioxide": 99.985878
+        }, 
+        "atmosphereType": "Hot Sulphur dioxide", 
+        "axialTilt": 0.200297, 
+        "bodyId": 31, 
+        "distanceToArrival": 350.223731, 
+        "earthMasses": 0.806202, 
+        "gravity": 1.41938890588355, 
+        "id64": 1116892712112258391, 
+        "isLandable": false, 
+        "meanAnomaly": 171.492254, 
+        "name": "Eorld Byio AA-A h539 A 13", 
+        "orbitalEccentricity": 0.000541, 
+        "orbitalInclination": -0.008437, 
+        "orbitalPeriod": 33.2247969453009, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 4804.6075, 
+        "rotationalPeriod": 0.872744836134259, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.701469278230511, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 85.7428, 
+          "Rock": 14.2572
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 0.582076124164816, 
+        "surfaceTemperature": 1293.205078, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:12Z", 
+          "meanAnomaly": "2026-03-06T20:12:12Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:12+00", 
+        "volcanismType": "Major Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 347.037797, 
+        "ascendingNode": -9.006947, 
+        "bodyId": 32, 
+        "id64": 1152921509131222359, 
+        "meanAnomaly": 312.113341, 
+        "name": "Eorld Byio AA-A h539 barycentre 32", 
+        "orbitalEccentricity": 0.005804, 
+        "orbitalInclination": 0.065983, 
+        "orbitalPeriod": 48.8933127511458, 
+        "semiMajorAxis": 0.907542003022587, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:11:27Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:11:27+00"
+      }, 
+      {
+        "argOfPeriapsis": 82.462209, 
+        "ascendingNode": 58.378183, 
+        "atmosphereType": null, 
+        "axialTilt": -0.137162, 
+        "bodyId": 33, 
+        "distanceToArrival": 450.73473, 
+        "earthMasses": 1.390722, 
+        "gravity": 1.33537921892526, 
+        "id64": 1188950306150186327, 
+        "isLandable": true, 
+        "materials": {
+          "Chromium": 15.855765, 
+          "Germanium": 1.642802, 
+          "Iron": 35.255939, 
+          "Manganese": 14.560342, 
+          "Mercury": 1.539569, 
+          "Molybdenum": 2.302192, 
+          "Nickel": 26.666113, 
+          "Ruthenium": 2.177279
+        }, 
+        "meanAnomaly": 252.303075, 
+        "name": "Eorld Byio AA-A h539 A 14", 
+        "orbitalEccentricity": 0.083168, 
+        "orbitalInclination": 7.661098, 
+        "orbitalPeriod": 14.73966020125, 
+        "parents": [
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 6505.857, 
+        "rotationalPeriod": 13.7975802308565, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000840405140651023, 
+        "signals": {
+          "genuses": [
+            "$Codex_Ent_Sphere_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-03-06 20:11:33+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 93.9872, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 1218.250122, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:11:34Z", 
+          "meanAnomaly": "2026-03-06T20:11:34Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:11:34+00", 
+        "volcanismType": "Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 262.462204, 
+        "ascendingNode": 58.378183, 
+        "atmosphereType": null, 
+        "axialTilt": 0.222767, 
+        "bodyId": 34, 
+        "distanceToArrival": 451.735486, 
+        "earthMasses": 0.847037, 
+        "gravity": 1.61540022432956, 
+        "id64": 1224979103169150295, 
+        "isLandable": true, 
+        "materials": {
+          "Chromium": 15.735044, 
+          "Iron": 34.987507, 
+          "Manganese": 14.449483, 
+          "Molybdenum": 2.284664, 
+          "Nickel": 26.463083, 
+          "Niobium": 2.39121, 
+          "Selenium": 2.43765, 
+          "Technetium": 1.251362
+        }, 
+        "meanAnomaly": 252.30107, 
+        "name": "Eorld Byio AA-A h539 A 15", 
+        "orbitalEccentricity": 0.083168, 
+        "orbitalInclination": 7.661098, 
+        "orbitalPeriod": 14.73966020125, 
+        "parents": [
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 4616.341, 
+        "rotationalPeriod": 18.6970899804861, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.001379832702192, 
+        "signals": {
+          "genuses": [
+            "$Codex_Ent_Sphere_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 2
+          }, 
+          "updateTime": "2026-03-06 20:11:26+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 100.0, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 1218.254028, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:11:27Z", 
+          "meanAnomaly": "2026-03-06T20:11:27Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:11:27+00", 
+        "volcanismType": "Major Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 255.841558, 
+        "ascendingNode": 128.746136, 
+        "bodyId": 35, 
+        "id64": 1261007900188114263, 
+        "meanAnomaly": 280.536448, 
+        "name": "Eorld Byio AA-A h539 barycentre 35", 
+        "orbitalEccentricity": 0.000742, 
+        "orbitalInclination": -0.043586, 
+        "orbitalPeriod": 78.8197259384144, 
+        "semiMajorAxis": 1.24773884117624, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "absoluteMagnitude": 15.946808, 
+        "age": 2, 
+        "argOfPeriapsis": 48.602123, 
+        "ascendingNode": -50.438949, 
+        "axialTilt": 2.278072, 
+        "bodyId": 36, 
+        "distanceToArrival": 622.543533, 
+        "id64": 1297036697207078231, 
+        "luminosity": "VI", 
+        "mainStar": false, 
+        "meanAnomaly": 194.969212, 
+        "name": "Eorld Byio AA-A h539 A 16", 
+        "orbitalEccentricity": 0.16205, 
+        "orbitalInclination": -4.724358, 
+        "orbitalPeriod": 8.22429020923611, 
+        "parents": [
+          {
+            "Null": 35
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.423305715972222, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.88337305534924e-06, 
+        "solarMasses": 0.078125, 
+        "solarRadius": 0.21823118907261, 
+        "spectralClass": "TTS5", 
+        "stations": [], 
+        "subType": "T Tauri Star", 
+        "surfaceTemperature": 957.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:10:48Z", 
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "argOfPeriapsis": 228.602098, 
+        "ascendingNode": -50.438949, 
+        "atmosphereType": null, 
+        "axialTilt": -0.060787, 
+        "bodyId": 37, 
+        "distanceToArrival": 622.006619, 
+        "earthMasses": 1.485032, 
+        "gravity": 2.04395594983175, 
+        "id64": 1333065494226042199, 
+        "isLandable": false, 
+        "meanAnomaly": 194.997766, 
+        "name": "Eorld Byio AA-A h539 A 17", 
+        "orbitalEccentricity": 0.16205, 
+        "orbitalInclination": -4.724358, 
+        "orbitalPeriod": 8.22429020923611, 
+        "parents": [
+          {
+            "Null": 35
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 5433.989, 
+        "rotationalPeriod": 8.22451558104167, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0346481241326018, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 100.0, 
+          "Rock": 0.0
+        }, 
+        "stations": [], 
+        "subType": "Metal-rich body", 
+        "surfacePressure": 9.34619195657538e-05, 
+        "surfaceTemperature": 1299.08667, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:11:45Z", 
+          "meanAnomaly": "2026-03-06T20:11:45Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:11:45+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 315.841556, 
+        "ascendingNode": 128.746136, 
+        "atmosphereComposition": {
+          "Sulphur dioxide": 99.996483
+        }, 
+        "atmosphereType": "Hot Sulphur dioxide", 
+        "axialTilt": 0.004578, 
+        "bodyId": 38, 
+        "distanceToArrival": 622.543453, 
+        "earthMasses": 3.32921, 
+        "gravity": 1.8304000203936, 
+        "id64": 1369094291245006167, 
+        "isLandable": false, 
+        "meanAnomaly": 280.540582, 
+        "name": "Eorld Byio AA-A h539 A 18", 
+        "orbitalEccentricity": 0.000742, 
+        "orbitalInclination": -0.043586, 
+        "orbitalPeriod": 78.8197259384144, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 8597.738, 
+        "rotationalPeriod": 0.509930390405093, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.24773884117624, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.1681, 
+          "Rock": 66.832
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 4.53705249198125, 
+        "surfaceTemperature": 1324.550293, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:07Z", 
+          "meanAnomaly": "2026-03-06T20:12:07Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:07+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 195.84156, 
+        "ascendingNode": 128.746136, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 1.598018, 
+          "Silicates": 98.384872
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide-rich", 
+        "axialTilt": -0.148329, 
+        "bodyId": 39, 
+        "distanceToArrival": 622.543465, 
+        "earthMasses": 6.224409, 
+        "gravity": 2.44311858876313, 
+        "id64": 1405123088263970135, 
+        "isLandable": false, 
+        "meanAnomaly": 280.539129, 
+        "name": "Eorld Byio AA-A h539 A 19", 
+        "orbitalEccentricity": 0.000742, 
+        "orbitalInclination": -0.043586, 
+        "orbitalPeriod": 78.8197259384144, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 10175.679, 
+        "rotationalPeriod": 1.49319471915509, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.24773884117624, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 33.1681, 
+          "Rock": 66.8319
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 47360.5078312361, 
+        "surfaceTemperature": 4557.572266, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:11:39Z", 
+          "meanAnomaly": "2026-03-06T20:11:39Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:11:39+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 251.926613, 
+        "ascendingNode": -140.106342, 
+        "bodyId": 40, 
+        "id64": 1441151885282934103, 
+        "meanAnomaly": 283.931606, 
+        "name": "Eorld Byio AA-A h539 barycentre 40", 
+        "orbitalEccentricity": 0.002843, 
+        "orbitalInclination": -0.979602, 
+        "orbitalPeriod": 107.55116326941, 
+        "semiMajorAxis": 1.53500751544923, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "absoluteMagnitude": 12.485504, 
+        "age": 2, 
+        "argOfPeriapsis": 21.516571, 
+        "ascendingNode": -0.657802, 
+        "axialTilt": 2.4759, 
+        "bodyId": 41, 
+        "distanceToArrival": 765.448246, 
+        "id64": 1477180682301898071, 
+        "luminosity": "VI", 
+        "mainStar": false, 
+        "meanAnomaly": 190.263928, 
+        "name": "Eorld Byio AA-A h539 A 20", 
+        "orbitalEccentricity": 0.161864, 
+        "orbitalInclination": 7.195391, 
+        "orbitalPeriod": 21.5254013461111, 
+        "parents": [
+          {
+            "Null": 40
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.690996807650463, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 3.62012532320154e-05, 
+        "solarMasses": 0.144531, 
+        "solarRadius": 0.315399154565061, 
+        "spectralClass": "TTS3", 
+        "stations": [], 
+        "subType": "T Tauri Star", 
+        "surfaceTemperature": 1766.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:10:48Z", 
+          "meanAnomaly": "2026-03-06T20:10:48Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-03-06 20:10:48+00"
+      }, 
+      {
+        "argOfPeriapsis": 201.516556, 
+        "ascendingNode": -0.657802, 
+        "atmosphereComposition": {
+          "Iron": 1.475549, 
+          "Silicates": 98.482574
+        }, 
+        "atmosphereType": "Hot thick Silicate vapour", 
+        "axialTilt": -0.035436, 
+        "bodyId": 42, 
+        "distanceToArrival": 787.409863, 
+        "earthMasses": 22.163439, 
+        "gravity": 4.7215937595595, 
+        "id64": 1513209479320862039, 
+        "isLandable": false, 
+        "meanAnomaly": 190.279522, 
+        "name": "Eorld Byio AA-A h539 A 21", 
+        "orbitalEccentricity": 0.161864, 
+        "orbitalInclination": 7.195391, 
+        "orbitalPeriod": 21.5254013461111, 
+        "parents": [
+          {
+            "Null": 40
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 13812.137, 
+        "rotationalPeriod": 32.2954247834838, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0798760185064006, 
+        "solidComposition": {
+          "Ice": 0.2961, 
+          "Metal": 33.0699, 
+          "Rock": 66.6341
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 16591377.7008241, 
+        "surfaceTemperature": 7384.395508, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-03-06T20:12:09Z", 
+          "meanAnomaly": "2026-03-06T20:12:09Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-03-06 20:12:09+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }
+    ], 
+    "bodyCount": 25, 
+    "coords": {
+      "x": 7320.125, 
+      "y": -929.75, 
+      "z": 29693.15625
+    }, 
+    "date": "2026-03-06 20:12:38+00", 
+    "government": "None", 
+    "id64": 4524375383, 
+    "name": "Eorld Byio AA-A h539", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "region": {
+      "name": "Empyrean Straits", 
+      "region": 2
+    }, 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}

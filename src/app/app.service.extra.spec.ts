@@ -190,4 +190,161 @@ describe('AppService (HTTP-driven coverage)', () => {
       vi.useRealTimers();
     }
   });
+
+  it('lazily loads the megaship schedule asset and memoises the fetch', async () => {
+    await init();
+    let scheduleCalls = 0;
+    const schedule = { anchor: '2023-12-28T07:00:00+00:00', week_seconds: 604800, generated_at: 'x', ships: [] };
+    route = (url: string) => {
+      if (url.includes('megaship-schedule.json')) {
+        scheduleCalls++;
+        return ok(schedule);
+      }
+      return ok({});
+    };
+    expect(service.megashipSchedule()).toBeNull();
+    service.ensureMegaships();
+    service.ensureMegaships(); // second call before the first resolves must not fire a second fetch
+    await flush();
+    expect(scheduleCalls).toBe(1);
+    expect(service.megashipSchedule()).toEqual(schedule);
+  });
+
+  it('leaves the megaship schedule null and retryable when the asset fetch fails', async () => {
+    await init();
+    let scheduleCalls = 0;
+    route = (url: string) => {
+      if (url.includes('megaship-schedule.json')) {
+        scheduleCalls++;
+        return fail(500, 'boom');
+      }
+      return ok({});
+    };
+    service.ensureMegaships();
+    await flush();
+    expect(service.megashipSchedule()).toBeNull();
+    expect(scheduleCalls).toBeGreaterThanOrEqual(1);
+  });
+
+  it('lazily loads the Gnosis position and memoises the fetch within the cache window', async () => {
+    await init();
+    let gnosisCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/gnosis')) {
+        gnosisCalls++;
+        return ok({ arrival: '2026-07-10', coords: [1, 2, 3], departure: '2026-07-17', desc: 'x', system: 'Varati' });
+      }
+      return ok({});
+    };
+    expect(service.gnosisData()).toBeNull();
+    service.ensureGnosis();
+    service.ensureGnosis(); // second call before the first resolves must not fire a second fetch
+    await flush();
+    expect(gnosisCalls).toBe(1);
+    expect(service.gnosisData()?.system).toBe('Varati');
+
+    // Still within the cache window: a further call doesn't refetch.
+    service.ensureGnosis();
+    await flush();
+    expect(gnosisCalls).toBe(1);
+  });
+
+  it('refetches the Gnosis position once the cache window has elapsed', async () => {
+    vi.useFakeTimers();
+    try {
+      await init();
+      let gnosisCalls = 0;
+      route = (url: string) => {
+        if (url.includes('/gnosis')) {
+          gnosisCalls++;
+          return ok({ arrival: 'x', coords: [0, 0, 0], departure: 'x', desc: '', system: gnosisCalls === 1 ? 'Varati' : 'HIP 17862' });
+        }
+        return ok({});
+      };
+      service.ensureGnosis();
+      await flush();
+      expect(service.gnosisData()?.system).toBe('Varati');
+
+      await vi.advanceTimersByTimeAsync(3600001); // just past the 1-hour cache window
+      service.ensureGnosis();
+      await flush();
+      expect(gnosisCalls).toBe(2);
+      expect(service.gnosisData()?.system).toBe('HIP 17862');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('leaves the Gnosis position unchanged and retryable when the fetch fails', async () => {
+    await init();
+    let gnosisCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/gnosis')) {
+        gnosisCalls++;
+        return fail(404, 'nope'); // a 4xx isn't retried internally, keeping this test fast
+      }
+      return ok({});
+    };
+    service.ensureGnosis();
+    await flush();
+    expect(service.gnosisData()).toBeNull();
+    expect(gnosisCalls).toBe(1);
+
+    // The failed fetch cleared the memo, so an immediate retry (within the cache window) fires again.
+    service.ensureGnosis();
+    await flush();
+    expect(gnosisCalls).toBe(2);
+  });
+
+  it('resolves a system name via biostats and caches it in systemNames', async () => {
+    await init();
+    let biostatsCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/codex/biostats?id=555')) {
+        biostatsCalls++;
+        return ok({ system: { name: 'Croatigae' } });
+      }
+      return ok({});
+    };
+    expect(service.systemNames().get('555')).toBeUndefined();
+    service.requestSystemName(555);
+    service.requestSystemName(555); // deduped: must not fire a second request
+    await flush();
+    expect(biostatsCalls).toBe(1);
+    expect(service.systemNames().get('555')).toBe('Croatigae');
+  });
+
+  it('caches a failed lookup as the raw id64 fallback (not retried)', async () => {
+    await init();
+    let biostatsCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/codex/biostats?id=777')) {
+        biostatsCalls++;
+        return fail(404, 'not found');
+      }
+      return ok({});
+    };
+    service.requestSystemName(777);
+    await flush();
+    service.requestSystemName(777);
+    await flush();
+    expect(biostatsCalls).toBe(1); // failure is cached too; no retry storm
+    expect(service.systemNames().get('777')).toBe('777');
+  });
+
+  it('resolveSystemName dedupes concurrent in-flight lookups for the same id64', async () => {
+    await init();
+    let biostatsCalls = 0;
+    route = (url: string) => {
+      if (url.includes('/codex/biostats?id=888')) {
+        biostatsCalls++;
+        return ok({ system: { name: 'Varati' } });
+      }
+      return ok({});
+    };
+    const [a, b] = await Promise.all([service.resolveSystemName(888), service.resolveSystemName(888)]);
+    expect(biostatsCalls).toBe(1);
+    expect(a).toBe('Varati');
+    expect(b).toBe('Varati');
+  });
 });

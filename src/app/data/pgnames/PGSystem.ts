@@ -1,6 +1,7 @@
 import { PGRegion } from './PGRegion';
 import { PGSectors } from './PGSectors';
 import { ByteXYZ } from './PGSectors';
+import { PGHASectors } from './PGHASectors';
 
 export interface IPGSystem {
     regionName: string;
@@ -20,6 +21,15 @@ export class PGSystem implements IPGSystem {
     mid2: number = 0;
     sizeClass: number = 0;
     mid3: number = 0;
+    /**
+     * True when {@link regionName} is a hand-authored named sector resolved from
+     * galaxy coordinates rather than the procedural name for the boxel. The name
+     * is then already canonically cased (e.g. "NGC 2392 Sector") and must not be
+     * re-cased by callers.
+     */
+    isHASector: boolean = false;
+    /** True when the resolved hand-authored region sits behind a permit lock. */
+    needsPermit: boolean = false;
 
     get region(): PGRegion {
         return PGRegion.getRegion(this.regionName);
@@ -37,7 +47,10 @@ export class PGSystem implements IPGSystem {
         const mid3 = Math.trunc(this.mid3);
         const seq = Math.trunc(this.sequence);
 
-        return `${this.regionName} ${mid1a}${mid1b}-${mid2} ${size}${mid3}-${seq}`;
+        // Elite Dangerous omits the N1 field (and its hyphen) when it is zero,
+        // so "Synuefe WH-F c0" (N1=0, N2=0) must not render as "…c0-0".
+        const index = mid3 !== 0 ? `${mid3}-${seq}` : `${seq}`;
+        return `${this.regionName} ${mid1a}${mid1b}-${mid2} ${size}${index}`;
     }
 
     /**
@@ -248,7 +261,7 @@ export class PGSystem implements IPGSystem {
             while (i > 8 && _s[i] >= '0' && _s[i] <= '9') i--;
             if (i === vend) return [false, sys];
 
-            const mid3Str = _s.substring(i + 1, vend - i + 1);
+            const mid3Str = _s.substring(i + 1, vend + 1);
             const mid3 = parseInt(mid3Str);
             if (isNaN(mid3)) return [false, sys];
             sys.mid3 = mid3;
@@ -284,61 +297,160 @@ export class PGSystem implements IPGSystem {
         return [true, sys];
     }
 
-    toSystemAddress(): bigint {
+    /**
+     * Absolute boxel coordinates (from the galaxy origin) of this system's boxel:
+     * the region-relative letter-code offset plus the region origin in boxels.
+     * Throws when the region cannot be resolved or the letter code lies outside
+     * the region, so encoders fail loudly instead of emitting a wrong sector.
+     */
+    private absoluteBoxel(): { x: number; y: number; z: number } {
         const reg = this.region;
+        const boxelSize = 320 << this.sizeClass; // internal units per boxel edge
+
+        if (reg.x0 < 0 || reg.y0 < 0 || reg.z0 < 0) {
+            throw new Error(`Unknown sector: ${this.regionName}`);
+        }
 
         const mid =
             ((this.mid3 * 26 + this.mid2) * 26 + this.mid1b) * 26 + this.mid1a;
-        const x = (mid & 0x7f) + Math.floor(reg.x0 / (320 << this.sizeClass));
-        const y =
-            ((mid >> 7) & 0x7f) + Math.floor(reg.y0 / (320 << this.sizeClass));
-        const z =
-            ((mid >> 14) & 0x7f) + Math.floor(reg.z0 / (320 << this.sizeClass));
-        const seq = this.sequence;
+        if (mid > 0x1fffff) {
+            // Only an oversized n1 can push mid past 21 bits (mid3 contributes mid3 * 26^3).
+            throw new RangeError(`System index n1=${this.mid3} out of range in ${this.regionName}`);
+        }
+        const bx = mid & 0x7f;
+        const by = (mid >> 7) & 0x7f;
+        const bz = (mid >> 14) & 0x7f;
+        // Letter codes count from the region origin snapped DOWN to the boxel
+        // grid, so a region whose origin is not boxel-aligned reaches one boxel
+        // further than sizeX/boxelSize — the bound must include the origin's
+        // offset within its boxel.
+        if (
+            bx * boxelSize >= (reg.x0 % boxelSize) + reg.sizeX ||
+            by * boxelSize >= (reg.y0 % boxelSize) + reg.sizeY ||
+            bz * boxelSize >= (reg.z0 % boxelSize) + reg.sizeZ
+        ) {
+            throw new RangeError(
+                `Letter code out of range for size class ${PGSystem.toLetter(this.sizeClass)} in ${this.regionName}`
+            );
+        }
 
-        const result =
-            this.sizeClass |
-            (z << 3) |
-            (y << (17 - this.sizeClass)) |
-            (x << (30 - this.sizeClass * 2)) |
-            (seq << (44 - this.sizeClass * 3));
+        const x = bx + Math.floor(reg.x0 / boxelSize);
+        const y = by + Math.floor(reg.y0 / boxelSize);
+        const z = bz + Math.floor(reg.z0 / boxelSize);
+        // A system address has 7 sector bits for x/z but only 6 for y; a
+        // parseable name can still resolve to a sector outside that space, and
+        // packing it would silently corrupt neighbouring fields.
+        const sc = this.sizeClass;
+        if (x >= 1 << (14 - sc) || y >= 1 << (13 - sc) || z >= 1 << (14 - sc)) {
+            throw new RangeError(`Sector position of ${this.regionName} does not fit a system address`);
+        }
 
-        return BigInt(result);
+        return { x, y, z };
+    }
+
+    toSystemAddress(): bigint {
+        const sc = this.sizeClass;
+        const { x, y, z } = this.absoluteBoxel();
+
+        // The sequence (N2) field spans bits [44-3*sc, 55); the 9 bits above it
+        // are the body ID, which a system address leaves at zero.
+        const seqWidth = 11 + sc * 3;
+        if (this.sequence < 0 || this.sequence >= 2 ** seqWidth) {
+            throw new RangeError(`Sequence ${this.sequence} does not fit in ${seqWidth} bits`);
+        }
+
+        // Pack with BigInt: JS number bitwise operators truncate operands and
+        // results to 32 bits (ToInt32), so any field reaching bit 31 or above
+        // would be corrupted.
+        return (
+            BigInt(sc) |
+            (BigInt(z) << 3n) |
+            (BigInt(y) << BigInt(17 - sc)) |
+            (BigInt(x) << BigInt(30 - sc * 2)) |
+            (BigInt(this.sequence) << BigInt(44 - sc * 3))
+        );
     }
 
     toModSystemAddress(): bigint {
-        const reg = this.region;
+        const sc = this.sizeClass;
+        const bps = 7 - sc; // log2 of boxels per sector edge at this size class
+        const boxelMask = 0x7f >> sc;
+        const { x, y, z } = this.absoluteBoxel();
 
-        const mid =
-            ((this.mid3 * 26 + this.mid2) * 26 + this.mid1b) * 26 + this.mid1a;
-        const x = (mid & 0x7f) + Math.floor(reg.x0 / (320 << this.sizeClass));
-        const x1 = x & 0x7f;
-        const x2 = (x >> 7) & 0x7f;
-        const y =
-            ((mid >> 7) & 0x7f) + Math.floor(reg.y0 / (320 << this.sizeClass));
-        const y1 = y & 0x7f;
-        const y2 = (y >> 7) & 0x3f;
-        const z =
-            ((mid >> 14) & 0x7f) + Math.floor(reg.z0 / (320 << this.sizeClass));
-        const z1 = z & 0x7f;
-        const z2 = (z >> 7) & 0x7f;
-        const seq = this.sequence;
-        const szclass = this.sizeClass;
+        if (this.sequence < 0 || this.sequence > 0x7fff) {
+            throw new RangeError(`Sequence ${this.sequence} does not fit in the 15-bit mod-address field`);
+        }
 
-        const result =
-            seq |
-            (x1 << 16) |
-            (y1 << 23) |
-            (z1 << 30) |
-            (szclass << 37) |
-            (x2 << 40) |
-            (y2 << 47) |
-            (z2 << 53);
+        // Split each axis into sector coordinate and within-sector boxel. Sectors
+        // span 2^(7 - sizeClass) boxels at this size class, not a fixed 7 bits.
+        // The sector-relative letter code is what fromModSystemAddress reads from
+        // bits 16-36.
+        const midOut =
+            (x & boxelMask) | ((y & boxelMask) << 7) | ((z & boxelMask) << 14);
 
-        return BigInt(result);
+        // Pack with BigInt: JS number bitwise operators truncate operands and
+        // results to 32 bits (ToInt32), so any field reaching bit 31 or above
+        // would be corrupted.
+        return (
+            BigInt(this.sequence) |
+            (BigInt(midOut) << 16n) |
+            (BigInt(sc) << 37n) |
+            (BigInt((x >> bps) & 0x7f) << 40n) |
+            (BigInt((y >> bps) & 0x3f) << 47n) |
+            (BigInt((z >> bps) & 0x7f) << 53n)
+        );
     }
 
-    static fromSystemAddress(systemaddress: bigint): PGSystem {
+    /**
+     * When galaxy coordinates fall inside a hand-authored named sector, overwrite
+     * the procedural region name and letter/N1 suffix with the hand-authored ones.
+     *
+     * The letter code and N1 are the boxel's position *relative to the sector
+     * origin*, so a hand-authored sector (whose origin differs from the procedural
+     * sector's) yields different letters for the same physical boxel — this is the
+     * exact inverse of {@link absoluteBoxel}. The mass code and N2 (sequence) are
+     * origin-independent and stay as decoded. Leaves the system untouched when the
+     * coordinates are in procedural space, or when the boxel does not sit within
+     * the resolved region (a coords/id64 mismatch), so the procedural name stands.
+     *
+     * @param abs Absolute boxel indices (from the galaxy origin) decoded from the id64.
+     * @param coords System position in galaxy light-years (Sol at origin), or undefined.
+     */
+    private static applyHASectorName(
+        sys: PGSystem,
+        abs: { x: number; y: number; z: number },
+        coords?: { x: number; y: number; z: number }
+    ): void {
+        if (!coords) return;
+        const region = PGHASectors.regionForCoords(coords.x, coords.y, coords.z);
+        if (region === null) return;
+
+        const reg = PGRegion.getRegion(region.name);
+        if (reg.x0 < 0 || reg.y0 < 0 || reg.z0 < 0) return; // origin unknown; keep procedural
+
+        const boxelSize = 320 << sys.sizeClass; // internal units per boxel edge
+        const bx = abs.x - Math.floor(reg.x0 / boxelSize);
+        const by = abs.y - Math.floor(reg.y0 / boxelSize);
+        const bz = abs.z - Math.floor(reg.z0 / boxelSize);
+        // Each axis occupies 7 bits of the packed letter code; a boxel outside the
+        // region (only possible when coords and id64 disagree) would corrupt the
+        // adjacent field, so bail and let the procedural name stand.
+        if (bx < 0 || bx > 0x7f || by < 0 || by > 0x7f || bz < 0 || bz > 0x7f) return;
+
+        const mid = bx | (by << 7) | (bz << 14);
+        sys.regionName = region.name;
+        sys.isHASector = true;
+        sys.needsPermit = region.needsPermit;
+        sys.mid1a = mid % 26;
+        sys.mid1b = Math.trunc(mid / 26) % 26;
+        sys.mid2 = Math.trunc(mid / (26 * 26)) % 26;
+        sys.mid3 = Math.trunc(mid / (26 * 26 * 26));
+    }
+
+    static fromSystemAddress(
+        systemaddress: bigint,
+        coords?: { x: number; y: number; z: number }
+    ): PGSystem {
         const addr = systemaddress; // Keep as BigInt to preserve precision
         const sizeclass = Number(addr & BigInt(7));
         const z0 = Number((addr >> BigInt(3)) & BigInt(0x3fff >> sizeclass));
@@ -350,7 +462,11 @@ export class PGSystem implements IPGSystem {
         const x0 = Number((addr >> BigInt(30 - sizeclass * 2)) & BigInt(0x3fff >> sizeclass));
         const x1 = Number((addr >> BigInt(30 - sizeclass * 2)) & BigInt(0x7f >> sizeclass));
         const x2 = Number((addr >> BigInt(37 - sizeclass * 3)) & BigInt(0x7f));
-        const seq = Number((addr >> BigInt(44 - sizeclass * 3)) & BigInt(0x7fff));
+        // The sequence (N2) field is 11 + 3*sizeclass bits wide, ending at bit 55
+        // where the 9-bit body ID starts.
+        const seq = Number(
+            (addr >> BigInt(44 - sizeclass * 3)) & ((1n << BigInt(11 + sizeclass * 3)) - 1n)
+        );
 
         const regionname = PGSectors.getSectorName(
             new ByteXYZ(x2, y2, z2)
@@ -369,10 +485,14 @@ export class PGSystem implements IPGSystem {
         sys.mid3 = mid3;
         sys.sizeClass = sizeclass;
         sys.sequence = seq;
+        PGSystem.applyHASectorName(sys, { x: x0, y: y0, z: z0 }, coords);
         return sys;
     }
 
-    static fromModSystemAddress(systemaddress: bigint): PGSystem {
+    static fromModSystemAddress(
+        systemaddress: bigint,
+        coords?: { x: number; y: number; z: number }
+    ): PGSystem {
         const addr = systemaddress; // Keep as BigInt to preserve precision
         const seq = Number(addr & BigInt(0x7fff));
         const mid = Number((addr >> BigInt(16)) & BigInt(0x1fffff));
@@ -389,6 +509,14 @@ export class PGSystem implements IPGSystem {
         const mid2 = Math.trunc(mid / (26 * 26)) % 26;
         const mid3 = Math.trunc(mid / (26 * 26 * 26));
 
+        // Reconstruct absolute boxel indices: sector coordinate (x2/y2/z2) shifted
+        // above the within-sector boxel bits, plus the low bits carried in `mid`.
+        const bps = 7 - sizeclass; // boxels per sector edge = 2^bps
+        const boxelMask = 0x7f >> sizeclass;
+        const absX = (x2 << bps) | (mid & boxelMask);
+        const absY = (y2 << bps) | ((mid >> 7) & boxelMask);
+        const absZ = (z2 << bps) | ((mid >> 14) & boxelMask);
+
         const sys = new PGSystem();
         sys.regionName = regionname;
         sys.mid1a = mid1a;
@@ -397,6 +525,7 @@ export class PGSystem implements IPGSystem {
         sys.mid3 = mid3;
         sys.sizeClass = sizeclass;
         sys.sequence = seq;
+        PGSystem.applyHASectorName(sys, { x: absX, y: absY, z: absZ }, coords);
         return sys;
     }
 }

@@ -25,6 +25,8 @@ describe('HomeComponent (extended coverage)', () => {
   let edastroSystems$: WritableSignal<any[]>;
   let independentOutposts$: WritableSignal<any[]>;
   let nebulae$: WritableSignal<any[]>;
+  let megashipSchedule$: WritableSignal<any>;
+  let systemNames$: WritableSignal<ReadonlyMap<string, string>>;
   let setBackgroundImage: ReturnType<typeof vi.fn>;
   let getEdastroData: ReturnType<typeof vi.fn>;
 
@@ -59,6 +61,8 @@ describe('HomeComponent (extended coverage)', () => {
     edastroSystems$ = signal<any[]>([]);
     independentOutposts$ = signal<any[]>([]);
     nebulae$ = signal<any[]>([]);
+    megashipSchedule$ = signal<any>(null);
+    systemNames$ = signal<ReadonlyMap<string, string>>(new Map());
     setBackgroundImage = vi.fn();
     getEdastroData = vi.fn(() => Promise.resolve(null));
 
@@ -83,6 +87,14 @@ describe('HomeComponent (extended coverage)', () => {
             typeahead: vi.fn((q: string) => httpGet(`/typeahead?q=${q}`)),
             getBiostats: vi.fn((id: number) => httpGet(`/codex/biostats?id=${id}&caller=Signals`)),
             getSimbad: vi.fn((id: number, name: string) => httpGet(`/simbad?system_address=${id}&name=${name}`)),
+            megashipSchedule: megashipSchedule$,
+            ensureMegaships: vi.fn(),
+            systemNames: systemNames$,
+            requestSystemName: vi.fn(),
+            resolveSystemName: vi.fn(() => Promise.resolve('')),
+            nowOverride: signal<number | null>(null),
+            gnosisData: signal(null),
+            ensureGnosis: vi.fn(),
           },
         },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
@@ -122,9 +134,9 @@ describe('HomeComponent (extended coverage)', () => {
     });
 
     it('resolves a procedural-generation name from a known system address', () => {
+      // N1 is zero for this system, so ED omits it: "…d0", not "…d0-0".
       const name = component.getPGName(10577693187);
-      expect(name.length).toBeGreaterThan(0);
-      expect(name).toMatch(/[A-Z]{2}-[A-Z] [a-z]\d/); // mass-code + index segment
+      expect(name).toBe('Blae Eock KC-C d0');
     });
 
     it('returns an empty PG name for an invalid address', () => {
@@ -402,11 +414,10 @@ describe('HomeComponent (extended coverage)', () => {
 
     it('opens SIMBAD and signals pages in a new tab', () => {
       component.openSimbadPageRaw('NGC 1');
-      component.openSimbadPage('@NGC 1');
       component.openSignalsPage('Sol');
-      expect(openSpy).toHaveBeenCalledTimes(3);
-      component.openSimbadPage('');
-      expect(openSpy).toHaveBeenCalledTimes(3); // empty ident is a no-op
+      expect(openSpy).toHaveBeenCalledTimes(2);
+      component.openSimbadPageRaw('');
+      expect(openSpy).toHaveBeenCalledTimes(2); // empty ident is a no-op
     });
 
     it('encodes URI components', () => {
@@ -430,6 +441,55 @@ describe('HomeComponent (extended coverage)', () => {
       component.fetchEdGalaxyData('Sol', 10477373803n);
       await flushPromises();
       expect(component.edGalaxyData()?.Simbad?.Name).toBe('Sol');
+    });
+  });
+
+  describe('stale-response guards', () => {
+    it('drops a slow SIMBAD response once another system has been selected', async () => {
+      const svc = TestBed.inject(AppService) as any;
+      let resolveAlpha!: (v: unknown) => void;
+      svc.getSimbad = vi.fn()
+        // First (system Alpha) hangs; the later call (Beta) resolves immediately.
+        .mockReturnValueOnce(new Promise(res => { resolveAlpha = res; }))
+        .mockImplementation(() => Promise.resolve({
+          system_address: 20n, name: 'Beta', simbad_name: 'Beta Star', simbad_ident: '@Beta',
+          ra_j2000: 1, dec_j2000: 2,
+        }));
+
+      component.fetchEdGalaxyData('Alpha', 10n);
+      component.fetchEdGalaxyData('Beta', 20n);
+      await flushPromises();
+      expect(component.edGalaxyData()?.Simbad?.Name).toBe('Beta Star');
+
+      // Alpha's response finally arrives — it must not clobber Beta.
+      resolveAlpha({
+        system_address: 10n, name: 'Alpha', simbad_name: 'Alpha Star', simbad_ident: '@Alpha',
+        ra_j2000: 9, dec_j2000: 9,
+      });
+      await flushPromises();
+      expect(component.edGalaxyData()?.Simbad?.Name).toBe('Beta Star');
+    });
+
+    it('drops a slow EDAstro response (summary + background) after switching systems', async () => {
+      const svc = TestBed.inject(AppService) as any;
+      let resolveAlpha!: (v: unknown) => void;
+      svc.getEdastroData = vi.fn()
+        .mockReturnValueOnce(new Promise(res => { resolveAlpha = res; }))
+        .mockImplementation(() => Promise.resolve({
+          name: 'Beta POI', summary: 'Beta summary', mainImage: 'https://example.com/beta.png',
+        }));
+
+      (component as any).processBodies({ system: { name: 'Alpha', id64: 111, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
+      (component as any).processBodies({ system: { name: 'Beta', id64: 222, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
+      await flushPromises();
+      expect(component.edastroData()?.name).toBe('Beta POI');
+
+      setBackgroundImage.mockClear();
+      // Alpha's EDAstro payload resolves late — must not overwrite Beta's data or background.
+      resolveAlpha({ name: 'Alpha POI', summary: 'Alpha summary', mainImage: 'https://example.com/alpha.png' });
+      await flushPromises();
+      expect(component.edastroData()?.name).toBe('Beta POI');
+      expect(setBackgroundImage).not.toHaveBeenCalledWith('https://example.com/alpha.png');
     });
   });
 

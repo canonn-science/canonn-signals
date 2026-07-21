@@ -1,0 +1,66 @@
+<app-dialog-shell [heading]="data.shipName">
+  <div class="megaship-route-dialog">
+    <div class="values">
+      <ul>
+        <li><strong>Signal name:</strong> {{ data.signalName }}</li>
+        @if (data.type === 'cycle') {
+        <li><strong>Route:</strong>
+          @if (data.routeDescription) {
+          {{ data.routeDescription }}
+          } @else {
+          {{ data.routeLen }} weekly stop{{ data.routeLen === 1 ? '' : 's' }}
+          — <span [class.confirmed]="data.confirmed" [class.unconfirmed]="!data.confirmed">
+            {{ data.confirmed ? 'confirmed' : 'unconfirmed' }}
+          </span>
+          }
+        </li>
+        } @else {
+        <li><strong>Route:</strong> static — always at the same system</li>
+        @if (data.firstSeen) {
+        <li><strong>First seen:</strong> {{ data.firstSeen }}</li>
+        }
+        @if (data.weeksConfirmed) {
+        <li><strong>Weeks confirmed:</strong> {{ data.weeksConfirmed }}</li>
+        }
+        }
+        <li><strong>Last seen:</strong> {{ data.lastSeen }}</li>
+      </ul>
+    </div>
+
+    <div class="route-stops">
+      <h3>Route</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>System</th>
+            <th>Date due</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (stop of stops(); track stop.position) {
+          <tr [class.present]="stop.presentNow">
+            <td class="num">{{ stop.position + 1 }}</td>
+            <td>{{ stop.systemName }}</td>
+            <td class="date">{{ stop.dueDate ?? '—' }}</td>
+            <td>{{ stop.presentNow ? 'Present' : 'Due' }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="disclaimer">
+      <strong>Disclaimer:</strong>
+      @if (data.disclaimer) {
+      {{ data.disclaimer }}
+      } @else {
+      This route is derived from community sightings collected since 2022 —
+      it is not an official schedule and has not been confirmed against the ship's actual shipboard
+      itinerary. Positions with no recorded sighting are omitted, and unconfirmed routes are a
+      best guess from limited data.
+      }
+    </p>
+  </div>
+</app-dialog-shell>

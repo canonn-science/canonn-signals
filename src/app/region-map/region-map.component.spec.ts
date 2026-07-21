@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal, WritableSignal } from '@angular/core';
 
-import { RegionMapComponent } from './region-map.component';
+import { GnosisData, RegionMapComponent } from './region-map.component';
 import { AppService } from '../app.service';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -10,19 +10,23 @@ describe('RegionMapComponent', () => {
   let component: RegionMapComponent;
   let fixture: ComponentFixture<RegionMapComponent>;
   let fetchMock: ReturnType<typeof vi.fn>;
-  let getGnosis: ReturnType<typeof vi.fn>;
+  let ensureGnosis: ReturnType<typeof vi.fn>;
+  let gnosisData$: WritableSignal<GnosisData | null>;
 
   beforeEach(() => {
     // The SVG is loaded via the global fetch; return an empty SVG so loadRegionMap has
     // something to parse.
     fetchMock = vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve('<svg></svg>') }));
     vi.stubGlobal('fetch', fetchMock);
-    getGnosis = vi.fn(() => Promise.resolve(null));
+    gnosisData$ = signal<GnosisData | null>(null);
+    // ensureGnosis resolves once gnosisData$ has been set, mirroring AppService's real
+    // "fetch, then set the signal" sequencing.
+    ensureGnosis = vi.fn(() => Promise.resolve());
     TestBed.configureTestingModule({
       imports: [RegionMapComponent],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: AppService, useValue: { getGnosis } },
+        { provide: AppService, useValue: { ensureGnosis, gnosisData: gnosisData$ } },
       ],
     });
     fixture = TestBed.createComponent(RegionMapComponent);
@@ -229,23 +233,27 @@ describe('RegionMapComponent', () => {
     it('fetches Gnosis data only for Inner Orion Spur (region 18)', () => {
       const svg = buildSvg();
       (component as any).zoomToRegion(svg.querySelector('#Region_07') as any, svg);
-      expect(getGnosis).not.toHaveBeenCalled();
+      expect(ensureGnosis).not.toHaveBeenCalled();
       (component as any).zoomToRegion(svg.querySelector('#Region_18') as any, svg);
-      expect(getGnosis).toHaveBeenCalledTimes(1);
+      expect(ensureGnosis).toHaveBeenCalledTimes(1);
     });
 
-    it('caches Gnosis data within the cache window', async () => {
-      getGnosis.mockReturnValue(Promise.resolve({ system: 'Sol', coords: [0, 0, 0], arrival: '', departure: '', desc: '' }));
-      await (component as any).fetchGnosisData();
-      await (component as any).fetchGnosisData();
-      expect(getGnosis).toHaveBeenCalledTimes(1); // second call served from cache
+    it('reads the shared AppService.gnosisData cache instead of keeping its own', async () => {
+      // Region-map no longer has a private cache; caching lives solely in AppService (see
+      // app.service.extra.spec.ts), so a second zoom into region 18 just re-reads the signal
+      // rather than re-fetching — ensureGnosis is still called (it's a cheap cache check).
+      gnosisData$.set({ system: 'Sol', coords: [0, 0, 0], desc: '' });
+      const svg = buildSvg();
+      (component as any).zoomToRegion(svg.querySelector('#Region_18') as any, svg);
+      (component as any).zoomToRegion(svg.querySelector('#Region_18') as any, svg);
+      expect(ensureGnosis).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('addGnosisMarker', () => {
     it('adds a clickable Gnosis marker when within the region bounds', () => {
       const svg = buildSvg();
-      (component as any).gnosisData = { system: 'Varati', coords: [-178.65625, 0, -87.125], arrival: '', departure: '', desc: '' };
+      gnosisData$.set({ system: 'Varati', coords: [-178.65625, 0, -87.125], desc: '' });
       const tx = (component as any).mapX(-178.65625);
       const ty = (component as any).mapY(-87.125);
       const bbox = { x: tx - 50, y: ty - 50, width: 100, height: 100 } as DOMRect;
@@ -262,8 +270,15 @@ describe('RegionMapComponent', () => {
 
     it('does not add the marker when Gnosis is outside the region bounds', () => {
       const svg = buildSvg();
-      (component as any).gnosisData = { system: 'Far', coords: [0, 0, 0], arrival: '', departure: '', desc: '' };
+      gnosisData$.set({ system: 'Far', coords: [0, 0, 0], desc: '' });
       const bbox = { x: 9000, y: 9000, width: 10, height: 10 } as DOMRect;
+      (component as any).addGnosisMarker(svg, bbox);
+      expect(svg.querySelector('#gnosis-marker')).toBeNull();
+    });
+
+    it('does nothing when the shared Gnosis data has not resolved yet', () => {
+      const svg = buildSvg();
+      const bbox = { x: 0, y: 0, width: 100, height: 100 } as DOMRect;
       (component as any).addGnosisMarker(svg, bbox);
       expect(svg.querySelector('#gnosis-marker')).toBeNull();
     });

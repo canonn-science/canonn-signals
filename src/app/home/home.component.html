@@ -5,327 +5,593 @@
     <div class="search-field">
       <mat-form-field class="input-full-width">
         <mat-label>Search by system name, id64 or POI name</mat-label>
-        <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128"
-          (input)="onSearchInput()" (keyup.enter)="search()">
-          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">
-            @for (system of filteredSystems(); track $index) {
-              <mat-option [value]="system">
-                {{ system }}
-              </mat-option>
-            }
-          </mat-autocomplete>
-          <mat-error>System not found</mat-error>
-        </mat-form-field>
-        <button mat-flat-button color="primary" (click)="search()" [disabled]="searching"
-          aria-label="Search">
-          <fa-icon [icon]="faMagnifyingGlass" aria-hidden="true"></fa-icon>
-        </button>
+        <input matInput [formControl]="searchControl" [matAutocomplete]="auto" maxlength="128" (input)="onSearchInput()"
+          (keyup.enter)="search()">
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSystemSelected($event.option.value)">
+          @for (system of filteredSystems(); track $index) {
+          <mat-option [value]="system">
+            {{ system }}
+          </mat-option>
+          }
+        </mat-autocomplete>
+        <mat-error>System not found</mat-error>
+      </mat-form-field>
+      <button mat-flat-button color="primary" (click)="search()" [disabled]="searching" aria-label="Search">
+        <fa-icon [icon]="faMagnifyingGlass" aria-hidden="true"></fa-icon>
+      </button>
+    </div>
+    @if (searchError()) {
+    <div class="error-message">
+      <p style="white-space: pre-line; margin: 0; text-align: left;">{{ searchErrorMessage() }}</p>
+    </div>
+    }
+  </div>
+  <div>
+    <app-canonn-logo [animating]="searching" style="display: block; width: 200px; height: 200px;"></app-canonn-logo>
+  </div>
+</div>
+@if (data(); as data) {
+@let edastro = edastroData();
+@let edGalaxy = edGalaxyData();
+<div class="system-container">
+  <div class="system-container-data">
+    <div class="system-info-box">
+      <div class="system-title">
+        <span style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+          <span>{{ data.system.name }}@if (edastro?.name) {
+            <span> ({{ edastro.name }})</span>
+            }</span>
+          @if (edastro?.name) {
+          <a [href]="edastro.poiUrl" target="_blank" rel="noopener noreferrer"
+            title="View on the Galactic Exploration Catalog" class="title-link">
+            <img src="assets/icons/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline"
+              style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;" />
+          </a>
+          }
+          <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" rel="noopener noreferrer"
+            class="title-link">
+            <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh"
+              class="title-link-icon title-link-icon--rounded" />
+          </a>
+          <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank" rel="noopener noreferrer"
+            class="title-link title-link--tight">
+            <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="Spansh JSON"
+              title="View the spansh dump" class="title-link-icon" />
+          </a>
+          <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)"
+            target="_blank" rel="noopener noreferrer" title="View on Inara" class="title-link">
+            <img src="assets/icons/inara.png" alt="Inara" class="title-link-icon title-link-icon--light" />
+          </a>
+          <a [href]="'https://ravencolonial.com/#sys=' + encodeURIComponent(data.system.name)" target="_blank"
+            rel="noopener noreferrer" title="View on Raven Colonial" class="title-link">
+            <img src="assets/icons/rcc-96.png" alt="Raven Colonial" class="title-link-icon title-link-icon--rounded" />
+          </a>
+          <a [href]="'https://www.edsm.net/en/system?systemName=' + encodeURIComponent(data.system.name)"
+            target="_blank" rel="noopener noreferrer" class="title-link">
+            <img src="assets/icons/edsm-194x194.png" alt="EDSM" title="View on EDSM"
+              class="title-link-icon title-link-icon--light" />
+          </a>
+          <a [href]="'https://www.edsm.net/api-system-v1/bodies?systemName=' + encodeURIComponent(data.system.name)"
+            target="_blank" rel="noopener noreferrer" class="title-link title-link--tight">
+            <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="EDSM JSON"
+              title="View the EDSM dump" class="title-link-icon" />
+          </a>
+          <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
+            target="_blank" rel="noopener noreferrer" class="title-link">
+            <img src="assets/icons/eddn.png" alt="ED Galaxy Data" title="View on EDDN journals on ED Galaxy Data"
+              class="title-link-icon title-link-icon--light" />
+          </a>
+          <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
+            target="_blank" rel="noopener noreferrer"
+            style="display: inline-flex; align-items: center; margin-left: -0.5em;">
+            <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="ED Galaxy Data"
+              title="View on EDDN journals on ED Galaxy Data"
+              style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;" />
+          </a>
+          @if (isVoyagerGoldenRecordSystem()) {
+          <a href="https://science.nasa.gov/mission/voyager/golden-record-cover/" target="_blank"
+            rel="noopener noreferrer" class="title-link">
+            <img src="assets/icons/Voyager_Golden_Record_fx.png" alt="Voyager Golden Record"
+              title="This pulsar is featured on the Voyager Golden Record cover"
+              style="max-height: 1.1em; width: 1.1em; display: block; pointer-events: auto; cursor: pointer;" />
+          </a>
+          }
+          <button type="button" class="title-link title-link-button system-export-button"
+            (click)="exportSystem(data)"
+            title="Download the full system JSON, enriched with calculated values"
+            aria-label="Export system JSON with calculated values">
+            <fa-icon [icon]="faDownload" aria-hidden="true"></fa-icon>
+            <span class="system-export-button__label">Export</span>
+          </button>
+        </span>
+        @if (data.system.population !== null && data.system.population !== undefined && data.system.population > 0) {
+        <span class="population">Population: {{ data.system.population | number }}</span>
+        } @else {
+        <a [href]="'https://spansh.co.uk/colonisation/load?destination=' + encodeURIComponent(data.system.name)"
+          target="_blank" rel="noopener noreferrer" class="population"
+          title="Plan a colonisation route to this system on Spansh">Colony Router</a>
+        }
       </div>
-      @if (searchError()) {
-        <div class="error-message">
-          <p style="white-space: pre-line; margin: 0; text-align: left;">{{ searchErrorMessage() }}</p>
-        </div>
+      @if (edastro?.summary) {
+      <div class="edastro-summary">
+        <span class="summary-text">{{ edastro.summary }}</span>
+      </div>
       }
-    </div>
-    <div>
-      <img alt="" [src]="searching ? 'assets/Canonn-Logo_transparent_50.gif' : 'assets/Canonn-Logo_transparent_50_f1.gif'"
-        style="width: 200px; height: 200px;" />
+      <div class="system-data">
+        <app-region-map [system]="data.system" [outposts]="independentOutposts()"
+          (systemSelected)="onMarkerSelected($event)"></app-region-map>
+        <div class="system-data-columns">
+          <div class="system-data-section">
+            <div class="system-data-section-header">Location</div>
+            @if (edGalaxy?.PGName) {
+            <div class="system-data-entry">
+              <div>PG Name</div>
+              <div>{{ edGalaxy.PGName }}</div>
+            </div>
+            }
+            @if (data.system.region) {
+            <div class="system-data-entry">
+              <div>Region</div>
+              <div>{{ data.system.region.name }}</div>
+            </div>
+            }
+            <div class="system-data-entry">
+              <div>Id64</div>
+              <div class="id64-copy" role="button" tabindex="0" (click)="copyId64ToClipboard()"
+                (keydown.enter)="copyId64ToClipboard()" (keydown.space)="$event.preventDefault(); copyId64ToClipboard()"
+                title="Click to copy Id64">
+                {{ data.system.id64 }}
+              </div>
+            </div>
+            <div class="system-data-entry">
+              <div>Coordinates</div>
+              <div class="coordinates-copy" role="button" tabindex="0" (click)="copyCoordinatesToClipboard('comma')"
+                (keydown.enter)="copyCoordinatesToClipboard('comma')"
+                (keydown.space)="$event.preventDefault(); copyCoordinatesToClipboard('comma')"
+                (contextmenu)="copyCoordinatesToClipboard('tab', $event)" (mousedown)="onCoordinatesMouseDown($event)"
+                title="Left: comma, Right: tab, Middle: pipe">
+                {{ data.system.coords.x }} / {{ data.system.coords.y }} / {{ data.system.coords.z }}
+              </div>
+            </div>
+            <div class="system-data-entry">
+              <div>Permit required</div>
+              <div>{{ isPermitLocked() ? 'Yes' : 'No' }}</div>
+            </div>
+            @if (data.system.date) {
+            <div class="system-data-entry">
+              <div>Info updated</div>
+              <div class="info-updated-value" [matTooltip]="formatUpdatedTooltip(data.system.date)"
+                matTooltipClass="multiline-tooltip">{{ formatUpdated(data.system.date) }}</div>
+            </div>
+            }
+          </div>
+          @if (data.system.population > 0) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Society</div>
+            @if (systemEconomyDisplay(data.system); as economy) {
+            <div class="system-data-entry">
+              <div>Economy</div>
+              <div>{{ economy }}</div>
+            </div>
+            }
+            @if (data.system.government && data.system.government !== 'None') {
+            <div class="system-data-entry">
+              <div>Government</div>
+              <div>{{ data.system.government }}</div>
+            </div>
+            }
+            @if (data.system.allegiance && data.system.allegiance !== 'None') {
+            <div class="system-data-entry">
+              <div>Allegiance</div>
+              <div>{{ data.system.allegiance }}</div>
+            </div>
+            }
+            @if (data.system.controllingFaction?.name; as factionName) {
+            <div class="system-data-entry">
+              <div>Controlling faction</div>
+              <div>{{ factionName }}</div>
+            </div>
+            }
+            @if (data.system.security && data.system.security !== 'None') {
+            <div class="system-data-entry">
+              <div>Security</div>
+              <div>{{ data.system.security }}</div>
+            </div>
+            }
+          </div>
+          }
+          @if (edGalaxy?.Simbad?.Name || edGalaxy?.Simbad?.RAJ2000 || edGalaxy?.Simbad?.DEJ2000) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Simbad</div>
+            @if (edGalaxy.Simbad.Name) {
+            <div class="system-data-entry">
+              <div>Name</div>
+              <div>
+                @if (edGalaxy.Simbad.Ident) {
+                <span class="pgname-link" role="button" tabindex="0" (click)="openSimbadPageRaw(edGalaxy.Simbad.Ident)"
+                  (keydown.enter)="openSimbadPageRaw(edGalaxy.Simbad.Ident)"
+                  (keydown.space)="$event.preventDefault(); openSimbadPageRaw(edGalaxy.Simbad.Ident)"
+                  title="Open in SIMBAD" style="cursor:pointer;text-decoration:underline dotted;">
+                  {{ edGalaxy.Simbad.Name }}
+                </span>
+                } @else {
+                {{ edGalaxy.Simbad.Name }}
+                }
+              </div>
+            </div>
+            }
+            @if (edGalaxy.Simbad.RAJ2000) {
+            <div class="system-data-entry">
+              <div>Right Ascension</div>
+              <div>{{ formatRAJ2000(edGalaxy.Simbad.RAJ2000) }}</div>
+            </div>
+            }
+            @if (edGalaxy.Simbad.DEJ2000) {
+            <div class="system-data-entry">
+              <div>Declination</div>
+              <div>{{ formatDEJ2000(edGalaxy.Simbad.DEJ2000) }}</div>
+            </div>
+            }
+          </div>
+          }
+          <div class="system-data-section">
+            <div class="system-data-section-header">Distances</div>
+            @for (dist of getSystemDistances(); track dist) {
+            <div class="system-data-entry">
+              <div class="distance-system-link" role="button" tabindex="0" (click)="openSignalsPage(dist.name)"
+                (keydown.enter)="openSignalsPage(dist.name)"
+                (keydown.space)="$event.preventDefault(); openSignalsPage(dist.name)"
+                title="Open signals page for {{ dist.name }}">
+                {{ dist.name }}
+              </div>
+              <div>{{ dist.distance | number: '1.1-1' }} ly</div>
+            </div>
+            }
+          </div>
+          @if (getNearestOutposts().length) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Nearest DSSA</div>
+            @for (outpost of getNearestOutposts(); track outpost) {
+            <div class="system-data-entry">
+              <div class="distance-system-link" role="button" tabindex="0" (click)="openSignalsPage(outpost.systemName)"
+                (keydown.enter)="openSignalsPage(outpost.systemName)"
+                (keydown.space)="$event.preventDefault(); openSignalsPage(outpost.systemName)"
+                title="{{ outpost.systemName }}">
+                {{ outpost.name }}
+              </div>
+              <div>{{ outpost.distance | number: '1.1-1' }} ly</div>
+            </div>
+            }
+          </div>
+          }
+          @if (getNearestNebulae().length) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Nearest Nebulae</div>
+            @for (nebula of getNearestNebulae(); track nebula) {
+            <div class="system-data-entry">
+              <div class="distance-system-link" role="button" tabindex="0" (click)="openSignalsPage(nebula.system)"
+                (keydown.enter)="openSignalsPage(nebula.system)"
+                (keydown.space)="$event.preventDefault(); openSignalsPage(nebula.system)"
+                title="Open signals page for {{ nebula.system }}">
+                {{ nebula.name }}
+              </div>
+              <div>{{ nebula.distance | number: '1.1-1' }} ly</div>
+            </div>
+            }
+          </div>
+          }
+          @if (megashipRows().length) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Megaships</div>
+            @for (row of megashipRows(); track row.signalName) {
+            <div class="system-data-entry">
+              <div class="distance-system-link" role="button" tabindex="0" (click)="openMegashipRouteDialog(row.signalName)"
+                (keydown.enter)="openMegashipRouteDialog(row.signalName)"
+                (keydown.space)="$event.preventDefault(); openMegashipRouteDialog(row.signalName)"
+                title="Show route for {{ row.signalName }}">
+                {{ row.signalName }}
+              </div>
+              <div>{{ row.locationLabel }}</div>
+            </div>
+            }
+          </div>
+          }
+          @if (data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Signals</div>
+            @if (data.system.signals.cloud?.length) {
+            <div class="system-data-entry">
+              <div>Clouds</div>
+              <div>
+                @for (cloud of data.system.signals!.cloud; track cloud) {
+                <div>
+                  {{ cloud }}
+                </div>
+                }
+              </div>
+            </div>
+            }
+            @if (data.system.signals.anomaly?.length) {
+            <div class="system-data-entry">
+              <div>Anomalies</div>
+              <div>
+                @for (anomaly of data.system.signals!.anomaly; track anomaly) {
+                <div>
+                  {{ anomaly }}
+                </div>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          }
+          @if (edastro?.mainImage) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">Galactic Exploration Catalog</div>
+            <div class="gec-image-panel">
+              @if (edastro.poiUrl) {
+<a [href]="edastro.poiUrl" target="_blank" rel="noopener noreferrer" class="gec-image-link"
+  title="View on the Galactic Exploration Catalog"
+  aria-label="View on the Galactic Exploration Catalog (opens in a new tab)">
+  <img [src]="edastro.mainImage" alt="" class="gec-main-image" (error)="onGecImageError($event)" />
+</a>
+              } @else {
+              <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image" (error)="onGecImageError($event)" />
+              }
+              @if (edastro.description) {
+              <div class="gec-description">{{
+                edastro.description }}
+              </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
       </div>
     </div>
-    @if (data(); as data) {
-      @let edastro = edastroData();
-      @let edGalaxy = edGalaxyData();
-      <div class="system-container" animate.enter="system-container--enter" animate.leave="system-container--leave">
-        <div class="system-container-data">
-          <div class="system-info-box">
-            <div class="system-title">
-              <span style="display: flex; align-items: center; gap: 4px;">
-                <span>{{ data.system.name }}@if (edastro?.name) {
-                  <span> ({{ edastro.name }})</span>
-                }</span>
-                @if (edastro?.name) {
-                  <a [href]="edastro.poiUrl" target="_blank" rel="noopener noreferrer" title="View on the Galactic Exploration Catalog"
-                    class="title-link">
-                    <img src="assets/icons/GEC-marker-logo-240px.png" alt="GEC" class="edastro-icon-inline"
-                      style="height: 1.1em; width: auto; pointer-events: auto; cursor: pointer;" />
-                    </a>
-                  }
-                  <a [href]="'https://spansh.co.uk/system/' + data.system.id64" target="_blank" rel="noopener noreferrer"
-                    class="title-link">
-                    <img src="assets/icons/spansh.png" alt="Spansh" title="View on Spansh"
-                      class="title-link-icon title-link-icon--rounded" />
-                    </a>
-                    <a href="https://spansh.co.uk/api/dump/{{ data.system.id64 }}" target="_blank" rel="noopener noreferrer"
-                      class="title-link title-link--tight">
-                      <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="Spansh JSON"
-                        title="View the spansh dump"
-                        class="title-link-icon" />
-                      </a>
-                    <a [href]="'https://inara.cz/elite/starsystem/?search=' + encodeURIComponent(data.system.name)"
-                        target="_blank" rel="noopener noreferrer" title="View on Inara"
-                        class="title-link">
-                        <img src="assets/icons/inara.png" alt="Inara"
-                            class="title-link-icon title-link-icon--light" />
-                    </a>
-                    <a [href]="'https://ravencolonial.com/#sys=' + encodeURIComponent(data.system.name)" target="_blank" rel="noopener noreferrer"
-                        title="View on Raven Colonial"
-                        class="title-link">
-                        <img src="assets/icons/rcc-96.png" alt="Raven Colonial"
-                            class="title-link-icon title-link-icon--rounded" />
-                    </a>
-                    <a [href]="'https://www.edsm.net/en/system?systemName=' + encodeURIComponent(data.system.name)"
-                        target="_blank" rel="noopener noreferrer" class="title-link">
-                        <img src="assets/icons/edsm-194x194.png" alt="EDSM" title="View on EDSM"
-                            class="title-link-icon title-link-icon--light" />
-                    </a>
-                    <a [href]="'https://www.edsm.net/api-system-v1/bodies?systemName=' + encodeURIComponent(data.system.name)"
-                        target="_blank" rel="noopener noreferrer" class="title-link title-link--tight">
-                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="EDSM JSON"
-                            title="View the EDSM dump"
-                            class="title-link-icon" />
-                    </a>
-                    <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
-                        target="_blank" rel="noopener noreferrer" class="title-link">
-                        <img src="assets/icons/eddn.png" alt="ED Galaxy Data"
-                            title="View on EDDN journals on ED Galaxy Data"
-                            class="title-link-icon title-link-icon--light" />
-                    </a>
-                    <a [href]="'https://edgalaxydata.space/eddn-lookup/systems.php?systemName=' + encodeURIComponent(data.system.name) + '&systemId64=' + data.system.id64"
-                        target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; margin-left: -0.5em;">
-                        <img src="assets/icons/Papirus-Team-Papirus-Mimetypes-App-json.svg" alt="ED Galaxy Data"
-                            title="View on EDDN journals on ED Galaxy Data"
-                            style="max-height: 1.1em; width: auto; display: block; pointer-events: auto; cursor: pointer;" />
-                    </a>
-                    @if (isVoyagerGoldenRecordSystem()) {
-<a
-                        href="https://science.nasa.gov/mission/voyager/golden-record-cover/" target="_blank" rel="noopener noreferrer"
-                        class="title-link">
-                        <img src="assets/icons/Voyager_Golden_Record_fx.png" alt="Voyager Golden Record"
-                            title="This pulsar is featured on the Voyager Golden Record cover"
-                            style="max-height: 1.1em; width: 1.1em; display: block; pointer-events: auto; cursor: pointer;" />
-                    </a>
-}
-                </span>
-                @if (data.system.population !== null && data.system.population !== undefined) {
-<span
-                    class="population">Population: {{ data.system.population | number }}</span>
-}
-            </div>
-            @if (edastro?.summary) {
-<div class="edastro-summary">
-                <span class="summary-text">{{ edastro.summary }}</span>
-            </div>
-}
-            <div class="system-data">
-                <app-region-map [system]="data.system" [outposts]="independentOutposts()"
-                    (systemSelected)="onMarkerSelected($event)"></app-region-map>
-                <div class="system-data-columns">
-                    <div class="system-data-section">
-                        <div class="system-data-section-header">Location</div>
-                        @if (edGalaxy?.PGName) {
-<div class="system-data-entry">
-                            <div>PG Name</div>
-                            <div>{{ edGalaxy.PGName }}</div>
-                        </div>
-}
-                        <div class="system-data-entry">
-                            <div>Region</div>
-                            <div>{{ data.system.region.name }}</div>
-                        </div>
-                        <div class="system-data-entry">
-                            <div>Id64</div>
-                            <div class="id64-copy" role="button" tabindex="0" (click)="copyId64ToClipboard()"
-                                (keydown.enter)="copyId64ToClipboard()" (keydown.space)="$event.preventDefault(); copyId64ToClipboard()"
-                                title="Click to copy Id64">
-                                {{ data.system.id64 }}
-                            </div>
-                        </div>
-                        <div class="system-data-entry">
-                            <div>Coordinates</div>
-                            <div class="coordinates-copy" role="button" tabindex="0" (click)="copyCoordinatesToClipboard('comma')"
-                                (keydown.enter)="copyCoordinatesToClipboard('comma')"
-                                (keydown.space)="$event.preventDefault(); copyCoordinatesToClipboard('comma')"
-                                (contextmenu)="copyCoordinatesToClipboard('tab', $event)"
-                                          (mousedown)="onCoordinatesMouseDown($event)"
-                                          title="Left: comma, Right: tab, Middle: pipe">
-                                          {{ data.system.coords.x }} / {{ data.system.coords.y }} / {{ data.system.coords.z }}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    @if (edGalaxy?.Simbad?.Name || edGalaxy?.Simbad?.RAJ2000 || edGalaxy?.Simbad?.DEJ2000) {
-                                      <div class="system-data-section"
-                                        >
-                                        <div class="system-data-section-header">Simbad</div>
-                                        @if (edGalaxy.Simbad.Name) {
-                                          <div class="system-data-entry">
-                                            <div>Name</div>
-                                            <div>
-                                              @if (edGalaxy.Simbad.Ident) {
-                                                <span class="pgname-link" role="button" tabindex="0"
-                                                  (click)="openSimbadPageRaw(edGalaxy.Simbad.Ident)"
-                                                  (keydown.enter)="openSimbadPageRaw(edGalaxy.Simbad.Ident)"
-                                                  (keydown.space)="$event.preventDefault(); openSimbadPageRaw(edGalaxy.Simbad.Ident)"
-                                                  title="Open in SIMBAD"
-                                                  style="cursor:pointer;text-decoration:underline dotted;">
-                                                  {{ edGalaxy.Simbad.Name }}
-                                                </span>
-                                              } @else {
-                                                {{ edGalaxy.Simbad.Name }}
-                                              }
-                                            </div>
-                                          </div>
-                                        }
-                                        @if (edGalaxy.Simbad.RAJ2000) {
-                                          <div class="system-data-entry">
-                                            <div>Right Ascension</div>
-                                            <div>{{ formatRAJ2000(edGalaxy.Simbad.RAJ2000) }}</div>
-                                          </div>
-                                        }
-                                        @if (edGalaxy.Simbad.DEJ2000) {
-                                          <div class="system-data-entry">
-                                            <div>Declination</div>
-                                            <div>{{ formatDEJ2000(edGalaxy.Simbad.DEJ2000) }}</div>
-                                          </div>
-                                        }
-                                      </div>
-                                    }
-                                    <div class="system-data-section">
-                                      <div class="system-data-section-header">Distances</div>
-                                      @for (dist of getSystemDistances(); track dist) {
-                                        <div class="system-data-entry">
-                                          <div class="distance-system-link" role="button" tabindex="0"
-                                            (click)="openSignalsPage(dist.name)"
-                                            (keydown.enter)="openSignalsPage(dist.name)"
-                                            (keydown.space)="$event.preventDefault(); openSignalsPage(dist.name)"
-                                            title="Open signals page for {{ dist.name }}">
-                                            {{ dist.name }}
-                                          </div>
-                                          <div>{{ dist.distance | number: '1.1-1' }} ly</div>
-                                        </div>
-                                      }
-                                    </div>
-                                    @if (getNearestOutposts().length) {
-                                      <div class="system-data-section">
-                                        <div class="system-data-section-header">Nearest DSSA</div>
-                                        @for (outpost of getNearestOutposts(); track outpost) {
-                                          <div class="system-data-entry">
-                                            <div class="distance-system-link" role="button" tabindex="0"
-                                              (click)="openSignalsPage(outpost.systemName)"
-                                              (keydown.enter)="openSignalsPage(outpost.systemName)"
-                                              (keydown.space)="$event.preventDefault(); openSignalsPage(outpost.systemName)"
-                                              title="{{ outpost.systemName }}">
-                                              {{ outpost.name }}
-                                            </div>
-                                            <div>{{ outpost.distance | number: '1.1-1' }} ly</div>
-                                          </div>
-                                        }
-                                      </div>
-                                    }
-                                    @if (getNearestNebulae().length) {
-                                      <div class="system-data-section">
-                                        <div class="system-data-section-header">Nearest Nebulae</div>
-                                        @for (nebula of getNearestNebulae(); track nebula) {
-                                          <div class="system-data-entry">
-                                            <div class="distance-system-link" role="button" tabindex="0"
-                                              (click)="openSignalsPage(nebula.system)"
-                                              (keydown.enter)="openSignalsPage(nebula.system)"
-                                              (keydown.space)="$event.preventDefault(); openSignalsPage(nebula.system)"
-                                              title="Open signals page for {{ nebula.system }}">
-                                              {{ nebula.name }}
-                                            </div>
-                                            <div>{{ nebula.distance | number: '1.1-1' }} ly</div>
-                                          </div>
-                                        }
-                                      </div>
-                                    }
-                                    @if (data.system.signals?.cloud?.length || data.system.signals?.anomaly?.length) {
-                                      <div class="system-data-section"
-                                        >
-                                        <div class="system-data-section-header">Signals</div>
-                                        @if (data.system.signals.cloud?.length) {
-                                          <div class="system-data-entry">
-                                            <div>Clouds</div>
-                                            <div>
-                                              @for (cloud of data.system.signals!.cloud; track cloud) {
-                                                <div>
-                                                  {{ cloud }}
-                                                </div>
-                                              }
-                                            </div>
-                                          </div>
-                                        }
-                                        @if (data.system.signals.anomaly?.length) {
-                                          <div class="system-data-entry">
-                                            <div>Anomalies</div>
-                                            <div>
-                                              @for (anomaly of data.system.signals!.anomaly; track anomaly) {
-                                                <div>
-                                                  {{ anomaly }}
-                                                </div>
-                                              }
-                                            </div>
-                                          </div>
-                                        }
-                                      </div>
-                                    }
-                                    @if (edastro?.mainImage) {
-                                      <div class="system-data-section">
-                                        <div class="system-data-section-header">Galactic Exploration Catalog</div>
-                                        <div class="gec-image-panel">
-                                          <img [src]="edastro.mainImage" alt="GEC Image" class="gec-main-image"
-                                            (error)="onGecImageError($event)" #gecImage />
-                                            @if (edastro.description) {
-                                              <div class="gec-description">{{
-                                                edastro.description }}
-                                              </div>
-                                            }
-                                          </div>
-                                        </div>
-                                      }
-                                    </div>
-                                  </div>
-                                </div>
-                                @if (systemCompleteness(); as completeness) {
-                                  <div class="system-completeness" role="img"
-                                    [attr.aria-label]="completeness.percent === null
+    @if (showGnosisRoute()) {
+    <app-gnosis-route (stopSelected)="openSignalsPage($event)"></app-gnosis-route>
+    }
+    @if (systemCompleteness(); as completeness) {
+    <div class="system-completeness" role="img"
+      [attr.aria-label]="completeness.percent === null
                                       ? 'System completeness unknown (' + completeness.known + ' bodies known, total unknown)'
                                       : 'System completeness ' + completeness.percent + '% (' + completeness.known + ' of ' + completeness.total + ' bodies known)'">
-                                    <div class="system-completeness-header">
-                                      <span class="system-completeness-label">System Completeness</span>
-                                      <span class="system-completeness-value">{{ completeness.percent === null ? '?' : completeness.percent }}%</span>
-                                    </div>
-                                    <div class="system-completeness-track">
-                                      @if (completeness.percent === null) {
-                                        <span class="system-completeness-unknown">Unknown</span>
-                                      } @else {
-                                        <div class="system-completeness-fill"
-                                          [style.width.%]="completeness.percent"
-                                          [style.background-color]="'hsl(' + (completeness.percent * 1.2) + ', 55%, 42%)'"></div>
-                                      }
-                                    </div>
-                                  </div>
-                                }
-                                @if (bodies().length) {
-                                  <div class="bodies">
-                                    @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
-                                      <app-system-body [body]="body"
-                                        [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
-                                      [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"></app-system-body>
-                                    }
-                                  </div>
-                                }
-                                <div class="credits-panel">
-                                  <div class="credits-title">
-                                    <span class="credits-title-text">Credits</span>
-                                    <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
-                                      rel="noopener noreferrer" aria-label="Donate via PayPal (fallback)">
-                                      <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
-                                    </a>
-                                  </div>
-                                  <div class="credits-detail">
-                                    <div [innerHTML]="creditsHtml"></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          }
+      <div class="system-completeness-header">
+        <span class="system-completeness-label-group">
+          <span class="system-completeness-label">System Completeness</span>
+          <button type="button" class="histogram-button" (click)="showBodyHistogram()"
+            title="Show a histogram of body types in this system" aria-label="Show histogram of body types">
+            <fa-icon [icon]="faChartColumn" aria-hidden="true"></fa-icon>
+          </button>
+        </span>
+        <span class="system-completeness-count">{{ completeness.known }} / {{ completeness.total ?? '?' }} bodies</span>
+        <span class="system-completeness-value">{{ completeness.percent === null ? '?' : completeness.percent }}%</span>
+      </div>
+      <div class="system-completeness-track">
+        @if (completeness.percent === null) {
+        <span class="system-completeness-unknown">Unknown</span>
+        } @else {
+        <div class="system-completeness-fill" [style.width.%]="completeness.percent"
+          [style.background-color]="'hsl(' + (completeness.percent * 1.2) + ', 55%, 42%)'"></div>
+        }
+      </div>
+    </div>
+    }
+    @if (speculativeSystemInfo(); as infoParagraphs) {
+    <div class="system-info-panel">
+      <figure class="system-info-image">
+        <img src="assets/thargoid-map.png" alt="Thargoid map" loading="lazy" />
+        <figcaption>Thargoid Map</figcaption>
+      </figure>
+      <div class="system-info-text">
+        @for (paragraph of infoParagraphs; track paragraph) {
+        <p [innerHTML]="paragraph"></p>
+        }
+      </div>
+      @if (systemMapImage(); as mapImage) {
+      <figure class="system-info-image">
+        <img [src]="mapImage.path" [alt]="mapImage.caption" loading="lazy" />
+        <figcaption>{{ mapImage.caption }}</figcaption>
+      </figure>
+      }
+    </div>
+    }
+    @if (bodies().length) {
+    <div class="quick-filters">
+      @if (biologyMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'biology'"
+        (click)="onBiologyFilterClick()" title="Expand only bodies with biological signals"
+        aria-label="Expand only bodies with biological signals">
+        <img alt="" src="assets/icons/Biology.svg" />
+        <span>Biology</span>
+      </button>
+      }
+      @if (geologyMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'geology'"
+        (click)="onGeologyFilterClick()" title="Expand only bodies with geological signals"
+        aria-label="Expand only bodies with geological signals">
+        <img alt="" src="assets/icons/Geology.svg" />
+        <span>Geology</span>
+      </button>
+      }
+      @if (guardianMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'guardian'"
+        (click)="onGuardianFilterClick()" title="Expand only bodies with Guardian sites"
+        aria-label="Expand only bodies with Guardian sites">
+        <img alt="" src="assets/icons/Guardian.svg" />
+        <span>Guardian</span>
+      </button>
+      }
+      @if (thargoidMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'thargoid'"
+        (click)="onThargoidFilterClick()" title="Expand only bodies with Thargoid sites"
+        aria-label="Expand only bodies with Thargoid sites">
+        <img alt="" src="assets/icons/Thargoid.svg" />
+        <span>Thargoid</span>
+      </button>
+      }
+      @if (humanMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'human'"
+        (click)="onHumanFilterClick()" title="Expand only bodies with human sites"
+        aria-label="Expand only bodies with human sites">
+        <img alt="" src="assets/icons/Human.svg" />
+        <span>Human</span>
+      </button>
+      }
+      @if (landableMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'landable'"
+        (click)="onLandableFilterClick()" title="Expand only landable bodies"
+        aria-label="Expand only landable bodies">
+        <img alt="" src="assets/icons/footprint.svg" style="filter: brightness(0) invert(1);" />
+        <span>Landable</span>
+      </button>
+      }
+      @if (availableMaterialKeys().length) {
+      <div class="quick-filter-dropdown" (click)="$event.stopPropagation()">
+        <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'materials'"
+          (click)="toggleMaterialsMenu()" aria-haspopup="true" [attr.aria-expanded]="materialsMenuOpen()"
+          title="Expand only bodies containing selected materials">
+          <span>Materials{{ selectedMaterials().size ? ' (' + selectedMaterials().size + ')' : '' }}</span>
+          <fa-icon [icon]="faChevronDown" aria-hidden="true"></fa-icon>
+        </button>
+        @if (materialsMenuOpen()) {
+        <div class="quick-filter-menu">
+          @for (material of availableMaterialKeys(); track material) {
+          <label class="quick-filter-menu-item">
+            <input type="checkbox" [checked]="selectedMaterials().has(material)"
+              (change)="toggleMaterialSelection(material)" />
+            {{ material }}
+          </label>
+          }
+        </div>
+        }
+      </div>
+      }
+      @if (availableHotspotKeys().length) {
+      <div class="quick-filter-dropdown" (click)="$event.stopPropagation()">
+        <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'mining'"
+          (click)="toggleMiningMenu()" aria-haspopup="true" [attr.aria-expanded]="miningMenuOpen()"
+          title="Expand only bodies containing selected mining hotspots">
+          <span>Mining{{ selectedHotspots().size ? ' (' + selectedHotspots().size + ')' : '' }}</span>
+          <fa-icon [icon]="faChevronDown" aria-hidden="true"></fa-icon>
+        </button>
+        @if (miningMenuOpen()) {
+        <div class="quick-filter-menu">
+          @for (resource of availableHotspotKeys(); track resource) {
+          <label class="quick-filter-menu-item">
+            <input type="checkbox" [checked]="selectedHotspots().has(resource)"
+              (change)="toggleHotspotSelection(resource)" />
+            {{ hotspotDisplayName(resource) }}
+          </label>
+          }
+        </div>
+        }
+      </div>
+      }
+      @if (touristMatches().size) {
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'tourist'"
+        (click)="onTouristFilterClick()" title="Expand only bodies with special badges"
+        aria-label="Expand only bodies with special badges">
+        <span>Tourist</span>
+      </button>
+      }
+      <button type="button" class="quick-filter-button" [class.active]="activeFilterCategory() === 'everything'"
+        (click)="onEverythingFilterClick()" title="Expand every body" aria-label="Expand every body">
+        <span>Everything</span>
+      </button>
+    </div>
+    <div class="bodies">
+      @for (body of bodies(); track trackByBody($index, body); let isLast = $last) {
+      <app-system-body [body]="body" [isRoot]="true" [isLast]="isLast" [forceExpanded]="getTotalBodyCount() <= 3"
+        [defaultExpanded]="defaultExpandStarOnly()" [anchorBodyId]="anchorBodyId()" [edGalaxyData]="edGalaxy"
+        [filterCommand]="filterCommand()" [systemKey]="systemKey()"
+        [systemPopulation]="data.system.population"></app-system-body>
+      }
+    </div>
+    }
+    <div class="credits-panel">
+      <div class="credits-title">
+        <span class="credits-title-text">Credits</span>
+        <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
+          aria-label="Donate via PayPal (fallback)">
+          <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
+        </a>
+      </div>
+      <div class="credits-detail">
+        <div [innerHTML]="creditsHtml"></div>
+      </div>
+    </div>
+  </div>
+</div>
+}
+@else if (searching) {
+<!-- Loading shell: reuses the real system chrome classes below (.system-container, .system-data,
+     .system-data-section, .system-completeness, .bodies …) so layout, spacing and the responsive
+     breakpoints come from one place — only the shimmer tuning is loading-specific (see .system-loading
+     in the SCSS). Static section headers and row labels render as real text; per-system value cells
+     shimmer. The map reuses RegionMapComponent's own reserved-space skeleton (mounted with no system),
+     and the body tree stays generic because bodies are unknown until the data arrives. -->
+<div class="system-container system-loading" [animate.enter]="fadeInPanel() ? 'system-container--enter' : ''">
+  <div class="system-container-data">
+    <span class="sr-only" role="status">Loading system data…</span>
+    <div class="system-info-box" aria-hidden="true">
+      <div class="system-title">
+        <span class="skeleton skeleton-w40"></span>
+      </div>
+      <div class="system-data">
+        <app-region-map />
+        <div class="system-data-columns">
+          <!-- Labelled sections (Location, Society): the static label renders as real text; only the
+               value cell shimmers. -->
+          @for (section of loadingLabelledSections; track section.header) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">{{ section.header }}</div>
+            @for (row of section.rows; track row.label) {
+            <div class="system-data-entry">
+              <div>{{ row.label }}</div>
+              <div><span class="skeleton" [style.width.px]="row.value"></span></div>
+            </div>
+            }
+          </div>
+          }
+          <!-- Shimmer sections (Distances, DSSA, Nebulae): no static label (the system name is
+               per-system too), so both cells shimmer. -->
+          @for (section of loadingShimmerSections; track section.header) {
+          <div class="system-data-section">
+            <div class="system-data-section-header">{{ section.header }}</div>
+            @for (row of section.rows; track $index) {
+            <div class="system-data-entry">
+              <div><span class="skeleton" [style.width.px]="row.name"></span></div>
+              <div><span class="skeleton" [style.width.px]="row.value"></span></div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="system-completeness" aria-hidden="true">
+      <div class="system-completeness-header">
+        <span class="system-completeness-label">System Completeness</span>
+        <span class="skeleton system-completeness-count-loading"></span>
+        <span class="skeleton system-completeness-value-loading"></span>
+      </div>
+      <div class="system-completeness-track">
+        <span class="skeleton"></span>
+      </div>
+    </div>
+
+    <div class="bodies" aria-hidden="true">
+      @for (row of loadingBodyRows; track row) {
+      <div class="loading-body-row">
+        <span class="skeleton loading-body-name"></span>
+        <span class="skeleton loading-body-chip"></span>
+        <span class="skeleton loading-body-chip"></span>
+      </div>
+      }
+    </div>
+  </div>
+</div>
+}

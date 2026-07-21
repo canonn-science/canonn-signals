@@ -1,0 +1,1087 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "absoluteMagnitude": 7.396439, 
+        "age": 10882, 
+        "axialTilt": 0.0, 
+        "belts": [
+          {
+            "innerRadius": 759470000.0, 
+            "mass": 101830000000000.0, 
+            "name": "Prooe Bli FQ-R c19-2 A Belt", 
+            "outerRadius": 2066600000.0, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 7184300000.0, 
+            "mass": 5955900000000000.0, 
+            "name": "Prooe Bli FQ-R c19-2 B Belt", 
+            "outerRadius": 179380000000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "bodyId": 0, 
+        "distanceToArrival": 0.0, 
+        "id64": 646492666282, 
+        "luminosity": "Va", 
+        "mainStar": true, 
+        "name": "Prooe Bli FQ-R c19-2", 
+        "rotationalPeriod": 2.68818540219907, 
+        "solarMasses": 0.519531, 
+        "solarRadius": 0.661804169662114, 
+        "stations": [], 
+        "subType": "K (Yellow-Orange) Star", 
+        "surfaceTemperature": 3934.0, 
+        "type": "Star", 
+        "updateTime": "2019-01-06 18:06:01+00"
+      }, 
+      {
+        "argOfPeriapsis": 56.600533, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 29.87, 
+          "Nitrogen": 0.62, 
+          "Silicates": 69.21
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide-rich", 
+        "axialTilt": 0.350787, 
+        "bodyId": 7, 
+        "distanceToArrival": 13.0, 
+        "earthMasses": 5.015754, 
+        "gravity": 2.20147542018281, 
+        "id64": 252202225625414058, 
+        "isLandable": false, 
+        "name": "Prooe Bli FQ-R c19-2 1", 
+        "orbitalEccentricity": 2e-06, 
+        "orbitalInclination": -0.006139, 
+        "orbitalPeriod": 2.17397406684028, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 9627.105, 
+        "rotationalPeriod": 2.08077112268519, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0264910482846866, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 2210.22523562793, 
+        "surfaceTemperature": 3182.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:06:07+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 213.138443, 
+        "atmosphereComposition": {
+          "Helium": 26.89, 
+          "Hydrogen": 73.11
+        }, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": 1.675548, 
+        "bodyId": 18, 
+        "distanceToArrival": 950.0, 
+        "earthMasses": 1023.682129, 
+        "gravity": 7.05601793787338, 
+        "id64": 648518992834017706, 
+        "isLandable": false, 
+        "name": "Prooe Bli FQ-R c19-2 2", 
+        "orbitalEccentricity": 0.00011, 
+        "orbitalInclination": -0.020306, 
+        "orbitalPeriod": 1323.52527777778, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 76822.288, 
+        "rings": [
+          {
+            "innerRadius": 141850000.0, 
+            "mass": 299480000000.0, 
+            "name": "Prooe Bli FQ-R c19-2 2 A Ring", 
+            "outerRadius": 350860000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 0.506888066041667, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.90290777597278, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 272.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:06:53+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 273.138428, 
+        "atmosphereComposition": {
+          "Argon": 6.22, 
+          "Neon": 0.15, 
+          "Nitrogen": 93.62
+        }, 
+        "atmosphereType": "Argon-rich", 
+        "axialTilt": 0.170149, 
+        "bodyId": 25, 
+        "distanceToArrival": 950.0, 
+        "earthMasses": 1.082789, 
+        "gravity": 0.642250109833082, 
+        "id64": 900720571966765482, 
+        "isLandable": false, 
+        "name": "Prooe Bli FQ-R c19-2 3", 
+        "orbitalEccentricity": 0.00011, 
+        "orbitalInclination": -0.020306, 
+        "orbitalPeriod": 1323.52527777778, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 8281.411, 
+        "rotationalPeriod": 1.49693133319444, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 1.90290777597278, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 3.72374599062423, 
+        "surfaceTemperature": 93.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:06:49+00", 
+        "volcanismType": "Water Magma"
+      }, 
+      {
+        "argOfPeriapsis": 91.758347, 
+        "atmosphereComposition": {
+          "Helium": 26.89, 
+          "Hydrogen": 73.1
+        }, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -1.136286, 
+        "bodyId": 27, 
+        "distanceToArrival": 1602.0, 
+        "earthMasses": 518.561768, 
+        "gravity": 3.75296152165953, 
+        "id64": 972778166004693418, 
+        "isLandable": false, 
+        "name": "Prooe Bli FQ-R c19-2 4", 
+        "orbitalEccentricity": 0.015352, 
+        "orbitalInclination": -5.592374, 
+        "orbitalPeriod": 230.112106481481, 
+        "parents": [
+          {
+            "Null": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 74971.76, 
+        "rings": [
+          {
+            "innerRadius": 123700000.0, 
+            "mass": 66125000000.0, 
+            "name": "Prooe Bli FQ-R c19-2 4 A Ring", 
+            "outerRadius": 133470000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "innerRadius": 133570000.0, 
+            "mass": 1824300000000.0, 
+            "name": "Prooe Bli FQ-R c19-2 4 B Ring", 
+            "outerRadius": 290820000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 1.63114583333333, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000762968399656507, 
+        "stations": [], 
+        "subType": "Gas giant with ammonia-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 149.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:39+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 150.203278, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.357522, 
+        "bodyId": 30, 
+        "distanceToArrival": 1603.0, 
+        "earthMasses": 0.011656, 
+        "gravity": 0.12048959932069, 
+        "id64": 1080864557061585322, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.97, 
+          "Carbon": 23.58, 
+          "Iron": 12.55, 
+          "Mercury": 0.55, 
+          "Nickel": 9.5, 
+          "Phosphorus": 15.1, 
+          "Selenium": 4.39, 
+          "Sulphur": 28.04, 
+          "Technetium": 0.45, 
+          "Zinc": 3.41, 
+          "Zirconium": 1.46
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 4 a", 
+        "orbitalEccentricity": 0.000305, 
+        "orbitalInclination": 0.090492, 
+        "orbitalPeriod": 2.21407425491898, 
+        "parents": [
+          {
+            "Planet": 27
+          }, 
+          {
+            "Null": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1983.738875, 
+        "rotationalPeriod": 2.15193576388889, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00385366854021673, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 83.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:50+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 356.543213, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.197833, 
+        "bodyId": 31, 
+        "distanceToArrival": 1604.0, 
+        "earthMasses": 0.01044, 
+        "gravity": 0.116008669870303, 
+        "id64": 1116893354080549290, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 1.61, 
+          "Carbon": 23.24, 
+          "Chromium": 5.56, 
+          "Iron": 12.37, 
+          "Nickel": 9.36, 
+          "Niobium": 0.85, 
+          "Phosphorus": 14.88, 
+          "Sulphur": 27.64, 
+          "Technetium": 0.44, 
+          "Tungsten": 0.68, 
+          "Zinc": 3.36
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 4 b", 
+        "orbitalEccentricity": 0.000319, 
+        "orbitalInclination": -0.466039, 
+        "orbitalPeriod": 3.40522135416667, 
+        "parents": [
+          {
+            "Planet": 27
+          }, 
+          {
+            "Null": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1913.3285, 
+        "rotationalPeriod": 3.33469328703704, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00513463778866473, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 81.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:46+00", 
+        "volcanismType": "Minor Carbon Dioxide Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 271.758331, 
+        "atmosphereComposition": {
+          "Helium": 77.96, 
+          "Neon": 3.0, 
+          "Nitrogen": 19.04
+        }, 
+        "atmosphereType": "Helium", 
+        "axialTilt": 0.224644, 
+        "bodyId": 32, 
+        "distanceToArrival": 1588.0, 
+        "earthMasses": 4.67255, 
+        "gravity": 1.0960811771752, 
+        "id64": 1152922151099513258, 
+        "isLandable": false, 
+        "name": "Prooe Bli FQ-R c19-2 5", 
+        "orbitalEccentricity": 0.015352, 
+        "orbitalInclination": -5.592374, 
+        "orbitalPeriod": 230.112106481481, 
+        "parents": [
+          {
+            "Null": 26
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 13168.616, 
+        "rings": [
+          {
+            "innerRadius": 23432000.0, 
+            "mass": 60715000000.0, 
+            "name": "Prooe Bli FQ-R c19-2 5 A Ring", 
+            "outerRadius": 58201000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 231.146388888889, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0846789549926395, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.437972450964717, 
+        "surfaceTemperature": 73.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:50+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 315.665955, 
+        "atmosphereComposition": {
+          "Helium": 26.89, 
+          "Hydrogen": 73.11
+        }, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -2.626472, 
+        "bodyId": 34, 
+        "distanceToArrival": 1993.0, 
+        "earthMasses": 119.59726, 
+        "gravity": 1.37576783950655, 
+        "id64": 1224979745137441194, 
+        "isLandable": false, 
+        "name": "Prooe Bli FQ-R c19-2 6", 
+        "orbitalEccentricity": 0.14534, 
+        "orbitalInclination": -178.347031, 
+        "orbitalPeriod": 5023.5737037037, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 59466.524, 
+        "rotationalPeriod": 0.405867060914352, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 4.6302530814832, 
+        "stations": [], 
+        "subType": "Class I gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 74.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:06:58+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 335.228851, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.472156, 
+        "bodyId": 35, 
+        "distanceToArrival": 1994.0, 
+        "earthMasses": 0.001737, 
+        "gravity": 0.0629341369818619, 
+        "id64": 1261008542156405162, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 22.38, 
+          "Chromium": 5.36, 
+          "Iron": 11.91, 
+          "Manganese": 4.92, 
+          "Molybdenum": 0.78, 
+          "Nickel": 9.01, 
+          "Phosphorus": 14.33, 
+          "Ruthenium": 0.74, 
+          "Sulphur": 26.62, 
+          "Tin": 0.72, 
+          "Zinc": 3.24
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 a", 
+        "orbitalEccentricity": 0.00063, 
+        "orbitalInclination": -0.039446, 
+        "orbitalPeriod": 2.55962456597222, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1059.598375, 
+        "rotationalPeriod": 2.55988245081019, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00260329758824569, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 59.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:39+00", 
+        "volcanismType": "Carbon Dioxide Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 356.148376, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.298411, 
+        "bodyId": 36, 
+        "distanceToArrival": 1992.0, 
+        "earthMasses": 0.001657, 
+        "gravity": 0.0619376712120548, 
+        "id64": 1297037339175369130, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.74, 
+          "Carbon": 22.72, 
+          "Iron": 12.09, 
+          "Manganese": 4.99, 
+          "Nickel": 9.15, 
+          "Niobium": 0.83, 
+          "Phosphorus": 14.54, 
+          "Selenium": 4.23, 
+          "Sulphur": 27.01, 
+          "Tin": 0.73, 
+          "Vanadium": 2.97
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 b", 
+        "orbitalEccentricity": 0.000893, 
+        "orbitalInclination": -0.001433, 
+        "orbitalPeriod": 5.417412109375, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1043.2018125, 
+        "rotationalPeriod": 5.41795862268518, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00429141851415403, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 59.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:32+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 53.701431, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -1.279497, 
+        "bodyId": 37, 
+        "distanceToArrival": 1996.0, 
+        "earthMasses": 0.005871, 
+        "gravity": 0.0954357856254704, 
+        "id64": 1333066136194333098, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 22.95, 
+          "Germanium": 3.58, 
+          "Iron": 12.33, 
+          "Molybdenum": 0.81, 
+          "Nickel": 9.33, 
+          "Phosphorus": 14.69, 
+          "Selenium": 4.27, 
+          "Sulphur": 27.29, 
+          "Tungsten": 0.68, 
+          "Yttrium": 0.74, 
+          "Zinc": 3.35
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 c", 
+        "orbitalEccentricity": 0.00021, 
+        "orbitalInclination": 0.134497, 
+        "orbitalPeriod": 11.2355237268519, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1581.9215, 
+        "rotationalPeriod": 11.2366572627315, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00697913890829196, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 58.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:13+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 166.022659, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.520218, 
+        "bodyId": 38, 
+        "distanceToArrival": 1996.0, 
+        "earthMasses": 0.000257, 
+        "gravity": 0.0314454538316534, 
+        "id64": 1369094933213297066, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 25.72, 
+          "Chromium": 4.23, 
+          "Iron": 9.41, 
+          "Manganese": 3.89, 
+          "Mercury": 0.41, 
+          "Nickel": 7.12, 
+          "Phosphorus": 16.47, 
+          "Ruthenium": 0.58, 
+          "Sulphur": 30.59, 
+          "Tin": 0.49, 
+          "Zirconium": 1.09
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 c a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 8.024307, 
+        "orbitalPeriod": 0.932349717881944, 
+        "parents": [
+          {
+            "Planet": 37
+          }, 
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 576.5966875, 
+        "rotationalPeriod": 0.952531738287037, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 4.93140073817909e-05, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 58.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:09+00", 
+        "volcanismType": "Major Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 17.914965, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.455535, 
+        "bodyId": 39, 
+        "distanceToArrival": 1996.0, 
+        "earthMasses": 0.001444, 
+        "gravity": 0.0591208314420053, 
+        "id64": 1405123730232261034, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 23.25, 
+          "Chromium": 5.57, 
+          "Iron": 12.38, 
+          "Molybdenum": 0.81, 
+          "Nickel": 9.36, 
+          "Niobium": 0.85, 
+          "Phosphorus": 14.89, 
+          "Ruthenium": 0.76, 
+          "Sulphur": 27.65, 
+          "Vanadium": 3.04, 
+          "Zirconium": 1.44
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 d", 
+        "orbitalEccentricity": 7e-05, 
+        "orbitalInclination": 0.002593, 
+        "orbitalPeriod": 19.5837065972222, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 996.776625, 
+        "rotationalPeriod": 19.5856814236111, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0101081002351459, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 58.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:14+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 261.594391, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.232584, 
+        "bodyId": 40, 
+        "distanceToArrival": 1988.0, 
+        "earthMasses": 0.001198, 
+        "gravity": 0.0554976724616751, 
+        "id64": 1441152527251225002, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.92, 
+          "Carbon": 22.36, 
+          "Chromium": 5.35, 
+          "Iron": 11.9, 
+          "Manganese": 4.92, 
+          "Mercury": 0.52, 
+          "Nickel": 9.0, 
+          "Phosphorus": 14.31, 
+          "Sulphur": 26.59, 
+          "Tellurium": 0.9, 
+          "Zinc": 3.23
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 e", 
+        "orbitalEccentricity": 0.00073, 
+        "orbitalInclination": -0.517589, 
+        "orbitalPeriod": 28.7052777777778, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 937.0775625, 
+        "rotationalPeriod": 28.7081712962963, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0130430998708058, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 58.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:18+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 37.829426, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.380245, 
+        "bodyId": 41, 
+        "distanceToArrival": 2000.0, 
+        "earthMasses": 0.002476, 
+        "gravity": 0.0709786735424819, 
+        "id64": 1477181324270188970, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.93, 
+          "Carbon": 22.59, 
+          "Chromium": 5.41, 
+          "Iron": 12.03, 
+          "Nickel": 9.1, 
+          "Niobium": 0.82, 
+          "Phosphorus": 14.46, 
+          "Polonium": 0.31, 
+          "Selenium": 4.2, 
+          "Sulphur": 26.87, 
+          "Zinc": 3.27
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 f", 
+        "orbitalEccentricity": 6.7e-05, 
+        "orbitalInclination": -0.29012, 
+        "orbitalPeriod": 47.459615162037, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1191.23075, 
+        "rotationalPeriod": 47.4644010416667, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0182370989321842, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 57.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:25+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 90.056686, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": 0.028146, 
+        "bodyId": 42, 
+        "distanceToArrival": 1984.0, 
+        "earthMasses": 0.002754, 
+        "gravity": 0.073577817929999, 
+        "id64": 1513210121289152938, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.93, 
+          "Carbon": 22.54, 
+          "Chromium": 5.4, 
+          "Germanium": 3.49, 
+          "Iron": 12.0, 
+          "Nickel": 9.08, 
+          "Niobium": 0.82, 
+          "Phosphorus": 14.43, 
+          "Polonium": 0.31, 
+          "Selenium": 4.2, 
+          "Sulphur": 26.8
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 g", 
+        "orbitalEccentricity": 0.000464, 
+        "orbitalInclination": 0.021185, 
+        "orbitalPeriod": 70.2866203703704, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1233.937125, 
+        "rotationalPeriod": 70.2937152777778, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0236948929781793, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 57.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:31+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 151.641388, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": 0.515053, 
+        "bodyId": 43, 
+        "distanceToArrival": 2005.0, 
+        "earthMasses": 0.002807, 
+        "gravity": 0.0740536429304015, 
+        "id64": 1549238918308116906, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 0.91, 
+          "Carbon": 22.13, 
+          "Chromium": 5.3, 
+          "Iron": 11.78, 
+          "Manganese": 4.87, 
+          "Molybdenum": 0.77, 
+          "Nickel": 8.91, 
+          "Phosphorus": 14.17, 
+          "Ruthenium": 0.73, 
+          "Selenium": 4.12, 
+          "Sulphur": 26.32
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 6 h", 
+        "orbitalEccentricity": 0.014242, 
+        "orbitalInclination": -0.025291, 
+        "orbitalPeriod": 117.643449074074, 
+        "parents": [
+          {
+            "Planet": 34
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1241.74525, 
+        "rotationalPeriod": 117.655324074074, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0334029481610797, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 57.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:07:20+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 129.539017, 
+        "atmosphereComposition": {
+          "Helium": 89.34, 
+          "Hydrogen": 8.43, 
+          "Neon": 2.24
+        }, 
+        "atmosphereType": "Helium", 
+        "axialTilt": 0.443969, 
+        "bodyId": 44, 
+        "distanceToArrival": 3252.0, 
+        "earthMasses": 13.653534, 
+        "gravity": 1.6553088999867, 
+        "id64": 1585267715327080874, 
+        "isLandable": false, 
+        "name": "Prooe Bli FQ-R c19-2 7", 
+        "orbitalEccentricity": 0.067508, 
+        "orbitalInclination": 77.431061, 
+        "orbitalPeriod": 8070.46, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 18317.556, 
+        "rings": [
+          {
+            "innerRadius": 30224000.0, 
+            "mass": 143320000000.0, 
+            "name": "Prooe Bli FQ-R c19-2 7 A Ring", 
+            "outerRadius": 86581000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 1.56925672743056, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 6.35128666921594, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 1.29139279546015, 
+        "surfaceTemperature": 50.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:12+00", 
+        "volcanismType": "Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 213.651581, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.025905, 
+        "bodyId": 46, 
+        "distanceToArrival": 3251.0, 
+        "earthMasses": 0.00017, 
+        "gravity": 0.0287740002133507, 
+        "id64": 1657325309365008810, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 23.11, 
+          "Chromium": 5.53, 
+          "Germanium": 3.58, 
+          "Iron": 12.3, 
+          "Molybdenum": 0.8, 
+          "Nickel": 9.3, 
+          "Phosphorus": 14.79, 
+          "Sulphur": 27.48, 
+          "Tellurium": 0.93, 
+          "Tin": 0.74, 
+          "Zirconium": 1.43
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 7 a", 
+        "orbitalEccentricity": 0.001224, 
+        "orbitalInclination": -0.001324, 
+        "orbitalPeriod": 5.84583441840278, 
+        "parents": [
+          {
+            "Planet": 44
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 490.240125, 
+        "rotationalPeriod": 5.75676215277778, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00219010069105215, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 48.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:10+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 235.124985, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.502607, 
+        "bodyId": 47, 
+        "distanceToArrival": 3253.0, 
+        "earthMasses": 0.000328, 
+        "gravity": 0.0358805164930384, 
+        "id64": 1693354106383972778, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 23.19, 
+          "Iron": 12.35, 
+          "Mercury": 0.54, 
+          "Nickel": 9.34, 
+          "Phosphorus": 14.85, 
+          "Ruthenium": 0.76, 
+          "Selenium": 4.32, 
+          "Sulphur": 27.58, 
+          "Tungsten": 0.68, 
+          "Vanadium": 3.03, 
+          "Zinc": 3.36
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 7 b", 
+        "orbitalEccentricity": 7.4e-05, 
+        "orbitalInclination": -0.421005, 
+        "orbitalPeriod": 20.5954441550926, 
+        "parents": [
+          {
+            "Planet": 44
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 609.8065625, 
+        "rotationalPeriod": 20.4627170138889, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00507084736200059, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 48.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:15+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 106.007935, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": 1.672828, 
+        "bodyId": 48, 
+        "distanceToArrival": 3253.0, 
+        "earthMasses": 0.000304, 
+        "gravity": 0.0350505368186345, 
+        "id64": 1729382903402936746, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 22.54, 
+          "Chromium": 5.47, 
+          "Germanium": 3.53, 
+          "Iron": 12.15, 
+          "Mercury": 0.53, 
+          "Nickel": 9.19, 
+          "Niobium": 0.83, 
+          "Phosphorus": 14.43, 
+          "Polonium": 0.32, 
+          "Selenium": 4.2, 
+          "Sulphur": 26.81
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 7 c", 
+        "orbitalEccentricity": 4.4e-05, 
+        "orbitalInclination": -0.034087, 
+        "orbitalPeriod": 77.3657233796296, 
+        "parents": [
+          {
+            "Planet": 44
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 593.9829375, 
+        "rotationalPeriod": -77.1703240740741, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0122536503455727, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 48.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:17+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 303.501923, 
+        "atmosphereType": "No atmosphere", 
+        "axialTilt": -0.162595, 
+        "bodyId": 49, 
+        "distanceToArrival": 3249.0, 
+        "earthMasses": 0.000204, 
+        "gravity": 0.0305753892974472, 
+        "id64": 1765411700421900714, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.77, 
+          "Arsenic": 1.63, 
+          "Cadmium": 0.97, 
+          "Carbon": 23.46, 
+          "Iron": 12.49, 
+          "Mercury": 0.55, 
+          "Nickel": 9.45, 
+          "Phosphorus": 15.02, 
+          "Selenium": 4.37, 
+          "Sulphur": 27.9, 
+          "Zinc": 3.39
+        }, 
+        "name": "Prooe Bli FQ-R c19-2 7 d", 
+        "orbitalEccentricity": 0.001417, 
+        "orbitalInclination": -0.036236, 
+        "orbitalPeriod": 134.848611111111, 
+        "parents": [
+          {
+            "Planet": 44
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 520.9710625, 
+        "rotationalPeriod": 1.60042914496528, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0177472369865756, 
+        "signals": {}, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 48.0, 
+        "type": "Planet", 
+        "updateTime": "2019-01-06 18:08:22+00", 
+        "volcanismType": "No volcanism"
+      }
+    ], 
+    "coords": {
+      "x": 7662.21875, 
+      "y": -734.0625, 
+      "z": 49709.75
+    }, 
+    "date": "2019-01-06 18:05:55+00", 
+    "government": "None", 
+    "id64": 646492666282, 
+    "name": "Prooe Bli FQ-R c19-2", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "region": {
+      "name": "Formorian Frontier", 
+      "region": 24
+    }, 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}

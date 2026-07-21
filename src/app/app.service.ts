@@ -4,6 +4,7 @@ import { parseJsonWithBigIntIds } from './data/json-bigint';
 import type { CanonnBiostats, SimbadApiResponse } from './home/home.component';
 import type { GnosisData } from './region-map/region-map.component';
 import type { Nebula } from './data/nebulae';
+import type { MegashipScheduleFile } from './data/megaships';
 
 /** Default per-request timeout for remote API calls (ms). */
 const HTTP_TIMEOUT_MS = 20000;
@@ -11,6 +12,9 @@ const HTTP_TIMEOUT_MS = 20000;
 const HTTP_RETRY_COUNT = 2;
 /** Base URL for the Canonn cloud-function query API. */
 const CANONN_QUERY_BASE = 'https://us-central1-canonn-api-236217.cloudfunctions.net/query';
+/** How long a fetched Gnosis position is considered fresh before {@link AppService.ensureGnosis}
+ *  refetches it. Matches the cache window the region map previously kept locally for the same data. */
+const GNOSIS_CACHE_DURATION_MS = 3600000; // 1 hour
 
 /**
  * Error thrown by {@link AppService} HTTP helpers for non-2xx responses. Mirrors the
@@ -111,6 +115,30 @@ export class AppService {
   /** Memoises the one-shot nebula asset load so concurrent callers share a single fetch. */
   private nebulaeLoad?: Promise<void>;
 
+  /** Optional timestamp override (ms since epoch) set via the `?t=` URL param for debugging. */
+  private readonly _nowOverride = signal<number | null>(null);
+  public readonly nowOverride: Signal<number | null> = this._nowOverride.asReadonly();
+  public setNowOverride(ms: number | null): void { this._nowOverride.set(ms); }
+
+  private readonly _megashipSchedule = signal<MegashipScheduleFile | null>(null);
+  /** The megaship route schedule; null until {@link ensureMegaships} has loaded the asset. */
+  public readonly megashipSchedule: Signal<MegashipScheduleFile | null> = this._megashipSchedule.asReadonly();
+  /** Memoises the one-shot schedule asset load so concurrent callers share a single fetch. */
+  private megashipScheduleLoad?: Promise<void>;
+
+  /** system address (as a string key) -> resolved system name, for megaship route display. */
+  private readonly _systemNames = signal<ReadonlyMap<string, string>>(new Map());
+  public readonly systemNames: Signal<ReadonlyMap<string, string>> = this._systemNames.asReadonly();
+  /** In-flight name lookups, keyed by id64 string, so concurrent callers share one fetch. */
+  private readonly systemNameLookups = new Map<string, Promise<string>>();
+
+  private readonly _gnosisData = signal<GnosisData | null>(null);
+  /** The Gnosis megaship's live-tracked current stop; null until {@link ensureGnosis} resolves
+   *  (or on failure). Shared by the Galaxy Region Map marker and the Gnosis route card. */
+  public readonly gnosisData: Signal<GnosisData | null> = this._gnosisData.asReadonly();
+  private gnosisLoad?: Promise<void>;
+  private gnosisFetchedAt = 0;
+
   constructor() {
     void this.loadCodexEntries();
     void this.loadEdastroSystems();
@@ -171,6 +199,83 @@ export class AppService {
         // Clear the memo so a later call can retry the load.
         this.nebulaeLoad = undefined;
       });
+  }
+
+  /**
+   * Lazily loads the megaship route schedule asset the first time it's needed (it's ~2.2MB, so
+   * it's kept off the startup critical path). The fetch runs at most once; failures leave the
+   * schedule null and are retried on the next call. See `src/app/data/megaships.ts` for the
+   * lookup logic that consumes it.
+   */
+  public ensureMegaships(): void {
+    if (this.megashipScheduleLoad) {
+      return;
+    }
+    this.megashipScheduleLoad = this.resilientGet<MegashipScheduleFile>('assets/megaship-schedule.json', 60000)
+      .then(schedule => { this._megashipSchedule.set(schedule); })
+      .catch(() => {
+        this._megashipSchedule.set(null);
+        // Clear the memo so a later call can retry the load.
+        this.megashipScheduleLoad = undefined;
+      });
+  }
+
+  /**
+   * Lazily (re)loads the Gnosis's current position, at most once per {@link GNOSIS_CACHE_DURATION_MS}.
+   * A failed fetch leaves the previous value in place (stale data beats none) and is retried on the
+   * next call rather than waiting out the cache window. Returns the in-flight/cached load promise
+   * so callers that need the resolved value (e.g. {@link RegionMapComponent}) can await it instead
+   * of keeping their own parallel cache.
+   */
+  public ensureGnosis(): Promise<void> {
+    const now = Date.now();
+    if (this.gnosisLoad && now - this.gnosisFetchedAt < GNOSIS_CACHE_DURATION_MS) {
+      return this.gnosisLoad;
+    }
+    this.gnosisFetchedAt = now;
+    this.gnosisLoad = this.getGnosis()
+      .then(data => { this._gnosisData.set(data); })
+      .catch(() => {
+        // Clear the memo so the next call retries immediately instead of waiting out the cache window.
+        this.gnosisLoad = undefined;
+      });
+    return this.gnosisLoad;
+  }
+
+  /**
+   * Resolves a system's display name from its address, for megaship route display (there's no
+   * reverse id64->name endpoint, so this piggybacks on the biostats API). Every id64 is resolved
+   * at most once per session — success *or* failure both cache permanently (a failed lookup
+   * caches the id64 itself, stringified, as the display fallback) — so a reactive caller that
+   * re-reads an unresolved entry every change-detection pass can't retry it in a loop.
+   */
+  public resolveSystemName(id64: number): Promise<string> {
+    const key = String(id64);
+    const cached = this._systemNames().get(key);
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    const inFlight = this.systemNameLookups.get(key);
+    if (inFlight) {
+      return inFlight;
+    }
+    const promise = this.getBiostats(id64)
+      .then(biostats => biostats?.system?.name || key)
+      .catch(() => key)
+      .then(name => {
+        const next = new Map(this._systemNames());
+        next.set(key, name);
+        this._systemNames.set(next);
+        this.systemNameLookups.delete(key);
+        return name;
+      });
+    this.systemNameLookups.set(key, promise);
+    return promise;
+  }
+
+  /** Fire-and-forget {@link resolveSystemName}, for reactive callers that just need the signal to update. */
+  public requestSystemName(id64: number): void {
+    void this.resolveSystemName(id64);
   }
 
   public getEdastroData(id64: number | bigint): Promise<EdastroData> {

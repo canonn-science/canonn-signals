@@ -1,74 +1,84 @@
-<div class="body-container"
-     [class]="styleClass"
-     [id]="'body-' + body().bodyData.bodyId">
+<div class="body-container" [class]="styleClass" [id]="'body-' + body().bodyData.bodyId">
   <div class="body-title">
     <div class="title-left">
       <b>{{ getBodyDisplayName(body().bodyData.name) }}</b>
-      <fa-icon [icon]="faLink"
-               class="clickable body-anchor-link"
-               [class.body-anchor-link--copied]="bodyLinkCopied()"
-               [attr.aria-label]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"
-               (click)="copyBodyLink()"
-               [matTooltip]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"></fa-icon>
+      <fa-icon [icon]="faLink" class="clickable body-anchor-link" [class.body-anchor-link--copied]="bodyLinkCopied()"
+        [attr.aria-label]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'" (click)="copyBodyLink()"
+        [matTooltip]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"></fa-icon>
       @if (body().bodyData.subType) {
       <span>-</span>
       }
       @if (body().bodyData.subType) {
       <span [class.clickable]="getWhiteDwarfSpectralCode()"
-            [matTooltip]="getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip()"
-            matTooltipClass="multiline-tooltip"
-            (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{ body().bodyData.subType }}@if (classifyNeutronStar()) {
+        [matTooltip]="body().bodyData.speculative ? speculativeBodyTooltip : (getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip())"
+        matTooltipClass="multiline-tooltip" (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{
+        body().bodyData.subType }}{{ body().bodyData.speculative ? '?' : '' }}@if (classifyNeutronStar()) {
         <span> ({{
-        classifyNeutronStar() }})</span>
-      }</span>
+          classifyNeutronStar() }})</span>
+        }</span>
       }
       @if (body().bodyData.atmosphereType || body().bodyData.atmosphereComposition || getWhiteDwarfAtmosphere()) {
-      <span [matTooltip]="getAtmosphereCompositionTooltip()"
-            matTooltipClass="multiline-tooltip"
-            class="atmosphere-type">
+      <span [matTooltip]="getAtmosphereCompositionTooltip()" matTooltipClass="multiline-tooltip"
+        class="atmosphere-type">
         - {{ getAtmosphereDisplay() }}
       </span>
       }
+      @if (body().bodyData.speculative) {
+      <span class="badge badge-red" [matTooltip]="speculativeBodyTooltip" matTooltipClass="multiline-tooltip">Speculation</span>
+      }
       @if (isRingNotVisible()) {
-      <span class="badge badge-red clickable"
-            (click)="showInvisibleRingExplanation()">Invisible</span>
+      <span class="badge badge-red clickable" (click)="showInvisibleRingExplanation()">Invisible</span>
+      }
+      @if (isRacingRings()) {
+      <span class="badge badge-orange" [matTooltip]="racingRingsTooltip()" matTooltipClass="multiline-tooltip">Racing Rings</span>
+      }
+      @if (isTaylorRing()) {
+      <span class="badge badge-blue clickable" [matTooltip]="taylorRingTooltip() + ' — click for an explanation'"
+        matTooltipClass="multiline-tooltip" (click)="showRingClassificationDialog('taylor')">
+        <img alt="" src="assets/icons/taylor-ring.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
+      </span>
+      }
+      @if (isPauperRing()) {
+      <span class="badge badge-blue clickable" [matTooltip]="pauperRingTooltip() + ' — click for an explanation'"
+        matTooltipClass="multiline-tooltip" (click)="showRingClassificationDialog('pauper')">
+        <img alt="" src="assets/icons/pauper-ring.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
+      </span>
       }
       @if (isActualShepherd()) {
       <span class="badge badge-blue clickable"
-            [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
-            (click)="showShepherdingHillLimitChart()">Shepherd</span>
+        [matTooltip]="'Shepherd moon (Hill sphere close to ring edge) - click for analysis'"
+        (click)="showShepherdingHillLimitChart()">Shepherd</span>
       }
       @if (body().bodyData.isLandable) {
-      <span [class]="'badge clickable ' + getLandableBadgeClass()"
-            [matTooltip]="getLandableTooltip()"
-            [attr.aria-label]="getLandableTooltip()"
-            (click)="showOnFootSafetyDialog()">
-        <img alt=""
-             src="assets/icons/footprint.svg"
-             style="width: 12px; height: 12px; filter: brightness(0);" />
+      <span [class]="'badge clickable ' + getLandableBadgeClass()" [matTooltip]="getLandableTooltip()"
+        [attr.aria-label]="getLandableTooltip()" (click)="showOnFootSafetyDialog()">
+        <img alt="" src="assets/icons/footprint.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
       </span>
       }
+      @if (highAngularDiameterAssessment()) {
+      <div [matTooltip]="highAngularDiameterTooltip()" matTooltipClass="multiline-tooltip"
+        [attr.aria-label]="highAngularDiameterTooltip()">
+        <img alt="High angular diameter parent" src="assets/icons/high-angular-diameter.svg" />
+      </div>
+      }
       @if (getSpinResonance() !== 'none' || body().bodyData.rotationalPeriodTidallyLocked) {
-        <span
-          class="badge badge-purple clickable"
-          [matTooltip]="getSpinResonanceTooltip() + ' — click for tidal locking explanation'"
-          (click)="showTidalLockDialog()">
-          @if (getSpinResonance() !== 'none') {
-            <span>{{ getSpinResonance() }}</span>
-          }
-          @if (body().bodyData.rotationalPeriodTidallyLocked) {
-            <fa-icon [icon]="faLock" class="lock-icon"></fa-icon>
-          }
-        </span>
+      <span class="badge badge-purple clickable"
+        [matTooltip]="getSpinResonanceTooltip() + ' — click for tidal locking explanation'"
+        (click)="showTidalLockDialog()">
+        @if (getSpinResonance() !== 'none') {
+        <span>{{ getSpinResonance() }}</span>
+        }
+        @if (body().bodyData.rotationalPeriodTidallyLocked) {
+        <fa-icon [icon]="faLock" class="lock-icon"></fa-icon>
+        }
+      </span>
       }
       @if (getStellarAgeAssessment(); as ageAssessment) {
       @if (ageAssessment.status === 'old' || ageAssessment.status === 'young') {
-      <span class="badge clickable"
-            [class.badge-orange]="ageAssessment.status === 'old'"
-            [class.badge-cyan]="ageAssessment.status === 'young'"
-            [matTooltip]="ageAssessment.message + ' - click for the H–R diagram'"
-            matTooltipClass="multiline-tooltip"
-            (click)="showHrDiagram()">{{ ageAssessment.label }}</span>
+      <span class="badge clickable" [class.badge-orange]="ageAssessment.status === 'old'"
+        [class.badge-cyan]="ageAssessment.status === 'young'"
+        [matTooltip]="ageAssessment.message + ' - click for the H–R diagram'" matTooltipClass="multiline-tooltip"
+        (click)="showHrDiagram()">{{ ageAssessment.label }}</span>
       }
       }
       @if (body().bodyData.isLandable && body().bodyData.atmosphereType && body().bodyData.atmosphereType != '') {
@@ -78,144 +88,131 @@
       <span class="badge badge-gray">Terraformable</span>
       }
       @if (trojanHostStatus) {
-      <span class="badge badge-blue"
-            matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points">Host</span>
+      <span class="badge badge-blue clickable" (click)="showLagrangeDialog()"
+        matTooltip="Co-orbital primary: this body has companions at its L4 and L5 Lagrange points — click for the diagram">Host</span>
       }
       @if (trojanStatus) {
-      <span class="badge badge-blue"
-            [matTooltip]="'Trojan at Lagrange ' + trojanStatus">{{
+      <span class="badge badge-blue clickable" (click)="showLagrangeDialog()"
+        [matTooltip]="'Trojan at Lagrange ' + trojanStatus + ' — click for the diagram'">{{
         trojanStatus }}</span>
       }
       @if (rosetteStatus) {
-      <span class="badge badge-red"
-            [matTooltip]="'Klemperer ' + rosetteStatus">{{
+      <span class="badge badge-red" [matTooltip]="'Klemperer ' + rosetteStatus">{{
         rosetteStatus }}</span>
+      }
+      @if (collisionStatus(); as cs) {
+        @if (cs.isCandidate) {
+        <span class="badge badge-red clickable" [matTooltip]="cs.nextCollision
+                ? ('Collides with ' + cs.partnerName
+                   + ' in ' + formatCollisionCountdown(cs.nextCollision.days)
+                   + ' — click for details')
+                : ('Crossing orbit with ' + cs.partnerName + ' — click for details')"
+          (click)="showCollisionDialog()">{{ (cs.nextCollision?.days ?? 0) < 0 ? 'Collision In Progress' : 'Collision' }}</span>
+        }
+      } @else if (collisionPending()) {
+        <span class="badge badge-skeleton" aria-hidden="true"
+          matTooltip="Checking for crossing orbits…">Collision</span>
       }
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"
-            [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
-        <img alt=""
-             src="assets/icons/roche.svg"
-             style="width: 12px; height: 12px; filter: brightness(0);" />
+        [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">
+        <img alt="Roche limit exceeded" src="assets/icons/roche.svg" style="width: 12px; height: 12px; filter: brightness(0);" />
       </span>
       }
       @if ((geologySignals.length || geologySignalCount) && body().bodyData.type !== 'Star') {
       <div matTooltip="Geological signals">
-        <img alt=""
-             src="assets/icons/Geology.svg" />
+        <img alt="Geological signals" src="assets/icons/Geology.svg" />
       </div>
       }
       @if ((biologySignals.length || biologySignalCount) && body().bodyData.type !== 'Star') {
       <div matTooltip="Biological signals">
-        <img alt=""
-             src="assets/icons/Biology.svg" />
+        <img alt="Biological signals" src="assets/icons/Biology.svg" />
       </div>
       }
       @if (thargoidSignals.length || thargoidSignalCount) {
       <div matTooltip="Thargoid signals">
-        <img alt=""
-             src="assets/icons/Thargoid.svg" />
+        <img alt="Thargoid signals" src="assets/icons/Thargoid.svg" />
       </div>
       }
       @if (guardianSignals.length || guardianSignalCount) {
       <div matTooltip="Guardian signals">
-        <img alt=""
-             src="assets/icons/Guardian.svg" />
+        <img alt="Guardian signals" src="assets/icons/Guardian.svg" />
       </div>
       }
       @if (humanSignalCount) {
       <div matTooltip="Human signals">
-        <img alt=""
-             src="assets/icons/Human.svg" />
+        <img alt="Human signals" src="assets/icons/Human.svg" />
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Gemstone')) {
-      <div matTooltip="Contains gemstones">
-        <span style="font-size: 16px;">💎</span>
+      <div matTooltip="Contains gemstones" role="img" aria-label="Contains gemstones">
+        <span style="font-size: 16px;" aria-hidden="true">💎</span>
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Metal')) {
-      <div matTooltip="Contains metals">
-        <span style="font-size: 16px;">⚙️</span>
+      <div matTooltip="Contains metals" role="img" aria-label="Contains metals">
+        <span style="font-size: 16px;" aria-hidden="true">⚙️</span>
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Mineral')) {
-      <div matTooltip="Contains minerals">
-        <span style="font-size: 16px;">🪨</span>
+      <div matTooltip="Contains minerals" role="img" aria-label="Contains minerals">
+        <span style="font-size: 16px;" aria-hidden="true">🪨</span>
       </div>
       }
       @if (body().bodyData.type === 'Ring' && getRingResourceTypes().has('Fuel')) {
-      <div matTooltip="Contains fuel">
-        <span style="font-size: 16px;">⚡</span>
+      <div matTooltip="Contains fuel" role="img" aria-label="Contains fuel">
+        <span style="font-size: 16px;" aria-hidden="true">⚡</span>
       </div>
       }
       @if (expandable && !expanded()) {
-      <div (click)="toggleExpand()"
-           class="clickable"
-           matTooltip="Expand"
-           aria-label="Expand body details">
+      <div (click)="toggleExpand()" class="clickable" matTooltip="Expand" aria-label="Expand body details">
         <fa-icon [icon]="faSquareCaretDown"></fa-icon>
       </div>
       }
       @if (expandable && expanded()) {
-      <div (click)="toggleExpand()"
-           class="clickable"
-           matTooltip="Collapse"
-           aria-label="Collapse body details">
+      <div (click)="toggleExpand()" class="clickable" matTooltip="Collapse" aria-label="Collapse body details">
         <fa-icon [icon]="faSquareCaretUp"></fa-icon>
       </div>
       }
       @if (hasChildren() && getChildrenExpandedState()) {
-      <div (click)="toggleChildren()"
-           class="clickable"
-           matTooltip="Collapse all children"
-           aria-label="Collapse all child bodies">
+      <div (click)="toggleChildren()" class="clickable" matTooltip="Collapse all children"
+        aria-label="Collapse all child bodies">
         <fa-icon [icon]="faSquareCaretUp"></fa-icon>
       </div>
       }
       @if (hasChildren() && !getChildrenExpandedState()) {
-      <div (click)="toggleChildren()"
-           class="clickable"
-           matTooltip="Expand all children"
-           aria-label="Expand all child bodies">
+      <div (click)="toggleChildren()" class="clickable" matTooltip="Expand all children"
+        aria-label="Expand all child bodies">
         <fa-icon [icon]="faSquareCaretDown"></fa-icon>
       </div>
       }
     </div>
-    <div class="materials-badges"
-         (mouseleave)="hoveredIndex = -1">
+    <div class="materials-badges" (mouseleave)="hoveredIndex = -1">
       @for (material of getMaterialBadges(); track trackByMaterial(i, material); let i = $index) {
-      <span [class]="'badge ' + material.class"
-            (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ?
+      <span [class]="'badge ' + material.class" (mouseenter)="onMouseEnter(i)">{{ hoveredIndex === i ?
         material.tooltip : material.name }}</span>
       }
-      <button class="json-button"
-              (click)="showBodyJsonDialog()"
-              (contextmenu)="copyBodyJson(); $event.preventDefault()"
-              matTooltip="View body JSON (right-click to copy)"
-              aria-label="View body JSON (right-click to copy)">
+      <button class="json-button" (click)="showBodyJsonDialog()" (contextmenu)="copyBodyJson(); $event.preventDefault()"
+        matTooltip="View body JSON (right-click to copy)" aria-label="View body JSON (right-click to copy)">
         <fa-icon [icon]="faCode"></fa-icon>
       </button>
     </div>
   </div>
   @if (expanded()) {
-  <div class="system-body-grow"
-       animate.enter="grow--enter"
-       animate.leave="grow--leave">
-    <div class="system-body">
+  <div class="system-body-grow" animate.enter="grow--enter" animate.leave="grow--leave">
+    <div class="system-body" [class.speculative-values]="body().bodyData.speculative || body().bodyData.speculativeValues">
       <div class="body-image">
+        @if (body().bodyData.speculative) {
+        <fa-icon [icon]="faCircleQuestion" class="speculative-body-icon" [matTooltip]="speculativeBodyTooltip"
+          matTooltipClass="multiline-tooltip" aria-label="Unconfirmed body — extrapolated data"></fa-icon>
+        } @else {
         @if (bodyCoronaImage) {
-        <img alt=""
-             src="assets/{{ bodyCoronaImage }}"
-             class="body-image-corona"
-             (error)="bodyCoronaImage = ''"
-             loading="lazy" />
+        <img alt="" src="assets/{{ bodyCoronaImage }}" class="body-image-corona" (error)="bodyCoronaImage = ''"
+          loading="lazy" />
         }
         @if (bodyImage) {
-        <img alt=""
-             src="assets/{{ bodyImage }}"
-             (error)="bodyImage = ''"
-             loading="lazy" />
+        <img alt="" src="assets/{{ bodyImage }}" (error)="bodyImage = ''" loading="lazy" />
+        }
         }
       </div>
       <div class="body-content">
@@ -223,7 +220,7 @@
           <!-- Orbit Section -->
           @if (body().bodyData.orbitalPeriod || body().bodyData.semiMajorAxis || body().bodyData.orbitalEccentricity !==
           undefined || body().bodyData.orbitalInclination || body().bodyData.argOfPeriapsis ||
-          body().bodyData.ascendingNode || getNextPeriapsis() || getNextApoapsis()) {
+          body().bodyData.ascendingNode) {
           <div class="body-data-section">
             <div class="body-data-section-header">Orbit</div>
             @if (body().bodyData.orbitalPeriod) {
@@ -231,8 +228,8 @@
               <div>
                 Orbital period
               </div>
-              <div [matTooltip]="body().bodyData.orbitalPeriod + ' days'">
-                {{ getOrbitalPeriodDisplay() }}
+              <div>
+                <span [matTooltip]="body().bodyData.orbitalPeriod + ' days'">{{ getOrbitalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.orbitalPeriod" label="Orbital period" [uiUnit]="durationUnitLabel(body().bodyData.orbitalPeriod)" sourceUnit="Seconds" [sourcePrecise]="false" />
               </div>
             </div>
             }
@@ -241,8 +238,8 @@
               <div>
                 Semi-major axis
               </div>
-              <div [matTooltip]="body().bodyData.semiMajorAxis + ' au'">
-                {{ (body().bodyData.semiMajorAxis! * 149597870.7) | number:'0.2-2' }} km
+              <div>
+                <span [matTooltip]="body().bodyData.semiMajorAxis + ' au'">{{ formatOrbitDistance(getSemiMajorAxisKm()) }}</span><app-convert-icon [kind]="'length'" [value]="getSemiMajorAxisKm()" label="Semi-major axis" [uiUnit]="orbitDistanceUnitLabel()" sourceUnit="m" [sourcePrecise]="false" />
               </div>
             </div>
             }
@@ -259,69 +256,45 @@
             }
             @if (body().bodyData.semiMajorAxis && body().bodyData.orbitalEccentricity !== undefined &&
             body().bodyData.orbitalEccentricity !== null && body().bodyData.orbitalEccentricity !== 0) {
-            <div class="body-data-entry clickable"
-                 (click)="showApoPeriDialog('apo')">
+            <div class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
               <div>
                 Apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="getApoapsis() + ' km'">
-                {{ getApoapsis() | number:'0.2-2' }} km
-              </div>
-            </div>
-            }
-            @if (getNextApoapsis()) {
-            <div class="body-data-entry clickable"
-                 (click)="showApoPeriDialog('apo')">
               <div>
-                Next apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
-              </div>
-              <div [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
-                {{ getNextApoapsis()!.days | number:'0.1-1' }} days
+                <span [matTooltip]="getApoapsis() + ' km'">{{ formatOrbitDistance(getApoapsis()) }}</span><app-convert-icon [kind]="'length'" [value]="getApoapsis()" label="Apoapsis" [uiUnit]="orbitDistanceUnitLabel()" />
               </div>
             </div>
             }
             @if (body().bodyData.semiMajorAxis && body().bodyData.orbitalEccentricity !== undefined &&
             body().bodyData.orbitalEccentricity !== null && body().bodyData.orbitalEccentricity !== 0) {
-            <div class="body-data-entry clickable"
-                 (click)="showApoPeriDialog('peri')">
+            <div class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
               <div>
                 Periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="getPeriapsis() + ' km'">
-                {{ getPeriapsis() | number:'0.2-2' }} km
-              </div>
-            </div>
-            }
-            @if (getNextPeriapsis()) {
-            <div class="body-data-entry clickable"
-                 (click)="showApoPeriDialog('peri')">
               <div>
-                Next periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
-              </div>
-              <div [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">
-                {{ getNextPeriapsis()!.days | number:'0.1-1' }} days
+                <span [matTooltip]="getPeriapsis() + ' km'">{{ formatOrbitDistance(getPeriapsis()) }}</span><app-convert-icon [kind]="'length'" [value]="getPeriapsis()" label="Periapsis" [uiUnit]="orbitDistanceUnitLabel()" />
               </div>
             </div>
             }
             @if (body().bodyData.argOfPeriapsis) {
-            <div class="body-data-entry clickable"
-                 (click)="showOrbitalDiagram('periapsis')">
+            <div class="body-data-entry clickable" (click)="showOrbitalDiagram('periapsis')">
               <div>
-                Argument of periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+                Argument of periapsis<fa-icon class="info-icon" title="Click for more information"
+                  [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="body().bodyData.argOfPeriapsis + '° - click for diagram'">
-                {{ body().bodyData.argOfPeriapsis | number:'0.2-2' }}°
+              <div>
+                <span [matTooltip]="body().bodyData.argOfPeriapsis + '° - click for diagram'">{{ body().bodyData.argOfPeriapsis | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="body().bodyData.argOfPeriapsis" label="Argument of periapsis" uiUnit="Degrees" sourceUnit="Degrees" />
               </div>
             </div>
             }
             @if (body().bodyData.orbitalInclination) {
-            <div class="body-data-entry clickable"
-                 (click)="showOrbitalDiagram('inclination')">
+            <div class="body-data-entry clickable" (click)="showOrbitalDiagram('inclination')">
               <div>
-                Orbital inclination<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+                Orbital inclination<fa-icon class="info-icon" title="Click for more information"
+                  [icon]="faInfo"></fa-icon>
               </div>
-              <div [matTooltip]="body().bodyData.orbitalInclination + '° - click for diagram'">
-                {{ body().bodyData.orbitalInclination | number:'0.2-2' }}°
+              <div>
+                <span [matTooltip]="body().bodyData.orbitalInclination + '° - click for diagram'">{{ body().bodyData.orbitalInclination | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="body().bodyData.orbitalInclination" label="Orbital inclination" uiUnit="Degrees" sourceUnit="Degrees" />
               </div>
             </div>
             }
@@ -330,8 +303,8 @@
               <div>
                 Ascending node
               </div>
-              <div [matTooltip]="body().bodyData.ascendingNode + '°'">
-                {{ body().bodyData.ascendingNode | number:'0.2-2' }}°
+              <div>
+                <span [matTooltip]="body().bodyData.ascendingNode + '°'">{{ body().bodyData.ascendingNode | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="body().bodyData.ascendingNode" label="Ascending node" uiUnit="Degrees" sourceUnit="Degrees" />
               </div>
             </div>
             }
@@ -340,8 +313,8 @@
               <div>
                 Tangential velocity
               </div>
-              <div [matTooltip]="getTangentialVelocityTooltip()">
-                {{ getTangentialVelocityDisplay() }}
+              <div>
+                <span [matTooltip]="getTangentialVelocityTooltip()">{{ getTangentialVelocityDisplay() }}</span><app-convert-icon [kind]="'velocity'" [value]="getTangentialVelocity()" label="Tangential velocity" [uiUnit]="velocityUnitLabel(getTangentialVelocity())" />
               </div>
             </div>
             }
@@ -349,25 +322,16 @@
           }
           <!-- Limits Section (Bodies only - when Roche limit breached or within parent rings) -->
           @if (calculateBodyRocheLimits(); as rocheLimits) {
-          @if (rocheLimits.periapsis < rocheLimits.rigid
-            ||
-            rocheLimits.apoapsis
-            <
-            rocheLimits.fluid
-            ||
-            isBodyWithinParentRings())
-            {
-            <div
-            class="body-data-section">
+          @if (rocheLimits.periapsis < rocheLimits.rigid || rocheLimits.apoapsis < rocheLimits.fluid ||
+            isBodyWithinParentRings()) { <div class="body-data-section">
             <div class="body-data-section-header">Limits</div>
-            <div class="body-data-entry clickable"
-                 (click)="showBodyRocheLimitChart()">
+            <div class="body-data-entry clickable" (click)="showBodyRocheLimitChart()">
               <div>
-                Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+                Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information"
+                  [icon]="faInfo"></fa-icon>
               </div>
-              <div
-                   [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">
-                {{ rocheLimits.rigid | number:'0.2-2' }} km
+              <div>
+                <span [matTooltip]="'Rigid: ' + (rocheLimits.rigid | number:'0.0-0') + ' km, Periapsis: ' + (rocheLimits.periapsis | number:'0.0-0') + ' km' + (rocheLimits.periapsis < rocheLimits.rigid ? ' - BREACHED' : '')">{{ formatLength(rocheLimits.rigid) }}</span><app-convert-icon [kind]="'length'" [value]="rocheLimits.rigid" label="Roche limit (rigid)" [uiUnit]="lengthUnitLabel(rocheLimits.rigid)" />
                 @if (rocheLimits.periapsis < rocheLimits.rigid)
                   {
                   <span
@@ -378,14 +342,13 @@
                   }
               </div>
             </div>
-            <div class="body-data-entry clickable"
-                 (click)="showBodyRocheLimitChart()">
+            <div class="body-data-entry clickable" (click)="showBodyRocheLimitChart()">
               <div>
-                Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+                Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information"
+                  [icon]="faInfo"></fa-icon>
               </div>
-              <div
-                   [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">
-                {{ rocheLimits.fluid | number:'0.2-2' }} km
+              <div>
+                <span [matTooltip]="'Fluid: ' + (rocheLimits.fluid | number:'0.0-0') + ' km, Apoapsis: ' + (rocheLimits.apoapsis | number:'0.0-0') + ' km' + (rocheLimits.apoapsis < rocheLimits.fluid ? ' - BREACHED' : '')">{{ formatLength(rocheLimits.fluid) }}</span><app-convert-icon [kind]="'length'" [value]="rocheLimits.fluid" label="Roche limit (fluid)" [uiUnit]="lengthUnitLabel(rocheLimits.fluid)" />
                 @if (rocheLimits.apoapsis < rocheLimits.fluid)
                   {
                   <span
@@ -403,18 +366,16 @@
         @if (calculateShepherdingHillLimit(); as hillData) {
         <div class="body-data-section">
           <div class="body-data-section-header">Shepherding Analysis</div>
-          <div class="body-data-entry clickable"
-               (click)="showShepherdingHillLimitChart()">
+          <div class="body-data-entry clickable" (click)="showShepherdingHillLimitChart()">
             <div>
               Hill sphere radius<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
-            <div [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">
-              {{ hillData.hillRadius | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="'Gravitational influence radius: ' + (hillData.hillRadius | number:'0.0-0') + ' km'">{{ formatLength(hillData.hillRadius) }}</span><app-convert-icon [kind]="'length'" [value]="hillData.hillRadius" label="Hill sphere radius" [uiUnit]="lengthUnitLabel(hillData.hillRadius)" />
             </div>
           </div>
           @if (hillData.withinRings || hillData.isFirstOutside) {
-          <div class="body-data-entry clickable"
-               (click)="showShepherdingHillLimitChart()">
+          <div class="body-data-entry clickable" (click)="showShepherdingHillLimitChart()">
             <div>
               Position<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
@@ -434,7 +395,7 @@
         <!-- Physical Properties Section -->
         @if (body().bodyData.radius || body().bodyData.earthMasses || body().bodyData.solarMasses ||
         body().bodyData.solarRadius || body().bodyData.gravity || body().bodyData.axialTilt || body().bodyData.age ||
-        body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
+        body().bodyData.ageDisplay || body().bodyData.mass || (body().bodyData.innerRadius && body().bodyData.outerRadius)) {
         <div class="body-data-section">
           <div class="body-data-section-header">Physical Properties</div>
           @if (body().bodyData.radius) {
@@ -442,27 +403,27 @@
             <div>
               Radius
             </div>
-            <div [matTooltip]="body().bodyData.radius + ' km'">
-              {{ body().bodyData.radius | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="body().bodyData.radius + ' km'">{{ body().bodyData.radius | number:'0.2-2' }} km</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.radius" label="Radius" uiUnit="km" sourceUnit="m" [sourcePrecise]="false" />
             </div>
           </div>
           }
-          @if (getCompactObjectRadiusKm(); as compactRadiusKm) {
+          @if (getStarRadiusKm(); as starRadiusKm) {
           <div class="body-data-entry">
             <div>
               Radius
             </div>
-            <div [matTooltip]="compactRadiusKm + ' km'">
-              {{ compactRadiusKm | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="starRadiusKm + ' km'">{{ starRadiusKm | number:'0.2-2' }} km</span><app-convert-icon [kind]="'length'" [value]="starRadiusKm" label="Radius" uiUnit="km" />
             </div>
           </div>
           } @else if (body().bodyData.solarRadius) {
           <div class="body-data-entry">
             <div>
-              Solar radius
+              Radius
             </div>
-            <div [matTooltip]="body().bodyData.solarRadius!.toString()">
-              {{ body().bodyData.solarRadius | number:'0.2-2' }}
+            <div>
+              <span [matTooltip]="body().bodyData.solarRadius!.toString() + ' R☉'">{{ body().bodyData.solarRadius | number:'0.2-2' }} R☉</span><app-convert-icon [kind]="'length'" [value]="getSolarRadiusKm()" label="Radius" uiUnit="Solar Radii" sourceUnit="m" [sourcePrecise]="false" />
             </div>
           </div>
           }
@@ -471,46 +432,24 @@
             <div>
               Schwarzschild radius
             </div>
-            <div [matTooltip]="'Event-horizon radius r_s = 2GM/c² = ' + (schwarzschildRadius | number:'0.2-4') + ' km'"
-                 matTooltipClass="multiline-tooltip">
-              {{ schwarzschildRadius | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="'Event-horizon radius r_s = 2GM/c² = ' + (schwarzschildRadius | number:'0.2-4') + ' km'"
+                    matTooltipClass="multiline-tooltip">{{ schwarzschildRadius | number:'0.2-2' }} km</span><app-convert-icon [kind]="'length'" [value]="schwarzschildRadius" label="Schwarzschild radius" uiUnit="km" />
             </div>
           </div>
           }
-          @if (body().bodyData.earthMasses && body().bodyData.type === 'Planet') {
+          @if (getMassKg(); as massKg) {
           <div class="body-data-entry">
             <div>
               Mass
             </div>
-            <div [matTooltip]="formattedEarthMass?.tooltip || ''">
-              {{ formattedEarthMass?.display }}
-            </div>
-          </div>
-          }
-          @if (body().bodyData.solarMasses) {
-          <div class="body-data-entry">
             <div>
-              Solar masses
-            </div>
-            <div>
-              <span [matTooltip]="formattedSolarMass?.tooltip || ''">
-                {{ formattedSolarMass?.display }}
-              </span>
+              <span [matTooltip]="getMassTooltip()">{{ formatMass(massKg) }}</span><app-convert-icon [kind]="'mass'" [value]="massKg" label="Mass" [uiUnit]="massUnitLabel(massKg)" [sourceUnit]="massSourceUnit()" />
               @if (getMassStabilityAlert(); as massAlert) {
-              <span class="status-danger"
-                    [matTooltip]="massAlert"
-                    matTooltipClass="multiline-tooltip">⚠</span>
+              <span [class.status-danger]="massAlert.severity === 'danger'"
+                [class.status-warning]="massAlert.severity === 'warning'" [matTooltip]="massAlert.message"
+                matTooltipClass="multiline-tooltip">⚠</span>
               }
-            </div>
-          </div>
-          }
-          @if (body().bodyData.mass) {
-          <div class="body-data-entry">
-            <div>
-              Mass
-            </div>
-            <div [matTooltip]="body().bodyData.mass + ' Mt'">
-              {{ body().bodyData.mass | number:'0.2-2' }} Mt
             </div>
           </div>
           }
@@ -524,48 +463,44 @@
             </div>
           </div>
           }
-          @if (getPlanetaryDensity()) {
+          @if (getPlanetaryDensity(); as density) {
           <div class="body-data-entry">
             <div>
               Density
             </div>
-            <div [matTooltip]="getPlanetaryDensity()!.tooltip">
-              {{ getPlanetaryDensity()!.value | number:'0.2-2' }} {{ getPlanetaryDensity()!.unit }}
+            <div>
+              <span [matTooltip]="density.tooltip">{{ density.value | number:'0.2-2' }} {{ density.unit }}</span><app-convert-icon [kind]="'density'" [value]="density.densityKgM3" label="Density" [uiUnit]="density.unit" />
             </div>
           </div>
           }
           @if (body().bodyData.axialTilt) {
-          <div class="body-data-entry clickable"
-               (click)="showOrbitalDiagram('tilt')">
+          <div class="body-data-entry clickable" (click)="showOrbitalDiagram('tilt')">
             <div>
               Axial tilt<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
             </div>
-            <div [matTooltip]="radToDeg(body().bodyData.axialTilt) + '° - click for diagram'">
-              {{ radToDeg(body().bodyData.axialTilt) | number:'0.2-2' }}°
+            <div>
+              <span [matTooltip]="radToDeg(body().bodyData.axialTilt) + '° - click for diagram'">{{ radToDeg(body().bodyData.axialTilt) | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="radToDeg(body().bodyData.axialTilt)" label="Axial tilt" uiUnit="Degrees" sourceUnit="Radians" />
             </div>
           </div>
           }
-          @if (body().bodyData.age) {
-          <div class="body-data-entry"
-               [class.clickable]="showStarAgeFeature()"
-               (click)="showStarAgeFeature() && showHrDiagram()">
+          @if (body().bodyData.age || body().bodyData.ageDisplay) {
+          <div class="body-data-entry" [class.clickable]="showStarAgeFeature()"
+            (click)="showStarAgeFeature() && showHrDiagram()">
             <div>
               Age
               @if (showStarAgeFeature()) {
               <fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
               }
             </div>
-            <div class="age-cell">
+            <div class="age-cell" [class.no-speculative-mark]="!!body().bodyData.ageDisplay">
               <div [matTooltip]="showStarAgeFeature() ? 'Click for the H–R diagram' : ''">
-                {{ body().bodyData.age }} million years
+                {{ body().bodyData.ageDisplay || body().bodyData.age }} million years
               </div>
               @if (getStellarAgeAssessment(); as ageAssessment) {
               @if (ageAssessment.barFraction !== null) {
-              <div class="age-bar"
-                   [class.age-bar--over]="ageAssessment.outOfRange"
-                   [class.age-bar--old]="ageAssessment.status === 'old'"
-                   [class.age-bar--young]="ageAssessment.status === 'young'"
-                   [matTooltip]="ageAssessment.message">
+              <div class="age-bar" [class.age-bar--over]="ageAssessment.outOfRange"
+                [class.age-bar--old]="ageAssessment.status === 'old'"
+                [class.age-bar--young]="ageAssessment.status === 'young'" [matTooltip]="ageAssessment.message">
                 <div class="age-bar__track">
                   <div class="age-bar__fill" [style.width.%]="ageAssessment.barFraction! * 100"></div>
                   <div class="age-bar__marker" [style.left.%]="ageAssessment.barFraction! * 100"></div>
@@ -581,8 +516,8 @@
             <div>
               Inner radius
             </div>
-            <div [matTooltip]="body().bodyData.innerRadius + ' km'">
-              {{ body().bodyData.innerRadius | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="body().bodyData.innerRadius + ' km'">{{ formatLength(body().bodyData.innerRadius!) }}</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.innerRadius" label="Inner radius" [uiUnit]="lengthUnitLabel(body().bodyData.innerRadius)" sourceUnit="m" />
             </div>
           </div>
           }
@@ -591,8 +526,8 @@
             <div>
               Outer radius
             </div>
-            <div [matTooltip]="body().bodyData.outerRadius + ' km'">
-              {{ body().bodyData.outerRadius | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="body().bodyData.outerRadius + ' km'">{{ formatLength(body().bodyData.outerRadius!) }}</span><app-convert-icon [kind]="'length'" [value]="body().bodyData.outerRadius" label="Outer radius" [uiUnit]="lengthUnitLabel(body().bodyData.outerRadius)" sourceUnit="m" />
             </div>
           </div>
           }
@@ -601,8 +536,8 @@
             <div>
               Ring width
             </div>
-            <div [matTooltip]="getRingWidth() + ' km'">
-              {{ getRingWidth() | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="getRingWidth() + ' km'">{{ formatLength(getRingWidth()) }}</span><app-convert-icon [kind]="'length'" [value]="getRingWidth()" label="Ring width" [uiUnit]="lengthUnitLabel(getRingWidth())" />
             </div>
           </div>
           }
@@ -611,8 +546,8 @@
             <div>
               Ring area
             </div>
-            <div [matTooltip]="getRingArea() + ' km²'">
-              {{ getRingArea() | number:'0.2-2' }} km²
+            <div>
+              <span [matTooltip]="getRingArea() + ' km²'">{{ formatArea(getRingArea()) }}</span><app-convert-icon [kind]="'area'" [value]="getRingArea()" label="Ring area" [uiUnit]="areaUnitLabel(getRingArea())" />
             </div>
           </div>
           }
@@ -621,8 +556,65 @@
             <div>
               Density
             </div>
-            <div [matTooltip]="getRingDensity() + ' Mt/km²'">
-              {{ getRingDensity() | number:'0.2-2' }} Mt/km²
+            <div>
+              <span [matTooltip]="getRingDensity() + ' Mt/km²'">{{ formatRingDensity(getRingDensity()) }}</span><app-convert-icon [kind]="'arealDensity'" [value]="getRingDensity()" label="Density" [uiUnit]="ringDensityUnitLabel(getRingDensity())" />
+            </div>
+          </div>
+          }
+        </div>
+        }
+        <!-- Dynamics Section (Rings and Belts) -->
+        @if ((body().bodyData.type === 'Ring' || body().bodyData.type === 'Belt') && (getRingOrbitalPeriod() !== null
+        || getRingMaxVelocity() !== null || getRingNeighbourDistance() !== null)) {
+        <div class="body-data-section">
+          <div class="body-data-section-header">Dynamics</div>
+          @if (getRingOrbitalPeriod() !== null) {
+          <div class="body-data-entry">
+            <div [matTooltip]="'Orbital period calculated at nominal radius (inner + (outer−inner)×3/8)'">
+              Orbital period
+            </div>
+            <div>
+              <span [matTooltip]="getRingOrbitalPeriodTooltip()">{{ getRingOrbitalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="getRingOrbitalPeriod()" label="Orbital period" [uiUnit]="durationUnitLabel(getRingOrbitalPeriod())" />
+            </div>
+          </div>
+          }
+          @if (getRingMinVelocity() !== null) {
+          <div class="body-data-entry">
+            <div [matTooltip]="'Tangential velocity at inner radius using the nominal orbital period'">
+              Min velocity
+            </div>
+            <div>
+              <span [matTooltip]="getRingMinVelocityTooltip()">{{ getRingMinVelocityDisplay() }}</span><app-convert-icon [kind]="'velocity'" [value]="getRingMinVelocity()" label="Min velocity" [uiUnit]="velocityUnitLabel(getRingMinVelocity())" />
+            </div>
+          </div>
+          }
+          @if (getRingMaxVelocity() !== null) {
+          <div class="body-data-entry">
+            <div [matTooltip]="'Tangential velocity at outer radius using the nominal orbital period'">
+              Max velocity
+            </div>
+            <div>
+              <span [matTooltip]="getRingMaxVelocityTooltip()">{{ getRingMaxVelocityDisplay() }}</span><app-convert-icon [kind]="'velocity'" [value]="getRingMaxVelocity()" label="Max velocity" [uiUnit]="velocityUnitLabel(getRingMaxVelocity())" />
+            </div>
+          </div>
+          }
+          @if (getRingNeighbourDistance() !== null) {
+          <div class="body-data-entry">
+            <div>
+              Distance {{ getRingNeighbourDistanceLabel() }}
+            </div>
+            <div>
+              <span [matTooltip]="getRingNeighbourDistance() + ' km'">{{ getRingNeighbourDistance() | number:'0.0-0' }} km</span><app-convert-icon [kind]="'length'" [value]="getRingNeighbourDistance()" [label]="'Distance ' + getRingNeighbourDistanceLabel()" uiUnit="km" />
+            </div>
+          </div>
+          }
+          @if (getRingVelocityDiff() !== null) {
+          <div class="body-data-entry">
+            <div>
+              Velocity Difference {{ getRingNeighbourDistanceLabel() }}
+            </div>
+            <div>
+              <span [matTooltip]="getRingVelocityDiffTooltip()">{{ getRingVelocityDiffDisplay() }}</span><app-convert-icon [kind]="'velocity'" [value]="getRingVelocityDiff()" [label]="'Velocity Difference ' + getRingNeighbourDistanceLabel()" [uiUnit]="velocityUnitLabel(getRingVelocityDiff())" />
             </div>
           </div>
           }
@@ -634,24 +626,24 @@
         <div class="body-data-section">
           <div class="body-data-section-header">Limits</div>
           @if (calculateRigidRocheLimit() !== null) {
-          <div class="body-data-entry clickable"
-               (click)="showRocheLimitChart()">
+          <div class="body-data-entry clickable" (click)="showRocheLimitChart()">
             <div>
-              Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+              Roche limit (rigid)<fa-icon class="info-icon" title="Click for more information"
+                [icon]="faInfo"></fa-icon>
             </div>
-            <div [matTooltip]="'Rigid body Roche limit: ' + calculateRigidRocheLimit()! + ' km'">
-              {{ calculateRigidRocheLimit()! | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="'Rigid body Roche limit: ' + calculateRigidRocheLimit()! + ' km'">{{ formatLength(calculateRigidRocheLimit()!) }}</span><app-convert-icon [kind]="'length'" [value]="calculateRigidRocheLimit()" label="Roche limit (rigid)" [uiUnit]="lengthUnitLabel(calculateRigidRocheLimit())" />
             </div>
           </div>
           }
           @if (calculateFluidRocheLimit() !== null) {
-          <div class="body-data-entry clickable"
-               (click)="showRocheLimitChart()">
+          <div class="body-data-entry clickable" (click)="showRocheLimitChart()">
             <div>
-              Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+              Roche limit (fluid)<fa-icon class="info-icon" title="Click for more information"
+                [icon]="faInfo"></fa-icon>
             </div>
-            <div [matTooltip]="'Fluid body Roche limit: ' + calculateFluidRocheLimit()! + ' km'">
-              {{ calculateFluidRocheLimit()! | number:'0.2-2' }} km
+            <div>
+              <span [matTooltip]="'Fluid body Roche limit: ' + calculateFluidRocheLimit()! + ' km'">{{ formatLength(calculateFluidRocheLimit()!) }}</span><app-convert-icon [kind]="'length'" [value]="calculateFluidRocheLimit()" label="Roche limit (fluid)" [uiUnit]="lengthUnitLabel(calculateFluidRocheLimit())" />
             </div>
           </div>
           }
@@ -669,19 +661,23 @@
               {{ body().bodyData.type === 'Star' ? 'Surface Temperature' : 'Average Surface Temperature'
               }}
             </div>
-            <div [matTooltip]="body().bodyData.surfaceTemperature + ' K'">
-              {{ body().bodyData.surfaceTemperature | number:'0.2-2' }} K
+            <div>
+              <span [matTooltip]="body().bodyData.surfaceTemperature + ' K'">{{ body().bodyData.surfaceTemperature | number:'0.2-2' }} K</span><app-convert-icon [kind]="'temperature'" [value]="body().bodyData.surfaceTemperature" label="Surface temperature" uiUnit="K" sourceUnit="K" />
             </div>
           </div>
           }
           @if (body().bodyData.isLandable && getEstimatedTempRange(); as estTemp) {
           <div class="body-data-entry">
             <div>Min Surface Temperature Estimate</div>
-            <div [matTooltip]="estTemp.min + ' K'">{{ estTemp.min | number:'0.2-2' }} K</div>
+            <div>
+              <span [matTooltip]="estTemp.min + ' K'">{{ estTemp.min | number:'0.2-2' }} K</span><app-convert-icon [kind]="'temperature'" [value]="estTemp.min" label="Min surface temperature estimate" uiUnit="K" />
+            </div>
           </div>
           <div class="body-data-entry">
             <div>Max Surface Temperature Estimate</div>
-            <div [matTooltip]="estTemp.max + ' K'">{{ estTemp.max | number:'0.2-2' }} K</div>
+            <div>
+              <span [matTooltip]="estTemp.max + ' K'">{{ estTemp.max | number:'0.2-2' }} K</span><app-convert-icon [kind]="'temperature'" [value]="estTemp.max" label="Max surface temperature estimate" uiUnit="K" />
+            </div>
           </div>
           }
           @if (body().bodyData.surfacePressure != null && body().bodyData.surfacePressure !== 0) {
@@ -689,9 +685,9 @@
             <div>
               Surface pressure
             </div>
-            <div [matTooltip]="cachedSurfacePressureTooltip() || ''"
-                 matTooltipClass="multiline-tooltip">
-              {{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres
+            <div>
+              <span [matTooltip]="cachedSurfacePressureTooltip() || ''"
+                    matTooltipClass="multiline-tooltip">{{ body().bodyData.surfacePressure | number:'0.2-2' }} atmospheres</span><app-convert-icon [kind]="'pressure'" [value]="body().bodyData.surfacePressure" label="Surface pressure" uiUnit="atm" sourceUnit="Pa" [sourcePrecise]="false" />
             </div>
           </div>
           }
@@ -708,7 +704,9 @@
         </div>
         }
         <!-- Dynamics Section -->
-        @if (body().bodyData.rotationalPeriod || body().bodyData.distanceToArrival !== undefined) {
+        @if (body().bodyData.rotationalPeriod || (body().bodyData.distanceToArrival !== undefined &&
+        body().bodyData.distanceToArrival !== null && (body().bodyData.bodyId !== 0 ||
+        body().bodyData.distanceToArrival! > 0)) || getMeanAnomaly() !== undefined) {
         <div class="body-data-section">
           <div class="body-data-section-header">Dynamics</div>
           @if (body().bodyData.rotationalPeriod) {
@@ -716,8 +714,8 @@
             <div>
               Rotational period
             </div>
-            <div [matTooltip]="body().bodyData.rotationalPeriod + ' days'">
-              {{ getRotationalPeriodDisplay() }}
+            <div>
+              <span [matTooltip]="body().bodyData.rotationalPeriod + ' days'">{{ getRotationalPeriodDisplay() }}</span><app-convert-icon [kind]="'duration'" [value]="body().bodyData.rotationalPeriod" label="Rotational period" [uiUnit]="durationUnitLabel(body().bodyData.rotationalPeriod)" sourceUnit="Seconds" [sourcePrecise]="false" />
             </div>
           </div>
           }
@@ -727,8 +725,58 @@
             <div>
               Distance to arrival
             </div>
-            <div [matTooltip]="body().bodyData.distanceToArrival + ' ls'">
-              {{ body().bodyData.distanceToArrival | number:'0.2-2' }} ls
+            <div>
+              <span [matTooltip]="body().bodyData.distanceToArrival + ' ls'">{{ formatDistanceLs(body().bodyData.distanceToArrival!) }}</span><app-convert-icon [kind]="'length'" [value]="getDistanceToArrivalKm()" label="Distance to arrival" [uiUnit]="distanceUnitLabel(getDistanceToArrivalKm())" sourceUnit="Light seconds" />
+            </div>
+          </div>
+          }
+          @if (getMeanAnomaly() !== undefined) {
+          <div class="body-data-entry clickable" (click)="showAnomalyDialog('mean')">
+            <div>
+              Mean anomaly<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">{{ getMeanAnomaly() | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="getMeanAnomaly()" label="Mean anomaly" uiUnit="Degrees" sourceUnit="Degrees" />
+            </div>
+          </div>
+          }
+          @if (getTrueAnomaly() !== undefined) {
+          <div class="body-data-entry clickable" (click)="showAnomalyDialog('true')">
+            <div>
+              True anomaly<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="'Calculated for ' + (getSystemAnomalyEpoch() | date:'yyyy-MM-dd HH:mm') + ' UTC - click for details'">{{ getTrueAnomaly() | number:'0.2-2' }}°</span><app-convert-icon [kind]="'angle'" [value]="getTrueAnomaly()" label="True anomaly" uiUnit="Degrees" />
+            </div>
+          </div>
+          }
+          @if (getParentDistanceKm(); as parentDistanceKm) {
+          <div class="body-data-entry clickable" (click)="showParentDistanceDialog()">
+            <div>
+              Parent distance<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="parentDistanceKm + ' km'">{{ formatOrbitDistance(parentDistanceKm) }}</span><app-convert-icon [kind]="'length'" [value]="parentDistanceKm" label="Parent distance" [uiUnit]="orbitDistanceUnitLabel()" />
+            </div>
+          </div>
+          }
+          @if (getNextApoapsis()) {
+          <div class="body-data-entry clickable" (click)="showApoPeriDialog('apo')">
+            <div>
+              Next apoapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="(getNextApoapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextApoapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextApoapsis()!.days" label="Next apoapsis" uiUnit="Days" />
+            </div>
+          </div>
+          }
+          @if (getNextPeriapsis()) {
+          <div class="body-data-entry clickable" (click)="showApoPeriDialog('peri')">
+            <div>
+              Next periapsis<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              <span [matTooltip]="(getNextPeriapsis()!.date | date:'yyyy-MM-dd HH:mm') || ''">{{ getNextPeriapsis()!.days | number:'0.1-1' }} days</span><app-convert-icon [kind]="'duration'" [value]="getNextPeriapsis()!.days" label="Next periapsis" uiUnit="Days" />
             </div>
           </div>
           }
@@ -736,7 +784,7 @@
         }
         <!-- Stellar Properties Section (Stars only) -->
         @if (body().bodyData.type === 'Star' && (body().bodyData.luminosity || body().bodyData.absoluteMagnitude !==
-        undefined || body().bodyData.spectralClass || getJetConeAngle() !== null)) {
+        undefined || body().bodyData.spectralClass)) {
         <div class="body-data-section">
           <div class="body-data-section-header">Stellar Properties</div>
           @if (body().bodyData.spectralClass) {
@@ -744,7 +792,7 @@
             <div>
               Spectral class
             </div>
-            <div>
+            <div class="no-speculative-mark">
               {{ body().bodyData.spectralClass }}
             </div>
           </div>
@@ -754,7 +802,7 @@
             <div>
               Luminosity class
             </div>
-            <div>
+            <div class="no-speculative-mark">
               {{ body().bodyData.luminosity }}
             </div>
           </div>
@@ -766,17 +814,6 @@
             </div>
             <div [matTooltip]="body().bodyData.absoluteMagnitude!.toString()">
               {{ body().bodyData.absoluteMagnitude | number:'0.2-2' }}
-            </div>
-          </div>
-          }
-          @if (getJetConeAngle() !== null) {
-          <div class="body-data-entry clickable"
-               (click)="showJetAngleDialog()">
-            <div>
-              Jet cone half angle<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
-            </div>
-            <div [matTooltip]="getJetConeAngle() !== null ? (getJetConeAngle() | number:'1.6-6') + '° ± 5°' : ''">
-              {{ getJetConeAngle() | number:'0.2-2' }}°
             </div>
           </div>
           }
@@ -816,14 +853,12 @@
           <div class="body-data-section-header">
             Signals
             @if (humanSignalCount) {
-            <img alt=""
-                 src="assets/icons/Human.svg"
-                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+            <img alt="" src="assets/icons/Human.svg"
+              style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
             }
             @if (otherSignalCount) {
-            <img alt=""
-                 src="assets/icons/Other.png"
-                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+            <img alt="" src="assets/icons/Other.png"
+              style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
             }
           </div>
           @if (humanSignalCount) {
@@ -853,9 +888,8 @@
         <div class="body-data-section">
           <div class="body-data-section-header">
             Geology
-            <img alt=""
-                 src="assets/icons/Geology.svg"
-                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+            <img alt="" src="assets/icons/Geology.svg"
+              style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
           </div>
           <div class="body-data-entry">
             <div>
@@ -882,9 +916,8 @@
         <div class="body-data-section">
           <div class="body-data-section-header">
             Biology
-            <img alt=""
-                 src="assets/icons/Biology.svg"
-                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+            <img alt="" src="assets/icons/Biology.svg"
+              style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
           </div>
           <div class="body-data-entry">
             <div>
@@ -899,8 +932,7 @@
           <div class="body-data-entry">
             <div>
               @if (biologySignal.isGuess) {
-              <fa-icon [icon]="faCircleQuestion"
-                       matTooltip="Guess"></fa-icon>
+              <fa-icon [icon]="faCircleQuestion" matTooltip="Guess"></fa-icon>
               }
               @if (!biologySignal.entryId) {
               <span>
@@ -908,9 +940,8 @@
               }
               @if (biologySignal.entryId) {
               <span>
-                <a href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.signal }}"
-                   target="_blank"
-                   rel="noopener noreferrer">
+                <a href="https://canonn-science.github.io/bioforge/?entryid={{ biologySignal.entryId }}" target="_blank"
+                  rel="noopener noreferrer">
                   {{ biologySignal.signal }}
                   <fa-icon [icon]="faUpRightFromSquare"></fa-icon>
                 </a>
@@ -934,9 +965,8 @@
         <div class="body-data-section">
           <div class="body-data-section-header">
             Thargoid
-            <img alt=""
-                 src="assets/icons/Thargoid.svg"
-                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+            <img alt="" src="assets/icons/Thargoid.svg"
+              style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
           </div>
           <div class="body-data-entry">
             <div>
@@ -963,9 +993,8 @@
         <div class="body-data-section">
           <div class="body-data-section-header">
             Guardian
-            <img alt=""
-                 src="assets/icons/Guardian.svg"
-                 style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
+            <img alt="" src="assets/icons/Guardian.svg"
+              style="width: 20px; height: 20px; margin-left: 8px; vertical-align: middle;" />
           </div>
           <div class="body-data-entry">
             <div>
@@ -995,11 +1024,10 @@
 <div class="system-body-end"></div>
 <div class="child-bodies">
   @for (body of body().subBodies; track $index; let isLast = $last) {
-  <app-system-body [body]="body"
-                   [isLast]="isLast"
-                   [forceExpanded]="forceExpanded() || isAnchorBody"
-                   [anchorBodyId]="anchorBodyId()"
-                   [edGalaxyData]="edGalaxyData()"></app-system-body>
+  <app-system-body [body]="body" [isLast]="isLast" [forceExpanded]="forceExpanded() || isAnchorBody"
+    [anchorBodyId]="anchorBodyId()" [systemPopulation]="systemPopulation()"
+    [filterCommand]="filterCommand()" [systemKey]="systemKey()"
+    [edGalaxyData]="edGalaxyData()"></app-system-body>
   }
 </div>
 </div>

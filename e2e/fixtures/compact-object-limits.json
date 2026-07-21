@@ -2,7 +2,7 @@
   "system": {
     "name": "Compact Object Limits",
     "id64": 9100000000001,
-    "bodyCount": 5,
+    "bodyCount": 6,
     "coords": {
       "x": 0,
       "y": 0,
@@ -92,6 +92,23 @@
         "distanceToArrival": 0,
         "surfaceTemperature": 4962653,
         "solarMasses": 0.808594,
+        "solarRadius": 1.55295201294033e-05,
+        "age": 3218,
+        "rotationalPeriod": 3.04077662037037e-05,
+        "axialTilt": 0.0,
+        "spectralClass": "N0",
+        "luminosity": "VII",
+        "updateTime": "2026-06-14 00:00:00+00"
+      },
+      {
+        "bodyId": 5,
+        "id64": 9100000000005,
+        "name": "Super-TOV Neutron Star",
+        "type": "Star",
+        "subType": "Neutron Star",
+        "distanceToArrival": 0,
+        "surfaceTemperature": 4962653,
+        "solarMasses": 2.35,
         "solarRadius": 1.55295201294033e-05,
         "age": 3218,
         "rotationalPeriod": 3.04077662037037e-05,

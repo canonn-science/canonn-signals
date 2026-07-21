@@ -1,5 +1,5 @@
 import { estimateTempRange, isTempSafe, lookupTempDelta } from '../data/temperature-estimation';
-import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked } from '@angular/core';
+import { Component, OnChanges, ChangeDetectionStrategy, SimpleChanges, input, viewChildren, inject, afterNextRender, signal, effect, untracked, DestroyRef } from '@angular/core';
 import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
@@ -10,33 +10,89 @@ import { MatDialog } from '@angular/material/dialog';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { ClickableDirective } from '../clickable.directive';
-import { BodyPhysicsService, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity } from '../data/body-physics.service';
+import {
+  BodyPhysicsService, RingDynamics, ShepherdingHillLimit, BodyRocheLimits, PlanetaryDensity, MassStabilityAlert, SPEED_OF_LIGHT,
+  NARROW_RING_SPAN_RADII, PAUPER_RING_MIN_INNER_EDGE_RADII, PAUPER_RING_MAX_SPAN_RADII, HighAngularDiameterAssessment,
+} from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
-import { OrbitalRelationsService } from '../data/orbital-relations.service';
+import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
+import { OrbitalWorkerService } from '../data/orbital-worker.service';
+import { logger } from '../data/logger';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
 import { WHITE_DWARF_CLASSES, whiteDwarfSpectralCode, whiteDwarfSpectralTypeKey } from '../data/white-dwarf';
-import { WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData } from '../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component';
+import { openLazyDialog } from '../dialogs/lazy-dialog';
+import type { WhiteDwarfTypesDialogData } from '../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component';
 import { MATERIAL_DATA } from '../data/materials';
 import { GENUS_NAMES } from '../data/genus';
-import { OrbitalDiagramDialogComponent, OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
-import { TidalLockDialogComponent, TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
-import { HrDiagramDialogComponent } from '../dialogs/hr-diagram-dialog/hr-diagram-dialog.component';
-import { HillLimitDialogComponent } from '../dialogs/hill-limit-dialog/hill-limit-dialog.component';
-import { RocheLimitDialogComponent } from '../dialogs/roche-limit-dialog/roche-limit-dialog.component';
-import { InvisibleRingDialogComponent, InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
-import { ApoPeriDialogComponent, ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
-import { JetAngleDialogComponent } from '../dialogs/jet-angle-dialog/jet-angle-dialog.component';
-import { JsonDialogComponent, JsonDialogData, formatBodyJson } from '../dialogs/json-dialog/json-dialog.component';
-import { OnFootSafetyDialogComponent, OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
+import type { OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component';
+import type { TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
+import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
+import type { RingClassificationDialogData } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
+import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
+import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
+import type { ParentDistanceDialogData } from '../dialogs/parent-distance-dialog/parent-distance-dialog.component';
+import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
+import type { SynodicDiagramInput } from '../data/collision-diagram';
+import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
+import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
+import { BodyEnrichmentService } from '../data/body-enrichment.service';
+import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dialog.component';
+import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
+import { resolveBodySignalsMap, FilterCommand } from '../data/body-filters';
+import { SPECULATIVE_BODY_TOOLTIP } from '../data/speculative-systems';
+import { SpeculativeValueTooltipDirective } from './speculative-value-tooltip.directive';
+import { BodyInterestRegistryService } from '../data/body-interest-registry.service';
+import { ConvertIconComponent } from '../dialogs/unit-conversion-dialog/convert-icon.component';
+import {
+  dynamicArealDensityUnitLabel,
+  dynamicAreaUnitLabel,
+  dynamicDistanceUnitLabel,
+  dynamicLengthUnitLabel,
+  dynamicMassUnitLabel,
+  formatDynamicArea,
+  formatDynamicArealDensity,
+  formatDynamicDistanceLs,
+  formatDynamicLength,
+  formatDynamicMass,
+  formatLengthInUnit,
+  InlineLengthUnit,
+  pickInlineLengthUnit,
+  KM_PER_AU,
+  KM_PER_LIGHT_SECOND,
+  KM_PER_SOLAR_RADIUS,
+  KG_PER_EARTH_MASS,
+  KG_PER_MEGATONNE,
+  KG_PER_SOLAR_MASS,
+  RADIANS_PER_DEGREE,
+} from '../data/unit-conversions';
+
+/**
+ * Delay (ms) before the collision badge shows its pending skeleton. The collision search now runs
+ * off the main thread, so its result arrives asynchronously; most bodies resolve within a worker
+ * round-trip, so we only reveal the skeleton once the wait crosses this threshold (matching the
+ * lazy-dialog skeleton's own delay) to avoid a flash on the common fast path.
+ */
+const COLLISION_SKELETON_DELAY_MS = 150;
+
+/** Horizon (days) over which simultaneous (multi-body) collisions are scanned for the dialog's section. */
+const SIMULTANEOUS_COLLISION_HORIZON_DAYS = 180;
+/** Width of the collision dialog's distance-over-time diagram, in synodic periods. */
+const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
+/**
+ * Number of separation samples drawn across the diagram window (~100 per synodic period over the
+ * {@link COLLISION_DIAGRAM_SYNODIC_PERIODS}-period span). Enough to render the conjunction dips
+ * smoothly; the exact contact minima are threaded into the curve separately for precise markers.
+ */
+const COLLISION_DIAGRAM_SAMPLES = 1000;
 
 @Component({
   selector: 'app-system-body',
   templateUrl: './system-body.component.html',
   styleUrls: ['./system-body.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective]
+  imports: [FaIconComponent, MatTooltip, DecimalPipe, DatePipe, ClickableDirective, ConvertIconComponent, SpeculativeValueTooltipDirective]
 })
 export class SystemBodyComponent implements OnChanges {
   private readonly appService = inject(AppService);
@@ -44,6 +100,10 @@ export class SystemBodyComponent implements OnChanges {
   private readonly physics = inject(BodyPhysicsService);
   private readonly stellarPhysics = inject(StellarPhysicsService);
   private readonly orbitalRelations = inject(OrbitalRelationsService);
+  private readonly orbitalWorker = inject(OrbitalWorkerService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly enrichment = inject(BodyEnrichmentService);
+  private readonly interestRegistry = inject(BodyInterestRegistryService);
 
   // Expose Math.abs for template use
   abs(value: number): number {
@@ -58,12 +118,21 @@ export class SystemBodyComponent implements OnChanges {
   public readonly faCode = faCode;
   public readonly faLock = faLock;
   public readonly faLink = faLink;
+  public readonly speculativeBodyTooltip = SPECULATIVE_BODY_TOOLTIP;
   readonly body = input.required<SystemBody>();
   readonly edGalaxyData = input<EdGalaxyData | null>(null);
   readonly isRoot = input<boolean>(false);
   readonly isLast = input<boolean>(false);
   readonly forceExpanded = input<boolean>(false);
+  // Unlike forceExpanded, this is deliberately NOT propagated to subBodies (see the
+  // recursive @for in the template) — it only auto-expands the exact body it's bound to,
+  // e.g. home.component.html sets it on the root call so a special-cased system (see
+  // data/speculative-systems.ts) can default to just its main star open, children collapsed.
+  readonly defaultExpanded = input<boolean>(false);
   readonly anchorBodyId = input<number | null>(null);
+  readonly systemPopulation = input<number>(0);
+  readonly filterCommand = input<FilterCommand | null>(null);
+  readonly systemKey = input<string | number | bigint | null>(null);
   readonly childComponents = viewChildren(SystemBodyComponent);
   public styleClass = "child-container-default";
   private codex: CanonnCodexEntry[] | null = null;
@@ -89,11 +158,17 @@ export class SystemBodyComponent implements OnChanges {
 
   public expandable = false;
   public readonly expanded = signal(false);
+  // Auto-expand is a function of body identity, the anchor target and forceExpanded only.
+  // These record the last values it was evaluated for, so ngOnChanges re-fires from
+  // unrelated inputs (the async edGalaxyData/codex updates) don't re-open a body the
+  // user has since collapsed. See the auto-expand block in ngOnChanges.
+  private autoExpandBody: SystemBody | null = null;
+  private autoExpandAnchor: number | null = null;
+  /** Last-applied quick-filter token (see {@link FilterCommand}), so a repeat ngOnChanges from an unrelated input doesn't reapply it. */
+  private lastAppliedFilterToken: number | null = null;
+  private autoExpandForce = false;
 
   public hoveredIndex: number = -1;
-
-  public formattedEarthMass: { display: string; tooltip: string } | null = null;
-  public formattedSolarMass: { display: string; tooltip: string } | null = null;
 
   // Cache for expensive computed properties
   public readonly getMaterialBadges = signal<{ name: string, class: string, tooltip: string }[]>([]);
@@ -103,17 +178,39 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getSolidCompositionTooltip = signal('');
   public readonly getRingResourceTypes = signal<Set<string>>(new Set());
   // Cached values for template bindings that are read multiple times per render.
-  public readonly getJetConeAngle = signal<number | null>(null);
   public readonly getSpinResonance = signal('none');
   public readonly getConfirmedBiologyCount = signal(0);
   // Orbit/ring geometry and physics-service results, computed once per body change
   // rather than on every change-detection pass (several are bound multiple times).
   public readonly getApoapsis = signal(0);
   public readonly getPeriapsis = signal(0);
+  public readonly getSystemAnomalyEpoch = signal<Date | null>(null);
+  public readonly getMeanAnomaly = signal<number | undefined>(undefined);
+  public readonly getTrueAnomaly = signal<number | undefined>(undefined);
   public readonly getRingWidth = signal(0);
   public readonly getRingArea = signal(0);
   public readonly getRingDensity = signal(0);
   public readonly isRingNotVisible = signal(false);
+  public readonly getRingOrbitalPeriod = signal<number | null>(null);
+  public readonly getRingOrbitalPeriodDisplay = signal('');
+  public readonly getRingOrbitalPeriodTooltip = signal('');
+  public readonly getRingMinVelocity = signal<number | null>(null);
+  public readonly getRingMinVelocityDisplay = signal('');
+  public readonly getRingMinVelocityTooltip = signal('');
+  public readonly getRingMaxVelocity = signal<number | null>(null);
+  public readonly getRingMaxVelocityDisplay = signal('');
+  public readonly getRingMaxVelocityTooltip = signal('');
+  public readonly getRingNeighbourDistance = signal<number | null>(null);
+  public readonly getRingNeighbourDistanceLabel = signal('');
+  public readonly getRingVelocityDiff = signal<number | null>(null);
+  public readonly getRingVelocityDiffDisplay = signal('');
+  public readonly getRingVelocityDiffTooltip = signal('');
+  public readonly isRacingRings = signal(false);
+  public readonly racingRingsTooltip = signal('');
+  public readonly isTaylorRing = signal(false);
+  public readonly taylorRingTooltip = signal('');
+  public readonly isPauperRing = signal(false);
+  public readonly pauperRingTooltip = signal('');
   public readonly getPlanetaryDensity = signal<PlanetaryDensity | null>(null);
   public readonly calculateRigidRocheLimit = signal<number | null>(null);
   public readonly calculateFluidRocheLimit = signal<number | null>(null);
@@ -121,6 +218,8 @@ export class SystemBodyComponent implements OnChanges {
   public readonly calculateShepherdingHillLimit = signal<ShepherdingHillLimit | null>(null);
   public readonly isActualShepherd = signal(false);
   public readonly isShepherdingCandidate = signal(false);
+  public readonly highAngularDiameterAssessment = signal<HighAngularDiameterAssessment | null>(null);
+  public readonly highAngularDiameterTooltip = signal('');
   public readonly isBodyWithinParentRings = signal(false);
   public readonly getSignalsCount = signal(0);
   public readonly getAtmosphereCompositionTooltip = signal('');
@@ -130,7 +229,7 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getTangentialVelocityTooltip = signal('');
   public readonly classifyNeutronStar = signal<string | null>(null);
   public readonly getSchwarzschildRadius = signal<number | null>(null);
-  public readonly getMassStabilityAlert = signal<string | null>(null);
+  public readonly getMassStabilityAlert = signal<MassStabilityAlert | null>(null);
   public getBodyDisplayName(bodyName: string): string {
     return this.appService.getBodyDisplayName(bodyName);
   }
@@ -171,18 +270,18 @@ export class SystemBodyComponent implements OnChanges {
     this.trojanStatus = trojan.lagrangePoint;
     this.trojanHostStatus = trojan.isHost;
     this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
+    // Collision detection runs a costly 3D orbital search, so only redo it when the body
+    // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
+    // the async codex effect, which leave the orbital geometry untouched.
+    if (this.collisionBody !== body) {
+      this.collisionBody = body;
+      this.requestCollisionStatus(body);
+    }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
+    this.getParentDistanceKm.set(this.calculateParentDistanceKm());
     this.getRocheExcess.set(this.calculateRocheExcess());
     this.getStellarAgeAssessment.set(this.computeStellarAgeAssessment());
-
-    // Calculate formatted mass values once when body changes
-    this.formattedEarthMass = body.bodyData.earthMasses
-      ? this.formatEarthMass(body.bodyData.earthMasses)
-      : null;
-    this.formattedSolarMass = body.bodyData.solarMasses
-      ? this.formatSolarMass(body.bodyData.solarMasses)
-      : null;
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
@@ -268,7 +367,22 @@ export class SystemBodyComponent implements OnChanges {
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
       this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
     this.expandable = true;
-    if (this.expanded() === false) {
+    // Auto-expansion is driven only by the body itself, the anchor target (a body-link
+    // click) and forceExpanded. Track the last values each was decided for so unrelated
+    // ngOnChanges re-fires (the async edGalaxyData/codex updates) never re-open a body the
+    // user has collapsed. Crucially, "interesting" only auto-expands on first sight of the
+    // body — an anchor/forceExpanded change expands only the body it now targets, so
+    // navigating to one body never re-opens a *different* interesting body the user
+    // collapsed. Manual toggle and ancestor "expand all" (setExpandedState) are untouched.
+    const anchorBodyId = this.anchorBodyId();
+    const forceExpanded = this.forceExpanded();
+    const bodyChanged = this.autoExpandBody !== body;
+    const anchorChanged = this.autoExpandAnchor !== anchorBodyId;
+    const forceChanged = this.autoExpandForce !== forceExpanded;
+    this.autoExpandBody = body;
+    this.autoExpandAnchor = anchorBodyId;
+    this.autoExpandForce = forceExpanded;
+    if (this.expanded() === false && (bodyChanged || anchorChanged || forceChanged)) {
       const isInteresting = this.hasSignals ||
         body.bodyData.subType === 'Earth-like world' ||
         body.bodyData.subType === 'Water world' ||
@@ -279,7 +393,22 @@ export class SystemBodyComponent implements OnChanges {
         body.bodyData.subType?.includes('Wolf-Rayet') ||
         body.bodyData.subType?.includes('Herbig') ||
         !!body.bodyData.isLandable;
-      this.expanded.set(this.forceExpanded() || isInteresting || this.containsAnchorBody(body));
+      const shouldExpand =
+        (bodyChanged && isInteresting) ||
+        ((bodyChanged || forceChanged) && forceExpanded) ||
+        ((bodyChanged || anchorChanged) && this.containsAnchorBody(body)) ||
+        (bodyChanged && this.defaultExpanded());
+      if (shouldExpand) {
+        this.expanded.set(true);
+      }
+    }
+
+    // Quick-filter command (see FilterCommand): applies unconditionally, overriding whatever
+    // expanded() currently holds, so a click both expands matching bodies and collapses the rest.
+    const filterCommand = this.filterCommand();
+    if (filterCommand && filterCommand.token !== this.lastAppliedFilterToken) {
+      this.lastAppliedFilterToken = filterCommand.token;
+      this.expanded.set(filterCommand.bodies === 'all' || filterCommand.bodies.has(body));
     }
 
     if (this.isRoot()) {
@@ -310,7 +439,6 @@ export class SystemBodyComponent implements OnChanges {
 
     // Cache values read several times per render from the template.
     this.getSpinResonance.set(this.computeSpinResonance());
-    this.getJetConeAngle.set(this.computeJetConeAngle());
     this.getConfirmedBiologyCount.set(this.biologySignals.filter(b => !b.isGuess).length);
     this.getAtmosphereDisplay.set(this.computeAtmosphereDisplay());
     this.getSolidCompositionTooltip.set(this.computeSolidCompositionTooltip());
@@ -328,11 +456,24 @@ export class SystemBodyComponent implements OnChanges {
     const body = this.body();
     const bd = body.bodyData;
 
-    // Orbit extents (km).
-    const semiMajorAxisKm = (bd.semiMajorAxis ?? 0) * 149597870.7;
-    const eccentricity = bd.orbitalEccentricity ?? 0;
-    this.getApoapsis.set(semiMajorAxisKm * (1 + eccentricity));
-    this.getPeriapsis.set(semiMajorAxisKm * (1 - eccentricity));
+    // Orbit extents (km) — shared with the JSON export via BodyPhysicsService.
+    const extents = this.physics.orbitExtentsKm(bd);
+    this.getApoapsis.set(extents?.apoapsisKm ?? 0);
+    this.getPeriapsis.set(extents?.periapsisKm ?? 0);
+
+    // Mean/true anomaly: propagated to the most recent mean-anomaly observation
+    // timestamp anywhere in the system (not "now"), so every body in a system reads
+    // as one consistent snapshot even when their individual recordings differ in age.
+    const epoch = this.orbitalRelations.systemAnomalyEpoch(body);
+    this.getSystemAnomalyEpoch.set(epoch);
+    let meanAnomalyAtEpoch: number | undefined;
+    if (bd.meanAnomaly != null && bd.orbitalPeriod && bd.timestamps?.meanAnomaly && epoch) {
+      meanAnomalyAtEpoch = this.orbitalRelations.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, epoch.getTime());
+    }
+    this.getMeanAnomaly.set(meanAnomalyAtEpoch);
+    this.getTrueAnomaly.set(meanAnomalyAtEpoch !== undefined && bd.orbitalEccentricity != null
+      ? this.orbitalRelations.meanToTrueAnomaly(meanAnomalyAtEpoch, bd.orbitalEccentricity)
+      : undefined);
 
     // Ring geometry.
     const outer = bd.outerRadius ?? 0;
@@ -341,7 +482,50 @@ export class SystemBodyComponent implements OnChanges {
     this.getRingArea.set(Math.PI * (outer * outer - inner * inner));
     this.getRingDensity.set(this.getRingArea() > 0 ? (bd.mass ?? 0) / this.getRingArea() : 0);
     this.isRingNotVisible.set(bd.type === BODY_TYPE.Ring
-      && this.getRingDensity() < 0.1 && this.getRingWidth() > 1000000);
+      && this.isLowDensityWideRing(this.getRingWidth(), this.getRingDensity()));
+
+    // Ring dynamics: orbital period and max velocity (Kepler math lives in the service).
+    this.applyRingDynamics(this.physics.ringDynamics(body));
+
+    // Distance to the next ring/belt sibling (by innerRadius order).
+    const { distance: neighbourDist, label: neighbourLabel, velocityDiff, eitherRingInvisible } = this.physics.ringNeighbourDistance(body);
+    // Suppress gap/velocity display when either ring in the pair is invisible — the values
+    // are physically real but the invisible ring cannot be observed in-game.
+    const displayDist = eitherRingInvisible ? null : neighbourDist;
+    const displayVelocityDiff = eitherRingInvisible ? null : velocityDiff;
+    this.getRingNeighbourDistance.set(displayDist);
+    this.getRingNeighbourDistanceLabel.set(displayDist !== null ? neighbourLabel : '');
+    this.getRingVelocityDiff.set(displayVelocityDiff);
+    this.getRingVelocityDiffDisplay.set(displayVelocityDiff !== null ? this.formatVelocityKms(displayVelocityDiff) : '');
+    this.getRingVelocityDiffTooltip.set(displayVelocityDiff !== null ? `${displayVelocityDiff.toFixed(3)} km/s` : '');
+
+    // Racing Rings badge: gap between adjacent rings below threshold AND speed
+    // differential above threshold, and neither ring in the pair is invisible.
+    const racingRings = this.physics.isRacingRings(body);
+    this.isRacingRings.set(racingRings);
+    if (racingRings) {
+      const dashIdx = neighbourLabel.indexOf('-');
+      const innerLabel = dashIdx >= 0 ? neighbourLabel.slice(0, dashIdx) : neighbourLabel;
+      const outerLabel = dashIdx >= 0 ? neighbourLabel.slice(dashIdx + 1) : '';
+      this.racingRingsTooltip.set(
+        `Ring ${innerLabel} and Ring ${outerLabel} pass within ${neighbourDist!.toFixed(0)} km with a speed differential of ${velocityDiff!.toFixed(1)} km/s`,
+      );
+    } else {
+      this.racingRingsTooltip.set('');
+    }
+
+    // Taylor (unusually narrow) / Pauper (unusually wide and distant) ring badges.
+    const ringClass = this.physics.classifyRingSystem(body);
+    this.isTaylorRing.set(ringClass?.isTaylor ?? false);
+    this.isPauperRing.set(ringClass?.isPauper ?? false);
+    this.taylorRingTooltip.set(ringClass?.isTaylor
+      ? `Taylor ring: total ring span is ${ringClass.span.toFixed(0)} km, under 25% of the body's radius `
+        + `(${(NARROW_RING_SPAN_RADII * ringClass.parentRadius).toFixed(0)} km) — unusually narrow`
+      : '');
+    this.pauperRingTooltip.set(ringClass?.isPauper
+      ? `Pauper ring: innermost edge sits ${(ringClass.innermostInner / ringClass.parentRadius).toFixed(1)}× the body's radius out, `
+        + `spanning only ${ringClass.span.toFixed(0)} km — unusually wide and distant`
+      : '');
 
     // Physics-service delegations.
     this.getPlanetaryDensity.set(this.physics.getPlanetaryDensity(bd));
@@ -352,6 +536,14 @@ export class SystemBodyComponent implements OnChanges {
     this.isShepherdingCandidate.set(this.physics.isShepherdingCandidate(body));
     this.isActualShepherd.set(this.physics.isActualShepherd(body));
     this.isBodyWithinParentRings.set(this.physics.isBodyWithinParentRings(body));
+
+    // High Angular Diameter badge: parent star/planet visibly dominates this landable body's sky.
+    const angularDiameter = this.physics.highAngularDiameterAssessment(body);
+    this.highAngularDiameterAssessment.set(angularDiameter);
+    this.highAngularDiameterTooltip.set(angularDiameter
+      ? `High angular diameter parent (${angularDiameter.parentType}: ${angularDiameter.parentLabel})\n`
+        + `Landable — parent spans ${angularDiameter.angularDiameterDegrees.toFixed(0)}° across the sky`
+      : '');
 
     // Signals and tooltips.
     this.getSignalsCount.set(this.computeSignalsCount());
@@ -416,10 +608,7 @@ export class SystemBodyComponent implements OnChanges {
 
 
   public getEccentricityAnalysis(eccentricity: number): string {
-    if (eccentricity === 0) return 'Circular';
-    if (eccentricity < 0.4) return 'Nearly Circular';
-    if (eccentricity < 0.8) return 'Eccentric';
-    return 'Highly Eccentric';
+    return this.physics.eccentricityClass(eccentricity);
   }
 
 
@@ -449,13 +638,15 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   /** Opens the white-dwarf spectral-type reference modal, highlighting this star's type. */
-  public showWhiteDwarfSpectralDialog(): void {
+  public async showWhiteDwarfSpectralDialog(): Promise<void> {
     const code = this.getWhiteDwarfSpectralCode();
     if (!code) { return; }
-    this.dialog.open<WhiteDwarfTypesDialogComponent, WhiteDwarfTypesDialogData>(WhiteDwarfTypesDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/white-dwarf-types-dialog/white-dwarf-types-dialog.component').then(m => m.WhiteDwarfTypesDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
-      data: { typeKey: whiteDwarfSpectralTypeKey(code) },
+      data: { typeKey: whiteDwarfSpectralTypeKey(code) } satisfies WhiteDwarfTypesDialogData,
     });
   }
 
@@ -492,7 +683,7 @@ export class SystemBodyComponent implements OnChanges {
    * Axial tilt is stored in radians, so it is converted to degrees here; orbital
    * inclination and argument of periapsis are already in degrees.
    */
-  public showOrbitalDiagram(type: OrbitalDiagramType): void {
+  public async showOrbitalDiagram(type: OrbitalDiagramType): Promise<void> {
     const bodyData = this.body().bodyData;
     let degrees: number | null | undefined;
     switch (type) {
@@ -526,10 +717,11 @@ export class SystemBodyComponent implements OnChanges {
       };
     }
 
-    this.dialog.open(OrbitalDiagramDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/orbital-diagram-dialog/orbital-diagram-dialog.component').then(m => m.OrbitalDiagramDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: { type, degrees, eccentricity: bodyData.orbitalEccentricity, bodyName, parentName, orbit },
@@ -540,13 +732,14 @@ export class SystemBodyComponent implements OnChanges {
    * Opens the Hertzsprung–Russell diagram modal for this star, plotting it by temperature
    * and absolute magnitude and comparing its age to the lifetime its class implies.
    */
-  public showHrDiagram(): void {
+  public async showHrDiagram(): Promise<void> {
     const body = this.body();
     const bodyData = body.bodyData;
-    this.dialog.open(HrDiagramDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/hr-diagram-dialog/hr-diagram-dialog.component').then(m => m.HrDiagramDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -576,37 +769,127 @@ export class SystemBodyComponent implements OnChanges {
       && isPlottableStarClass(bodyData.spectralClass, bodyData.subType);
   }
 
-  public formatEarthMass(earthMasses: number): { display: string; tooltip: string } {
-    return {
-      display: `${earthMasses.toFixed(2)} Earth masses`,
-      tooltip: `${earthMasses} Earth masses`
-    };
+  // --- Inline dynamic-by-magnitude formatters (delegated to the shared pure module) ---
+  public formatLength(km: number): string { return formatDynamicLength(km); }
+  public formatDistanceLs(ls: number): string { return formatDynamicDistanceLs(ls); }
+  public formatMass(kg: number): string { return formatDynamicMass(kg); }
+  public formatArea(km2: number): string { return formatDynamicArea(km2); }
+  /** Ring/belt areal density (Mt/km² base), scaled up to Gt/km² for very dense rings. */
+  public formatRingDensity(mtKm2: number): string { return formatDynamicArealDensity(mtKm2); }
+
+  // --- Conversion-dialog "shown in UI" unit labels (which dialog row to accent). ---
+  public lengthUnitLabel(km: number | null | undefined): string {
+    return km == null ? '' : dynamicLengthUnitLabel(km);
+  }
+  public distanceUnitLabel(km: number | null | undefined): string {
+    return km == null ? '' : dynamicDistanceUnitLabel(km);
+  }
+  public massUnitLabel(kg: number | null | undefined): string {
+    return kg == null ? '' : dynamicMassUnitLabel(kg);
+  }
+  public areaUnitLabel(km2: number | null | undefined): string {
+    return km2 == null ? '' : dynamicAreaUnitLabel(km2);
+  }
+  public ringDensityUnitLabel(mtKm2: number | null | undefined): string {
+    return mtKm2 == null ? '' : dynamicArealDensityUnitLabel(mtKm2);
+  }
+  /** Dialog-row label for the inline duration unit chosen by {@link formatPeriodDays}. */
+  public durationUnitLabel(days: number | null | undefined): string {
+    if (days == null || !Number.isFinite(days)) { return ''; }
+    return this.periodParts(days).label;
+  }
+  /** Dialog-row label for the inline velocity unit chosen by {@link formatVelocityKms}. */
+  public velocityUnitLabel(kms: number | null | undefined): string {
+    if (kms == null || !Number.isFinite(kms)) { return ''; }
+    return this.isRelativistic(kms) ? 'c (fraction of light)' : 'km/s';
+  }
+  /** Native (journal/API) mass unit for this body, by which field carries it. */
+  public massSourceUnit(): string {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) { return 'Solar Masses'; }
+    if (bd.earthMasses != null) { return 'Earth Masses'; }
+    if (bd.mass != null) { return 'Megatonnes'; }
+    return '';
   }
 
-  public formatSolarMass(solarMasses: number): { display: string; tooltip: string } {
-    return {
-      display: `${solarMasses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      tooltip: `${solarMasses.toLocaleString('en-US', { maximumFractionDigits: 20 })} Solar masses`
-    };
+  // --- Shared orbit-distance unit: semi-major axis, apoapsis and periapsis (#5). ---
+  /**
+   * One length unit shared by the semi-major-axis/apoapsis/periapsis trio, chosen from the
+   * semi-major axis (the orbit's representative scale; apoapsis ≤ 2a and periapsis ≥ 0 stay
+   * the same order of magnitude). Falls back to apoapsis then periapsis when absent.
+   */
+  public orbitDistanceUnit(): InlineLengthUnit {
+    const rep = this.getSemiMajorAxisKm() ?? (this.getApoapsis() || this.getPeriapsis() || 0);
+    return pickInlineLengthUnit(rep);
   }
+  public formatOrbitDistance(km: number | null | undefined): string {
+    return km == null ? '' : formatLengthInUnit(km, this.orbitDistanceUnit());
+  }
+  public orbitDistanceUnitLabel(): string { return this.orbitDistanceUnit().label; }
+
+  /** This body's mass in kilograms from whichever source field it carries, or null. */
+  public getMassKg(): number | null {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) { return bd.solarMasses * KG_PER_SOLAR_MASS; }
+    if (bd.earthMasses != null) { return bd.earthMasses * KG_PER_EARTH_MASS; }
+    if (bd.mass != null) { return bd.mass * KG_PER_MEGATONNE; }
+    return null;
+  }
+
+  /** Tooltip for the mass row: the value in its stored unit at full precision. */
+  public getMassTooltip(): string {
+    const bd = this.body().bodyData;
+    if (bd.solarMasses != null) {
+      return `${bd.solarMasses.toLocaleString('en-US', { maximumFractionDigits: 20 })} Solar masses`;
+    }
+    if (bd.earthMasses != null) { return `${bd.earthMasses} Earth masses`; }
+    if (bd.mass != null) { return `${bd.mass} Mt`; }
+    return '';
+  }
+
+  /** This body's semi-major axis in km (stored in AU), or null. */
+  public getSemiMajorAxisKm(): number | null {
+    const au = this.body().bodyData.semiMajorAxis;
+    return au == null ? null : au * KM_PER_AU;
+  }
+
+  /** This body's distance-to-arrival in km (stored in light-seconds), or null. */
+  public getDistanceToArrivalKm(): number | null {
+    const ls = this.body().bodyData.distanceToArrival;
+    return ls == null ? null : ls * KM_PER_LIGHT_SECOND;
+  }
+
+  /** An ordinary star's radius in km (stored in solar radii), for the conversion dialog; null if absent. */
+  public getSolarRadiusKm(): number | null {
+    const solarRadius = this.body().bodyData.solarRadius;
+    return solarRadius == null ? null : solarRadius * KM_PER_SOLAR_RADIUS;
+  }
+
+  /**
+   * Physical radius in km for stars shown in km rather than solar radii: neutron stars,
+   * black holes (compact objects) and — per the display spec — white dwarfs. Null for
+   * ordinary stars, which keep solar radii. Kept distinct from {@link isBlackHoleOrNeutronStar}
+   * so the tangential-velocity gate stays compact-object-only.
+   */
+  public getStarRadiusKm(): number | null {
+    const compact = this.getCompactObjectRadiusKm();
+    if (compact !== null) { return compact; }
+    const bd = this.body().bodyData;
+    if (bd.subType?.startsWith('White Dwarf')) {
+      return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
+    }
+    return null;
+  }
+
 
 
   /**
    * The hotspot/signal map for this body: its own `signals.signals`, or — for a ring
-   * body — the matching entry in the parent's `rings` array. Single source of truth for
-   * the signal-count, hotspot-list and signal-tooltip lookups, which previously each
-   * reimplemented this resolution.
+   * body — the matching entry in the parent's `rings` array. Delegates to the shared
+   * {@link resolveBodySignalsMap}, also used by the home page's Mining quick filter.
    */
   private resolveSignalsMap(): { [key: string]: number } | undefined {
-    const body = this.body();
-    if (body.bodyData.signals?.signals) {
-      return body.bodyData.signals.signals;
-    }
-    if (body.bodyData.type === BODY_TYPE.Ring && body.parent?.bodyData.rings) {
-      const ringData = body.parent.bodyData.rings.find(r => r.name === body.bodyData.name);
-      return ringData?.signals?.signals;
-    }
-    return undefined;
+    return resolveBodySignalsMap(this.body());
   }
 
   private computeSignalsCount(): number {
@@ -730,6 +1013,14 @@ export class SystemBodyComponent implements OnChanges {
     // Sync the cached collapse/expand-all state once the child components first render.
     afterNextRender(() => this.updateChildrenExpandedState());
 
+    // On teardown, invalidate any in-flight collision request (so a late worker response is dropped
+    // by the generation guard rather than written to a destroyed component) and cancel the pending
+    // skeleton timer.
+    this.destroyRef.onDestroy(() => {
+      this.collisionRequestId++;
+      clearTimeout(this.collisionPendingTimer);
+    });
+
     // Codex reference data loads asynchronously. When it changes, refresh the
     // codex-dependent biology signals (recomputed in ngOnChanges). untracked()
     // stops the effect from also re-running on body() input changes — Angular's
@@ -765,23 +1056,29 @@ export class SystemBodyComponent implements OnChanges {
     this.hoveredIndex = index;
   }
 
-  public showBodyJsonDialog(): void {
-    this.dialog.open(JsonDialogComponent, {
+  /** Epoch the export's time-dependent values use — the app clock override (frozen-clock tests / `?t=`) or now. */
+  private exportNow(): number {
+    return this.appService.nowOverride() ?? Date.now();
+  }
+
+  public async showBodyJsonDialog(): Promise<void> {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/json-dialog/json-dialog.component').then(m => m.JsonDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       restoreFocus: false,
-      data: { body: this.body(), edGalaxyData: this.edGalaxyData() } satisfies JsonDialogData,
+      data: { body: this.body(), edGalaxyData: this.edGalaxyData(), now: this.exportNow() } satisfies JsonDialogData,
     });
   }
 
-  /** Copies the body JSON to the clipboard (right-click shortcut on the JSON button). */
+  /** Copies the body JSON — raw Spansh plus the `calculated` block — to the clipboard (right-click shortcut). */
   public copyBodyJson(): void {
-    navigator.clipboard?.writeText(formatBodyJson(this.body().bodyData))
+    navigator.clipboard?.writeText(formatBodyJson(this.enrichment.enrichBody(this.body(), this.exportNow())))
       .catch(() => { /* clipboard unavailable */ });
   }
 
-  public showInvisibleRingExplanation(): void {
+  public async showInvisibleRingExplanation(): Promise<void> {
     const body = this.body();
     if (body.bodyData.type !== BODY_TYPE.Ring) {
       return;
@@ -793,14 +1090,15 @@ export class SystemBodyComponent implements OnChanges {
     const width = this.getRingWidth();
     const area = this.getRingArea();
     const density = this.getRingDensity();
-    const isInvisible = density < 0.1 && width > 1000000;
+    const isInvisible = this.isLowDensityWideRing(width, density);
 
     const ringName = body.bodyData.name.split(' ').slice(1).join(' ') || body.bodyData.name;
 
-    this.dialog.open(InvisibleRingDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/invisible-ring-dialog/invisible-ring-dialog.component').then(m => m.InvisibleRingDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       data: {
         ringName,
         innerRadius,
@@ -814,19 +1112,52 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  /** Opens the Roche-limit chart dialog with the prepared chart data. */
-  private openRocheLimitDialog(data: RocheChartData): void {
-    this.dialog.open(RocheLimitDialogComponent, {
+  /** Opens the explanation dialog for the Taylor (narrow) or Pauper (wide, distant) ring badge. */
+  public async showRingClassificationDialog(kind: 'taylor' | 'pauper'): Promise<void> {
+    const body = this.body();
+    const ringClass = this.physics.classifyRingSystem(body);
+    if (!ringClass) { return; }
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/ring-classification-dialog/ring-classification-dialog.component').then(m => m.RingClassificationDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        kind,
+        bodyName: body.parent?.bodyData.name ?? '',
+        // `body` is one of the visible rings classifyRingSystem requires to compute `ringClass`
+        // (see its early returns above), so it is guaranteed to appear in `ringClass.rings`.
+        ringName: ringClass.rings.find(r => r.innerRadius === (body.bodyData.innerRadius ?? 0))!.name,
+        parentRadius: ringClass.parentRadius,
+        rings: ringClass.rings,
+        span: ringClass.span,
+        innermostInner: ringClass.innermostInner,
+        outermostOuter: ringClass.outermostOuter,
+        narrowThresholdKm: NARROW_RING_SPAN_RADII * ringClass.parentRadius,
+        pauperInnerEdgeThresholdKm: PAUPER_RING_MIN_INNER_EDGE_RADII * ringClass.parentRadius,
+        pauperMaxSpanKm: PAUPER_RING_MAX_SPAN_RADII * ringClass.parentRadius,
+        hasVisibleGap: ringClass.hasVisibleGap,
+      } satisfies RingClassificationDialogData,
+    });
+  }
+
+  /** Opens the Roche-limit chart dialog with the prepared chart data. */
+  private async openRocheLimitDialog(data: RocheChartData): Promise<void> {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/roche-limit-dialog/roche-limit-dialog.component').then(m => m.RocheLimitDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data,
     });
   }
 
-  public showRocheLimitChart(): void {
+  public async showRocheLimitChart(): Promise<void> {
     const body = this.body();
     if (!body.parent || body.bodyData.type !== BODY_TYPE.Ring) {
       return;
@@ -851,7 +1182,7 @@ export class SystemBodyComponent implements OnChanges {
       density: this.physics.ringSatelliteDensityKgM3(body.bodyData.subType)
     };
 
-    this.openRocheLimitDialog({
+    await this.openRocheLimitDialog({
       parentName: parent.name,
       ringName: body.bodyData.name,
       densityRange,
@@ -863,7 +1194,7 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showBodyRocheLimitChart(): void {
+  public async showBodyRocheLimitChart(): Promise<void> {
     const rocheLimits = this.calculateBodyRocheLimits();
     const body = this.body();
     if (!rocheLimits || !body.parent) {
@@ -897,7 +1228,7 @@ export class SystemBodyComponent implements OnChanges {
       density: bodyDensity
     };
 
-    this.openRocheLimitDialog({
+    await this.openRocheLimitDialog({
       parentName: parent.name,
       ringName: body.bodyData.name,
       densityRange,
@@ -909,7 +1240,7 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showApoPeriDialog(type: 'apo' | 'peri'): void {
+  public async showApoPeriDialog(type: 'apo' | 'peri'): Promise<void> {
     let data: { date: Date, days: number } | null = null;
     let distanceKm: number | undefined = undefined;
     const body = this.body();
@@ -938,14 +1269,15 @@ export class SystemBodyComponent implements OnChanges {
       meanAnomaly = body.bodyData.meanAnomaly;
       orbitalPeriod = body.bodyData.orbitalPeriod;
       timestamp = new Date(body.bodyData.timestamps.meanAnomaly);
-      currentMeanAnomaly = this.orbitalRelations.meanAnomalyNow(meanAnomaly, orbitalPeriod, body.bodyData.timestamps.meanAnomaly);
+      currentMeanAnomaly = this.orbitalRelations.meanAnomalyNow(meanAnomaly, orbitalPeriod, body.bodyData.timestamps.meanAnomaly, this.appService.nowOverride() ?? Date.now());
       degreesToEvent = this.orbitalRelations.degreesToEvent(currentMeanAnomaly, type);
     }
 
-    this.dialog.open(ApoPeriDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/apo-peri-dialog/apo-peri-dialog.component').then(m => m.ApoPeriDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -962,7 +1294,210 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showShepherdingHillLimitChart(): void {
+  /** Opens the Mean/True Anomaly dialog with the recorded, epoch, and live values. */
+  public async showAnomalyDialog(type: 'mean' | 'true'): Promise<void> {
+    const bd = this.body().bodyData;
+    const epoch = this.getSystemAnomalyEpoch();
+    const meanAnomalyAtEpoch = this.getMeanAnomaly();
+    if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly || !epoch || meanAnomalyAtEpoch === undefined) return;
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/anomaly-dialog/anomaly-dialog.component').then(m => m.AnomalyDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        type,
+        bodyName: this.getBodyDisplayName(bd.name),
+        recordedMeanAnomaly: bd.meanAnomaly,
+        recordedTimestamp: new Date(bd.timestamps.meanAnomaly),
+        systemEpoch: epoch,
+        meanAnomalyAtEpoch,
+        eccentricity: bd.orbitalEccentricity ?? undefined,
+        orbitalPeriodDays: bd.orbitalPeriod,
+        argOfPeriapsisDeg: bd.argOfPeriapsis ?? 0,
+      } satisfies AnomalyDialogData,
+    });
+  }
+
+  /** Opens the Parent Distance dialog with this body's live distance and its orbital elements. */
+  public async showParentDistanceDialog(): Promise<void> {
+    const body = this.body();
+    const bd = body.bodyData;
+    const aKm = this.getSemiMajorAxisKm();
+    if (aKm == null || bd.orbitalEccentricity == null || bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) return;
+    const recordedTimestampMs = Date.parse(bd.timestamps.meanAnomaly);
+    if (!Number.isFinite(recordedTimestampMs)) return;
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/parent-distance-dialog/parent-distance-dialog.component').then(m => m.ParentDistanceDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        bodyName: this.getBodyDisplayName(bd.name),
+        parentName: body.parent ? this.getBodyDisplayName(body.parent.bodyData.name) : undefined,
+        semiMajorAxisKm: aKm,
+        eccentricity: bd.orbitalEccentricity,
+        apoapsisKm: this.getApoapsis(),
+        periapsisKm: this.getPeriapsis(),
+        recordedMeanAnomaly: bd.meanAnomaly,
+        recordedTimestamp: new Date(recordedTimestampMs),
+        orbitalPeriodDays: bd.orbitalPeriod,
+        argOfPeriapsisDeg: bd.argOfPeriapsis ?? 0,
+        nowOverrideMs: this.appService.nowOverride() ?? undefined,
+      } satisfies ParentDistanceDialogData,
+    });
+  }
+
+  /** Opens the collision dialog with this body's collision-candidate details. */
+  public async showCollisionDialog(): Promise<void> {
+    const status = this.collisionStatus();
+    if (!status?.isCandidate) { return; }
+    // Snapshot the body once: the worker round-trip below is async, so re-reading this.body()
+    // afterwards could pick up a different body if the row's input is re-bound mid-flight, fusing
+    // two bodies into one dialog. Use `now` consistent with the badge's candidacy (honours the
+    // app-level time override) so the dialog's countdowns and now-marker match the badge.
+    const body = this.body();
+    const siblings = body.parent?.subBodies ?? [];
+    const now = this.appService.nowOverride() ?? Date.now();
+
+    // Both of these run the heavy orbital search, so compute them off the main thread before the
+    // dialog opens (one worker round-trip). The badge already knows this body is a candidate, so
+    // this only gathers the detail rows and the distance-over-time curves.
+    const [simultaneousCollisions, separationDiagram] = await Promise.all([
+      this.orbitalWorker.simultaneousCollisionsWithin(body, SIMULTANEOUS_COLLISION_HORIZON_DAYS, now),
+      this.buildCollisionDistanceDiagram(body, siblings, status, now),
+    ]);
+
+    // Descriptive info for every collision candidate: each crossing partner from the upcoming
+    // windows, the primary partner, and any simultaneous-cluster member — so the dialog can
+    // enumerate all involved bodies, not just the primary pair.
+    const partnerNames = new Set<string>();
+    for (const w of status.upcomingCollisions) { if (w.partnerName) { partnerNames.add(w.partnerName); } }
+    if (status.partnerName) { partnerNames.add(status.partnerName); }
+    for (const n of status.simultaneousPartners) { partnerNames.add(n); }
+    const partnerInfos = [...partnerNames].map(name => ({
+      name,
+      info: this.buildCollisionBodyInfo(siblings.find(s => s.bodyData.name === name) ?? null),
+    }));
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/collision-dialog/collision-dialog.component').then(m => m.CollisionDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        bodyName: body.bodyData.name,
+        partnerName: status.partnerName,
+        synodicPeriodDays: status.synodicPeriodDays,
+        nextCollision: status.nextCollision,
+        upcomingCollisions: status.upcomingCollisions,
+        combinedRadiiKm: status.combinedRadiiKm,
+        bodyInfo: this.buildCollisionBodyInfo(body),
+        partnerInfo: this.buildCollisionBodyInfo(
+          siblings.find(s => s.bodyData.name === status.partnerName) ?? null
+        ),
+        partnerInfos,
+        systemPopulation: this.systemPopulation(),
+        systemName: this.edGalaxyData()?.Name ?? '',
+        simultaneousPartners: status.simultaneousPartners,
+        simultaneousCollisions,
+        separationDiagram,
+      } satisfies CollisionDialogData,
+    });
+  }
+
+  /**
+   * Builds the distance-over-time samples for the collision dialog's synodic-period diagram:
+   * one centre-to-centre separation curve from this body to each sibling it directly collides
+   * with, over a window of ten synodic periods. Every collision falling inside that window is
+   * marked (uncapped — not just the 10 table rows), so no in-view dip is left without a marker.
+   * Returns null when no pair has the phase data needed to place the bodies in time.
+   */
+  private async buildCollisionDistanceDiagram(
+    body: SystemBody,
+    siblings: SystemBody[],
+    status: CollisionStatus,
+    now: number,
+  ): Promise<SynodicDiagramInput | null> {
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+    // Timeline: ten synodic periods — long enough to show the conjunction dips recurring and
+    // which of them deepen into collisions. Without a synodic period there is nothing to scale to.
+    const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
+    if (!(synMs > 0)) { return null; }
+    const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const endMs = now + spanMs;
+
+    // Every contact inside the window — uncapped — grouped by the partner each is with, so dips
+    // beyond the table's 10-row limit are still marked. Runs off the main thread.
+    const windowContacts = await this.orbitalWorker.upcomingContactsWithin(body, spanMs / MS_PER_DAY, now);
+
+    // Distinct siblings this body collides with in-window, plus any from the (capped) status list
+    // and the primary partner, so a curve is drawn even when no contact lands inside the window.
+    const partnerNames = new Set<string>();
+    for (const w of windowContacts) { if (w.partnerName) { partnerNames.add(w.partnerName); } }
+    for (const w of status.upcomingCollisions) { if (w.partnerName) { partnerNames.add(w.partnerName); } }
+    if (partnerNames.size === 0 && status.partnerName) { partnerNames.add(status.partnerName); }
+    if (partnerNames.size === 0) { return null; }
+
+    // Sample each partner's separation curve off the main thread; the calls are independent, so
+    // run them concurrently and preserve partner order when assembling the series below.
+    const built = await Promise.all([...partnerNames].map(async name => {
+      const sibling = siblings.find(s => s.bodyData.name === name);
+      if (!sibling) { return null; }
+      const samplesArr = await this.orbitalWorker.separationSeries(body.bodyData, sibling.bodyData, now, endMs, COLLISION_DIAGRAM_SAMPLES);
+      if (samplesArr.length === 0) { return null; }
+      // Every contact window already carries this pair's contact threshold (combinedRadiiKm), so
+      // prefer it; fall back to the status-level value, then the bare radius sum, only if absent.
+      const partnerWindows = windowContacts.filter(w => w.partnerName === name);
+      const combinedRadiiKm = partnerWindows[0]?.combinedRadiiKm
+        ?? status.upcomingCollisions.find(w => w.partnerName === name)?.combinedRadiiKm
+        ?? status.combinedRadiiKm
+        ?? ((body.bodyData.radius ?? 0) + (sibling.bodyData.radius ?? 0));
+      const contacts = partnerWindows.map(w => ({
+        tMs: (w.start.getTime() + w.end.getTime()) / 2,
+        sepKm: w.minSeparationKm,
+      }));
+      return { partnerName: name, combinedRadiiKm, samples: samplesArr, contacts };
+    }));
+
+    const series: SynodicDiagramInput['series'] = built.filter((s): s is NonNullable<typeof s> => s !== null);
+    return series.length > 0 ? { startMs: now, endMs, nowMs: now, series } : null;
+  }
+
+  /**
+   * Human-readable time-until for the collision badge tooltip: days, with years in parentheses
+   * once the wait reaches a year. Negative means contact is already in progress.
+   */
+  public formatCollisionCountdown(days: number): string {
+    if (days < 0) { return 'in progress now'; }
+    if (days < 1) { return 'less than a day'; }
+    const dayLabel = `${Math.round(days).toLocaleString()} days`;
+    return days >= 365.25 ? `${dayLabel} (${(days / 365.25).toFixed(1)} years)` : dayLabel;
+  }
+
+  /** Extracts the key descriptive facts from a SystemBody for the collision dialog summary. */
+  private buildCollisionBodyInfo(body: SystemBody | null): CollisionBodyInfo | null {
+    if (!body) { return null; }
+    const bd = body.bodyData;
+    return {
+      subType: bd.subType || bd.type || 'body',
+      atmosphereType: bd.atmosphereType ?? null,
+      orbitalPeriodDays: bd.orbitalPeriod ?? 0,
+      moonCount: body.subBodies.length,
+      hasRings: !!(bd.rings?.length),
+    };
+  }
+
+  public async showShepherdingHillLimitChart(): Promise<void> {
     const hillData = this.calculateShepherdingHillLimit();
     const body = this.body();
     if (!hillData || !body.parent) {
@@ -990,10 +1525,11 @@ export class SystemBodyComponent implements OnChanges {
     // truth in BodyPhysicsService (shared with the isActualShepherd badge).
     const shepherdStatus = this.physics.shepherdStatus(hillData);
 
-    this.dialog.open(HillLimitDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/hill-limit-dialog/hill-limit-dialog.component').then(m => m.HillLimitDialogComponent),
+      skeleton: 'diagram',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -1055,9 +1591,8 @@ export class SystemBodyComponent implements OnChanges {
     const velocityKms = this.getTangentialVelocity();
     if (velocityKms === null) return '';
 
-    const speedOfLight = 299792458; // m/s
     const velocityMs = velocityKms * 1000;
-    const fractionOfC = velocityMs / speedOfLight;
+    const fractionOfC = velocityMs / SPEED_OF_LIGHT;
 
     if (fractionOfC >= 0.01) {
       return `${fractionOfC.toFixed(3)}c`;
@@ -1087,26 +1622,75 @@ export class SystemBodyComponent implements OnChanges {
     return this.stellarPhysics.radiusKm(bd.radius, bd.solarRadius);
   }
 
-  private formatPeriodDays(days: number): string {
+  /** Shared invisibility heuristic used for ring stats, badges, and dialog explanations. */
+  private isLowDensityWideRing(widthKm: number, densityKgPerKm2: number): boolean {
+    return this.physics.isLowDensityWideRing(widthKm, densityKgPerKm2);
+  }
+
+  private applyRingDynamics(dynamics: RingDynamics | null): void {
+    if (dynamics) {
+      this.getRingOrbitalPeriod.set(dynamics.orbitalPeriodDays);
+      this.getRingOrbitalPeriodDisplay.set(this.formatPeriodDays(dynamics.orbitalPeriodDays));
+      this.getRingOrbitalPeriodTooltip.set(`${dynamics.orbitalPeriodDays.toFixed(6)} days`);
+      this.getRingMinVelocity.set(dynamics.minVelocityKms);
+      this.getRingMinVelocityDisplay.set(this.formatVelocityKms(dynamics.minVelocityKms));
+      this.getRingMinVelocityTooltip.set(`${dynamics.minVelocityKms.toFixed(3)} km/s`);
+      this.getRingMaxVelocity.set(dynamics.maxVelocityKms);
+      this.getRingMaxVelocityDisplay.set(this.formatVelocityKms(dynamics.maxVelocityKms));
+      this.getRingMaxVelocityTooltip.set(`${dynamics.maxVelocityKms.toFixed(3)} km/s`);
+    } else {
+      this.getRingOrbitalPeriod.set(null);
+      this.getRingOrbitalPeriodDisplay.set('');
+      this.getRingOrbitalPeriodTooltip.set('');
+      this.getRingMinVelocity.set(null);
+      this.getRingMinVelocityDisplay.set('');
+      this.getRingMinVelocityTooltip.set('');
+      this.getRingMaxVelocity.set(null);
+      this.getRingMaxVelocityDisplay.set('');
+      this.getRingMaxVelocityTooltip.set('');
+    }
+  }
+
+  /** True when a velocity is fast enough to read as a fraction of c rather than km/s. */
+  private isRelativistic(velocityKms: number): boolean {
+    return velocityKms / (SPEED_OF_LIGHT / 1000) >= 0.01;
+  }
+
+  private formatVelocityKms(velocityKms: number): string {
+    if (this.isRelativistic(velocityKms)) {
+      return `${(velocityKms / (SPEED_OF_LIGHT / 1000)).toFixed(3)}c`;
+    }
+    return `${velocityKms.toFixed(3)} km/s`;
+  }
+
+  /**
+   * The unit a period reads in at this magnitude: numeric value, inline abbreviation, and
+   * the matching conversion-dialog row label (every band maps to a dialog row, so the inline
+   * unit is accented in the dialog — including Milliseconds for millisecond pulsars).
+   * Single source for both {@link formatPeriodDays} and {@link durationUnitLabel}.
+   */
+  private periodParts(days: number): { value: number; unit: string; label: string } {
     const absDays = Math.abs(days);
     const seconds = absDays * 86400;
     const minutes = seconds / 60;
     const hours = minutes / 60;
     const weeks = absDays / 7;
     const years = absDays / 365.25;
-    const decades = years / 10;
-    const centuries = years / 100;
-    const sign = days < 0 ? '-' : '';
 
-    if (seconds < 1) return `${sign}${(seconds * 1000).toFixed(2)} ms`;
-    if (seconds < 60) return `${sign}${seconds.toFixed(2)} s`;
-    if (minutes < 60) return `${sign}${minutes.toFixed(2)} min`;
-    if (hours < 24) return `${sign}${hours.toFixed(2)} h`;
-    if (absDays < 7) return `${sign}${absDays.toFixed(2)} days`;
-    if (weeks < 52) return `${sign}${weeks.toFixed(2)} weeks`;
-    if (years < 10) return `${sign}${years.toFixed(2)} years`;
-    if (decades < 10) return `${sign}${decades.toFixed(2)} decades`;
-    return `${sign}${centuries.toFixed(2)} centuries`;
+    if (seconds < 1) return { value: seconds * 1000, unit: 'ms', label: 'Milliseconds' };
+    if (seconds < 60) return { value: seconds, unit: 's', label: 'Seconds' };
+    if (minutes < 60) return { value: minutes, unit: 'min', label: 'Minutes' };
+    if (hours < 24) return { value: hours, unit: 'h', label: 'Hours' };
+    if (absDays < 7) return { value: absDays, unit: 'days', label: 'Days' };
+    if (weeks < 52) return { value: weeks, unit: 'weeks', label: 'Weeks' };
+    if (years < 10) return { value: years, unit: 'years', label: 'Years' };
+    if (years / 10 < 10) return { value: years / 10, unit: 'decades', label: 'Decades' };
+    return { value: years / 100, unit: 'centuries', label: 'Centuries' };
+  }
+
+  private formatPeriodDays(days: number): string {
+    const { value, unit } = this.periodParts(days);
+    return `${days < 0 ? '-' : ''}${value.toFixed(2)} ${unit}`;
   }
 
   public getRotationalPeriodDisplay(): string {
@@ -1187,11 +1771,111 @@ export class SystemBodyComponent implements OnChanges {
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
+  /**
+   * Result of the off-thread collision search for the current body, or null while it is still
+   * running (or when the body isn't a collision candidate). A signal, not a plain field, because
+   * the worker resolves asynchronously and setting it is what schedules change detection under
+   * zoneless. See {@link requestCollisionStatus}.
+   */
+  public readonly collisionStatus = signal<CollisionStatus | null>(null);
+  /** True once a collision search has been outstanding longer than {@link COLLISION_SKELETON_DELAY_MS}. */
+  public readonly collisionPending = signal(false);
+  /** The body `collisionStatus` was last requested for, to skip recompute on unrelated re-renders. */
+  private collisionBody: SystemBody | null = null;
+  /** Generation token: increments per request so a stale worker response for a superseded body is dropped. */
+  private collisionRequestId = 0;
+  /** Timer that reveals the pending skeleton; cleared when the result arrives or the component is destroyed. */
+  private collisionPendingTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Runs {@link OrbitalRelationsCore.detectCollisionStatus} for `body` off the main thread and
+   * lands the result in {@link collisionStatus}. Since the search is now asynchronous, a per-request
+   * generation token ({@link collisionRequestId}) discards a response whose body has since been
+   * superseded (the row's input flipped while the worker was busy), and the pending skeleton is
+   * only revealed if the worker hasn't answered within {@link COLLISION_SKELETON_DELAY_MS}.
+   */
+  private requestCollisionStatus(body: SystemBody): void {
+    const requestId = ++this.collisionRequestId;
+    this.collisionStatus.set(null);
+    const now = this.appService.nowOverride() ?? Date.now();
+
+    clearTimeout(this.collisionPendingTimer);
+    this.collisionPendingTimer = setTimeout(() => {
+      if (requestId === this.collisionRequestId) { this.collisionPending.set(true); }
+    }, COLLISION_SKELETON_DELAY_MS);
+
+    this.orbitalWorker.detectCollisionStatus(body, now)
+      .then(status => {
+        if (requestId !== this.collisionRequestId) { return; }
+        clearTimeout(this.collisionPendingTimer);
+        this.collisionStatus.set(status);
+        this.collisionPending.set(false);
+        this.reportCollisionCandidate(body, status.isCandidate);
+      })
+      .catch((err: unknown) => {
+        // A worker/engine failure leaves the badge simply absent (collisionStatus stays null) rather
+        // than crashing the row. Surface it via the logger (silent in production) so a malfunctioning
+        // worker is diagnosable in development instead of being swallowed without trace.
+        logger.error('Collision search failed', err);
+        if (requestId !== this.collisionRequestId) { return; }
+        clearTimeout(this.collisionPendingTimer);
+        this.collisionPending.set(false);
+        this.reportCollisionCandidate(body, false);
+      });
+  }
+
+  /**
+   * Surfaces this body's resolved collision-candidate status to the shared registry so the
+   * "Tourist" quick filter (computed eagerly in HomeComponent from synchronous body data) can
+   * pick it up once the off-thread search finishes, without re-running collision detection itself.
+   */
+  private reportCollisionCandidate(body: SystemBody, isCandidate: boolean): void {
+    const key = this.systemKey();
+    if (key === null) { return; }
+    this.interestRegistry.reportCollisionCandidate(key, body, isCandidate);
+  }
+
+  /**
+   * Opens the Lagrange-points diagram for this body's co-orbital family. Resolves the
+   * configuration from the service, maps every body name to its display name (stripping the
+   * system prefix), and hands it to the dialog. No-op when the body isn't part of a
+   * detectable Trojan/Lagrange configuration.
+   */
+  public async showLagrangeDialog(): Promise<void> {
+    const config = this.orbitalRelations.lagrangeConfiguration(this.body());
+    if (!config) { return; }
+
+    // Map raw names to full display names. The dialog drops the (repeated) system-name
+    // prefix for the cramped diagram itself but keeps the full names in its description.
+    const toDisplay = (occupant: LagrangeOccupant): LagrangeOccupant =>
+      ({ ...occupant, name: this.getBodyDisplayName(occupant.name) });
+    const points = { L1: [], L2: [], L3: [], L4: [], L5: [] } as LagrangeConfiguration['points'];
+    for (const id of ['L1', 'L2', 'L3', 'L4', 'L5'] as const) {
+      points[id] = config.points[id].map(toDisplay);
+    }
+    const displayConfig: LagrangeConfiguration = {
+      primaryName: config.primaryName ? this.getBodyDisplayName(config.primaryName) : null,
+      secondary: config.secondary ? toDisplay(config.secondary) : null,
+      points,
+    };
+    const data: LagrangeDialogData = { config: displayConfig, systemName: this.edGalaxyData()?.Name ?? '' };
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/lagrange-dialog/lagrange-dialog.component').then(m => m.LagrangeDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data,
+    });
+  }
   public readonly getEstimatedTempRange = signal<{ min: number; max: number } | null>(null);
   public readonly getLandableBadgeClass = signal('badge-gray');
   public readonly getLandableTooltip = signal('');
   public readonly getNextPeriapsis = signal<{ date: Date, days: number } | null>(null);
   public readonly getNextApoapsis = signal<{ date: Date, days: number } | null>(null);
+  public readonly getParentDistanceKm = signal<number | null>(null);
   public readonly getChildrenExpandedState = signal<boolean>(false);
   public readonly getRocheExcess = signal<number | null>(null);
   public readonly getStellarAgeAssessment = signal<StellarAgeAssessment | null>(null);
@@ -1211,21 +1895,35 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  private computeJetConeAngle(): number | null {
-    // Only apply to neutron stars with the required inputs.
-    const bodyData = this.body().bodyData;
-    if (bodyData.type !== BODY_TYPE.Star || !bodyData.subType?.includes('Neutron Star')) {
-      return null;
-    }
-    return this.stellarPhysics.jetConeAngle(bodyData.rotationalPeriod, bodyData.solarRadius, bodyData.age);
-  }
-
   private calculateNextPeriapsis(): { date: Date, days: number } | null {
-    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'peri');
+    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'peri', this.appService.nowOverride() ?? Date.now());
   }
 
   private calculateNextApoapsis(): { date: Date, days: number } | null {
-    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo');
+    return this.orbitalRelations.nextOrbitalEvent(this.body().bodyData, 'apo', this.appService.nowOverride() ?? Date.now());
+  }
+
+  /**
+   * Current straight-line distance (km) from the parent body — the orbital radius at the
+   * body's true anomaly right now — via the polar orbit equation r = a(1 − e²) / (1 + e·cos ν).
+   * Propagates the recorded mean anomaly to the same wall-clock "now" (or `?t=` override) that
+   * Next Apoapsis/Periapsis use, rather than the shared system-epoch snapshot Mean/True Anomaly
+   * show, so it reads as a genuinely live value. Null when the semi-major axis, eccentricity,
+   * or recorded mean anomaly + timestamp needed to propagate it is unavailable. Also null for
+   * an eccentricity outside [0, 1) (parabolic/hyperbolic escape trajectory, or corrupt data) —
+   * there's no recurring, bound orbit to place a "current distance" on — matching the same
+   * bound {@link OrbitalRelationsCore.orbitalRadialRange} enforces before computing extents.
+   */
+  private calculateParentDistanceKm(): number | null {
+    const bd = this.body().bodyData;
+    const aKm = this.getSemiMajorAxisKm();
+    const e = bd.orbitalEccentricity;
+    if (aKm == null || e == null || !(e >= 0) || e >= 1 || bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) { return null; }
+    const now = this.appService.nowOverride() ?? Date.now();
+    const meanNow = this.orbitalRelations.meanAnomalyNow(bd.meanAnomaly, bd.orbitalPeriod, bd.timestamps.meanAnomaly, now);
+    if (!Number.isFinite(meanNow)) { return null; }
+    const nu = this.orbitalRelations.meanToTrueAnomaly(meanNow, e) * RADIANS_PER_DEGREE;
+    return (aKm * (1 - e * e)) / (1 + e * Math.cos(nu));
   }
 
   private computeMaterialBadges(): void {
@@ -1249,15 +1947,16 @@ export class SystemBodyComponent implements OnChanges {
     return this.physics.rocheExcess(this.body());
   }
 
-  public showOnFootSafetyDialog(): void {
+  public async showOnFootSafetyDialog(): Promise<void> {
     const bd = this.body().bodyData;
     const surfTemp = bd.surfaceTemperature ?? null;
     const estRange = surfTemp ? estimateTempRange(surfTemp, bd.subType, bd.atmosphereType, bd.surfacePressure) : null;
     const { delta, source } = lookupTempDelta(bd.subType, bd.atmosphereType, bd.surfacePressure);
-    this.dialog.open(OnFootSafetyDialogComponent, {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component').then(m => m.OnFootSafetyDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
-      autoFocus: 'first-heading',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       data: {
@@ -1277,27 +1976,14 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  public showJetAngleDialog(): void {
-    this.dialog.open(JetAngleDialogComponent, {
-      width: '900px',
-      maxWidth: '95vw',
-      autoFocus: 'first-heading',
-      hasBackdrop: true,
-      backdropClass: 'cdk-overlay-dark-backdrop'
-    });
-  }
-
-
-  public showTidalLockDialog(): void {
-    this.dialog.open(TidalLockDialogComponent, {
+  public async showTidalLockDialog(): Promise<void> {
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/tidal-lock-dialog/tidal-lock-dialog.component').then(m => m.TidalLockDialogComponent),
+      skeleton: 'text',
       width: '900px',
       maxWidth: '95vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
-      // Focus the dialog heading rather than the default first tabbable element
-      // (a "Further reading" link near the bottom), which would scroll the long
-      // content to the end on open.
-      autoFocus: 'first-heading',
       data: {
         body: this.body(),
         resonance: this.getSpinResonance()

@@ -38,16 +38,7 @@ describe('BodyPhysicsService (extended coverage)', () => {
     });
   });
 
-  describe('Roche limits via the megatonne mass branch', () => {
-    it('computes a rigid Roche limit from a parent expressed in megatonnes', () => {
-      // Parent density derived from `mass` (megatonnes) + radius rather than earthMasses.
-      const parent = node({ mass: 1e9, radius: 500 });
-      const ring = node({ subType: 'Rocky ring' }, parent);
-      const rigid = service.calculateRigidRocheLimit(ring);
-      expect(rigid).not.toBeNull();
-      expect(rigid!).toBeGreaterThan(0);
-    });
-
+  describe('calculateRigidRocheLimit guard clauses', () => {
     it('returns null when the parent exposes neither radius nor solar radius', () => {
       const parent = node({ earthMasses: 100 });
       expect(service.calculateRigidRocheLimit(node({ subType: 'Icy' }, parent))).toBeNull();
@@ -198,6 +189,21 @@ describe('BodyPhysicsService (extended coverage)', () => {
       const parent = node({ solarMasses: 1, solarRadius: 1 });
       const moon = node({ solarMasses: 0.0001, radius: 6371, semiMajorAxis: 0.0001 }, parent);
       const excess = service.rocheExcess(moon);
+      expect(excess).not.toBeNull();
+      expect(excess!).toBeGreaterThan(0);
+    });
+
+    it('breaches when an eccentric periapsis dips inside the limit despite a safe semi-major axis', () => {
+      const parent = node({ solarMasses: 1, solarRadius: 1 });
+      // Semi-major axis sits outside the rigid Roche limit, so a circular orbit reads safe...
+      const circular = node({ earthMasses: 1, radius: 6371, semiMajorAxis: 0.004 }, parent);
+      expect(service.rocheExcess(circular)).toBeNull();
+      // ...but a high-eccentricity orbit with the same semi-major axis swings inside at periapsis.
+      const eccentric = node(
+        { earthMasses: 1, radius: 6371, semiMajorAxis: 0.004, orbitalEccentricity: 0.6 },
+        parent,
+      );
+      const excess = service.rocheExcess(eccentric);
       expect(excess).not.toBeNull();
       expect(excess!).toBeGreaterThan(0);
     });

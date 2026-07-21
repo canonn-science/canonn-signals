@@ -25,6 +25,13 @@ describe('StellarPhysicsService', () => {
     it('returns none for a non-simple ratio', () => {
       expect(service.spinResonance(1, 7.13)).toBe('none');
     });
+
+    it('detects resonance for retrograde rotators (negative rotationalPeriod)', () => {
+      // Elite stores retrograde rotation as a negative period; a retrograde
+      // tidally-locked body must still classify as 1:1, not silently 'none'.
+      expect(service.spinResonance(-10, 10)).toBe('1:1');
+      expect(service.spinResonance(-2, 3)).toBe('3:2');
+    });
   });
 
   describe('tangentialVelocityKms', () => {
@@ -39,6 +46,14 @@ describe('StellarPhysicsService', () => {
       const v2 = service.tangentialVelocityKms(2, 100000);
       expect(v2).toBeCloseTo(v1 / 2, 9);
     });
+
+    it('returns a positive speed for a retrograde (negative period) spinner', () => {
+      // Elite stores retrograde rotation as a negative period; speed is a magnitude.
+      const prograde = service.tangentialVelocityKms(1, 100000);
+      const retrograde = service.tangentialVelocityKms(-1, 100000);
+      expect(retrograde).toBeGreaterThan(0);
+      expect(retrograde).toBeCloseTo(prograde, 9);
+    });
   });
 
   describe('radiusKm', () => {
@@ -52,26 +67,6 @@ describe('StellarPhysicsService', () => {
 
     it('returns null when neither is present', () => {
       expect(service.radiusKm(null, null)).toBeNull();
-    });
-  });
-
-  describe('jetConeAngle', () => {
-    it('returns null for non-positive or missing inputs', () => {
-      expect(service.jetConeAngle(0, 1, 1000)).toBeNull();
-      expect(service.jetConeAngle(1, 0, 1000)).toBeNull();
-      expect(service.jetConeAngle(1, 1, null)).toBeNull();
-    });
-
-    it('produces a finite angle for valid neutron-star inputs', () => {
-      const angle = service.jetConeAngle(2.01, 1.5, 12830)!;
-      expect(angle).not.toBeNull();
-      expect(Number.isFinite(angle)).toBe(true);
-    });
-
-    it('matches jetConeAngleFromSeconds after unit conversion', () => {
-      const fromDays = service.jetConeAngle(1.0, 1.5, 12830);
-      const fromSeconds = service.jetConeAngleFromSeconds(86400, 1.5, 12830);
-      expect(fromSeconds).toBeCloseTo(fromDays!, 9);
     });
   });
 
@@ -106,6 +101,15 @@ describe('StellarPhysicsService', () => {
 
     it('classifies a multi-hour rotator as an anomalous slow-rotator', () => {
       expect(service.classifyNeutronStar(1.5, 7200 / SEC, 8)).toBe('Anomalous Slow-Rotator');
+    });
+
+    it('classifies retrograde (negative period) rotators by magnitude', () => {
+      // Elite stores retrograde rotation as a negative period; the sign must not
+      // collapse a slow rotator into the sub-10ms "Millisecond Pulsar" branch.
+      expect(service.classifyNeutronStar(1.5, -7200 / SEC, 8)).toBe('Anomalous Slow-Rotator');
+      expect(service.classifyNeutronStar(1.5, -10 / SEC, 8)).toBe('Slow-Period Pulsar');
+      // A genuinely fast retrograde spinner still classifies as a millisecond pulsar.
+      expect(service.classifyNeutronStar(1.5, -0.005 / SEC, 8)).toBe('Millisecond Pulsar');
     });
   });
 });

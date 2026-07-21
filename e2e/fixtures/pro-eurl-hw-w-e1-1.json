@@ -1,0 +1,2946 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "absoluteMagnitude": 0.090546, 
+        "age": 260, 
+        "argOfPeriapsis": 24.430719, 
+        "axialTilt": 0.0, 
+        "bodyId": 1, 
+        "distanceToArrival": 0.0, 
+        "id64": 36028802670806228, 
+        "luminosity": "IVab", 
+        "mainStar": true, 
+        "name": "Pro Eurl HW-W e1-1 A", 
+        "orbitalEccentricity": 0.268097, 
+        "orbitalInclination": -12.879842, 
+        "orbitalPeriod": 1477900.98962963, 
+        "parents": [
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 0.918938711666667, 
+        "semiMajorAxis": 116.885322929292, 
+        "solarMasses": 3.605469, 
+        "solarRadius": 2.04296852336449, 
+        "spectralClass": "B9", 
+        "stations": [], 
+        "subType": "B (Blue-White) Star", 
+        "surfaceTemperature": 12036.0, 
+        "type": "Star", 
+        "updateTime": "2020-04-09 15:40:03+00"
+      }, 
+      {
+        "absoluteMagnitude": 3.987534, 
+        "age": 260, 
+        "argOfPeriapsis": 204.43071, 
+        "axialTilt": 0.0, 
+        "bodyId": 2, 
+        "distanceToArrival": 162286.0, 
+        "id64": 72057599689770196, 
+        "luminosity": "Vab", 
+        "mainStar": false, 
+        "name": "Pro Eurl HW-W e1-1 B", 
+        "orbitalEccentricity": 0.268097, 
+        "orbitalInclination": -12.879842, 
+        "orbitalPeriod": 1477900.98962963, 
+        "parents": [
+          {
+            "Null": 0
+          }
+        ], 
+        "rotationalPeriod": 3.24903718171296, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 315.63374684466, 
+        "solarMasses": 1.316406, 
+        "solarRadius": 1.26815783752696, 
+        "spectralClass": "F8", 
+        "stations": [], 
+        "subType": "F (White) Star", 
+        "surfaceTemperature": 6229.0, 
+        "type": "Star", 
+        "updateTime": "2020-04-09 15:40:36+00"
+      }, 
+      {
+        "argOfPeriapsis": 17.141216, 
+        "atmosphereType": null, 
+        "axialTilt": 2.479952, 
+        "bodyId": 4, 
+        "distanceToArrival": 315.378998, 
+        "earthMasses": 19.28507, 
+        "gravity": 4.31634454981136, 
+        "id64": 144115193727698132, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 12.939798, 
+          "Chromium": 9.446578, 
+          "Germanium": 4.473817, 
+          "Iron": 21.004847, 
+          "Manganese": 8.674788, 
+          "Molybdenum": 1.371604, 
+          "Nickel": 15.887186, 
+          "Phosphorus": 8.284281, 
+          "Sulphur": 15.388102, 
+          "Tellurium": 1.158728, 
+          "Tin": 1.370263
+        }, 
+        "name": "Pro Eurl HW-W e1-1 A 1", 
+        "orbitalEccentricity": 0.08464, 
+        "orbitalInclination": -8.46562, 
+        "orbitalPeriod": 19.9058752893519, 
+        "parents": [
+          {
+            "Null": 3
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 13475.323, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 43395000.0, 
+            "mass": 280010000000.0, 
+            "name": "Pro Eurl HW-W e1-1 A 1 A Ring", 
+            "outerRadius": 103920000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": -32.2646469907407, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00129036050511112, 
+        "solidComposition": {
+          "Ice": 0.8948, 
+          "Metal": 31.9814, 
+          "Rock": 67.1238
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 952.088562, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:49:04+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 197.141205, 
+        "atmosphereType": null, 
+        "axialTilt": -0.013479, 
+        "bodyId": 6, 
+        "distanceToArrival": 312.400208, 
+        "earthMasses": 5.254098, 
+        "gravity": 2.24251218517386, 
+        "id64": 216172787765626068, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.816504, 
+          "Carbon": 14.180835, 
+          "Germanium": 4.982625, 
+          "Iron": 23.392115, 
+          "Nickel": 17.692814, 
+          "Niobium": 1.598726, 
+          "Phosphorus": 9.078814, 
+          "Selenium": 2.639351, 
+          "Sulphur": 16.863949, 
+          "Yttrium": 1.397183, 
+          "Zinc": 6.357101
+        }, 
+        "name": "Pro Eurl HW-W e1-1 A 2", 
+        "orbitalEccentricity": 0.08464, 
+        "orbitalInclination": -8.46562, 
+        "orbitalPeriod": 19.9058752893519, 
+        "parents": [
+          {
+            "Null": 3
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 9758.168, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 14860000.0, 
+            "mass": 685860.0, 
+            "name": "Pro Eurl HW-W e1-1 A 2 A Ring", 
+            "outerRadius": 60521000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 22.4543041087963, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00473634334957149, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.2635, 
+          "Rock": 67.7365
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 952.073242, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:49:11+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 67.407349, 
+        "atmosphereType": null, 
+        "axialTilt": 2.399919, 
+        "bodyId": 9, 
+        "distanceToArrival": 554.489441, 
+        "earthMasses": 22.186983, 
+        "gravity": 3.32993902314673, 
+        "id64": 324259178822517972, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.712725, 
+          "Carbon": 13.527261, 
+          "Chromium": 9.919182, 
+          "Iron": 22.055704, 
+          "Nickel": 16.682009, 
+          "Phosphorus": 8.660383, 
+          "Ruthenium": 1.36208, 
+          "Sulphur": 16.086712, 
+          "Tin": 1.438895, 
+          "Zinc": 5.993914, 
+          "Zirconium": 2.561122
+        }, 
+        "name": "Pro Eurl HW-W e1-1 A 3", 
+        "orbitalEccentricity": 0.073515, 
+        "orbitalInclination": 4.885519, 
+        "orbitalPeriod": 44.8393923611111, 
+        "parents": [
+          {
+            "Null": 8
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 16455.748, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 43663000.0, 
+            "mass": 34147000000.0, 
+            "name": "Pro Eurl HW-W e1-1 A 3 A Ring", 
+            "outerRadius": 55397000.0, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 55497000.0, 
+            "mass": 223750000000.0, 
+            "name": "Pro Eurl HW-W e1-1 A 3 B Ring", 
+            "outerRadius": 103370000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 0.505844681354167, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000959900935274475, 
+        "solidComposition": {
+          "Ice": 0.6248, 
+          "Metal": 29.7969, 
+          "Rock": 62.3999
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 708.443237, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:48:44+00"
+      }, 
+      {
+        "argOfPeriapsis": 247.407333, 
+        "atmosphereType": null, 
+        "axialTilt": 0.459954, 
+        "bodyId": 12, 
+        "distanceToArrival": 559.26593, 
+        "earthMasses": 2.269463, 
+        "gravity": 1.53925553176303, 
+        "id64": 432345569879409876, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.988129, 
+          "Carbon": 13.298409, 
+          "Chromium": 9.865574, 
+          "Germanium": 4.672574, 
+          "Iron": 21.936502, 
+          "Molybdenum": 1.432441, 
+          "Nickel": 16.591852, 
+          "Niobium": 1.499243, 
+          "Phosphorus": 8.51387, 
+          "Sulphur": 15.814564, 
+          "Vanadium": 5.386842
+        }, 
+        "name": "Pro Eurl HW-W e1-1 A 4", 
+        "orbitalEccentricity": 0.073515, 
+        "orbitalInclination": 4.885519, 
+        "orbitalPeriod": 44.8393923611111, 
+        "parents": [
+          {
+            "Null": 8
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 7740.924, 
+        "rotationalPeriod": 47.0767737268519, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00938469229161294, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.2635, 
+          "Rock": 67.7365
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 721.076477, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:48:40+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 236.645935, 
+        "atmosphereComposition": {
+          "Helium": 28.512102, 
+          "Hydrogen": 71.4879
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.023848, 
+        "bodyId": 14, 
+        "distanceToArrival": 950.617493, 
+        "earthMasses": 18.970049, 
+        "gravity": 2.37260885082084, 
+        "id64": 504403163917337812, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 A 5", 
+        "orbitalEccentricity": 0.067068, 
+        "orbitalInclination": -0.538008, 
+        "orbitalPeriod": 42.3143634259259, 
+        "parents": [
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 18026.348, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 42447000.0, 
+            "mass": 21388000000.0, 
+            "name": "Pro Eurl HW-W e1-1 A 5 A Ring", 
+            "outerRadius": 49825000.0, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 49925000.0, 
+            "mass": 251010000000.0, 
+            "name": "Pro Eurl HW-W e1-1 A 5 B Ring", 
+            "outerRadius": 102340000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 106.9678125, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00151449449741399, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 545.156189, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:47:56+00"
+      }, 
+      {
+        "argOfPeriapsis": 137.975891, 
+        "atmosphereType": null, 
+        "axialTilt": 0.057055, 
+        "bodyId": 17, 
+        "distanceToArrival": 950.249084, 
+        "earthMasses": 0.001146, 
+        "gravity": 0.086015193229326, 
+        "id64": 612489554974229716, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.871141, 
+          "Germanium": 5.576538, 
+          "Iron": 19.203281, 
+          "Manganese": 7.930759, 
+          "Mercury": 0.838576, 
+          "Nickel": 14.524558, 
+          "Phosphorus": 10.160977, 
+          "Sulphur": 18.874073, 
+          "Tin": 1.157453, 
+          "Vanadium": 4.715658, 
+          "Yttrium": 1.146989
+        }, 
+        "name": "Pro Eurl HW-W e1-1 A 5 a", 
+        "orbitalEccentricity": 0.001754, 
+        "orbitalInclination": -1.53862, 
+        "orbitalPeriod": 1.53018645109954, 
+        "parents": [
+          {
+            "Planet": 14
+          }, 
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 735.762375, 
+        "rotationalPeriod": 1.53024576822917, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00100000075736372, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1305, 
+          "Rock": 90.8695
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 554.718933, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:48:03+00"
+      }, 
+      {
+        "argOfPeriapsis": 56.645935, 
+        "atmosphereType": null, 
+        "axialTilt": -0.322312, 
+        "bodyId": 18, 
+        "distanceToArrival": 946.177429, 
+        "earthMasses": 3.519477, 
+        "gravity": 1.86637809727745, 
+        "id64": 648518351993193684, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 13.621536, 
+          "Chromium": 10.105291, 
+          "Iron": 22.469522, 
+          "Mercury": 0.981207, 
+          "Molybdenum": 1.467247, 
+          "Nickel": 16.995005, 
+          "Phosphorus": 8.72074, 
+          "Ruthenium": 1.387636, 
+          "Selenium": 2.535254, 
+          "Sulphur": 16.198828, 
+          "Vanadium": 5.517732
+        }, 
+        "name": "Pro Eurl HW-W e1-1 A 6", 
+        "orbitalEccentricity": 0.067068, 
+        "orbitalInclination": -0.538008, 
+        "orbitalPeriod": 42.3143634259259, 
+        "parents": [
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 8754.39, 
+        "rotationalPeriod": 61.4299074074074, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00816378507451577, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.2635, 
+          "Rock": 67.7365
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 554.544922, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:48:09+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 196.656784, 
+        "atmosphereComposition": {
+          "Argon": 4.305343, 
+          "Carbon dioxide": 0.268672, 
+          "Nitrogen": 95.393639
+        }, 
+        "atmosphereType": "Thick Argon-rich", 
+        "axialTilt": -0.516663, 
+        "bodyId": 19, 
+        "distanceToArrival": 3458.40625, 
+        "earthMasses": 6.707201, 
+        "gravity": 1.68892097481391, 
+        "id64": 684547149012157652, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 A 7", 
+        "orbitalEccentricity": 0.839927, 
+        "orbitalInclination": 60.899117, 
+        "orbitalPeriod": 20037.2088888889, 
+        "parents": [
+          {
+            "Star": 1
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 12704.354, 
+        "rotationalPeriod": 0.697866527418981, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 22.1407608154145, 
+        "solidComposition": {
+          "Ice": 53.7027, 
+          "Metal": 16.6443, 
+          "Rock": 29.6531
+        }, 
+        "stations": [], 
+        "subType": "Water world", 
+        "surfacePressure": 2059.7832321737, 
+        "surfaceTemperature": 334.805023, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:50:10+00", 
+        "volcanismType": "Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 68.374619, 
+        "atmosphereType": null, 
+        "axialTilt": -2.088392, 
+        "bodyId": 20, 
+        "distanceToArrival": 162363.984375, 
+        "earthMasses": 13.385809, 
+        "gravity": 2.27069674722137, 
+        "id64": 720575946031121620, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.392379, 
+          "Cadmium": 1.950644, 
+          "Carbon": 15.300303, 
+          "Iron": 25.119511, 
+          "Mercury": 1.096928, 
+          "Nickel": 18.999346, 
+          "Phosphorus": 9.795517, 
+          "Selenium": 2.847707, 
+          "Sulphur": 18.195229, 
+          "Tellurium": 1.385537, 
+          "Zirconium": 2.916893
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 1", 
+        "orbitalEccentricity": 4e-06, 
+        "orbitalInclination": 0.00222, 
+        "orbitalPeriod": 26.8588773148148, 
+        "parents": [
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 15478.516, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 28135000.0, 
+            "mass": 12735000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 1 A Ring", 
+            "outerRadius": 34597000.0, 
+            "type": "Metallic"
+          }, 
+          {
+            "id64": 792633540069049556, 
+            "innerRadius": 34697000.0, 
+            "mass": 177040000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 1 B Ring", 
+            "outerRadius": 82659000.0, 
+            "signals": {
+              "signals": {
+                "Monazite": 3, 
+                "Musgravite": 4
+              }, 
+              "updateTime": "2020-04-09 16:12:30+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": -27.0511631944444, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.193294059017646, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Biological;": 1, 
+            "$SAA_SignalType_Geological;": 22
+          }, 
+          "updateTime": "2020-04-09 16:14:28+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.2422, 
+          "Metal": 28.9883, 
+          "Rock": 60.8077
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 726.423584, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 16:14:29+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 67.910072, 
+        "atmosphereType": null, 
+        "axialTilt": -0.918987, 
+        "bodyId": 23, 
+        "distanceToArrival": 162379.765625, 
+        "earthMasses": 6.564318, 
+        "gravity": 2.47588559192414, 
+        "id64": 828662337088013524, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 13.43512, 
+          "Germanium": 4.655124, 
+          "Iron": 21.856485, 
+          "Manganese": 9.026505, 
+          "Molybdenum": 1.427216, 
+          "Nickel": 16.531328, 
+          "Phosphorus": 8.601394, 
+          "Ruthenium": 1.349777, 
+          "Sulphur": 15.977139, 
+          "Tungsten": 1.200141, 
+          "Zinc": 5.939774
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 2", 
+        "orbitalEccentricity": 0.000569, 
+        "orbitalInclination": -0.005212, 
+        "orbitalPeriod": 67.4370601851852, 
+        "parents": [
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 10380.449, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 27481000.0, 
+            "mass": 12975000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 2 A Ring", 
+            "outerRadius": 34333000.0, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 34433000.0, 
+            "mass": 121040000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 2 B Ring", 
+            "outerRadius": 71626000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 67.9198611111111, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.357074676357676, 
+        "solidComposition": {
+          "Ice": 0.7724, 
+          "Metal": 32.0226, 
+          "Rock": 67.2049
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 543.928894, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:18+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 3.941887, 
+        "atmosphereType": null, 
+        "axialTilt": -0.462705, 
+        "bodyId": 26, 
+        "distanceToArrival": 162379.921875, 
+        "earthMasses": 0.00026, 
+        "gravity": 0.0520701539716529, 
+        "id64": 936748728144905428, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.203343, 
+          "Carbon": 16.194794, 
+          "Chromium": 8.736423, 
+          "Iron": 19.425791, 
+          "Molybdenum": 1.268493, 
+          "Nickel": 14.692855, 
+          "Phosphorus": 10.368185, 
+          "Selenium": 3.014191, 
+          "Sulphur": 19.258966, 
+          "Tungsten": 1.066671, 
+          "Vanadium": 4.770298
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 2 a", 
+        "orbitalEccentricity": 0.002804, 
+        "orbitalInclination": 1.933192, 
+        "orbitalPeriod": 2.60120135271991, 
+        "parents": [
+          {
+            "Planet": 23
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 450.37334375, 
+        "rotationalPeriod": 2.60136085792824, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00100000075736372, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 543.928894, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:26+00"
+      }, 
+      {
+        "argOfPeriapsis": 193.904556, 
+        "atmosphereType": null, 
+        "axialTilt": -0.060594, 
+        "bodyId": 27, 
+        "distanceToArrival": 162379.5625, 
+        "earthMasses": 0.000326, 
+        "gravity": 0.0562122973386357, 
+        "id64": 972777525163869396, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.722236, 
+          "Chromium": 8.481498, 
+          "Germanium": 5.524218, 
+          "Iron": 18.858953, 
+          "Nickel": 14.264123, 
+          "Niobium": 1.288909, 
+          "Phosphorus": 10.065646, 
+          "Sulphur": 18.696995, 
+          "Tellurium": 1.430784, 
+          "Tungsten": 1.035546, 
+          "Vanadium": 4.631103
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 2 b", 
+        "orbitalEccentricity": 5.1e-05, 
+        "orbitalInclination": 3.858377, 
+        "orbitalPeriod": 4.56375940393518, 
+        "parents": [
+          {
+            "Planet": 23
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 485.74715625, 
+        "rotationalPeriod": 4.56403935185185, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00145467557112763, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 543.928894, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:10+00"
+      }, 
+      {
+        "argOfPeriapsis": 116.651703, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 95.848145, 
+          "Nitrogen": 3.193112, 
+          "Sulphur dioxide": 0.958481
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide", 
+        "axialTilt": 0.005315, 
+        "bodyId": 28, 
+        "distanceToArrival": 162079.609375, 
+        "earthMasses": 6.261141, 
+        "gravity": 2.43753553584175, 
+        "id64": 1008806322182833364, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 3", 
+        "orbitalEccentricity": 0.0007, 
+        "orbitalInclination": 0.370386, 
+        "orbitalPeriod": 167.117233796296, 
+        "parents": [
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 10217.341, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 43702000.0, 
+            "mass": 10793000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 3 A Ring", 
+            "outerRadius": 47475000.0, 
+            "type": "Metallic"
+          }, 
+          {
+            "innerRadius": 47575000.0, 
+            "mass": 119680000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 3 B Ring", 
+            "outerRadius": 77897000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 0.898267234525463, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.653894089951108, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.3345, 
+          "Rock": 67.6655
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 849.900419442388, 
+        "surfaceTemperature": 1546.248657, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:37+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 111.912498, 
+        "atmosphereType": null, 
+        "axialTilt": 2.001663, 
+        "bodyId": 31, 
+        "distanceToArrival": 162079.15625, 
+        "earthMasses": 0.00147, 
+        "gravity": 0.0934650759661466, 
+        "id64": 1116892713239725268, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.825152, 
+          "Chromium": 8.572463, 
+          "Iron": 19.061216, 
+          "Mercury": 0.832372, 
+          "Nickel": 14.417106, 
+          "Niobium": 1.302733, 
+          "Phosphorus": 10.131534, 
+          "Ruthenium": 1.177152, 
+          "Sulphur": 18.819384, 
+          "Vanadium": 4.680772, 
+          "Zinc": 5.180126
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 3 a", 
+        "orbitalEccentricity": 0.000801, 
+        "orbitalInclination": -0.353022, 
+        "orbitalPeriod": 2.66276909722222, 
+        "parents": [
+          {
+            "Planet": 28
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 799.377125, 
+        "rotationalPeriod": -2.66359754774306, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00100000075736372, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.9032, 
+          "Rock": 91.0968
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 411.294312, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:32+00"
+      }, 
+      {
+        "argOfPeriapsis": 291.153168, 
+        "atmosphereType": null, 
+        "axialTilt": 0.273423, 
+        "bodyId": 32, 
+        "distanceToArrival": 162080.09375, 
+        "earthMasses": 0.001134, 
+        "gravity": 0.0855321708983379, 
+        "id64": 1152921510258689236, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.133428, 
+          "Cadmium": 1.420856, 
+          "Carbon": 15.25387, 
+          "Chromium": 8.228833, 
+          "Germanium": 5.359652, 
+          "Iron": 18.297144, 
+          "Manganese": 7.556533, 
+          "Nickel": 13.839194, 
+          "Phosphorus": 9.76579, 
+          "Sulphur": 18.140011, 
+          "Tungsten": 1.004697
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 3 b", 
+        "orbitalEccentricity": 0.001184, 
+        "orbitalInclination": -0.273856, 
+        "orbitalPeriod": 2.66276909722222, 
+        "parents": [
+          {
+            "Planet": 28
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 734.04975, 
+        "rotationalPeriod": 2.66359754774306, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00100000075736372, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 411.294312, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:34+00"
+      }, 
+      {
+        "argOfPeriapsis": 118.497894, 
+        "atmosphereType": null, 
+        "axialTilt": 0.494687, 
+        "bodyId": 33, 
+        "distanceToArrival": 162079.484375, 
+        "earthMasses": 0.000626, 
+        "gravity": 0.0699971448965025, 
+        "id64": 1188950307277653204, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.559077, 
+          "Carbon": 16.285904, 
+          "Iron": 19.535078, 
+          "Manganese": 8.067787, 
+          "Nickel": 14.775515, 
+          "Niobium": 1.335118, 
+          "Phosphorus": 10.426516, 
+          "Sulphur": 19.367313, 
+          "Tin": 1.171974, 
+          "Yttrium": 1.166807, 
+          "Zinc": 5.308903
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 3 c", 
+        "orbitalEccentricity": 0.003688, 
+        "orbitalInclination": -3.343658, 
+        "orbitalPeriod": 5.3544603587963, 
+        "parents": [
+          {
+            "Planet": 28
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 602.9495625, 
+        "rotationalPeriod": 5.35612666377315, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00159314417300727, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 411.294312, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:54+00"
+      }, 
+      {
+        "argOfPeriapsis": 78.150757, 
+        "atmosphereComposition": {
+          "Helium": 28.512106, 
+          "Hydrogen": 71.4879
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.545609, 
+        "bodyId": 35, 
+        "distanceToArrival": 161352.203125, 
+        "earthMasses": 1344.328125, 
+        "gravity": 9.87144539614561, 
+        "id64": 1261007901315581140, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 4", 
+        "orbitalEccentricity": 0.031059, 
+        "orbitalInclination": 2.776545, 
+        "orbitalPeriod": 67.4565162037037, 
+        "parents": [
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 74395.88, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 126310000.0, 
+            "mass": 162920000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 4 A Ring", 
+            "outerRadius": 145400000.0, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 145500000.0, 
+            "mass": 3973400000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 4 B Ring", 
+            "outerRadius": 384220000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 0.99052472150463, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 6.61355736796593e-05, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 496.718292, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:41:18+00"
+      }, 
+      {
+        "argOfPeriapsis": 203.806534, 
+        "atmosphereType": null, 
+        "axialTilt": 0.005196, 
+        "bodyId": 38, 
+        "distanceToArrival": 161353.046875, 
+        "earthMasses": 0.013752, 
+        "gravity": 0.200428265524625, 
+        "id64": 1369094292372473044, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 17.34416, 
+          "Iron": 20.804464, 
+          "Nickel": 15.735626, 
+          "Phosphorus": 11.10403, 
+          "Selenium": 3.228112, 
+          "Sulphur": 20.625799, 
+          "Tin": 1.248129, 
+          "Tungsten": 1.142374, 
+          "Vanadium": 5.108852, 
+          "Yttrium": 1.242626, 
+          "Zirconium": 2.415827
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 4 a", 
+        "orbitalEccentricity": 0.005259, 
+        "orbitalInclination": -0.414945, 
+        "orbitalPeriod": 0.796779333043982, 
+        "parents": [
+          {
+            "Planet": 35
+          }, 
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1669.87475, 
+        "rotationalPeriod": 0.796790364583333, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00267835298808167, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 324.274323, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:41:29+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 138.202591, 
+        "atmosphereType": null, 
+        "axialTilt": 0.040122, 
+        "bodyId": 39, 
+        "distanceToArrival": 161351.890625, 
+        "earthMasses": 0.015493, 
+        "gravity": 0.208871010502702, 
+        "id64": 1405123089391437012, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.884638, 
+          "Chromium": 8.569107, 
+          "Iron": 19.053757, 
+          "Manganese": 7.869006, 
+          "Nickel": 14.411463, 
+          "Niobium": 1.302223, 
+          "Phosphorus": 10.169619, 
+          "Polonium": 0.494425, 
+          "Sulphur": 18.890125, 
+          "Tin": 1.143098, 
+          "Zirconium": 2.212534
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 4 b", 
+        "orbitalEccentricity": 1.5e-05, 
+        "orbitalInclination": -0.001479, 
+        "orbitalPeriod": 1.42045012297454, 
+        "parents": [
+          {
+            "Planet": 35
+          }, 
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1736.256375, 
+        "rotationalPeriod": 1.42046974465278, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00393785540692191, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 312.553589, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:41:37+00", 
+        "volcanismType": "Minor Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 258.150757, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 95.84819, 
+          "Nitrogen": 3.193114, 
+          "Sulphur dioxide": 0.958482
+        }, 
+        "atmosphereType": "Hot thick Carbon dioxide", 
+        "axialTilt": -0.011275, 
+        "bodyId": 40, 
+        "distanceToArrival": 161370.84375, 
+        "earthMasses": 1.723095, 
+        "gravity": 1.36933170184562, 
+        "id64": 1441151886410400980, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 5", 
+        "orbitalEccentricity": 0.031059, 
+        "orbitalInclination": 2.776545, 
+        "orbitalPeriod": 67.4565162037037, 
+        "parents": [
+          {
+            "Null": 34
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 7151.3305, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 34489000.0, 
+            "mass": 48711000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 5 A Ring", 
+            "outerRadius": 52351000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 67.4997395833333, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0515965726776885, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.2873, 
+          "Rock": 67.7127
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 268.402250185048, 
+        "surfaceTemperature": 888.273987, 
+        "terraformingState": "Terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:41:49+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 59.446735, 
+        "atmosphereComposition": {
+          "Helium": 28.512102, 
+          "Hydrogen": 71.4879
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 1.255038, 
+        "bodyId": 43, 
+        "distanceToArrival": 160693.53125, 
+        "earthMasses": 1023.117188, 
+        "gravity": 7.2992573671867, 
+        "id64": 1549238277467292884, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 6", 
+        "orbitalEccentricity": 0.018856, 
+        "orbitalInclination": -5.981788, 
+        "orbitalPeriod": 250.566435185185, 
+        "parents": [
+          {
+            "Null": 42
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 75476.184, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 124540000.0, 
+            "mass": 804020000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 6 A Ring", 
+            "outerRadius": 373980000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.79693974247685, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000119644136084619, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 372.968781, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:43:09+00"
+      }, 
+      {
+        "argOfPeriapsis": 46.287868, 
+        "atmosphereType": null, 
+        "axialTilt": -0.876936, 
+        "bodyId": 45, 
+        "distanceToArrival": 160692.59375, 
+        "earthMasses": 0.002924, 
+        "gravity": 0.117962577750586, 
+        "id64": 1621295871505220820, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.429294, 
+          "Carbon": 15.319451, 
+          "Chromium": 8.277703, 
+          "Iron": 18.405807, 
+          "Manganese": 7.60141, 
+          "Nickel": 13.921382, 
+          "Phosphorus": 9.807775, 
+          "Sulphur": 18.218, 
+          "Tellurium": 1.394129, 
+          "Tin": 1.105216, 
+          "Vanadium": 4.519826
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 6 a", 
+        "orbitalEccentricity": 2.6e-05, 
+        "orbitalInclination": -0.000479, 
+        "orbitalPeriod": 1.03747124565972, 
+        "parents": [
+          {
+            "Planet": 43
+          }, 
+          {
+            "Null": 42
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1003.6874375, 
+        "rotationalPeriod": 0.956199996388889, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00291585455032817, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.7782, 
+          "Rock": 91.2218
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 250.584702, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:43:30+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 82.085526, 
+        "atmosphereComposition": {
+          "Oxygen": 2.999999, 
+          "Silicates": 5.0, 
+          "Sulphur dioxide": 90.0
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 1.935662, 
+        "bodyId": 46, 
+        "distanceToArrival": 160693.953125, 
+        "earthMasses": 0.003469, 
+        "gravity": 0.124979708371571, 
+        "id64": 1657324668524184788, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 6 b", 
+        "orbitalEccentricity": 0.001655, 
+        "orbitalInclination": -0.85105, 
+        "orbitalPeriod": 2.09889666521991, 
+        "parents": [
+          {
+            "Planet": 43
+          }, 
+          {
+            "Null": 42
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1062.126875, 
+        "rotationalPeriod": -1.99713469328704, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00466418574499136, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 240.334824, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:43:20+00", 
+        "volcanismType": "Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 81.724258, 
+        "atmosphereType": null, 
+        "axialTilt": 0.423874, 
+        "bodyId": 47, 
+        "distanceToArrival": 160696.453125, 
+        "earthMasses": 0.003637, 
+        "gravity": 0.127008667278475, 
+        "id64": 1693353465543148756, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.719234, 
+          "Chromium": 8.479878, 
+          "Iron": 18.855354, 
+          "Manganese": 7.787068, 
+          "Molybdenum": 1.231244, 
+          "Nickel": 14.261397, 
+          "Niobium": 1.288663, 
+          "Phosphorus": 10.063725, 
+          "Sulphur": 18.693426, 
+          "Tellurium": 1.430511, 
+          "Zirconium": 2.189495
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 6 c", 
+        "orbitalEccentricity": 0.000284, 
+        "orbitalInclination": 0.698491, 
+        "orbitalPeriod": 3.27635344328704, 
+        "parents": [
+          {
+            "Planet": 43
+          }, 
+          {
+            "Null": 42
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1078.811625, 
+        "rotationalPeriod": 3.16007414641204, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00627637596448757, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 235.110229, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:43:33+00"
+      }, 
+      {
+        "argOfPeriapsis": 100.295441, 
+        "atmosphereType": null, 
+        "axialTilt": 0.404956, 
+        "bodyId": 48, 
+        "distanceToArrival": 160688.015625, 
+        "earthMasses": 0.00924, 
+        "gravity": 0.17474875089222, 
+        "id64": 1729382262562112724, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.865811, 
+          "Germanium": 5.574666, 
+          "Iron": 19.031174, 
+          "Manganese": 7.85968, 
+          "Mercury": 0.83106, 
+          "Nickel": 14.394382, 
+          "Niobium": 1.300679, 
+          "Phosphorus": 10.157566, 
+          "Sulphur": 18.867737, 
+          "Tellurium": 1.44385, 
+          "Vanadium": 4.673394
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 6 d", 
+        "orbitalEccentricity": 0.001345, 
+        "orbitalInclination": 0.005486, 
+        "orbitalPeriod": 7.84219184027778, 
+        "parents": [
+          {
+            "Planet": 43
+          }, 
+          {
+            "Null": 42
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1465.954625, 
+        "rotationalPeriod": 7.6937109375, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0112306984593999, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 226.996964, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:43:26+00"
+      }, 
+      {
+        "argOfPeriapsis": 239.446732, 
+        "atmosphereComposition": {
+          "Nitrogen": 99.982758
+        }, 
+        "atmosphereType": "Nitrogen", 
+        "axialTilt": -0.511796, 
+        "bodyId": 49, 
+        "distanceToArrival": 160692.875, 
+        "earthMasses": 1.083268, 
+        "gravity": 1.13039849087387, 
+        "id64": 1765411059581076692, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 7", 
+        "orbitalEccentricity": 0.018856, 
+        "orbitalInclination": -5.981788, 
+        "orbitalPeriod": 250.566435185185, 
+        "parents": [
+          {
+            "Null": 42
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 6240.78, 
+        "rotationalPeriod": 0.522226155601852, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.113003184449737, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 32.2635, 
+          "Rock": 67.7365
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 2.46910991857883, 
+        "surfaceTemperature": 218.04628, 
+        "terraformingState": "Terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:42:48+00"
+      }, 
+      {
+        "argOfPeriapsis": 21.101746, 
+        "atmosphereComposition": {
+          "Helium": 28.512106, 
+          "Hydrogen": 71.4879
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 1.244873, 
+        "bodyId": 51, 
+        "distanceToArrival": 160687.5625, 
+        "earthMasses": 2398.643066, 
+        "gravity": 19.6082083205873, 
+        "id64": 1837468653619004628, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 8", 
+        "orbitalEccentricity": 0.073692, 
+        "orbitalInclination": 2.33446, 
+        "orbitalPeriod": 209.479027777778, 
+        "parents": [
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 70509.96, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 127820000.0, 
+            "mass": 642330000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 8 A Ring", 
+            "outerRadius": 192060000.0, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 192160000.0, 
+            "mass": 5635300000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 8 B Ring", 
+            "outerRadius": 466010000.0, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 1.07525707104167, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00368281947745664, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 686.806824, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:44:44+00"
+      }, 
+      {
+        "argOfPeriapsis": 92.149361, 
+        "atmosphereComposition": {
+          "Oxygen": 2.999999, 
+          "Silicates": 5.0, 
+          "Sulphur dioxide": 90.0
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.019699, 
+        "bodyId": 54, 
+        "distanceToArrival": 160686.453125, 
+        "earthMasses": 0.002238, 
+        "gravity": 0.107672988681554, 
+        "id64": 1945555044675896532, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 8 a", 
+        "orbitalEccentricity": 0.000391, 
+        "orbitalInclination": -0.013332, 
+        "orbitalPeriod": 1.6345628978588, 
+        "parents": [
+          {
+            "Planet": 51
+          }, 
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 919.051875, 
+        "rotationalPeriod": 1.63456615306713, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00524477539906589, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 281.20224, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:06+00", 
+        "volcanismType": "Major Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 23.609102, 
+        "atmosphereComposition": {
+          "Water": 100.0
+        }, 
+        "atmosphereType": "Hot thick Water", 
+        "axialTilt": 0.274993, 
+        "bodyId": 55, 
+        "distanceToArrival": 160688.0, 
+        "earthMasses": 0.001602, 
+        "gravity": 0.0961462220862649, 
+        "id64": 1981583841694860500, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 8 b", 
+        "orbitalEccentricity": 0.000734, 
+        "orbitalInclination": 0.45579, 
+        "orbitalPeriod": 2.87309769241898, 
+        "parents": [
+          {
+            "Planet": 51
+          }, 
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 823.01, 
+        "rotationalPeriod": 2.87310347945602, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00763881674687499, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 15.7255588452998, 
+        "surfaceTemperature": 799.872742, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:04+00"
+      }, 
+      {
+        "argOfPeriapsis": 26.649366, 
+        "atmosphereType": null, 
+        "axialTilt": 0.306686, 
+        "bodyId": 56, 
+        "distanceToArrival": 160690.921875, 
+        "earthMasses": 0.001692, 
+        "gravity": 0.0979375955949832, 
+        "id64": 2017612638713824468, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.427136, 
+          "Chromium": 8.322303, 
+          "Iron": 18.504978, 
+          "Manganese": 7.642367, 
+          "Nickel": 13.996389, 
+          "Niobium": 1.264717, 
+          "Phosphorus": 9.876718, 
+          "Polonium": 0.480185, 
+          "Sulphur": 18.346062, 
+          "Tin": 1.110175, 
+          "Zinc": 5.028961
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 8 c", 
+        "orbitalEccentricity": 0.002706, 
+        "orbitalInclination": -0.27063, 
+        "orbitalPeriod": 6.49371166087963, 
+        "parents": [
+          {
+            "Planet": 51
+          }, 
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 837.9748125, 
+        "rotationalPeriod": 6.49372395833333, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0131559168776324, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 245.739441, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:44:57+00"
+      }, 
+      {
+        "argOfPeriapsis": 201.10173, 
+        "atmosphereComposition": {
+          "Helium": 28.505825, 
+          "Hydrogen": 71.472183
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.436375, 
+        "bodyId": 57, 
+        "distanceToArrival": 160738.234375, 
+        "earthMasses": 67.493324, 
+        "gravity": 1.04747282553278, 
+        "id64": 2053641435732788436, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 9", 
+        "orbitalEccentricity": 0.073692, 
+        "orbitalInclination": 2.33446, 
+        "orbitalPeriod": 209.479027777778, 
+        "parents": [
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 51173.56, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 79112000.0, 
+            "mass": 16725000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 9 A Ring", 
+            "outerRadius": 82546000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "innerRadius": 82646000.0, 
+            "mass": 400020000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 9 B Ring", 
+            "outerRadius": 141740000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 0.772179904513889, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.13087336136797, 
+        "stations": [], 
+        "subType": "Gas giant with water-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 205.489212, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:44:04+00"
+      }, 
+      {
+        "argOfPeriapsis": 103.690681, 
+        "atmosphereType": null, 
+        "axialTilt": 1.566405, 
+        "bodyId": 60, 
+        "distanceToArrival": 160737.8125, 
+        "earthMasses": 0.003199, 
+        "gravity": 0.121633731008463, 
+        "id64": 2161727826789680340, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.381761, 
+          "Chromium": 8.314843, 
+          "Iron": 18.48839, 
+          "Manganese": 7.635516, 
+          "Nickel": 13.983843, 
+          "Niobium": 1.263583, 
+          "Phosphorus": 9.847667, 
+          "Ruthenium": 1.141776, 
+          "Sulphur": 18.292099, 
+          "Tin": 1.110428, 
+          "Vanadium": 4.540105
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 9 a", 
+        "orbitalEccentricity": 0.000421, 
+        "orbitalInclination": -0.740705, 
+        "orbitalPeriod": 0.811235984525463, 
+        "parents": [
+          {
+            "Planet": 57
+          }, 
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1033.804625, 
+        "rotationalPeriod": 0.811269350405093, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00100000075736372, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.7989, 
+          "Rock": 91.2011
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 205.929596, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:44:18+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 82.703293, 
+        "atmosphereType": null, 
+        "axialTilt": 0.395662, 
+        "bodyId": 61, 
+        "distanceToArrival": 160738.25, 
+        "earthMasses": 0.000669, 
+        "gravity": 0.0715676557560926, 
+        "id64": 2197756623808644308, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.420037, 
+          "Carbon": 15.245078, 
+          "Chromium": 8.224091, 
+          "Iron": 18.2866, 
+          "Manganese": 7.552178, 
+          "Molybdenum": 1.194104, 
+          "Nickel": 13.831216, 
+          "Phosphorus": 9.76016, 
+          "Sulphur": 18.129557, 
+          "Tellurium": 1.38736, 
+          "Zinc": 4.969613
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 9 b", 
+        "orbitalEccentricity": 0.001369, 
+        "orbitalInclination": 0.02851, 
+        "orbitalPeriod": 1.22432843244213, 
+        "parents": [
+          {
+            "Planet": 57
+          }, 
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 616.2510625, 
+        "rotationalPeriod": 1.22437879774306, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00131573209617883, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 205.657181, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:44:22+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 61.821056, 
+        "atmosphereType": null, 
+        "axialTilt": -2.938238, 
+        "bodyId": 62, 
+        "distanceToArrival": 160737.734375, 
+        "earthMasses": 0.001128, 
+        "gravity": 0.085446721729377, 
+        "id64": 2233785420827608276, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.571372, 
+          "Carbon": 16.364147, 
+          "Iron": 19.703445, 
+          "Manganese": 8.137322, 
+          "Molybdenum": 1.286624, 
+          "Nickel": 14.902863, 
+          "Phosphorus": 10.476608, 
+          "Sulphur": 19.46036, 
+          "Tungsten": 1.081917, 
+          "Vanadium": 4.838481, 
+          "Yttrium": 1.176863
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 9 c", 
+        "orbitalEccentricity": 0.004478, 
+        "orbitalInclination": -0.240415, 
+        "orbitalPeriod": 1.59059461805556, 
+        "parents": [
+          {
+            "Planet": 57
+          }, 
+          {
+            "Null": 50
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 732.3183125, 
+        "rotationalPeriod": -1.59066008391204, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00156654144142173, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.8855, 
+          "Rock": 91.1145
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 205.502426, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:44:25+00"
+      }, 
+      {
+        "argOfPeriapsis": 207.924133, 
+        "atmosphereComposition": {
+          "Helium": 28.512102, 
+          "Hydrogen": 71.4879
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.574726, 
+        "bodyId": 63, 
+        "distanceToArrival": 161240.140625, 
+        "earthMasses": 1157.454468, 
+        "gravity": 8.44814754767003, 
+        "id64": 2269814217846572244, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 10", 
+        "orbitalEccentricity": 0.000167, 
+        "orbitalInclination": -0.039887, 
+        "orbitalPeriod": 4266.57777777778, 
+        "parents": [
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 74620.448, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 129890000.0, 
+            "mass": 177730000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 10 A Ring", 
+            "outerRadius": 150440000.0, 
+            "type": "Metal Rich"
+          }, 
+          {
+            "innerRadius": 150540000.0, 
+            "mass": 3423700000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 10 B Ring", 
+            "outerRadius": 365520000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 2.05227701822917, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.66952120245653, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 362.648956, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:18+00"
+      }, 
+      {
+        "argOfPeriapsis": 288.610138, 
+        "atmosphereType": null, 
+        "axialTilt": 0.157284, 
+        "bodyId": 66, 
+        "distanceToArrival": 161245.15625, 
+        "earthMasses": 0.001583, 
+        "gravity": 0.0957498725400224, 
+        "id64": 2377900608903464148, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.604359, 
+          "Chromium": 8.417908, 
+          "Iron": 18.717558, 
+          "Manganese": 7.73016, 
+          "Molybdenum": 1.222246, 
+          "Nickel": 14.157178, 
+          "Niobium": 1.279245, 
+          "Phosphorus": 9.990178, 
+          "Selenium": 2.904299, 
+          "Sulphur": 18.556814, 
+          "Tellurium": 1.420056
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 10 a", 
+        "orbitalEccentricity": 0.002003, 
+        "orbitalInclination": 0.044774, 
+        "orbitalPeriod": 8.49603009259259, 
+        "parents": [
+          {
+            "Planet": 63
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 819.6964375, 
+        "rotationalPeriod": 8.49613208912037, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0123438933412573, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 189.181824, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:54+00"
+      }, 
+      {
+        "argOfPeriapsis": 92.812225, 
+        "atmosphereType": null, 
+        "axialTilt": 0.263402, 
+        "bodyId": 67, 
+        "distanceToArrival": 161241.5, 
+        "earthMasses": 0.001003, 
+        "gravity": 0.0820568981339859, 
+        "id64": 2413929405922428116, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 16.184177, 
+          "Iron": 19.413059, 
+          "Manganese": 8.017394, 
+          "Molybdenum": 1.267661, 
+          "Nickel": 14.683225, 
+          "Phosphorus": 10.361389, 
+          "Selenium": 3.012215, 
+          "Sulphur": 19.246342, 
+          "Tellurium": 1.472822, 
+          "Tungsten": 1.065972, 
+          "Zinc": 5.275743
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 10 b", 
+        "orbitalEccentricity": 0.000447, 
+        "orbitalInclination": -0.029528, 
+        "orbitalPeriod": 17.5556843171296, 
+        "parents": [
+          {
+            "Planet": 63
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 704.8133125, 
+        "rotationalPeriod": 17.5558955439815, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0200256523036193, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 183.626556, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:41+00"
+      }, 
+      {
+        "argOfPeriapsis": 266.372498, 
+        "atmosphereType": null, 
+        "axialTilt": -0.335497, 
+        "bodyId": 69, 
+        "distanceToArrival": 161250.25, 
+        "earthMasses": 0.002884, 
+        "gravity": 0.11736596308759, 
+        "id64": 2485986999960356052, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.436845, 
+          "Carbon": 15.425517, 
+          "Chromium": 8.32143, 
+          "Iron": 18.503036, 
+          "Manganese": 7.641565, 
+          "Mercury": 0.807997, 
+          "Nickel": 13.994922, 
+          "Phosphorus": 9.875681, 
+          "Sulphur": 18.344135, 
+          "Vanadium": 4.543702, 
+          "Yttrium": 1.105164
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 10 c", 
+        "orbitalEccentricity": 0.057498, 
+        "orbitalInclination": -9.839912, 
+        "orbitalPeriod": 5.84299334490741, 
+        "parents": [
+          {
+            "Null": 68
+          }, 
+          {
+            "Planet": 63
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 999.3511875, 
+        "rotationalPeriod": 8.99869502314815, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 6.59782586063239e-05, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 178.370834, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:46+00"
+      }, 
+      {
+        "argOfPeriapsis": 86.372513, 
+        "atmosphereType": null, 
+        "axialTilt": -0.12236, 
+        "bodyId": 70, 
+        "distanceToArrival": 161250.1875, 
+        "earthMasses": 0.002102, 
+        "gravity": 0.105415621494851, 
+        "id64": 2522015796979320020, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.650098, 
+          "Cadmium": 1.570943, 
+          "Carbon": 16.865158, 
+          "Germanium": 5.925799, 
+          "Iron": 20.229898, 
+          "Nickel": 15.301048, 
+          "Phosphorus": 10.797364, 
+          "Polonium": 0.524945, 
+          "Sulphur": 20.056168, 
+          "Tungsten": 1.110825, 
+          "Vanadium": 4.967759
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 10 d", 
+        "orbitalEccentricity": 0.057498, 
+        "orbitalInclination": -9.839912, 
+        "orbitalPeriod": 5.84299334490741, 
+        "parents": [
+          {
+            "Null": 68
+          }, 
+          {
+            "Planet": 63
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 900.290625, 
+        "rotationalPeriod": 7.68290798611111, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 9.05125583448562e-05, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 178.370834, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:49+00"
+      }, 
+      {
+        "argOfPeriapsis": 286.387085, 
+        "atmosphereType": null, 
+        "axialTilt": -0.169575, 
+        "bodyId": 71, 
+        "distanceToArrival": 161217.375, 
+        "earthMasses": 0.002803, 
+        "gravity": 0.116238503110023, 
+        "id64": 2558044593998283988, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.417246, 
+          "Carbon": 15.215113, 
+          "Chromium": 8.207925, 
+          "Germanium": 5.346033, 
+          "Iron": 18.250652, 
+          "Manganese": 7.537333, 
+          "Nickel": 13.80403, 
+          "Phosphorus": 9.740976, 
+          "Sulphur": 18.09392, 
+          "Tellurium": 1.384633, 
+          "Tungsten": 1.002144
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 10 e", 
+        "orbitalEccentricity": 0.001576, 
+        "orbitalInclination": -0.130925, 
+        "orbitalPeriod": 65.6999247685185, 
+        "parents": [
+          {
+            "Planet": 63
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 990.032625, 
+        "rotationalPeriod": 2.20949797453704, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0482708252344129, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 176.402832, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:25+00"
+      }, 
+      {
+        "argOfPeriapsis": 296.424469, 
+        "atmosphereType": null, 
+        "axialTilt": 1.941039, 
+        "bodyId": 72, 
+        "distanceToArrival": 161209.515625, 
+        "earthMasses": 0.0052, 
+        "gravity": 0.14366085449169, 
+        "id64": 2594073391017247956, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.50997, 
+          "Carbon": 16.131847, 
+          "Germanium": 5.668139, 
+          "Iron": 19.444708, 
+          "Manganese": 8.030465, 
+          "Molybdenum": 1.269728, 
+          "Nickel": 14.707162, 
+          "Phosphorus": 10.327885, 
+          "Sulphur": 19.184105, 
+          "Tellurium": 1.46806, 
+          "Zirconium": 2.257931
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 10 f", 
+        "orbitalEccentricity": 0.014621, 
+        "orbitalInclination": 0.048211, 
+        "orbitalPeriod": 102.985810185185, 
+        "parents": [
+          {
+            "Planet": 63
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1212.894875, 
+        "rotationalPeriod": 1.38937002677083, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0651367936348575, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.9394, 
+          "Rock": 91.0606
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 174.58374, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:34+00"
+      }, 
+      {
+        "argOfPeriapsis": 332.765045, 
+        "atmosphereType": null, 
+        "axialTilt": 0.201782, 
+        "bodyId": 73, 
+        "distanceToArrival": 161209.53125, 
+        "earthMasses": 0.000223, 
+        "gravity": 0.0480797389619659, 
+        "id64": 2630102188036211924, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.308306, 
+          "Carbon": 17.607399, 
+          "Germanium": 6.186595, 
+          "Iron": 18.339762, 
+          "Nickel": 13.871428, 
+          "Niobium": 1.253425, 
+          "Phosphorus": 11.27256, 
+          "Selenium": 3.277107, 
+          "Sulphur": 20.938845, 
+          "Tin": 0.960497, 
+          "Zinc": 4.984061
+        }, 
+        "name": "Pro Eurl HW-W e1-1 B 10 f a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 41.312443, 
+        "orbitalPeriod": 7.04280237268518, 
+        "parents": [
+          {
+            "Planet": 72
+          }, 
+          {
+            "Planet": 63
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 433.77296875, 
+        "rotationalPeriod": 7.19195963541667, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.000182265869643825, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 3.0496, 
+          "Rock": 96.9504
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 174.58374, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:45:30+00"
+      }, 
+      {
+        "argOfPeriapsis": 328.746246, 
+        "atmosphereComposition": {
+          "Helium": 28.512106, 
+          "Hydrogen": 71.4879
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -2.852062, 
+        "bodyId": 76, 
+        "distanceToArrival": 162574.1875, 
+        "earthMasses": 181.852341, 
+        "gravity": 1.89163821759967, 
+        "id64": 2738188579093103828, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 11", 
+        "orbitalEccentricity": 0.031025, 
+        "orbitalInclination": 0.647413, 
+        "orbitalPeriod": 314.736481481481, 
+        "parents": [
+          {
+            "Null": 75
+          }, 
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 62506.772, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 102360000.0, 
+            "mass": 98064000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 11 A Ring", 
+            "outerRadius": 116650000.0, 
+            "type": "Metallic"
+          }, 
+          {
+            "innerRadius": 116750000.0, 
+            "mass": 793010000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 11 B Ring", 
+            "outerRadius": 197230000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.38358760127315, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0151238670270726, 
+        "stations": [], 
+        "subType": "Class II gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 161.524094, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:47:23+00"
+      }, 
+      {
+        "argOfPeriapsis": 334.427277, 
+        "atmosphereComposition": {
+          "Oxygen": 2.999999, 
+          "Silicates": 5.0, 
+          "Sulphur dioxide": 90.0
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.131792, 
+        "bodyId": 79, 
+        "distanceToArrival": 162574.484375, 
+        "earthMasses": 0.001423, 
+        "gravity": 0.092368716223106, 
+        "id64": 2846274970149995732, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 11 a", 
+        "orbitalEccentricity": 0.000204, 
+        "orbitalInclination": -0.973378, 
+        "orbitalPeriod": 1.83252875434028, 
+        "parents": [
+          {
+            "Planet": 76
+          }, 
+          {
+            "Null": 75
+          }, 
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 791.4058125, 
+        "rotationalPeriod": 1.83257957175926, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0023956216911582, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 149.799911, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:46:51+00", 
+        "volcanismType": "Major Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 198.986038, 
+        "atmosphereComposition": {
+          "Ammonia": 0.180788, 
+          "Carbon dioxide": 99.819214
+        }, 
+        "atmosphereType": "Carbon dioxide", 
+        "axialTilt": -0.414306, 
+        "bodyId": 80, 
+        "distanceToArrival": 162572.109375, 
+        "earthMasses": 0.005243, 
+        "gravity": 0.143895686754359, 
+        "id64": 2882303767168959700, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 11 b", 
+        "orbitalEccentricity": 0.003474, 
+        "orbitalInclination": -0.444607, 
+        "orbitalPeriod": 4.40081814236111, 
+        "parents": [
+          {
+            "Planet": 76
+          }, 
+          {
+            "Null": 75
+          }, 
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 1216.9485, 
+        "rotationalPeriod": 4.4009400318287, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00429608938277489, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 1.12835715828275, 
+        "surfaceTemperature": 252.603973, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:47:36+00"
+      }, 
+      {
+        "argOfPeriapsis": 148.746262, 
+        "atmosphereComposition": {
+          "Helium": 28.512096, 
+          "Hydrogen": 71.4879
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.451323, 
+        "bodyId": 81, 
+        "distanceToArrival": 162614.453125, 
+        "earthMasses": 42.773903, 
+        "gravity": 0.9047636382176, 
+        "id64": 2918332564187923668, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 12", 
+        "orbitalEccentricity": 0.031025, 
+        "orbitalInclination": 0.647413, 
+        "orbitalPeriod": 314.736481481481, 
+        "parents": [
+          {
+            "Null": 75
+          }, 
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 43833.736, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 87095000.0, 
+            "mass": 224970000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 12 A Ring", 
+            "outerRadius": 121750000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.01167435258102, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0642962871262311, 
+        "stations": [], 
+        "subType": "Class I gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 145.674957, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:46:32+00"
+      }, 
+      {
+        "argOfPeriapsis": 12.171045, 
+        "atmosphereComposition": {
+          "Ammonia": 3.193121, 
+          "Carbon dioxide": 95.848389, 
+          "Sulphur dioxide": 0.958484
+        }, 
+        "atmosphereType": "Carbon dioxide", 
+        "axialTilt": 2.980354, 
+        "bodyId": 83, 
+        "distanceToArrival": 162614.5625, 
+        "earthMasses": 0.002144, 
+        "gravity": 0.106331599877638, 
+        "id64": 2990390158225851604, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 12 a", 
+        "orbitalEccentricity": 0.000936, 
+        "orbitalInclination": -0.046312, 
+        "orbitalPeriod": 0.994846733946759, 
+        "parents": [
+          {
+            "Planet": 81
+          }, 
+          {
+            "Null": 75
+          }, 
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 905.1849375, 
+        "rotationalPeriod": -0.994893844039352, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.000984118713128181, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.1068, 
+          "Rock": 90.8932
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 2.17246992968172, 
+        "surfaceTemperature": 267.983582, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:46:58+00", 
+        "volcanismType": "Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 288.432953, 
+        "atmosphereComposition": {
+          "Ammonia": 3.193121, 
+          "Carbon dioxide": 95.848396, 
+          "Sulphur dioxide": 0.958484
+        }, 
+        "atmosphereType": "Carbon dioxide", 
+        "axialTilt": -0.005094, 
+        "bodyId": 84, 
+        "distanceToArrival": 162614.125, 
+        "earthMasses": 0.000665, 
+        "gravity": 0.0714297950443561, 
+        "id64": 3026418955244815572, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 12 b", 
+        "orbitalEccentricity": 0.00019, 
+        "orbitalInclination": -0.121966, 
+        "orbitalPeriod": 1.33221661603009, 
+        "parents": [
+          {
+            "Planet": 81
+          }, 
+          {
+            "Null": 75
+          }, 
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 615.082875, 
+        "rotationalPeriod": 1.33227973090278, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00119562022616409, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.6976, 
+          "Rock": 91.3024
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.984777094132741, 
+        "surfaceTemperature": 245.159302, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:47:00+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 119.648636, 
+        "atmosphereComposition": {
+          "Oxygen": 2.986233, 
+          "Silicates": 4.977055, 
+          "Sulphur dioxide": 89.58699
+        }, 
+        "atmosphereType": "Sulphur dioxide", 
+        "axialTilt": -1.627694, 
+        "bodyId": 85, 
+        "distanceToArrival": 162615.140625, 
+        "earthMasses": 0.000749, 
+        "gravity": 0.0744894463138574, 
+        "id64": 3062447752263779540, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 12 c", 
+        "orbitalEccentricity": 0.005051, 
+        "orbitalInclination": 0.197428, 
+        "orbitalPeriod": 1.68968532986111, 
+        "parents": [
+          {
+            "Planet": 81
+          }, 
+          {
+            "Null": 75
+          }, 
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 639.4680625, 
+        "rotationalPeriod": -1.68976526331019, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00140092175790574, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.0158, 
+          "Rock": 90.9842
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 1.06721795583518, 
+        "surfaceTemperature": 247.194504, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:46:45+00", 
+        "volcanismType": "Major Rocky Magma"
+      }, 
+      {
+        "argOfPeriapsis": 193.606796, 
+        "atmosphereComposition": {
+          "Helium": 0.893936, 
+          "Nitrogen": 96.996338, 
+          "Oxygen": 1.619288
+        }, 
+        "atmosphereType": "Thick Nitrogen", 
+        "axialTilt": 0.060265, 
+        "bodyId": 86, 
+        "distanceToArrival": 162682.453125, 
+        "earthMasses": 17.593855, 
+        "gravity": 4.08940756602427, 
+        "id64": 3098476549282743508, 
+        "isLandable": false, 
+        "name": "Pro Eurl HW-W e1-1 B 13", 
+        "orbitalEccentricity": 0.141464, 
+        "orbitalInclination": 3.154288, 
+        "orbitalPeriod": 1051.88231481481, 
+        "parents": [
+          {
+            "Null": 74
+          }, 
+          {
+            "Star": 2
+          }, 
+          {
+            "Null": 0
+          }
+        ], 
+        "radius": 13223.212, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 24967000.0, 
+            "mass": 25483000000.0, 
+            "name": "Pro Eurl HW-W e1-1 B 13 A Ring", 
+            "outerRadius": 90545000.0, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.10716480396991, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.1688283931437, 
+        "solidComposition": {
+          "Ice": 0.005, 
+          "Metal": 32.195, 
+          "Rock": 67.592
+        }, 
+        "stations": [], 
+        "subType": "High metal content world", 
+        "surfacePressure": 26.8547915124599, 
+        "surfaceTemperature": 175.603836, 
+        "terraformingState": "Not terraformable", 
+        "type": "Planet", 
+        "updateTime": "2020-04-09 15:46:06+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }
+    ], 
+    "coords": {
+      "x": 1802.75, 
+      "y": 443.3125, 
+      "z": 592.84375
+    }, 
+    "date": "2020-04-09 15:39:57+00", 
+    "government": "None", 
+    "id64": 5651842260, 
+    "name": "Pro Eurl HW-W e1-1", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}

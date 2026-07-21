@@ -145,6 +145,11 @@
     position: absolute
 }
 
+.system-body .body-image .speculative-body-icon {
+    font-size: 48px;
+    color: var(--color-text-muted);
+}
+
 .system-body .body-content {
     flex-grow: 1;
     padding: 8px;
@@ -210,6 +215,24 @@
     overflow-wrap: anywhere;
 }
 
+/* Values that have no "⇄" convert affordance reserve the same trailing gutter the icon
+   would occupy (margin-left 6px + width 14px), so every value's text right-edge lines up
+   in one column whether or not it is convertible. */
+.system-body .body-data-entry > div:last-child:not(:has(.convert-icon)):not(:has(.unit-select-field)) {
+    padding-right: 20px;
+}
+
+/* Speculative body (or speculative-values-only body, e.g. Col 70 Sector FY-N c21-3's main
+   star — see `speculative`/`speculativeValues` on CanonnBiostatsBody): every displayed
+   detail value is a guess, so flag each one with a trailing "?" rather than editing every
+   individual field binding. `.no-speculative-mark` opts a specific value out — either
+   because it's known for certain (the star's spectral class/luminosity) or because it's
+   already self-qualified as a guess (the star's "5-10" age range doesn't need a "?" on
+   top of being a range). */
+.system-body.speculative-values .body-data-entry > div:last-child:not(.no-speculative-mark)::after {
+    content: " ?";
+}
+
 /* ---------------------------------------------------------------------------
  * Responsive — small screens (phones).
  * ------------------------------------------------------------------------- */
@@ -262,8 +285,9 @@
 .system-body .body-data-entry .info-icon {
     margin-left: 6px;
     font-size: 0.85em;
-    /* Vertically centre the icon against the label text sitting to its left. */
-    vertical-align: middle;
+    /* Sit the icon on the text baseline — vertical-align: middle looked off
+       against the label text here. */
+    vertical-align: baseline;
     color: var(--color-text);
     cursor: pointer
 }
@@ -346,4 +370,5 @@
 
 /* Inline status indicators — tokenized (replaces former inline hex). */
 .status-danger { color: var(--color-danger) }
+.status-warning { color: var(--color-warning) }
 .status-success { color: var(--color-success) }

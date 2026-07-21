@@ -1,0 +1,27 @@
+<div class="gnosis-route" role="region" aria-label="Gnosis Megaship Science Tour route">
+  <div class="gnosis-route-header">
+    <span class="gnosis-route-label">Gnosis Route</span>
+    <span class="gnosis-route-title">Gnosis Megaship Science Tour</span>
+  </div>
+  <div class="gnosis-route-track">
+    @for (stop of stops(); track stop.name; let last = $last) {
+    <div class="gnosis-stop" [class.gnosis-stop--current]="stop.current" role="button" tabindex="0"
+      [attr.aria-current]="stop.current ? 'location' : null"
+      [title]="'Open the signals page for ' + stop.name" (click)="select(stop.name)"
+      (keydown.enter)="select(stop.name)" (keydown.space)="$event.preventDefault(); select(stop.name)">
+      <span class="gnosis-stop-node" aria-hidden="true"></span>
+      <span class="gnosis-stop-label">{{ stop.name }}</span>
+      @if (stop.current) {
+      <span class="gnosis-stop-tag">Current position</span>
+      }
+    </div>
+    @if (!last) {
+    <span class="gnosis-connector" aria-hidden="true"></span>
+    }
+    }
+  </div>
+  <div class="gnosis-loop-note">
+    <span class="gnosis-loop-icon" aria-hidden="true">&#8635;</span>
+    Loops back to Varati
+  </div>
+</div>

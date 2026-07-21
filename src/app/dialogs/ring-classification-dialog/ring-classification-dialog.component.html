@@ -1,0 +1,111 @@
+<app-dialog-shell [heading]="heading">
+  <div class="ring-classification-dialog">
+    <div class="diagram">
+      @if (diagram(); as d) {
+      <svg [attr.viewBox]="'0 0 ' + d.viewBoxSize + ' ' + d.viewBoxSize" class="ring-classification-diagram"
+        role="img" [attr.aria-label]="'To-scale illustration of ' + data.bodyName + ' and its rings'">
+        @for (ring of d.rings; track ring.name) {
+        <circle class="ring" [class.focused]="ring.isFocused" [attr.cx]="d.center" [attr.cy]="d.center"
+          [attr.r]="ring.radius" [attr.stroke-width]="ring.strokeWidth" />
+        }
+        <circle class="body" [attr.cx]="d.center" [attr.cy]="d.center" [attr.r]="d.bodyRadius" />
+        <text class="label" [attr.x]="d.center" [attr.y]="d.center + d.bodyRadius + 10" text-anchor="middle">{{ data.bodyName }}</text>
+      </svg>
+      }
+    </div>
+
+    <div class="intro">
+      @if (data.kind === 'taylor') {
+      <p>
+        A <strong>Taylor Ring</strong> is a planetary ring system that appears as a single continuous ring
+        surrounding its primary body, with an apparent radial width no greater than 25% of the radius of the
+        primary body.
+      </p>
+      <p>
+        Taylor rings are named after Elizabeth Taylor's famous engagement ring: a diamond so large it dwarfed
+        the band holding it. A Taylor ring is the same idea applied to a planet — the ring is so narrow relative
+        to the body that it reads as almost pure "stone" with barely any band in sight. Not an official
+        astronomical term, but shorthand the exploration community uses for this rare, striking silhouette.
+      </p>
+      } @else {
+      <p>
+        A <strong>Pauper Ring</strong> is a planetary ring system that appears as a single continuous ring
+        surrounding its primary body, with a width no greater than the diameter of its primary body but greater
+        than 25% of the radius of the primary body. The inner radius of the ring system must be at least 14
+        times the radius of the primary body.
+      </p>
+      <p>
+        Pauper rings are indirectly inspired by Elizabeth Taylor's famous engagement ring: a diamond so large it
+        dwarfed the band holding it. In this case, however, the "stone" is no wider than the band it's set in.
+      </p>
+      }
+    </div>
+
+    <div class="formula">
+      <strong>Calculation</strong> (R = body radius; span = outermost outer edge − innermost inner edge, across
+      the body's visible rings only):
+    </div>
+
+    <div class="parameters">
+      @if (data.kind === 'taylor') {
+      <p>A ring system is a Taylor ring when:</p>
+      <ul>
+        <li><strong>Exactly 1 visible ring:</strong> ring width &lt; 0.25R</li>
+        <li><strong>2 or more visible rings:</strong> total span &lt; 0.25R</li>
+      </ul>
+      } @else {
+      <p>A ring system is a Pauper ring when all of the following hold:</p>
+      <ul>
+        <li><strong>Innermost edge</strong> ≥ 14R</li>
+        <li><strong>AND</strong></li>
+        <li><strong>Span</strong> ≤ 2R</li>
+        <li><strong>AND</strong></li>
+        <li><strong>Span</strong> &gt; 0.25R (wide enough to not also be a Taylor ring)</li>
+      </ul>
+      }
+    </div>
+
+    <div class="values">
+      <p><strong>Values for this ring system:</strong></p>
+      <ul>
+        <li><strong>Body radius (R):</strong> {{ fmt(data.parentRadius) }} km</li>
+        <li><strong>Innermost visible edge:</strong> {{ fmt(data.innermostInner) }} km ({{ ratio(data.innermostInner) }}× R)</li>
+        <li><strong>Outermost visible edge:</strong> {{ fmt(data.outermostOuter) }} km ({{ ratio(data.outermostOuter) }}× R)</li>
+        <li><strong>Total span:</strong> {{ fmt(data.span) }} km ({{ ratio(data.span) }}× R)</li>
+        @if (data.kind === 'taylor') {
+        <li><strong>Taylor threshold (0.25R):</strong> {{ fmt(data.narrowThresholdKm) }} km</li>
+        } @else {
+        <li><strong>Pauper inner-edge threshold (14R):</strong> {{ fmt(data.pauperInnerEdgeThresholdKm) }} km</li>
+        <li><strong>Pauper max span (2R):</strong> {{ fmt(data.pauperMaxSpanKm) }} km</li>
+        }
+      </ul>
+      <p><strong>Visible rings:</strong></p>
+      <ul>
+        @for (ring of data.rings; track ring.name) {
+        <li [class.focused]="ring.name === data.ringName">
+          <strong>{{ ring.name }} Ring:</strong> {{ fmt(ring.innerRadius) }} – {{ fmt(ring.outerRadius) }} km
+        </li>
+        }
+      </ul>
+    </div>
+
+    @if (data.hasVisibleGap) {
+    <p class="gap-note">
+      <strong>Note:</strong> The gap between two of the visible rings is wider than 2% of the total span, so it
+      may be visible in-game as a break between the rings rather than reading as one continuous ring.
+    </p>
+    }
+
+    <p class="disclaimer">
+      <strong>Disclaimer:</strong> The classification is based on the visible and observable structure of the
+      ring system rather than its total physical extent — a {{ data.kind === 'taylor' ? 'Taylor' : 'Pauper' }}
+      Ring may consist of one or more physical rings and may exhibit banding, density variations, or other
+      internal structure, provided these features do not create the appearance of distinct rings separated by
+      visible gaps. This calculation is based on the recorded ring and body radii, not on in-game observation —
+      camera position and lighting can also affect how a ring system actually appears. This means that even
+      though this site has identified the ring system as a {{ data.kind === 'taylor' ? 'Taylor' : 'Pauper' }}
+      Ring, it is possible that it may not qualify after observation. The illustration above is a simplified,
+      to-scale top-down view; values may also be rounded or truncated compared to ship logs.
+    </p>
+  </div>
+</app-dialog-shell>

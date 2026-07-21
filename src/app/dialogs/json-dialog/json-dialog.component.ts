@@ -3,20 +3,15 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { SystemBody, EdGalaxyData } from '../../home/home.component';
+import { formatBodyJson } from './format-body-json';
+import { BodyEnrichmentService } from '../../data/body-enrichment.service';
 
 /** Data passed to the body-JSON dialog when it is opened. */
 export interface JsonDialogData {
   body: SystemBody;
   edGalaxyData: EdGalaxyData | null;
-}
-
-/**
- * Pretty-prints body data as JSON. id64 is a bigint to preserve 64-bit precision;
- * JSON.stringify can't serialize BigInt natively, so it is rendered as its exact decimal
- * string. Shared with the host so the "right-click to copy" shortcut and the dialog agree.
- */
-export function formatBodyJson(bodyData: unknown): string {
-  return JSON.stringify(bodyData, (_key, value) => (typeof value === 'bigint' ? value.toString() : value), 2);
+  /** Epoch (ms) the calculated values are computed against — the host's clock override or now. */
+  now: number;
 }
 
 /**
@@ -33,11 +28,15 @@ export function formatBodyJson(bodyData: unknown): string {
 })
 export class JsonDialogComponent {
   private readonly data = inject<JsonDialogData>(MAT_DIALOG_DATA);
+  private readonly enrichment = inject(BodyEnrichmentService);
 
   public readonly bodyJsonCopied = signal(false);
 
-  /** Pretty-printed body JSON, cached so the template binding doesn't re-stringify per CD pass. */
-  public readonly formattedBodyJson = formatBodyJson(this.data.body.bodyData);
+  /**
+   * Pretty-printed body JSON — the raw Spansh body plus a `calculated` block of derived values —
+   * cached so the template binding doesn't re-stringify (or re-enrich) on every CD pass.
+   */
+  public readonly formattedBodyJson = formatBodyJson(this.enrichment.enrichBody(this.data.body, this.data.now));
 
   /** Deep link into the EDGalaxyData journal lookup for this body. */
   public readonly edGalaxyHref = this.buildEdGalaxyHref();

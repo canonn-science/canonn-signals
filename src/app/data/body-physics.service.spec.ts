@@ -21,9 +21,17 @@ describe('BodyPhysicsService', () => {
       expect(result.value).toBeCloseTo(5.51, 1);
     });
 
-    it('switches to kg/m³ for extreme densities', () => {
-      // A neutron-star-like density: heavy and tiny.
+    it('switches to Mt/cm³ for degenerate-matter densities', () => {
+      // A neutron-star-like density: heavy and tiny (~3.8e17 kg/m³ ≈ 0.38 Mt/cm³).
       const result = service.getPlanetaryDensity({ solarMasses: 1.4, radius: 12 } as CanonnBiostatsBody)!;
+      expect(result.unit).toBe('Mt/cm³');
+      expect(result.value).toBeCloseTo(0.385, 2);
+      expect(result.densityKgM3).toBeCloseTo(3.85e17, -16);
+    });
+
+    it('uses kg/m³ for mid-range densities (white-dwarf scale)', () => {
+      // ~1e9 kg/m³: above the g/cm³ cut-off but below the Mt/cm³ tier.
+      const result = service.getPlanetaryDensity({ earthMasses: 50, radius: 700 } as CanonnBiostatsBody)!;
       expect(result.unit).toBe('kg/m³');
     });
 
@@ -108,6 +116,125 @@ describe('BodyPhysicsService', () => {
     });
   });
 
+  describe('ringDynamics', () => {
+    // Hand-calculated reference values using:
+    //   G = 6.6743e-11 m³/(kg·s²)
+    //   nominalRadius = inner + (outer - inner) * 3/8
+    //   T = 2π * sqrt(nominalRadius³ / (G * M))
+    //   v_max = 2π * outerRadius / T  (converted to km/s)
+    //
+    // Note: Elite Dangerous rings rotate as a rigid body (single period for all
+    // radii), unlike real Keplerian rings where inner particles orbit faster.
+    // The 3/8 factor is empirically derived from observational data.
+
+    const G = 6.6743e-11;
+    const KG_PER_EARTH_MASS = 5.972e24;
+    // Mirror the service's conversion: solarMasses → earthMasses → kg
+    // (uses EARTH_MASSES_PER_SOLAR_MASS = 332950, not a direct KG_PER_SOLAR_MASS constant).
+    const EARTH_MASSES_PER_SOLAR_MASS = 332950;
+    const KG_PER_SOLAR_MASS_VIA_EARTH = EARTH_MASSES_PER_SOLAR_MASS * KG_PER_EARTH_MASS;
+
+    function expectedDynamics(innerKm: number, outerKm: number, massKg: number) {
+      const nominalM = (innerKm + (outerKm - innerKm) * (3 / 8)) * 1000;
+      const innerM = innerKm * 1000;
+      const outerM = outerKm * 1000;
+      const periodS = 2 * Math.PI * Math.sqrt(nominalM ** 3 / (G * massKg));
+      return {
+        periodDays: periodS / 86400,
+        minVelocityKms: (2 * Math.PI * innerM / periodS) / 1000,
+        maxVelocityKms: (2 * Math.PI * outerM / periodS) / 1000,
+      };
+    }
+
+    it('returns null for a non-ring/belt body type', () => {
+      const parent = body({ earthMasses: 1 });
+      expect(service.ringDynamics(body({ type: 'Planet', innerRadius: 10000, outerRadius: 50000 }, parent))).toBeNull();
+      expect(service.ringDynamics(body({ type: 'Star',   innerRadius: 10000, outerRadius: 50000 }, parent))).toBeNull();
+    });
+
+    it('returns null when the ring has no parent', () => {
+      const ring = body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 });
+      expect(service.ringDynamics(ring)).toBeNull();
+    });
+
+    it('returns null when parent has no mass', () => {
+      const parent = body({ radius: 6371 });
+      const ring = body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, parent);
+      expect(service.ringDynamics(ring)).toBeNull();
+    });
+
+    it('returns null when outerRadius is zero or absent', () => {
+      const parent = body({ earthMasses: 1 });
+      expect(service.ringDynamics(body({ type: 'Ring', innerRadius: 0, outerRadius: 0 }, parent))).toBeNull();
+      expect(service.ringDynamics(body({ type: 'Ring' }, parent))).toBeNull();
+    });
+
+    it('computes correct dynamics for a ring around an Earth-mass planet', () => {
+      const inner = 10000; const outer = 50000;
+      const parent = body({ earthMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: inner, outerRadius: outer }, parent);
+      const result = service.ringDynamics(ring)!;
+      const expected = expectedDynamics(inner, outer, 1 * KG_PER_EARTH_MASS);
+      expect(result).not.toBeNull();
+      expect(result.orbitalPeriodDays).toBeCloseTo(expected.periodDays, 6);
+      expect(result.minVelocityKms).toBeCloseTo(expected.minVelocityKms, 6);
+      expect(result.maxVelocityKms).toBeCloseTo(expected.maxVelocityKms, 6);
+    });
+
+    it('computes correct dynamics for a ring around a solar-mass star', () => {
+      const inner = 500000; const outer = 2000000;
+      const parent = body({ solarMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: inner, outerRadius: outer }, parent);
+      const result = service.ringDynamics(ring)!;
+      const expected = expectedDynamics(inner, outer, 1 * KG_PER_SOLAR_MASS_VIA_EARTH);
+      expect(result).not.toBeNull();
+      expect(result.orbitalPeriodDays).toBeCloseTo(expected.periodDays, 6);
+      expect(result.minVelocityKms).toBeCloseTo(expected.minVelocityKms, 6);
+      expect(result.maxVelocityKms).toBeCloseTo(expected.maxVelocityKms, 6);
+    });
+
+    it('min velocity is always less than max velocity when inner < outer', () => {
+      const ring = service.ringDynamics(body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, body({ earthMasses: 100 })))!;
+      expect(ring.minVelocityKms).toBeGreaterThan(0);
+      expect(ring.minVelocityKms).toBeLessThan(ring.maxVelocityKms);
+    });
+
+    it('a more massive parent produces a higher max velocity for the same ring geometry', () => {
+      // Heavier parent → shorter period at the nominal radius → outer edge moves faster.
+      const light  = service.ringDynamics(body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, body({ earthMasses: 10 })))!;
+      const heavy  = service.ringDynamics(body({ type: 'Ring', innerRadius: 10000, outerRadius: 50000 }, body({ earthMasses: 1000 })))!;
+      expect(heavy.maxVelocityKms).toBeGreaterThan(light.maxVelocityKms);
+    });
+
+    it('nominal radius uses 3/8 of the ring width from the inner edge', () => {
+      // With inner=0 and outer=8000, nominalRadius = 8000 * 3/8 = 3000 km.
+      // Cross-check the period against Kepler at 3000 km.
+      const inner = 0; const outer = 8000;
+      const massKg = 1 * KG_PER_EARTH_MASS;
+      const parent = body({ earthMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: inner, outerRadius: outer }, parent);
+      const result = service.ringDynamics(ring)!;
+      const nominalM = 3000 * 1000;
+      const expectedPeriodS = 2 * Math.PI * Math.sqrt(nominalM ** 3 / (G * massKg));
+      expect(result.orbitalPeriodDays).toBeCloseTo(expectedPeriodS / 86400, 8);
+    });
+
+    it('matches pinned reference values for an 8000 km ring around 1 Earth mass', () => {
+      const parent = body({ earthMasses: 1 });
+      const ring = body({ type: 'Ring', innerRadius: 0, outerRadius: 8000 }, parent);
+      const result = service.ringDynamics(ring)!;
+
+      // Independent reference values calculated outside this test from:
+      // G = 6.6743e-11 m^3/(kg·s^2), M = 5.972e24 kg, nominal radius = 3000 km
+      // (measured from the inner edge using the project's empirical 3/8 convention:
+      // 0 + (8000 - 0) * 3/8), then Kepler's Third Law.
+      // period ≈ 0.0189272 days, vmax ≈ 30.738 km/s
+      expect(result.orbitalPeriodDays).toBeCloseTo(0.0189272, 7);
+      expect(result.maxVelocityKms).toBeCloseTo(30.738, 3);
+      expect(result.minVelocityKms).toBe(0);
+    });
+  });
+
   describe('schwarzschildRadiusKm', () => {
     it('returns ~2.95 km for one solar mass', () => {
       expect(service.schwarzschildRadiusKm(1)).toBeCloseTo(2.95, 1);
@@ -128,7 +255,9 @@ describe('BodyPhysicsService', () => {
 
   describe('massStabilityAlert', () => {
     it('warns when a white dwarf exceeds the Chandrasekhar limit (1.44 M☉)', () => {
-      expect(service.massStabilityAlert('White Dwarf (DA)', 1.45)).toContain('Chandrasekhar');
+      const alert = service.massStabilityAlert('White Dwarf (DA)', 1.45);
+      expect(alert?.message).toContain('Chandrasekhar');
+      expect(alert?.severity).toBe('danger');
     });
 
     it('does not warn for a white dwarf just below the Chandrasekhar limit', () => {
@@ -136,8 +265,16 @@ describe('BodyPhysicsService', () => {
       expect(service.massStabilityAlert('White Dwarf (DA)', 1.42)).toBeNull();
     });
 
-    it('warns when a neutron star exceeds the TOV limit (2.17 M☉)', () => {
-      expect(service.massStabilityAlert('Neutron Star', 2.2)).toContain('Tolman');
+    it('warns (warning severity) when a neutron star exceeds the theoretical TOV limit (2.17 M☉)', () => {
+      const alert = service.massStabilityAlert('Neutron Star', 2.2);
+      expect(alert?.message).toContain('Tolman');
+      expect(alert?.severity).toBe('warning');
+    });
+
+    it('flags (danger severity) a neutron star above the observed maximum (2.51 M☉)', () => {
+      const alert = service.massStabilityAlert('Neutron Star', 2.6);
+      expect(alert?.message).toContain('observed maximum');
+      expect(alert?.severity).toBe('danger');
     });
 
     it('does not warn for a neutron star below the TOV limit', () => {
@@ -157,6 +294,114 @@ describe('BodyPhysicsService', () => {
     it('returns null for a missing subType even with a large mass', () => {
       expect(service.massStabilityAlert(null, 5)).toBeNull();
       expect(service.massStabilityAlert(undefined, 5)).toBeNull();
+    });
+  });
+
+  describe('orbitExtentsKm', () => {
+    it('derives semi-major axis, apoapsis and periapsis in km', () => {
+      const extents = service.orbitExtentsKm({ semiMajorAxis: 1, orbitalEccentricity: 0.5 } as CanonnBiostatsBody);
+      expect(extents).not.toBeNull();
+      expect(extents!.semiMajorAxisKm).toBeCloseTo(KM_PER_AU, 3);
+      expect(extents!.apoapsisKm).toBeCloseTo(KM_PER_AU * 1.5, 3);
+      expect(extents!.periapsisKm).toBeCloseTo(KM_PER_AU * 0.5, 3);
+      expect(extents!.eccentricity).toBe(0.5);
+    });
+
+    it('defaults eccentricity to 0 and returns null without a semi-major axis', () => {
+      expect(service.orbitExtentsKm({ semiMajorAxis: 2 } as CanonnBiostatsBody)!.apoapsisKm)
+        .toBeCloseTo(2 * KM_PER_AU, 3);
+      expect(service.orbitExtentsKm({} as CanonnBiostatsBody)).toBeNull();
+    });
+  });
+
+  describe('eccentricityClass', () => {
+    it('classifies eccentricity into the four bands', () => {
+      expect(service.eccentricityClass(0)).toBe('Circular');
+      expect(service.eccentricityClass(0.39)).toBe('Nearly Circular');
+      expect(service.eccentricityClass(0.5)).toBe('Eccentric');
+      expect(service.eccentricityClass(0.9)).toBe('Highly Eccentric');
+    });
+  });
+
+  describe('isLowDensityWideRing', () => {
+    it('flags only rings that are both very diffuse and very wide', () => {
+      expect(service.isLowDensityWideRing(2_000_000, 0.05)).toBe(true);
+      expect(service.isLowDensityWideRing(2_000_000, 0.5)).toBe(false); // too dense
+      expect(service.isLowDensityWideRing(500_000, 0.05)).toBe(false); // too narrow
+    });
+  });
+
+  describe('angularDiameterDegrees', () => {
+    it('returns 90° when the parent radius equals the orbital distance', () => {
+      // atan(1) = 45°; the full angular diameter is twice the half-angle.
+      const parent = body({ radius: KM_PER_AU, type: 'Planet' });
+      const b = body({ semiMajorAxis: 1 }, parent);
+      expect(service.angularDiameterDegrees(b)).toBeCloseTo(90, 6);
+    });
+
+    it('returns null without a parent, orbit distance, or parent radius', () => {
+      expect(service.angularDiameterDegrees(body({ semiMajorAxis: 1 }))).toBeNull();
+      const parent = body({ radius: 70000, type: 'Planet' });
+      expect(service.angularDiameterDegrees(body({}, parent))).toBeNull();
+      const radiuslessParent = body({ type: 'Barycentre' });
+      expect(service.angularDiameterDegrees(body({ semiMajorAxis: 1 }, radiuslessParent))).toBeNull();
+    });
+  });
+
+  describe('highAngularDiameterAssessment', () => {
+    it('flags a landable planet whose parent star fills more than 25° of its sky', () => {
+      const star = body({ type: 'Star', subType: 'K (Yellow-Orange) Star', solarRadius: 1 });
+      // ratio ≈ 0.233 → angular diameter ≈ 26.2°, just above the 25° star threshold.
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.02 }, star);
+      const result = service.highAngularDiameterAssessment(moon);
+      expect(result).not.toBeNull();
+      expect(result!.parentType).toBe('Star');
+      expect(result!.parentLabel).toBe('K (Yellow-Orange) Star');
+      expect(result!.angularDiameterDegrees).toBeGreaterThan(25);
+    });
+
+    it('does not flag a landable planet whose parent star falls under the 25° threshold', () => {
+      const star = body({ type: 'Star', subType: 'K (Yellow-Orange) Star', solarRadius: 1 });
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.05 }, star);
+      expect(service.highAngularDiameterAssessment(moon)).toBeNull();
+    });
+
+    it('uses the higher 45° threshold for a landable moon of a parent planet', () => {
+      const gasGiant = body({ type: 'Planet', subType: 'Sudarsky class I gas giant', radius: 70000 });
+      // ratio ≈ 0.468 → angular diameter ≈ 50.2°, above the 45° planet threshold.
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.001 }, gasGiant);
+      const result = service.highAngularDiameterAssessment(moon);
+      expect(result).not.toBeNull();
+      expect(result!.parentType).toBe('Planet');
+      expect(result!.angularDiameterDegrees).toBeGreaterThan(45);
+
+      const distantMoon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.003 }, gasGiant);
+      expect(service.highAngularDiameterAssessment(distantMoon)).toBeNull();
+    });
+
+    it('does not flag a body that is not landable', () => {
+      const star = body({ type: 'Star', solarRadius: 1 });
+      const nonLandable = body({ type: 'Planet', isLandable: false, semiMajorAxis: 0.02 }, star);
+      expect(service.highAngularDiameterAssessment(nonLandable)).toBeNull();
+    });
+
+    it('does not flag a body whose immediate parent is a barycentre', () => {
+      const barycentre = body({ type: 'Barycentre' });
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.02 }, barycentre);
+      expect(service.highAngularDiameterAssessment(moon)).toBeNull();
+    });
+
+    it('returns null for a body with no parent', () => {
+      expect(service.highAngularDiameterAssessment(body({ type: 'Planet', isLandable: true, semiMajorAxis: 0.02 }))).toBeNull();
+    });
+
+    it('flags a real system verified against issue #118 (Dryipoo YE-A g1 AB 2 b a)', () => {
+      const parentPlanet = body({ type: 'Planet', subType: 'Rocky body', radius: 2034.269125 });
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 2.83479139500078e-05 }, parentPlanet);
+      const result = service.highAngularDiameterAssessment(moon);
+      expect(result).not.toBeNull();
+      expect(result!.parentType).toBe('Planet');
+      expect(result!.angularDiameterDegrees).toBeCloseTo(51.25, 1);
     });
   });
 });

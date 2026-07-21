@@ -1,6 +1,6 @@
 import {
   Component, ChangeDetectionStrategy, ElementRef, Injector,
-  OnChanges, afterNextRender, inject, input, output, viewChild,
+  OnChanges, afterNextRender, inject, input, output, signal, viewChild,
 } from '@angular/core';
 import { AppService, IndependentOutpost } from '../app.service';
 import { logger } from '../data/logger';
@@ -14,9 +14,11 @@ export interface RegionMapSystem {
 }
 
 export interface GnosisData {
-  arrival: string;
+  // The live endpoint (query/gnosis) currently returns only `coords`, `desc` and `system` — no
+  // jump/arrival timestamp — so these are optional rather than assumed present.
+  arrival?: string;
   coords: [number, number, number];
-  departure: string;
+  departure?: string;
   desc: string;
   system: string;
 }
@@ -36,7 +38,17 @@ const FULL_VIEWBOX = `0 0 ${MAP_SIZE} ${MAP_SIZE}`;
  */
 @Component({
   selector: 'app-region-map',
-  template: '<div #regionMapContainer class="region-map"></div>',
+  // A square skeleton reserves the map's height while the SVG loads, so the data columns and
+  // body tree below don't jump when it injects. The container is always present (never inside the
+  // @if) so `regionMapContainer` resolves before `loadRegionMap` runs.
+  template: `
+    <div class="region-map-slot">
+      @if (!mapLoaded()) {
+        <div class="region-map-skeleton skeleton" aria-hidden="true"></div>
+      }
+      <div #regionMapContainer class="region-map"></div>
+    </div>
+  `,
   styleUrl: './region-map.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -50,11 +62,10 @@ export class RegionMapComponent implements OnChanges {
 
   readonly regionMapContainer = viewChild.required<ElementRef<HTMLDivElement>>('regionMapContainer');
 
-  private gnosisData: GnosisData | null = null;
-  private gnosisLastFetched = 0;
-  private readonly GNOSIS_CACHE_DURATION = 3600000; // 1 hour in milliseconds
   /** Guards against issuing a second SVG fetch while the first is still in flight. */
   private svgLoading = false;
+  /** False until the map SVG is injected (or the load fails); drives the reserved-space skeleton. */
+  readonly mapLoaded = signal(false);
 
   public ngOnChanges(): void {
     // Render after the view has updated so the container element is available.
@@ -105,6 +116,9 @@ export class RegionMapComponent implements OnChanges {
       svgContent = await response.text();
     } catch (error) {
       this.svgLoading = false;
+      // Clear the skeleton even on failure so it doesn't shimmer forever; the map slot just
+      // stays empty (rare — the SVG is a bundled asset).
+      this.mapLoaded.set(true);
       logger.error('Error loading region map:', error);
       return;
     }
@@ -145,7 +159,9 @@ export class RegionMapComponent implements OnChanges {
       }
 
       this.highlightRegion();
+      this.mapLoaded.set(true);
     } catch (error) {
+      this.mapLoaded.set(true);
       logger.error('Error rendering region map:', error);
     }
   }
@@ -248,11 +264,13 @@ export class RegionMapComponent implements OnChanges {
     // Calculate scale factor for markers
     const scaleFactor = MAP_SIZE / size;
 
-    // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18)
+    // Fetch Gnosis data and add marker only if region is Inner Orion Spur (region 18). Shares
+    // AppService's cache/fetch (also used by the Gnosis route card) rather than keeping a
+    // second one here.
     if (regionNumber === 18) {
-      this.fetchGnosisData()
-        .then(gnosisData => {
-          if (gnosisData) {
+      this.appService.ensureGnosis()
+        .then(() => {
+          if (this.appService.gnosisData()) {
             this.addGnosisMarker(svgElement, bbox);
             // Scale the Gnosis marker after it's added
             setTimeout(() => {
@@ -269,9 +287,6 @@ export class RegionMapComponent implements OnChanges {
     setTimeout(() => {
       this.updateMarkerScales(svgElement, scaleFactor);
     }, 50);
-
-    // Add a reset button or double-click handler to zoom out
-    svgElement.style.transition = 'viewBox 0.3s ease';
   }
 
   private updateMarkerScales(svgElement: SVGSVGElement, scaleFactor: number): void {
@@ -495,23 +510,9 @@ export class RegionMapComponent implements OnChanges {
     });
   }
 
-  private async fetchGnosisData(): Promise<GnosisData | null> {
-    // Check if we have cached data and if it's still fresh
-    const now = Date.now();
-
-    if (this.gnosisData && (now - this.gnosisLastFetched) < this.GNOSIS_CACHE_DURATION) {
-      return this.gnosisData;
-    }
-
-    // Fetch fresh data
-    const data = await this.appService.getGnosis();
-    this.gnosisData = data;
-    this.gnosisLastFetched = now;
-    return data;
-  }
-
   private addGnosisMarker(svgElement: SVGSVGElement, regionBbox: DOMRect): void {
-    if (!this.gnosisData) {
+    const gnosisData = this.appService.gnosisData();
+    if (!gnosisData) {
       return;
     }
 
@@ -527,7 +528,7 @@ export class RegionMapComponent implements OnChanges {
     const viewBoxSize = Math.max(viewBoxValues[2], viewBoxValues[3]);
     const currentScaleFactor = MAP_SIZE / viewBoxSize;
 
-    const [x, , z] = this.gnosisData.coords;
+    const [x, , z] = gnosisData.coords;
     const tx = this.mapX(x);
     const finalY = this.mapY(z);
 
@@ -558,7 +559,7 @@ export class RegionMapComponent implements OnChanges {
     circle.style.cursor = 'pointer';
 
     // Add click handler to navigate to system
-    circle.addEventListener('click', () => this.selectSystem(this.gnosisData!.system));
+    circle.addEventListener('click', () => this.selectSystem(gnosisData.system));
 
     // Position tooltip - use more conservative positioning for long text
     // Check if we're in the right 60% of the map (not just right half)
@@ -575,7 +576,7 @@ export class RegionMapComponent implements OnChanges {
     text.setAttribute('pointer-events', 'none');
     text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
     text.style.display = 'none';
-    text.textContent = `The Gnosis (${this.gnosisData.system})`;
+    text.textContent = `The Gnosis (${gnosisData.system})`;
 
     // Create background rect for text
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');

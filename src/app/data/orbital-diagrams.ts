@@ -51,6 +51,24 @@ export interface PeriapsisDiagram {
   arc: string;
 }
 
+/** One Lagrange point's marker position and the anchors for its "Lx" label and body name. */
+export interface LagrangeMarker {
+  id: 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
+  point: Point;     // where the marker (and any occupying body) is drawn
+  label: Point;     // anchor for the "Lx" caption, nudged clear of the marker
+  nameLabel: Point; // anchor for an occupying body's name, on the far side from the caption
+}
+
+export interface LagrangeDiagram {
+  center: Point;         // the primary, at the centre of the orbit
+  primaryRadius: number;
+  primaryLabel: Point;   // anchor for the primary's caption
+  orbitRadius: number;   // radius of the (circular) reference orbit
+  secondary: Point;      // the secondary body, on the orbit at angle 0 (to the right)
+  secondaryLabel: Point; // anchor for the secondary's caption
+  markers: LagrangeMarker[];
+}
+
 const DEG = Math.PI / 180;
 
 /** Round to 3 decimals so bound SVG attributes stay tidy and tests stay stable.
@@ -218,4 +236,180 @@ export function periapsisDiagram(argDeg: number, eccentricity?: number): Periaps
   const arc = arcPath(focus.x, focus.y, 16, 0, arg);
 
   return { focus, focusRadius: 4, ellipse, referenceLine, periapsisPoint, parentLabel, bodyLabel, arc };
+}
+
+export interface AnomalyDiagram {
+  focus: Point;            // parent body, sits at a focus of the ellipse
+  focusRadius: number;
+  ellipse: EllipseShape;   // the real orbit, rotated by the body's argument of periapsis
+  auxCircle: EllipseShape; // circumscribed circle, same centre, radius = semi-major axis
+  referenceLine: Line;     // shared 0° reference direction (e.g. ascending node), fixed for every body
+  meanPoint: Point;        // fictitious constant-speed body, on the auxiliary circle at M
+  truePoint: Point;        // the real body, on the ellipse at true anomaly ν
+  parentLabel: Point;
+  bodyLabel: Point;
+}
+
+/**
+ * Mean anomaly vs. true anomaly: a fictitious body moving at constant angular speed
+ * around a circle circumscribing the orbit (mean anomaly `meanAnomalyDeg`) compared
+ * with the real body's position on the elliptical orbit (true anomaly `trueAnomalyDeg`).
+ * The two coincide at periapsis/apoapsis and for a circular orbit, and diverge more as
+ * eccentricity grows.
+ *
+ * `argOfPeriapsisDeg` orients the ellipse (and both markers) relative to the shared 0°
+ * reference direction used across every body's diagram — the same convention as
+ * {@link periapsisDiagram}. Without it (defaulting to 0) two bodies that are actually
+ * colliding would be drawn with their periapses both pointing along +x regardless of
+ * their real orbits, making their true-anomaly markers land in unrelated places even
+ * though the bodies are at the same physical position.
+ */
+export function anomalyDiagram(meanAnomalyDeg: number, trueAnomalyDeg: number, eccentricity?: number, argOfPeriapsisDeg?: number): AnomalyDiagram {
+  const M = Number.isFinite(meanAnomalyDeg) ? meanAnomalyDeg : 0;
+  const nu = Number.isFinite(trueAnomalyDeg) ? trueAnomalyDeg : 0;
+  const arg = Number.isFinite(argOfPeriapsisDeg as number) ? (argOfPeriapsisDeg as number) : 0;
+  // Unlike periapsisDiagram, e = 0 is a valid and useful case here: a circular orbit is
+  // exactly where M and ν coincide, which is part of what this diagram teaches.
+  const e = clamp(Number.isFinite(eccentricity as number) ? (eccentricity as number) : 0.5, 0, 0.85);
+
+  const maxApo = 46;            // apoapsis distance from the focus
+  const a = maxApo / (1 + e);   // semi-major axis
+  const b = a * Math.sqrt(1 - e * e);
+  const c = a * e;              // focus offset from the ellipse centre
+
+  const focus = { x: CENTER, y: CENTER };
+  const phi = arg * DEG;
+  const u = { x: Math.cos(phi), y: -Math.sin(phi) }; // periapsis direction (screen)
+
+  const ellipse: EllipseShape = {
+    cx: r(focus.x - c * u.x), cy: r(focus.y - c * u.y), rx: r(a), ry: r(b), rotation: r(-arg),
+  };
+  const auxCircle: EllipseShape = { cx: ellipse.cx, cy: ellipse.cy, rx: r(a), ry: r(a), rotation: 0 };
+
+  // Mean anomaly is measured from periapsis just like true anomaly, so its marker sits
+  // at the same absolute angle (arg + M) on the auxiliary circle.
+  const meanPoint = roundPoint(pointAt(ellipse.cx, ellipse.cy, a, arg + M));
+
+  // True anomaly's distance from the focus depends only on ν (angle from periapsis);
+  // its screen direction is the absolute angle (arg + ν).
+  const nuRad = nu * DEG;
+  const rNu = (a * (1 - e * e)) / (1 + e * Math.cos(nuRad));
+  const absNu = (arg + nu) * DEG;
+  const truePoint: Point = { x: r(focus.x + rNu * Math.cos(absNu)), y: r(focus.y - rNu * Math.sin(absNu)) };
+
+  const referenceLine: Line = { x1: focus.x, y1: focus.y, x2: focus.x + maxApo, y2: focus.y };
+
+  const { parentLabel, bodyLabel } = labelAnchors(focus, truePoint);
+
+  return { focus, focusRadius: 4, ellipse, auxCircle, referenceLine, meanPoint, truePoint, parentLabel, bodyLabel };
+}
+
+/** Round a point's coordinates for tidy, test-stable SVG attributes. */
+function roundPoint(p: Point): Point {
+  return { x: r(p.x), y: r(p.y) };
+}
+
+export interface ParentDistanceDiagram {
+  focus: Point;            // parent body, sits at a focus of the ellipse
+  focusRadius: number;
+  ellipse: EllipseShape;   // the orbit — an ellipse, never a circle
+  periapsisPoint: Point;   // closest approach, for reference
+  apoapsisPoint: Point;    // farthest point, for reference
+  bodyPoint: Point;        // the body's current position, at true anomaly ν
+  distanceLine: Line;      // focus -> bodyPoint, the straight-line distance (r) being explained
+  distanceLabel: Point;    // anchor for the live "r = …" text, near the line's midpoint
+  parentLabel: Point;
+  bodyLabel: Point;
+}
+
+/**
+ * Current parent distance: the body's position on its elliptical orbit at true anomaly
+ * `trueAnomalyDeg`, and the straight-line distance from the parent (at a focus) to that
+ * point — r = a(1 − e²) / (1 + e·cos ν). Shares its ellipse construction with
+ * {@link periapsisDiagram}/{@link anomalyDiagram} (focus offset `c = a·e` from the ellipse
+ * centre toward periapsis), oriented by `argOfPeriapsisDeg` on the same shared 0° reference
+ * convention as those diagrams.
+ */
+export function parentDistanceDiagram(trueAnomalyDeg: number, eccentricity: number, argOfPeriapsisDeg?: number): ParentDistanceDiagram {
+  const nu = Number.isFinite(trueAnomalyDeg) ? trueAnomalyDeg : 0;
+  // e = 0 is a valid and useful case here (a circular orbit — constant r = a). Unlike
+  // anomaly/periapsis diagrams this one should stay numerically faithful to the body's real
+  // bound orbit, so accept the full elliptical range right up to (but not including) 1.
+  const e = clamp(Number.isFinite(eccentricity) ? eccentricity : 0.5, 0, 0.999);
+  const arg = Number.isFinite(argOfPeriapsisDeg as number) ? (argOfPeriapsisDeg as number) : 0;
+
+  const maxApo = 46;            // apoapsis distance from the focus
+  const a = maxApo / (1 + e);   // semi-major axis
+  const b = a * Math.sqrt(1 - e * e);
+  const c = a * e;              // focus offset from the ellipse centre
+
+  const focus = { x: CENTER, y: CENTER };
+  const phi = arg * DEG;
+  const u = { x: Math.cos(phi), y: -Math.sin(phi) }; // periapsis direction (screen)
+
+  const ellipse: EllipseShape = {
+    cx: r(focus.x - c * u.x), cy: r(focus.y - c * u.y), rx: r(a), ry: r(b), rotation: r(-arg),
+  };
+
+  const periapsisPoint = roundPoint({ x: focus.x + a * (1 - e) * u.x, y: focus.y + a * (1 - e) * u.y });
+  const apoapsisPoint = roundPoint({ x: focus.x - a * (1 + e) * u.x, y: focus.y - a * (1 + e) * u.y });
+
+  const nuRad = nu * DEG;
+  const rNu = (a * (1 - e * e)) / (1 + e * Math.cos(nuRad));
+  const absNu = (arg + nu) * DEG;
+  const bodyPoint = roundPoint({ x: focus.x + rNu * Math.cos(absNu), y: focus.y - rNu * Math.sin(absNu) });
+
+  const distanceLine: Line = { x1: focus.x, y1: focus.y, x2: bodyPoint.x, y2: bodyPoint.y };
+  const distanceLabel: Point = { x: r((focus.x + bodyPoint.x) / 2), y: r((focus.y + bodyPoint.y) / 2) };
+
+  const { parentLabel, bodyLabel } = labelAnchors(focus, bodyPoint);
+
+  return { focus, focusRadius: 4, ellipse, periapsisPoint, apoapsisPoint, bodyPoint, distanceLine, distanceLabel, parentLabel, bodyLabel };
+}
+
+/**
+ * The canonical five-point Lagrange schematic of a two-body system: a primary at the
+ * centre, a secondary on a circular reference orbit to the right (angle 0), and the five
+ * Lagrange points in their textbook positions — L1 between the bodies, L2 just beyond the
+ * secondary, L3 opposite, and L4 / L5 leading / trailing by 60°.
+ *
+ * The layout is fixed (it illustrates the configuration, not any one body's live angles);
+ * callers drop actual bodies onto the secondary slot and the L-points, or leave them as
+ * placeholders. Screen "up" is -y, so L4 (leading, +60°) sits above the axis and L5 below.
+ */
+export function lagrangeDiagram(): LagrangeDiagram {
+  const center = { x: CENTER, y: CENTER };
+  const orbitRadius = 34;
+
+  const secondary = pointAt(center.x, center.y, orbitRadius, 0);
+  const l1: Point = { x: center.x + orbitRadius - 12, y: center.y };
+  const l2: Point = { x: center.x + orbitRadius + 11, y: center.y };
+  const l3 = pointAt(center.x, center.y, orbitRadius, 180);
+  const l4 = pointAt(center.x, center.y, orbitRadius, 60);
+  const l5 = pointAt(center.x, center.y, orbitRadius, -60);
+  const l4Label = pointAt(center.x, center.y, orbitRadius + 13, 60);
+  const l5Label = pointAt(center.x, center.y, orbitRadius + 13, -60);
+
+  const markers: LagrangeMarker[] = [
+    { id: 'L1', point: roundPoint(l1), label: { x: r(l1.x), y: r(center.y - 9) }, nameLabel: { x: r(l1.x), y: r(center.y - 3) } },
+    { id: 'L2', point: roundPoint(l2), label: { x: r(l2.x), y: r(center.y - 9) }, nameLabel: { x: r(l2.x), y: r(center.y - 3) } },
+    // L3 sits opposite the secondary, on the left. Its "L3" caption goes above the marker but
+    // the occupant's name drops *below* it — onto the same band as the secondary's name on the
+    // right — so an L3-opposition pair reads as two names mirrored across the primary.
+    { id: 'L3', point: roundPoint(l3), label: { x: r(center.x - orbitRadius), y: r(center.y - 9) }, nameLabel: { x: r(l3.x), y: r(center.y + 11) } },
+    { id: 'L4', point: roundPoint(l4), label: roundPoint(l4Label), nameLabel: { x: r(l4Label.x), y: r(l4Label.y + 6) } },
+    { id: 'L5', point: roundPoint(l5), label: roundPoint(l5Label), nameLabel: { x: r(l5Label.x), y: r(l5Label.y + 6) } },
+  ];
+
+  return {
+    center,
+    primaryRadius: 7,
+    // Primary caption sits well below the centre and the secondary's just below its marker, so
+    // the two names land on separate bands and never overlap even when both are long.
+    primaryLabel: { x: center.x, y: r(center.y + 18) },
+    orbitRadius,
+    secondary: roundPoint(secondary),
+    secondaryLabel: { x: r(secondary.x), y: r(center.y + 11) },
+    markers,
+  };
 }

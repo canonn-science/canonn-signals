@@ -1,23 +1,11 @@
 import { Injectable } from '@angular/core';
+import { KM_PER_SOLAR_RADIUS } from './unit-conversions';
 
-const KM_PER_SOLAR_RADIUS = 695700;
 const SECONDS_PER_DAY = 86400;
-
-/** Fitted parameters for the neutron-star jet-cone half-angle model. */
-const JET_CONE = {
-  Amin: -83.8389,
-  Amax: -60.8896,
-  k: 2.2037,
-  x0: -5.0497,
-  alpha: 0.001517,
-  gammaSr: 0.724671,
-  gammaRot: -0.025587,
-  gammaAge: 0.045594,
-};
 
 /**
  * Pure rotational/stellar physics extracted from SystemBodyComponent: spin-orbit
- * resonance, tangential surface velocity and the neutron-star jet-cone angle model.
+ * resonance and tangential surface velocity.
  * No Angular/DOM dependency, so it can be unit-tested directly.
  */
 @Injectable({ providedIn: 'root' })
@@ -29,7 +17,10 @@ export class StellarPhysicsService {
   spinResonance(rotationalPeriod: number | null | undefined, orbitalPeriod: number | null | undefined): string {
     if (!rotationalPeriod || !orbitalPeriod) { return 'none'; }
 
-    const rotationsPerOrbit = orbitalPeriod / rotationalPeriod;
+    // Elite stores retrograde rotation as a negative rotationalPeriod; resonance is a
+    // ratio of magnitudes, so a retrograde tidally-locked body is still 1:1. Use the
+    // absolute periods (matching the solar-day code in SystemBodyComponent).
+    const rotationsPerOrbit = Math.abs(orbitalPeriod) / Math.abs(rotationalPeriod);
     const maxDenominator = 5;
     const tolerance = 0.01;
 
@@ -45,9 +36,14 @@ export class StellarPhysicsService {
     return 'none';
   }
 
-  /** Equatorial surface (tangential) velocity in km/s for a given rotation period (days) and radius (km). */
+  /**
+   * Equatorial surface (tangential) velocity in km/s for a given rotation period (days)
+   * and radius (km). Speed is a magnitude, so the period's sign (Elite stores retrograde
+   * rotation as a negative `rotationalPeriod`) is ignored — a retrograde spinner has the
+   * same surface speed as a prograde one.
+   */
   tangentialVelocityKms(rotationalPeriodDays: number, radiusKm: number): number {
-    const rotationalPeriodSeconds = rotationalPeriodDays * SECONDS_PER_DAY;
+    const rotationalPeriodSeconds = Math.abs(rotationalPeriodDays) * SECONDS_PER_DAY;
     const circumferenceM = 2 * Math.PI * radiusKm * 1000;
     return circumferenceM / rotationalPeriodSeconds / 1000;
   }
@@ -60,46 +56,11 @@ export class StellarPhysicsService {
   }
 
   /**
-   * Predicted neutron-star jet-cone half-angle (degrees) from a fitted model, given
-   * rotation period (days), radius (solar radii) and age. Returns null for non-positive inputs.
-   */
-  jetConeAngle(
-    rotationalPeriodDays: number | null | undefined,
-    solarRadius: number | null | undefined,
-    age: number | null | undefined,
-  ): number | null {
-    if (!rotationalPeriodDays || !solarRadius || !age) { return null; }
-    if (rotationalPeriodDays <= 0 || solarRadius <= 0 || age <= 0) { return null; }
-
-    const { Amin, Amax, k, x0, alpha, gammaSr, gammaRot, gammaAge } = JET_CONE;
-
-    // Combined predictor: x = ln(solarRadius / sqrt(rotationalPeriod)) + alpha * ln(age)
-    const x = Math.log(solarRadius / Math.sqrt(rotationalPeriodDays)) + alpha * Math.log(age);
-
-    // Sigmoid plus quadratic log corrections
-    const angleSigmoid = Amin + (Amax - Amin) / (1 + Math.exp(-k * (x - x0)));
-    const lnSr = Math.log(solarRadius);
-    const lnRot = Math.log(rotationalPeriodDays);
-    const lnAge = Math.log(age);
-    const quad = gammaSr * lnSr ** 2 + gammaRot * lnRot ** 2 + gammaAge * lnAge ** 2;
-
-    return angleSigmoid + quad;
-  }
-
-  /** Jet-cone angle for a CSV sample row where rotation is expressed in seconds. */
-  jetConeAngleFromSeconds(
-    rotSeconds: number | null,
-    solarRadius: number | null,
-    age: number | null,
-  ): number | null {
-    if (!rotSeconds) { return null; }
-    return this.jetConeAngle(Number(rotSeconds) / SECONDS_PER_DAY, solarRadius, age);
-  }
-
-  /**
    * Descriptive classification of a neutron star from its mass, rotation period and
    * absolute magnitude (period in days). Returns null when any required value is
    * missing, so callers can fall back to the generic "Neutron Star" label.
+   * The period is a spin rate, so its sign (Elite stores retrograde rotation as a
+   * negative `rotationalPeriod`) is ignored — only the magnitude classifies the body.
    */
   classifyNeutronStar(
     solarMasses: number | null | undefined,
@@ -112,7 +73,7 @@ export class StellarPhysicsService {
       return null;
     }
 
-    const period = rotationalPeriodDays * SECONDS_PER_DAY; // seconds
+    const period = Math.abs(rotationalPeriodDays) * SECONDS_PER_DAY; // seconds
     const isHighMass = solarMasses > 2.1;
 
     if (period < 0.01) {

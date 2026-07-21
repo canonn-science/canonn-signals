@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, ElementRef, afterNextRender, inject
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DialogShellComponent } from '../dialog-shell/dialog-shell.component';
 import { ChartRenderingService, HillChartData } from '../../data/chart-rendering.service';
+import { formatGroupedInteger } from '../../data/unit-conversions';
 
 /**
  * Shepherding-moon analysis: a logarithmic orbital diagram of the moon against its
@@ -26,6 +27,6 @@ export class HillLimitDialogComponent {
   }
 
   public fmt(value: number): string {
-    return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return formatGroupedInteger(value);
   }
 }
