@@ -223,12 +223,14 @@ export class AppService {
   /**
    * Lazily (re)loads the Gnosis's current position, at most once per {@link GNOSIS_CACHE_DURATION_MS}.
    * A failed fetch leaves the previous value in place (stale data beats none) and is retried on the
-   * next call rather than waiting out the cache window.
+   * next call rather than waiting out the cache window. Returns the in-flight/cached load promise
+   * so callers that need the resolved value (e.g. {@link RegionMapComponent}) can await it instead
+   * of keeping their own parallel cache.
    */
-  public ensureGnosis(): void {
+  public ensureGnosis(): Promise<void> {
     const now = Date.now();
     if (this.gnosisLoad && now - this.gnosisFetchedAt < GNOSIS_CACHE_DURATION_MS) {
-      return;
+      return this.gnosisLoad;
     }
     this.gnosisFetchedAt = now;
     this.gnosisLoad = this.getGnosis()
@@ -237,6 +239,7 @@ export class AppService {
         // Clear the memo so the next call retries immediately instead of waiting out the cache window.
         this.gnosisLoad = undefined;
       });
+    return this.gnosisLoad;
   }
 
   /**
