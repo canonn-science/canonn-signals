@@ -197,6 +197,49 @@ describe('HomeComponent', () => {
     });
   });
 
+  describe('processBodies applying the Col 70 Sector FY-N c21-3 speculative override', () => {
+    const COL_70_ID64 = 909626806858n;
+
+    function systemNamed(id64: bigint, bodies: any[]) {
+      return {
+        system: {
+          name: 'Col 70 Sector FY-N c21-3',
+          id64,
+          coords: { x: 0, y: 0, z: 0 },
+          population: 0,
+          bodies,
+        },
+      };
+    }
+
+    it('fills in the speculative body list and region when Spansh reports no bodies', () => {
+      const data = systemNamed(COL_70_ID64, []);
+
+      (component as any).processBodies(data);
+
+      // 11 synthesized bodies (star + 7 direct planets + barycentre + binary pair).
+      expect(data.system.bodies.length).toBe(11);
+      expect((data.system as any).region).toEqual({ name: 'Inner Orion Spur', region: 18 });
+      // The tree still builds correctly off the synthesized list: only the star is a
+      // root, and the barycentre (attached indirectly via the binary pair's ancestor
+      // chain) ends up nested under it rather than as a stray second root.
+      expect(component.bodies().length).toBe(1);
+      expect(component.bodies()[0].bodyData.bodyId).toBe(0);
+      const barycentre = component.bodies()[0].subBodies.find(b => b.bodyData.bodyId === 8);
+      expect(barycentre).toBeTruthy();
+      expect(barycentre!.subBodies.map(b => b.bodyData.bodyId).sort()).toEqual([9, 10]);
+    });
+
+    it('does not overwrite real body data for Col 70 Sector FY-N c21-3', () => {
+      const realBody = { bodyId: 0, name: 'Col 70 Sector FY-N c21-3', type: 'Star', subType: '', id64: 1 };
+      const data = systemNamed(COL_70_ID64, [realBody]);
+
+      (component as any).processBodies(data);
+
+      expect(data.system.bodies).toEqual([realBody]);
+    });
+  });
+
   describe('systemCompleteness', () => {
     function loadSystem(bodyCount: number | undefined, bodies: any[], id64: number | bigint = 1) {
       const data = {
