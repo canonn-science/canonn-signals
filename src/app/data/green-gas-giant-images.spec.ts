@@ -1,5 +1,4 @@
-import { getGreenGasGiantImagePath, isGreenGasGiant, findGreenGasGiant } from './green-gas-giant-images';
-import { GREEN_GAS_GIANTS } from './green-gas-giants.generated';
+import { getGreenGasGiantImagePath, isGreenGasGiant, findGreenGasGiant, RESOLVED_GREEN_GAS_GIANTS } from './green-gas-giant-images';
 
 describe('getGreenGasGiantImagePath', () => {
   it('resolves the square-crop path for a catalogued body', () => {
@@ -17,9 +16,9 @@ describe('getGreenGasGiantImagePath', () => {
   });
 
   it('resolves every catalogued body to a distinct path', () => {
-    const paths = GREEN_GAS_GIANTS.map(g => getGreenGasGiantImagePath(findGreenGasGiant(g.body)?.body ?? g.body));
+    const paths = RESOLVED_GREEN_GAS_GIANTS.map(g => getGreenGasGiantImagePath(g.body));
     expect(paths.every(p => p !== null)).toBe(true);
-    expect(new Set(paths).size).toBe(GREEN_GAS_GIANTS.length);
+    expect(new Set(paths).size).toBe(RESOLVED_GREEN_GAS_GIANTS.length);
   });
 
   describe('CSV rows recording only the system name (no body suffix)', () => {

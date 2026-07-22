@@ -200,6 +200,11 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getDisplaySubType()).toBe('Glowing green gas giant with water-based life');
     });
 
+    it('handles the "Water giant" subtype (no "gas" qualifier)', () => {
+      render(makeBody({ name: 'Eimbaith LW-W e1-290 7', subType: 'Water giant' }));
+      expect(component.getDisplaySubType()).toBe('Glowing green water giant');
+    });
+
     it('leaves an uncatalogued body\'s subType unchanged', () => {
       render(makeBody({ name: 'Sol 1', subType: 'Class I gas giant' }));
       expect(component.getDisplaySubType()).toBe('Class I gas giant');

@@ -42,7 +42,7 @@ export interface ResolvedGreenGasGiant {
     slug: string;
 }
 
-const RESOLVED_GREEN_GAS_GIANTS: readonly ResolvedGreenGasGiant[] = GREEN_GAS_GIANTS.map(g => ({
+export const RESOLVED_GREEN_GAS_GIANTS: readonly ResolvedGreenGasGiant[] = GREEN_GAS_GIANTS.map(g => ({
     system: g.system,
     body: g.body.toLowerCase() === g.system.toLowerCase()
         ? (AMBIGUOUS_BODY_OVERRIDES[g.system.toLowerCase()] ?? g.body)
