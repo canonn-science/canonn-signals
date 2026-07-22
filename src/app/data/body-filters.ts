@@ -4,6 +4,7 @@ import { MINING_RESOURCES } from './mining-resources';
 import { BodyPhysicsService } from './body-physics.service';
 import { OrbitalRelationsService } from './orbital-relations.service';
 import { assessStellarAge, isPlottableStarClass } from './stellar-reference';
+import { isGreenGasGiant } from './green-gas-giant-images';
 
 /**
  * Quick-filter categories for the system-page toolbar. Each expands the bodies
@@ -140,6 +141,7 @@ export function isTouristInteresting(body: SystemBody, physics: BodyPhysicsServi
   }
   if (bd.isLandable) { return true; }
   if (bd.terraformingState === 'Terraformable') { return true; }
+  if (isGreenGasGiant(bd.name)) { return true; }
 
   const trojan = orbitalRelations.detectTrojanStatus(body);
   if (trojan.lagrangePoint || trojan.isHost) { return true; }

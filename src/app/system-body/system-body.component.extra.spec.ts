@@ -182,6 +182,35 @@ describe('SystemBodyComponent (extended coverage)', () => {
       render(parent);
       expect(component.hasChildren()).toBe(true);
     });
+
+    it('auto-expands a catalogued Green Gas Giant on first render', () => {
+      render(makeBody({ name: 'Systimbu WJ-R e4-720 10', subType: 'Class I gas giant' }));
+      expect(component.expanded()).toBe(true);
+    });
+  });
+
+  describe('Green Gas Giant display subtype', () => {
+    it('inserts "glowing green" ahead of "gas giant" for a catalogued body', () => {
+      render(makeBody({ name: 'Systimbu WJ-R e4-720 10', subType: 'Class I gas giant' }));
+      expect(component.getDisplaySubType()).toBe('Class I glowing green gas giant');
+    });
+
+    it('capitalises "Glowing" when "gas giant" opens the subType', () => {
+      render(makeBody({ name: 'Aemonz UT-R d4-36 10 a', subType: 'Gas giant with water-based life' }));
+      expect(component.getDisplaySubType()).toBe('Glowing green gas giant with water-based life');
+    });
+
+    it('leaves an uncatalogued body\'s subType unchanged', () => {
+      render(makeBody({ name: 'Sol 1', subType: 'Class I gas giant' }));
+      expect(component.getDisplaySubType()).toBe('Class I gas giant');
+    });
+
+    it('flags a catalogued body for the glowing-green label style', () => {
+      render(makeBody({ name: 'Systimbu WJ-R e4-720 10', subType: 'Class I gas giant' }));
+      expect(component.isDisplayGreenGasGiant()).toBe(true);
+      render(makeBody({ name: 'Sol 1', subType: 'Class I gas giant' }));
+      expect(component.isDisplayGreenGasGiant()).toBe(false);
+    });
   });
 
   describe('atmosphere & white dwarf helpers', () => {

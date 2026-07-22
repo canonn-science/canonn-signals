@@ -4,6 +4,7 @@ import { SystemBody, EdGalaxyData } from '../home/home.component';
 import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSquareCaretUp, faUpRightFromSquare, faCode, faLock, faLink } from '@fortawesome/free-solid-svg-icons';
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
+import { getGreenGasGiantImagePath, isGreenGasGiant } from '../data/green-gas-giant-images';
 import { MINING_RESOURCES } from '../data/mining-resources';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
@@ -286,8 +287,14 @@ export class SystemBodyComponent implements OnChanges {
     this.bodyCoronaImage = "";
     this.bodyImage = "";
 
+    // A Green Gas Giant is a real, catalogued body — show its actual photo instead of
+    // the generic gas-giant art the classifier below would otherwise pick.
+    const greenGasGiantImage = getGreenGasGiantImagePath(body.bodyData.name);
     const bodyImageResult = BodyImage.getBodyImagePath(body.bodyData);
-    if (bodyImageResult) {
+    if (greenGasGiantImage) {
+      this.bodyImage = greenGasGiantImage;
+    }
+    else if (bodyImageResult) {
       this.bodyImage = `bodies/${bodyImageResult.path}.png`;
       if (bodyImageResult.coronaPath) {
         this.bodyCoronaImage = `bodies/${bodyImageResult.coronaPath}.png`;
@@ -392,7 +399,8 @@ export class SystemBodyComponent implements OnChanges {
         body.bodyData.subType?.includes('White Dwarf') ||
         body.bodyData.subType?.includes('Wolf-Rayet') ||
         body.bodyData.subType?.includes('Herbig') ||
-        !!body.bodyData.isLandable;
+        !!body.bodyData.isLandable ||
+        isGreenGasGiant(body.bodyData.name);
       const shouldExpand =
         (bodyChanged && isInteresting) ||
         ((bodyChanged || forceChanged) && forceExpanded) ||
@@ -635,6 +643,31 @@ export class SystemBodyComponent implements OnChanges {
   /** Spectral code of this body if it is a white dwarf (e.g. `DA`), otherwise null. */
   public getWhiteDwarfSpectralCode(): string | null {
     return whiteDwarfSpectralCode(this.body().bodyData.subType);
+  }
+
+  /**
+   * The classification text shown in the body header. A catalogued Green Gas Giant gets
+   * "glowing green" inserted ahead of "gas giant" (e.g. "Class I gas giant" -> "Class I
+   * glowing green gas giant"); every other body shows its subType unchanged. When "gas
+   * giant" opens the string (e.g. "Gas giant with ammonia-based life"), the sentence-case
+   * capital carries over to "Glowing" rather than being lowercased away.
+   */
+  public getDisplaySubType(): string {
+    const bd = this.body().bodyData;
+    if (bd.subType && isGreenGasGiant(bd.name)) {
+      return bd.subType.replace(/gas giant/i, (match, offset: number) => {
+        if (offset === 0 && /^[A-Z]/.test(match)) {
+          return 'Glowing green gas giant';
+        }
+        return 'glowing green gas giant';
+      });
+    }
+    return bd.subType;
+  }
+
+  /** Whether this body is a catalogued Green Gas Giant (drives the glowing-green label style). */
+  public isDisplayGreenGasGiant(): boolean {
+    return isGreenGasGiant(this.body().bodyData.name);
   }
 
   /** Opens the white-dwarf spectral-type reference modal, highlighting this star's type. */

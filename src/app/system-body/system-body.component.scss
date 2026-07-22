@@ -362,6 +362,16 @@
     font-size: 0.8em
 }
 
+// Green Gas Giant classification label: a neon-green glow evoking the body's own
+// bioluminescent glow, distinguishing it from the plain subType text next to it.
+.glowing-green-gas-giant {
+    color: #7cff8a;
+    text-shadow:
+        0 0 4px rgba(124, 255, 138, 0.9),
+        0 0 10px rgba(80, 255, 120, 0.6),
+        0 0 18px rgba(60, 255, 100, 0.4);
+}
+
 .body-signal-data {
     display: flex;
     column-gap: 16px;
