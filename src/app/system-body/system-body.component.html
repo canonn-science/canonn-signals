@@ -9,7 +9,7 @@
       <span>-</span>
       }
       @if (body().bodyData.subType) {
-      <span [class.clickable]="getWhiteDwarfSpectralCode()"
+      <span [class.clickable]="getWhiteDwarfSpectralCode()" [class.glowing-green-gas-giant]="isDisplayGreenGasGiant()"
         [matTooltip]="body().bodyData.speculative ? speculativeBodyTooltip : (getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip())"
         matTooltipClass="multiline-tooltip" (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{
         getDisplaySubType() }}{{ body().bodyData.speculative ? '?' : '' }}@if (classifyNeutronStar()) {

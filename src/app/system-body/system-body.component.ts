@@ -648,14 +648,26 @@ export class SystemBodyComponent implements OnChanges {
   /**
    * The classification text shown in the body header. A catalogued Green Gas Giant gets
    * "glowing green" inserted ahead of "gas giant" (e.g. "Class I gas giant" -> "Class I
-   * glowing green gas giant"); every other body shows its subType unchanged.
+   * glowing green gas giant"); every other body shows its subType unchanged. When "gas
+   * giant" opens the string (e.g. "Gas giant with ammonia-based life"), the sentence-case
+   * capital carries over to "Glowing" rather than being lowercased away.
    */
   public getDisplaySubType(): string {
     const bd = this.body().bodyData;
     if (bd.subType && isGreenGasGiant(bd.name)) {
-      return bd.subType.replace(/gas giant/i, 'glowing green gas giant');
+      return bd.subType.replace(/gas giant/i, (match, offset: number) => {
+        if (offset === 0 && /^[A-Z]/.test(match)) {
+          return 'Glowing green gas giant';
+        }
+        return 'glowing green gas giant';
+      });
     }
     return bd.subType;
+  }
+
+  /** Whether this body is a catalogued Green Gas Giant (drives the glowing-green label style). */
+  public isDisplayGreenGasGiant(): boolean {
+    return isGreenGasGiant(this.body().bodyData.name);
   }
 
   /** Opens the white-dwarf spectral-type reference modal, highlighting this star's type. */
