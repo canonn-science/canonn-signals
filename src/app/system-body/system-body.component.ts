@@ -647,19 +647,21 @@ export class SystemBodyComponent implements OnChanges {
 
   /**
    * The classification text shown in the body header. A catalogued Green Gas Giant gets
-   * "glowing green" inserted ahead of "gas giant" (e.g. "Class I gas giant" -> "Class I
-   * glowing green gas giant"); every other body shows its subType unchanged. When "gas
-   * giant" opens the string (e.g. "Gas giant with ammonia-based life"), the sentence-case
-   * capital carries over to "Glowing" rather than being lowercased away.
+   * "glowing green" inserted ahead of its "gas giant"/"water giant" qualifier (e.g. "Class I
+   * gas giant" -> "Class I glowing green gas giant", "Water giant" -> "Glowing green water
+   * giant"); every other body shows its subType unchanged. When the qualifier opens the
+   * string (e.g. "Gas giant with ammonia-based life"), the sentence-case capital carries
+   * over to "Glowing" rather than being lowercased away.
    */
   public getDisplaySubType(): string {
     const bd = this.body().bodyData;
     if (bd.subType && isGreenGasGiant(bd.name)) {
-      return bd.subType.replace(/gas giant/i, (match, offset: number) => {
+      return bd.subType.replace(/(gas|water) giant/i, (match, qualifier: string, offset: number) => {
+        const lower = `glowing green ${qualifier.toLowerCase()} giant`;
         if (offset === 0 && /^[A-Z]/.test(match)) {
-          return 'Glowing green gas giant';
+          return lower.charAt(0).toUpperCase() + lower.slice(1);
         }
-        return 'glowing green gas giant';
+        return lower;
       });
     }
     return bd.subType;
