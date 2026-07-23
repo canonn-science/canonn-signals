@@ -249,9 +249,19 @@ export class SystemBodyComponent implements OnChanges {
     return anchorBodyId !== null && this.body().bodyData.bodyId === anchorBodyId;
   }
 
+  /**
+   * Whether this body can be deep-linked. Synthesised belts and rings carry the placeholder
+   * `bodyId: -1` (they have no real in-system id), so a `#body--1` link would neither match
+   * the `#body-<n>` parser nor address a unique element — hide the copy-link control for them.
+   */
+  public get hasBodyLink(): boolean {
+    const bodyId = this.body()?.bodyData?.bodyId;
+    return bodyId !== undefined && bodyId !== null && bodyId >= 0;
+  }
+
   public copyBodyLink(): void {
     const bodyId = this.body()?.bodyData?.bodyId;
-    if (bodyId === undefined || bodyId === null) { return; }
+    if (bodyId === undefined || bodyId === null || bodyId < 0) { return; }
     const url = `${window.location.href.split('#')[0]}#body-${bodyId}`;
     navigator.clipboard?.writeText(url)
       .then(() => {

@@ -176,6 +176,16 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.expanded()).toBe(false);
     });
 
+    it('offers a copy link (the getter that gates the control) only for bodies with a real in-system id', () => {
+      // Real bodies — including the primary star at bodyId 0 — are deep-linkable.
+      expect(render(makeBody({ bodyId: 43 })).hasBodyLink).toBe(true);
+      expect(render(makeBody({ bodyId: 0 })).hasBodyLink).toBe(true);
+
+      // Synthesised belts and rings carry the placeholder bodyId -1 (no real id) → no link.
+      expect(render(makeBody({ bodyId: -1, type: 'Belt' })).hasBodyLink).toBe(false);
+      expect(render(makeBody({ bodyId: -1, type: 'Ring' })).hasBodyLink).toBe(false);
+    });
+
     it('reports children presence', () => {
       const parent = makeBody({ bodyId: 1 });
       parent.subBodies = [makeBody({ bodyId: 2 }, parent)];

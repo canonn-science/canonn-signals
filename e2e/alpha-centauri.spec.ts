@@ -64,7 +64,10 @@ test.describe('Alpha Centauri (live data)', () => {
     await loadAlphaCentauri(page);
 
     // Location section — each value asserted as the value *for* its label.
-    await expectSystemRow(page, 'PG Name', 'Wregoe AC-D d12-34');
+    // Alpha Centauri sits inside the hand-authored "Jastreb Sector" overlay, so its boxel
+    // name is the HA form (matching the game) — not the pure-procedural "Wregoe AC-D d12-34"
+    // that a coords-less decode would give.
+    await expectSystemRow(page, 'PG Name', 'Jastreb Sector CL-Y d34');
     await expectSystemRow(page, 'Region', 'Inner Orion Spur');
     await expectSystemRow(page, 'Id64', '1178708478315');
     await expectSystemRow(page, 'Coordinates', '3.03125 / -0.09375 / 3.15625');

@@ -1401,24 +1401,76 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.bodies.set(bodiesFlat.filter(b => b.parent === null));
 
-    const hash = window.location.hash;
-    if (hash) {
-      const match = hash.match(/^#body-(\d+)$/);
-      if (match) {
-        this.anchorBodyId.set(parseInt(match[1], 10));
-      }
-      // Wait for Angular to render the body elements, then scroll
-      setTimeout(() => {
-        const el = document.querySelector(hash);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 300);
+    const match = window.location.hash.match(/^#body-(\d+)$/);
+    if (match) {
+      const bodyId = parseInt(match[1], 10);
+      this.anchorBodyId.set(bodyId);
+      this.scrollToBodyAnchor(bodyId);
     } else {
       this.anchorBodyId.set(null);
     }
     // Zoneless: the data/bodies/anchorBodyId signal writes above schedule the CD
     // pass that re-reads this method's bound state, even from async HTTP callbacks.
+  }
+
+  /**
+   * Scrolls the deep-linked body (`#body-<id>`) to the top of the viewport and *keeps* it
+   * pinned there while the page finishes rendering.
+   *
+   * A large system keeps growing its layout for a second or more after the bodies signal is
+   * set: gas-giant canvas renderers, body images and worker-computed badges all resolve
+   * asynchronously and add height above the anchor. A single `scrollIntoView` (the old
+   * approach, fired on a fixed 300ms timeout) scrolled into that moving layout, so the anchor
+   * drifted back out of view and landed at an arbitrary, viewport-dependent offset. Instead,
+   * re-pin the anchor on each animation frame until its position holds steady for a few frames
+   * — and bail the moment the user scrolls, so we never fight a deliberate scroll.
+   */
+  private scrollToBodyAnchor(bodyId: number): void {
+    if (typeof requestAnimationFrame === 'undefined') {
+      return;
+    }
+    const selector = `#body-${bodyId}`;
+    const MAX_FRAMES = 180; // ~3s @ 60fps safety cap in case the layout never settles.
+    let frames = 0;
+    let stableFrames = 0;
+    let restingTop = Number.NaN; // Where the anchor sits after scrolling (respects scroll-margin).
+    let cancelled = false;
+
+    const onUserScroll = () => { cancelled = true; };
+    // Only genuine user gestures cancel; programmatic scrollIntoView doesn't emit these.
+    window.addEventListener('wheel', onUserScroll, { passive: true });
+    window.addEventListener('touchmove', onUserScroll, { passive: true });
+    window.addEventListener('keydown', onUserScroll);
+    const cleanup = () => {
+      window.removeEventListener('wheel', onUserScroll);
+      window.removeEventListener('touchmove', onUserScroll);
+      window.removeEventListener('keydown', onUserScroll);
+    };
+
+    const step = () => {
+      if (cancelled) { cleanup(); return; }
+      const el = document.querySelector(selector);
+      if (el) {
+        if (Number.isNaN(restingTop)) {
+          // First sighting: scroll it into place and record where it comes to rest.
+          el.scrollIntoView({ block: 'start' });
+          restingTop = el.getBoundingClientRect().top;
+          stableFrames = 0;
+        } else if (Math.abs(el.getBoundingClientRect().top - restingTop) > 2) {
+          // Content above shifted the anchor; re-pin it and restart the stability count.
+          el.scrollIntoView({ block: 'start' });
+          stableFrames = 0;
+        } else {
+          stableFrames++;
+        }
+      }
+      if (stableFrames < 3 && ++frames < MAX_FRAMES) {
+        requestAnimationFrame(step);
+      } else {
+        cleanup();
+      }
+    };
+    requestAnimationFrame(step);
   }
 
   private isNumeric(value: string) {
