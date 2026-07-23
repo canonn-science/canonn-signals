@@ -1,0 +1,2014 @@
+{
+  "system": {
+    "allegiance": null, 
+    "bodies": [
+      {
+        "absoluteMagnitude": 4.879105, 
+        "age": 7444, 
+        "axialTilt": 0.0, 
+        "bodyId": 0, 
+        "distanceToArrival": 0.0, 
+        "id64": 1246813571732, 
+        "luminosity": "VII", 
+        "mainStar": true, 
+        "name": "Eimbaith LW-W e1-290", 
+        "rotationalPeriod": 1.05528819444444e-05, 
+        "rotationalPeriodTidallyLocked": false, 
+        "solarMasses": 1.257813, 
+        "solarRadius": 1.33840312724659e-05, 
+        "spectralClass": "N0", 
+        "stations": [], 
+        "subType": "Neutron Star", 
+        "surfaceTemperature": 2047372.0, 
+        "timestamps": {
+          "distanceToArrival": "2026-06-14T02:33:12Z"
+        }, 
+        "type": "Star", 
+        "updateTime": "2026-06-27 12:10:14+00"
+      }, 
+      {
+        "argOfPeriapsis": 8.54539, 
+        "ascendingNode": -30.278266, 
+        "atmosphereComposition": {
+          "Helium": 26.631138, 
+          "Hydrogen": 73.368858
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -1.191954, 
+        "bodyId": 1, 
+        "distanceToArrival": 1301.535138, 
+        "earthMasses": 684.012817, 
+        "gravity": 4.77216131334761, 
+        "id64": 36030043832535700, 
+        "isLandable": false, 
+        "meanAnomaly": 324.465432, 
+        "name": "Eimbaith LW-W e1-290 1", 
+        "orbitalEccentricity": 5e-06, 
+        "orbitalInclination": 0.266013, 
+        "orbitalPeriod": 1370.00130834403, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 76324.008, 
+        "rotationalPeriod": 0.957234072592593, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 2.60827207358005, 
+        "stations": [], 
+        "subType": "Class III gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 301.440552, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 278.13588, 
+        "ascendingNode": 11.763474, 
+        "atmosphereType": null, 
+        "axialTilt": 0.098952, 
+        "bodyId": 2, 
+        "distanceToArrival": 1301.023728, 
+        "earthMasses": 0.002787, 
+        "gravity": 0.116130213113082, 
+        "id64": 72058840851499668, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.766561, 
+          "Carbon": 17.516588, 
+          "Iron": 21.339237, 
+          "Molybdenum": 1.39344, 
+          "Nickel": 16.140106, 
+          "Niobium": 1.458423, 
+          "Phosphorus": 11.21442, 
+          "Selenium": 3.260204, 
+          "Sulphur": 20.830853, 
+          "Tellurium": 1.602243, 
+          "Zirconium": 2.477926
+        }, 
+        "meanAnomaly": 168.709897, 
+        "name": "Eimbaith LW-W e1-290 1 a", 
+        "orbitalEccentricity": 0.000202, 
+        "orbitalInclination": -0.295747, 
+        "orbitalPeriod": 2.25745583021991, 
+        "parents": [
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 987.57825, 
+        "rotationalPeriod": 2.25753739275463, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00428135639126398, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 223.683121, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 79.866788, 
+        "ascendingNode": 34.867685, 
+        "atmosphereType": null, 
+        "axialTilt": 0.407046, 
+        "bodyId": 3, 
+        "distanceToArrival": 1300.960794, 
+        "earthMasses": 0.002064, 
+        "gravity": 0.104863872743958, 
+        "id64": 108087637870463636, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.625803, 
+          "Carbon": 16.62537, 
+          "Germanium": 5.871473, 
+          "Iron": 20.253531, 
+          "Molybdenum": 1.322544, 
+          "Nickel": 15.318921, 
+          "Niobium": 1.384221, 
+          "Phosphorus": 10.643847, 
+          "Sulphur": 19.771009, 
+          "Vanadium": 4.973562, 
+          "Yttrium": 1.209719
+        }, 
+        "meanAnomaly": 203.709649, 
+        "name": "Eimbaith LW-W e1-290 1 b", 
+        "orbitalEccentricity": 5.8e-05, 
+        "orbitalInclination": 0.347963, 
+        "orbitalPeriod": 3.46548462079861, 
+        "parents": [
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 894.2869375, 
+        "rotationalPeriod": 3.46560959778935, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00569741496941441, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 220.628677, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 130.926346, 
+        "ascendingNode": 142.542735, 
+        "atmosphereType": null, 
+        "axialTilt": 2.594123, 
+        "bodyId": 4, 
+        "distanceToArrival": 1300.810076, 
+        "earthMasses": 0.004761, 
+        "gravity": 0.139670337514021, 
+        "id64": 144116434889427604, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.162398, 
+          "Cadmium": 1.484502, 
+          "Carbon": 15.564015, 
+          "Germanium": 5.496641, 
+          "Iron": 19.116745, 
+          "Manganese": 7.89502, 
+          "Nickel": 14.459105, 
+          "Phosphorus": 9.96435, 
+          "Sulphur": 18.508837, 
+          "Tin": 1.153165, 
+          "Zinc": 5.195216
+        }, 
+        "meanAnomaly": 154.754759, 
+        "name": "Eimbaith LW-W e1-290 1 c", 
+        "orbitalEccentricity": 0.000615, 
+        "orbitalInclination": 0.486053, 
+        "orbitalPeriod": 4.89165544233796, 
+        "parents": [
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1177.07725, 
+        "rotationalPeriod": -4.8918325762963, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0071692291872623, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.3276, 
+          "Rock": 90.6724
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 218.470047, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 168.901716, 
+        "ascendingNode": 67.842353, 
+        "atmosphereType": null, 
+        "axialTilt": 0.510615, 
+        "bodyId": 5, 
+        "distanceToArrival": 1300.807228, 
+        "earthMasses": 0.000341, 
+        "gravity": 0.0555300295707148, 
+        "id64": 180145231908391572, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 16.17923, 
+          "Chromium": 7.683359, 
+          "Germanium": 5.713912, 
+          "Iron": 17.084259, 
+          "Manganese": 7.055624, 
+          "Molybdenum": 1.115592, 
+          "Nickel": 12.921818, 
+          "Niobium": 1.167618, 
+          "Phosphorus": 10.358221, 
+          "Sulphur": 19.240456, 
+          "Tellurium": 1.479915
+        }, 
+        "meanAnomaly": 45.203159, 
+        "name": "Eimbaith LW-W e1-290 1 c a", 
+        "orbitalEccentricity": 0.0, 
+        "orbitalInclination": 42.06788, 
+        "orbitalPeriod": 0.317091274039352, 
+        "parents": [
+          {
+            "Planet": 4
+          }, 
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 499.8465625, 
+        "rotationalPeriod": 0.328261428946759, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 2.26046047430273e-05, 
+        "signals": {
+          "genuses": [], 
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-10 18:47:15+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 3.1299, 
+          "Rock": 96.8701
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 218.470047, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "Major Silicate Vapour Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 52.926487, 
+        "ascendingNode": 110.880103, 
+        "atmosphereType": null, 
+        "axialTilt": 0.490341, 
+        "bodyId": 6, 
+        "distanceToArrival": 1301.912133, 
+        "earthMasses": 0.010722, 
+        "gravity": 0.184128887529316, 
+        "id64": 216174028927355540, 
+        "isLandable": true, 
+        "materials": {
+          "Arsenic": 2.593875, 
+          "Carbon": 16.423222, 
+          "Chromium": 8.997931, 
+          "Iron": 20.007265, 
+          "Mercury": 0.873684, 
+          "Nickel": 15.132657, 
+          "Niobium": 1.36739, 
+          "Phosphorus": 10.514428, 
+          "Selenium": 3.056706, 
+          "Sulphur": 19.530611, 
+          "Tellurium": 1.502233
+        }, 
+        "meanAnomaly": 64.292286, 
+        "name": "Eimbaith LW-W e1-290 1 d", 
+        "orbitalEccentricity": 0.00146, 
+        "orbitalInclination": 1.347484, 
+        "orbitalPeriod": 7.55253130638889, 
+        "parents": [
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1538.38775, 
+        "rotationalPeriod": 7.55280377314815, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0095770161924446, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 216.080276, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 199.206292, 
+        "ascendingNode": 20.873181, 
+        "atmosphereType": null, 
+        "axialTilt": -0.255761, 
+        "bodyId": 7, 
+        "distanceToArrival": 1293.434394, 
+        "earthMasses": 0.005694, 
+        "gravity": 0.148172019985724, 
+        "id64": 252202825946319508, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.465417, 
+          "Carbon": 15.49049, 
+          "Chromium": 8.486908, 
+          "Iron": 18.870983, 
+          "Manganese": 7.793525, 
+          "Molybdenum": 1.232264, 
+          "Nickel": 14.273222, 
+          "Phosphorus": 9.917278, 
+          "Ruthenium": 1.165404, 
+          "Selenium": 2.883105, 
+          "Sulphur": 18.421402
+        }, 
+        "meanAnomaly": 5.334299, 
+        "name": "Eimbaith LW-W e1-290 1 e", 
+        "orbitalEccentricity": 0.006988, 
+        "orbitalInclination": -0.083019, 
+        "orbitalPeriod": 23.99298672875, 
+        "parents": [
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1249.75925, 
+        "rotationalPeriod": 23.9938548198495, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0206962416463941, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 211.17543, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:05Z", 
+          "meanAnomaly": "2026-06-27T12:20:05Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:05+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 331.39776, 
+        "ascendingNode": -102.126259, 
+        "bodyId": 8, 
+        "id64": 288231622965283476, 
+        "meanAnomaly": 128.331655, 
+        "name": "Eimbaith LW-W e1-290 barycentre 8", 
+        "orbitalEccentricity": 0.006947, 
+        "orbitalInclination": -0.283193, 
+        "orbitalPeriod": 32.856050464838, 
+        "semiMajorAxis": 0.0255218509746474, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-27 12:20:06+00"
+      }, 
+      {
+        "argOfPeriapsis": 308.741411, 
+        "ascendingNode": 93.408871, 
+        "atmosphereType": null, 
+        "axialTilt": 0.187483, 
+        "bodyId": 9, 
+        "distanceToArrival": 1302.428894, 
+        "earthMasses": 0.006129, 
+        "gravity": 0.151951565208525, 
+        "id64": 324260419984247444, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.532734, 
+          "Carbon": 16.202076, 
+          "Iron": 19.73786, 
+          "Manganese": 8.151536, 
+          "Nickel": 14.928891, 
+          "Phosphorus": 10.372848, 
+          "Sulphur": 19.267624, 
+          "Tellurium": 1.482005, 
+          "Tin": 1.185518, 
+          "Vanadium": 4.846931, 
+          "Zirconium": 2.291973
+        }, 
+        "meanAnomaly": 69.486018, 
+        "name": "Eimbaith LW-W e1-290 1 f", 
+        "orbitalEccentricity": 0.168643, 
+        "orbitalInclination": 6.383324, 
+        "orbitalPeriod": 2.66815563319444, 
+        "parents": [
+          {
+            "Null": 8
+          }, 
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1280.376375, 
+        "rotationalPeriod": 3.98920291592593, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 5.41894599434429e-05, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 210.137283, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 128.741416, 
+        "ascendingNode": 93.408871, 
+        "atmosphereType": null, 
+        "axialTilt": -0.131885, 
+        "bodyId": 10, 
+        "distanceToArrival": 1302.478892, 
+        "earthMasses": 0.004961, 
+        "gravity": 0.141354440705618, 
+        "id64": 360289217003211412, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.276917, 
+          "Carbon": 17.09737, 
+          "Iron": 20.828533, 
+          "Molybdenum": 1.360091, 
+          "Nickel": 15.753831, 
+          "Phosphorus": 10.94603, 
+          "Selenium": 3.182179, 
+          "Sulphur": 20.332314, 
+          "Tungsten": 1.143696, 
+          "Zinc": 5.660416, 
+          "Zirconium": 2.418622
+        }, 
+        "meanAnomaly": 69.485107, 
+        "name": "Eimbaith LW-W e1-290 1 g", 
+        "orbitalEccentricity": 0.168643, 
+        "orbitalInclination": 6.383324, 
+        "orbitalPeriod": 2.66815563319444, 
+        "parents": [
+          {
+            "Null": 8
+          }, 
+          {
+            "Planet": 1
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1194.365125, 
+        "rotationalPeriod": 3.58911716207176, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 6.69440529447723e-05, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 210.137283, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:20:06Z", 
+          "meanAnomaly": "2026-06-27T12:20:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:20:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 38.349193, 
+        "ascendingNode": 119.024215, 
+        "bodyId": 13, 
+        "id64": 468375608060103316, 
+        "meanAnomaly": 70.768791, 
+        "name": "Eimbaith LW-W e1-290 barycentre 13", 
+        "orbitalEccentricity": 0.001176, 
+        "orbitalInclination": 0.055672, 
+        "orbitalPeriod": 2331.63208597236, 
+        "semiMajorAxis": 3.71802515433433, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-27T12:18:49Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-27 12:18:49+00"
+      }, 
+      {
+        "argOfPeriapsis": 342.426002, 
+        "ascendingNode": -134.908397, 
+        "atmosphereComposition": {
+          "Helium": 26.620573, 
+          "Hydrogen": 73.339752
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.23668, 
+        "bodyId": 14, 
+        "distanceToArrival": 1849.109945, 
+        "earthMasses": 99.099358, 
+        "gravity": 1.13484500866728, 
+        "id64": 504404405079067284, 
+        "isLandable": false, 
+        "meanAnomaly": 110.979287, 
+        "name": "Eimbaith LW-W e1-290 2", 
+        "orbitalEccentricity": 0.001954, 
+        "orbitalInclination": 4.142281, 
+        "orbitalPeriod": 138.652600623947, 
+        "parents": [
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 59573.588, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 540433202098031252, 
+            "innerRadius": 96339000.0, 
+            "mass": 69661000000.0, 
+            "name": "Eimbaith LW-W e1-290 2 A Ring", 
+            "outerRadius": 108100000.0, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 576461999116995220, 
+            "innerRadius": 108200000.0, 
+            "mass": 413420000000.0, 
+            "name": "Eimbaith LW-W e1-290 2 B Ring", 
+            "outerRadius": 161100000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 3, 
+                "Monazite": 1, 
+                "Musgravite": 2
+              }, 
+              "updateTime": "2026-01-28 01:06:19+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 258.383324242697, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0112877069943379, 
+        "stations": [], 
+        "subType": "Gas giant with water-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 174.237579, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:19:06Z", 
+          "meanAnomaly": "2026-06-27T12:19:06Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:19:06+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 303.865704, 
+        "ascendingNode": 131.750862, 
+        "atmosphereType": null, 
+        "axialTilt": 0.151695, 
+        "bodyId": 17, 
+        "distanceToArrival": 1849.669585, 
+        "earthMasses": 0.000258, 
+        "gravity": 0.0520255939634955, 
+        "id64": 612490796135959188, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.699792, 
+          "Chromium": 8.601581, 
+          "Iron": 19.125961, 
+          "Manganese": 7.898828, 
+          "Mercury": 0.835199, 
+          "Molybdenum": 1.248914, 
+          "Nickel": 14.466079, 
+          "Phosphorus": 10.051276, 
+          "Ruthenium": 1.18115, 
+          "Sulphur": 18.670305, 
+          "Zirconium": 2.220919
+        }, 
+        "meanAnomaly": 34.232376, 
+        "name": "Eimbaith LW-W e1-290 2 a", 
+        "orbitalEccentricity": 0.00052, 
+        "orbitalInclination": -0.424821, 
+        "orbitalPeriod": 1.21235164503472, 
+        "parents": [
+          {
+            "Planet": 14
+          }, 
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 449.27725, 
+        "rotationalPeriod": 1.21235886488426, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00148564289147667, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-10 18:46:30+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 171.351578, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:19:05Z", 
+          "meanAnomaly": "2026-06-27T12:19:05Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:19:05+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 191.769029, 
+        "ascendingNode": 47.113395, 
+        "atmosphereType": null, 
+        "axialTilt": -0.503428, 
+        "bodyId": 18, 
+        "distanceToArrival": 1849.653779, 
+        "earthMasses": 0.000254, 
+        "gravity": 0.0517056184358112, 
+        "id64": 648519593154923156, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.154465, 
+          "Chromium": 8.302807, 
+          "Germanium": 5.352003, 
+          "Iron": 18.461628, 
+          "Manganese": 7.624465, 
+          "Molybdenum": 1.205534, 
+          "Nickel": 13.963602, 
+          "Phosphorus": 9.702148, 
+          "Sulphur": 18.021797, 
+          "Tin": 1.108864, 
+          "Yttrium": 1.102691
+        }, 
+        "meanAnomaly": 97.83714, 
+        "name": "Eimbaith LW-W e1-290 2 b", 
+        "orbitalEccentricity": 0.000591, 
+        "orbitalInclination": 0.781502, 
+        "orbitalPeriod": 2.1380664159838, 
+        "parents": [
+          {
+            "Planet": 14
+          }, 
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 446.54615625, 
+        "rotationalPeriod": 2.1380791221412, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0021685834674759, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 170.826721, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:19:05Z", 
+          "meanAnomaly": "2026-06-27T12:19:05Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:19:05+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 162.426007, 
+        "ascendingNode": -134.908397, 
+        "atmosphereComposition": {
+          "Helium": 26.614212, 
+          "Hydrogen": 73.322227, 
+          "Oxygen": 0.06355
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.176683, 
+        "bodyId": 19, 
+        "distanceToArrival": 1868.166283, 
+        "earthMasses": 40.074024, 
+        "gravity": 0.695194452941776, 
+        "id64": 684548390173887124, 
+        "isLandable": false, 
+        "meanAnomaly": 110.979122, 
+        "name": "Eimbaith LW-W e1-290 3", 
+        "orbitalEccentricity": 0.001954, 
+        "orbitalInclination": 4.142281, 
+        "orbitalPeriod": 138.652600623947, 
+        "parents": [
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 48402.184, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 720577187192851092, 
+            "innerRadius": 90953000.0, 
+            "mass": 11758000000.0, 
+            "name": "Eimbaith LW-W e1-290 3 A Ring", 
+            "outerRadius": 93248000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 1, 
+                "Benitoite": 1, 
+                "Serendibite": 1
+              }, 
+              "updateTime": "2026-01-28 01:09:34+00"
+            }, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 756605984211815060, 
+            "innerRadius": 93348000.0, 
+            "mass": 152950000000.0, 
+            "name": "Eimbaith LW-W e1-290 3 B Ring", 
+            "outerRadius": 119130000.0, 
+            "signals": {
+              "signals": {
+                "Monazite": 2, 
+                "Painite": 1, 
+                "Platinum": 1, 
+                "Rhodplumsite": 1, 
+                "Serendibite": 1
+              }, 
+              "updateTime": "2026-01-28 01:09:29+00"
+            }, 
+            "type": "Metal Rich"
+          }
+        ], 
+        "rotationalPeriod": 164.314130164294, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0279116204664201, 
+        "stations": [], 
+        "subType": "Gas giant with water-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 168.358826, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:19:00Z", 
+          "meanAnomaly": "2026-06-27T12:19:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:19:00+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 48.13318, 
+        "ascendingNode": 24.679891, 
+        "atmosphereType": null, 
+        "axialTilt": 0.091814, 
+        "bodyId": 22, 
+        "distanceToArrival": 1867.816519, 
+        "earthMasses": 0.001907, 
+        "gravity": 0.102088916080351, 
+        "id64": 792634781230779028, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.130959, 
+          "Cadmium": 1.432551, 
+          "Carbon": 15.143064, 
+          "Chromium": 8.296559, 
+          "Iron": 18.447739, 
+          "Manganese": 7.618728, 
+          "Nickel": 13.953097, 
+          "Niobium": 1.260805, 
+          "Phosphorus": 9.69485, 
+          "Sulphur": 18.00824, 
+          "Zinc": 5.013405
+        }, 
+        "meanAnomaly": 299.375044, 
+        "name": "Eimbaith LW-W e1-290 3 a", 
+        "orbitalEccentricity": 0.000189, 
+        "orbitalInclination": 0.022153, 
+        "orbitalPeriod": 1.34743294782407, 
+        "parents": [
+          {
+            "Planet": 19
+          }, 
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 871.220875, 
+        "rotationalPeriod": 1.34748521702546, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00117880062589615, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Geological;": 3
+          }, 
+          "updateTime": "2026-06-10 18:46:55+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 169.716431, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:19:01Z", 
+          "meanAnomaly": "2026-06-27T12:19:01Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:19:01+00", 
+        "volcanismType": "Minor Metallic Magma"
+      }, 
+      {
+        "argOfPeriapsis": 20.221916, 
+        "ascendingNode": -76.017133, 
+        "atmosphereType": null, 
+        "axialTilt": 0.498097, 
+        "bodyId": 23, 
+        "distanceToArrival": 1868.766116, 
+        "earthMasses": 0.000246, 
+        "gravity": 0.0511561129805241, 
+        "id64": 828663578249742996, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 1.164055, 
+          "Carbon": 15.586196, 
+          "Chromium": 8.539344, 
+          "Germanium": 5.504475, 
+          "Iron": 18.987577, 
+          "Nickel": 14.361407, 
+          "Phosphorus": 9.97855, 
+          "Sulphur": 18.535215, 
+          "Tin": 1.140454, 
+          "Tungsten": 1.042609, 
+          "Zinc": 5.160113
+        }, 
+        "meanAnomaly": 88.120372, 
+        "name": "Eimbaith LW-W e1-290 3 b", 
+        "orbitalEccentricity": 0.003662, 
+        "orbitalInclination": 0.000132, 
+        "orbitalPeriod": 2.47110826549769, 
+        "parents": [
+          {
+            "Planet": 19
+          }, 
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 441.85359375, 
+        "rotationalPeriod": 2.47120451125, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00176616060615766, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 169.535324, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:19:00Z", 
+          "meanAnomaly": "2026-06-27T12:19:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:19:00+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 109.456899, 
+        "ascendingNode": -65.996324, 
+        "atmosphereType": null, 
+        "axialTilt": -2.608867, 
+        "bodyId": 24, 
+        "distanceToArrival": 1866.901353, 
+        "earthMasses": 0.000783, 
+        "gravity": 0.0755860099928622, 
+        "id64": 864692375268706964, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.574606, 
+          "Chromium": 8.544956, 
+          "Iron": 19.000057, 
+          "Manganese": 7.84683, 
+          "Molybdenum": 1.240693, 
+          "Nickel": 14.370847, 
+          "Niobium": 1.298553, 
+          "Phosphorus": 9.97113, 
+          "Sulphur": 18.521433, 
+          "Tellurium": 1.42461, 
+          "Zirconium": 2.206298
+        }, 
+        "meanAnomaly": 338.070651, 
+        "name": "Eimbaith LW-W e1-290 3 c", 
+        "orbitalEccentricity": 0.000647, 
+        "orbitalInclination": -0.985551, 
+        "orbitalPeriod": 4.72855374768518, 
+        "parents": [
+          {
+            "Planet": 19
+          }, 
+          {
+            "Null": 13
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 648.869875, 
+        "rotationalPeriod": -4.72873733142361, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00272220697766968, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.9831, 
+          "Rock": 91.0169
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.000351023113742906, 
+        "surfaceTemperature": 169.943436, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:19:01Z", 
+          "meanAnomaly": "2026-06-27T12:19:01Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:19:01+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 45.102502, 
+        "ascendingNode": -113.366783, 
+        "atmosphereComposition": {
+          "Helium": 26.620256, 
+          "Hydrogen": 73.33889
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.48816, 
+        "bodyId": 25, 
+        "distanceToArrival": 2667.606424, 
+        "earthMasses": 9.159299, 
+        "gravity": 0.86553624961762, 
+        "id64": 900721172287670932, 
+        "isLandable": false, 
+        "meanAnomaly": 195.522435, 
+        "name": "Eimbaith LW-W e1-290 4", 
+        "orbitalEccentricity": 0.001297, 
+        "orbitalInclination": -0.016017, 
+        "orbitalPeriod": 4012.39573127693, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 20738.394, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 936749969306634900, 
+            "innerRadius": 49820000.0, 
+            "mass": 7143300000.0, 
+            "name": "Eimbaith LW-W e1-290 4 A Ring", 
+            "outerRadius": 52057000.0, 
+            "signals": {
+              "signals": {
+                "Benitoite": 1, 
+                "Monazite": 1, 
+                "Musgravite": 1, 
+                "Serendibite": 1
+              }, 
+              "updateTime": "2026-01-28 02:59:35+00"
+            }, 
+            "type": "Rocky"
+          }, 
+          {
+            "id64": 972778766325598868, 
+            "innerRadius": 52157000.0, 
+            "mass": 123060000000.0, 
+            "name": "Eimbaith LW-W e1-290 4 B Ring", 
+            "outerRadius": 81457000.0, 
+            "signals": {
+              "signals": {
+                "Alexandrite": 2, 
+                "Benitoite": 3, 
+                "Monazite": 6, 
+                "Musgravite": 4, 
+                "Serendibite": 3
+              }, 
+              "updateTime": "2026-01-28 02:59:36+00"
+            }, 
+            "type": "Rocky"
+          }
+        ], 
+        "rotationalPeriod": 1.53427709387731, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 5.33918252901832, 
+        "stations": [], 
+        "subType": "Gas giant with ammonia-based life", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 138.236572, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:18:00Z", 
+          "meanAnomaly": "2026-06-27T12:18:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:18:00+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 299.671466, 
+        "ascendingNode": -39.905042, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 100.0
+        }, 
+        "atmosphereType": "Thin Carbon dioxide", 
+        "axialTilt": -0.24104, 
+        "bodyId": 28, 
+        "distanceToArrival": 2667.300227, 
+        "earthMasses": 0.000277, 
+        "gravity": 0.0532745997756704, 
+        "id64": 1008807563344562836, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.440742, 
+          "Carbon": 15.229659, 
+          "Chromium": 8.343999, 
+          "Iron": 18.553221, 
+          "Manganese": 7.662291, 
+          "Molybdenum": 1.211515, 
+          "Nickel": 14.03288, 
+          "Phosphorus": 9.750288, 
+          "Sulphur": 18.111217, 
+          "Vanadium": 4.556025, 
+          "Yttrium": 1.108162
+        }, 
+        "meanAnomaly": 343.723159, 
+        "name": "Eimbaith LW-W e1-290 4 a", 
+        "orbitalEccentricity": 7.6e-05, 
+        "orbitalInclination": -0.120137, 
+        "orbitalPeriod": 5.4350889943287, 
+        "parents": [
+          {
+            "Planet": 25
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 459.9344375, 
+        "rotationalPeriod": 5.43562275006944, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00182637649781469, 
+        "signals": {
+          "genuses": [
+            "$Codex_Ent_Tussocks_Genus_Name;", 
+            "$Codex_Ent_Bacterial_Genus_Name;", 
+            "$Codex_Ent_Conchas_Genus_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 3
+          }, 
+          "updateTime": "2026-06-27 12:23:10+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.00523837353071799, 
+        "surfaceTemperature": 155.391876, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:23:10Z", 
+          "meanAnomaly": "2026-06-27T12:23:10Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:23:10+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 71.674421, 
+        "ascendingNode": -50.782651, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 100.0
+        }, 
+        "atmosphereType": "Thin Carbon dioxide", 
+        "axialTilt": -3.042991, 
+        "bodyId": 29, 
+        "distanceToArrival": 2665.384018, 
+        "earthMasses": 0.000491, 
+        "gravity": 0.0647065361476496, 
+        "id64": 1044836360363526804, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.49825, 
+          "Carbon": 15.697598, 
+          "Germanium": 5.543818, 
+          "Iron": 19.293795, 
+          "Manganese": 7.96814, 
+          "Molybdenum": 1.259873, 
+          "Nickel": 14.593018, 
+          "Phosphorus": 10.049872, 
+          "Sulphur": 18.667694, 
+          "Technetium": 0.690061, 
+          "Vanadium": 4.737884
+        }, 
+        "meanAnomaly": 21.9156, 
+        "name": "Eimbaith LW-W e1-290 4 b", 
+        "orbitalEccentricity": 0.001379, 
+        "orbitalInclination": -0.812917, 
+        "orbitalPeriod": 21.821553646412, 
+        "parents": [
+          {
+            "Planet": 25
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 555.3335625, 
+        "rotationalPeriod": -21.8236970408102, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00461363231280619, 
+        "signals": {
+          "genuses": [
+            "$Codex_Ent_Bacterial_Genus_Name;", 
+            "$Codex_Ent_Tussocks_Genus_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 2
+          }, 
+          "updateTime": "2026-06-10 18:47:51+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.3621, 
+          "Rock": 90.6379
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.00768965684678016, 
+        "surfaceTemperature": 158.031876, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:18:00Z", 
+          "meanAnomaly": "2026-06-27T12:18:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:18:00+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 118.123931, 
+        "ascendingNode": -164.093843, 
+        "atmosphereComposition": {
+          "Carbon dioxide": 99.009911, 
+          "Sulphur dioxide": 0.990099
+        }, 
+        "atmosphereType": "Thin Carbon dioxide", 
+        "axialTilt": -0.069438, 
+        "bodyId": 30, 
+        "distanceToArrival": 2664.914892, 
+        "earthMasses": 0.000685, 
+        "gravity": 0.0722265728561232, 
+        "id64": 1080865157382490772, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 15.852531, 
+          "Germanium": 5.598534, 
+          "Iron": 19.312023, 
+          "Manganese": 7.975668, 
+          "Nickel": 14.606805, 
+          "Phosphorus": 10.149061, 
+          "Sulphur": 18.851942, 
+          "Technetium": 0.690713, 
+          "Tin": 1.159941, 
+          "Tungsten": 1.060424, 
+          "Vanadium": 4.742361
+        }, 
+        "meanAnomaly": 25.819729, 
+        "name": "Eimbaith LW-W e1-290 4 c", 
+        "orbitalEccentricity": 0.009046, 
+        "orbitalInclination": 0.042384, 
+        "orbitalPeriod": 74.9465561023495, 
+        "parents": [
+          {
+            "Planet": 25
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 620.842625, 
+        "rotationalPeriod": 74.9539185394329, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.0105023619897155, 
+        "signals": {
+          "genuses": [
+            "$Codex_Ent_Tussocks_Genus_Name;", 
+            "$Codex_Ent_Bacterial_Genus_Name;"
+          ], 
+          "signals": {
+            "$SAA_SignalType_Biological;": 2
+          }, 
+          "updateTime": "2026-06-10 18:47:45+00"
+        }, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0097246138366642, 
+        "surfaceTemperature": 159.814453, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:18:00Z", 
+          "meanAnomaly": "2026-06-27T12:18:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:18:00+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 189.369423, 
+        "ascendingNode": -171.205351, 
+        "bodyId": 32, 
+        "id64": 1152922751420418708, 
+        "meanAnomaly": 260.798447, 
+        "name": "Eimbaith LW-W e1-290 barycentre 32", 
+        "orbitalEccentricity": 0.001971, 
+        "orbitalInclination": -0.747984, 
+        "orbitalPeriod": 5468.59784258736, 
+        "semiMajorAxis": 6.5633098653148, 
+        "stations": [], 
+        "timestamps": {
+          "meanAnomaly": "2026-06-14T02:33:25Z"
+        }, 
+        "type": "Barycentre", 
+        "updateTime": "2026-06-14 02:33:25+00"
+      }, 
+      {
+        "argOfPeriapsis": 357.582372, 
+        "ascendingNode": -114.421928, 
+        "atmosphereComposition": {
+          "Helium": 26.631144, 
+          "Hydrogen": 73.368866
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": -0.481332, 
+        "bodyId": 33, 
+        "distanceToArrival": 3274.101541, 
+        "earthMasses": 154.967117, 
+        "gravity": 1.5638511267462, 
+        "id64": 1188951548439382676, 
+        "isLandable": false, 
+        "meanAnomaly": 22.623635, 
+        "name": "Eimbaith LW-W e1-290 5", 
+        "orbitalEccentricity": 0.041699, 
+        "orbitalInclination": -2.429261, 
+        "orbitalPeriod": 1062.60799975307, 
+        "parents": [
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 63461.26, 
+        "rotationalPeriod": 1.02783397546296, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.00899990074694657, 
+        "stations": [], 
+        "subType": "Class I gas giant", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 140.287384, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-10T18:44:31Z", 
+          "meanAnomaly": "2026-06-10T18:44:31Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-10 18:44:31+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 129.738658, 
+        "ascendingNode": 156.259623, 
+        "atmosphereType": null, 
+        "axialTilt": 0.493791, 
+        "bodyId": 34, 
+        "distanceToArrival": 3272.379402, 
+        "earthMasses": 0.001575, 
+        "gravity": 0.0956813500560824, 
+        "id64": 1224980345458346644, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.484772, 
+          "Carbon": 15.695086, 
+          "Germanium": 5.54293, 
+          "Iron": 19.120224, 
+          "Manganese": 7.896458, 
+          "Molybdenum": 1.24854, 
+          "Nickel": 14.461735, 
+          "Phosphorus": 10.048262, 
+          "Sulphur": 18.664705, 
+          "Vanadium": 4.695261, 
+          "Yttrium": 1.142028
+        }, 
+        "meanAnomaly": 260.316877, 
+        "name": "Eimbaith LW-W e1-290 5 a", 
+        "orbitalEccentricity": 0.000114, 
+        "orbitalInclination": -0.003646, 
+        "orbitalPeriod": 3.71973113053241, 
+        "parents": [
+          {
+            "Planet": 33
+          }, 
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 817.829375, 
+        "rotationalPeriod": 3.71986126717593, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00364111494340388, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 8.913, 
+          "Rock": 91.087
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 130.073822, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-10T18:45:56Z", 
+          "meanAnomaly": "2026-06-10T18:45:56Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-10 18:45:56+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 137.180887, 
+        "ascendingNode": 137.977314, 
+        "atmosphereType": null, 
+        "axialTilt": 0.411545, 
+        "bodyId": 35, 
+        "distanceToArrival": 3276.931028, 
+        "earthMasses": 0.0017, 
+        "gravity": 0.0982676659528908, 
+        "id64": 1261009142477310612, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.428329, 
+          "Carbon": 15.055161, 
+          "Chromium": 8.272113, 
+          "Germanium": 5.316933, 
+          "Iron": 18.393377, 
+          "Manganese": 7.596277, 
+          "Nickel": 13.911981, 
+          "Phosphorus": 9.638574, 
+          "Sulphur": 17.903706, 
+          "Tellurium": 1.377096, 
+          "Tin": 1.106457
+        }, 
+        "meanAnomaly": 42.26393, 
+        "name": "Eimbaith LW-W e1-290 5 b", 
+        "orbitalEccentricity": 0.005193, 
+        "orbitalInclination": 0.716936, 
+        "orbitalPeriod": 8.58500116953704, 
+        "parents": [
+          {
+            "Planet": 33
+          }, 
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 838.51475, 
+        "rotationalPeriod": 8.5853025891088, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00635897215442984, 
+        "solidComposition": {
+          "Ice": 0.0, 
+          "Metal": 9.057, 
+          "Rock": 90.943
+        }, 
+        "stations": [], 
+        "subType": "Rocky body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 129.217529, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-10T18:46:00Z", 
+          "meanAnomaly": "2026-06-10T18:46:00Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-10 18:46:00+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 279.521981, 
+        "ascendingNode": 174.557307, 
+        "atmosphereType": null, 
+        "axialTilt": -0.032263, 
+        "bodyId": 36, 
+        "distanceToArrival": 3272.16159, 
+        "earthMasses": 0.001893, 
+        "gravity": 0.0697064341796676, 
+        "id64": 1297037939496274580, 
+        "isLandable": true, 
+        "materials": {
+          "Cadmium": 1.064749, 
+          "Carbon": 21.081341, 
+          "Chromium": 6.166454, 
+          "Iron": 13.711362, 
+          "Manganese": 5.662652, 
+          "Nickel": 10.370698, 
+          "Niobium": 0.937098, 
+          "Phosphorus": 13.496635, 
+          "Ruthenium": 0.846764, 
+          "Sulphur": 25.070078, 
+          "Zirconium": 1.592172
+        }, 
+        "meanAnomaly": 4.595697, 
+        "name": "Eimbaith LW-W e1-290 5 c", 
+        "orbitalEccentricity": 2.8e-05, 
+        "orbitalInclination": 0.602037, 
+        "orbitalPeriod": 10.9424755943056, 
+        "parents": [
+          {
+            "Planet": 33
+          }, 
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1050.478125, 
+        "rotationalPeriod": 10.9428595390162, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00747544563500791, 
+        "solidComposition": {
+          "Ice": 67.3205, 
+          "Metal": 2.9127, 
+          "Rock": 29.7668
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 114.264694, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-10T18:45:50Z", 
+          "meanAnomaly": "2026-06-10T18:45:50Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-10 18:45:50+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 309.638252, 
+        "ascendingNode": 32.223367, 
+        "atmosphereType": null, 
+        "axialTilt": 0.236735, 
+        "bodyId": 37, 
+        "distanceToArrival": 3271.040732, 
+        "earthMasses": 0.001726, 
+        "gravity": 0.0675644947486489, 
+        "id64": 1333066736515238548, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 21.189554, 
+          "Germanium": 3.995311, 
+          "Iron": 13.781744, 
+          "Manganese": 5.69172, 
+          "Nickel": 10.423932, 
+          "Phosphorus": 13.565916, 
+          "Sulphur": 25.198767, 
+          "Tin": 0.827775, 
+          "Tungsten": 0.756756, 
+          "Yttrium": 0.823167, 
+          "Zinc": 3.745362
+        }, 
+        "meanAnomaly": 353.605263, 
+        "name": "Eimbaith LW-W e1-290 5 d", 
+        "orbitalEccentricity": 1.2e-05, 
+        "orbitalInclination": -0.000333, 
+        "orbitalPeriod": 14.4698857157292, 
+        "parents": [
+          {
+            "Planet": 33
+          }, 
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1018.957375, 
+        "rotationalPeriod": 14.470393902581, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00900609995729443, 
+        "solidComposition": {
+          "Ice": 67.3205, 
+          "Metal": 2.9127, 
+          "Rock": 29.7668
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 114.07122, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-10T18:45:53Z", 
+          "meanAnomaly": "2026-06-10T18:45:53Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-10 18:45:53+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 116.668421, 
+        "ascendingNode": 51.897417, 
+        "atmosphereType": null, 
+        "axialTilt": -0.105532, 
+        "bodyId": 38, 
+        "distanceToArrival": 3269.042276, 
+        "earthMasses": 0.002294, 
+        "gravity": 0.0744063424084837, 
+        "id64": 1369095533534202516, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 21.748682, 
+          "Iron": 14.145403, 
+          "Manganese": 5.841907, 
+          "Nickel": 10.698989, 
+          "Niobium": 0.966763, 
+          "Phosphorus": 13.923881, 
+          "Sulphur": 25.863686, 
+          "Tin": 0.849617, 
+          "Vanadium": 3.473619, 
+          "Yttrium": 0.844888, 
+          "Zirconium": 1.642573
+        }, 
+        "meanAnomaly": 152.313334, 
+        "name": "Eimbaith LW-W e1-290 5 e", 
+        "orbitalEccentricity": 0.016763, 
+        "orbitalInclination": -0.710807, 
+        "orbitalPeriod": 19.3589091025, 
+        "parents": [
+          {
+            "Planet": 33
+          }, 
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 1119.463875, 
+        "rotationalPeriod": 25.8127828650579, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.0109348779353322, 
+        "solidComposition": {
+          "Ice": 67.3205, 
+          "Metal": 2.9127, 
+          "Rock": 29.7668
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 113.887939, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-10T18:45:49Z", 
+          "meanAnomaly": "2026-06-10T18:45:49Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-10 18:45:49+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 177.582378, 
+        "ascendingNode": -114.421928, 
+        "atmosphereComposition": {
+          "Argon": 6.506967, 
+          "Helium": 0.075871, 
+          "Nitrogen": 93.405983
+        }, 
+        "atmosphereType": "Thick Argon-rich", 
+        "axialTilt": -0.276546, 
+        "bodyId": 39, 
+        "distanceToArrival": 3311.031741, 
+        "earthMasses": 9.175994, 
+        "gravity": 1.35683878862037, 
+        "id64": 1405124330553166484, 
+        "isLandable": false, 
+        "meanAnomaly": 23.750322, 
+        "name": "Eimbaith LW-W e1-290 6", 
+        "orbitalEccentricity": 0.041699, 
+        "orbitalInclination": -2.429261, 
+        "orbitalPeriod": 1062.60799975307, 
+        "parents": [
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 16578.645, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "innerRadius": 27355000.0, 
+            "mass": 139630000000.0, 
+            "name": "Eimbaith LW-W e1-290 6 A Ring", 
+            "outerRadius": 77072000.0, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 0.742564109965278, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 0.151991688675041, 
+        "solidComposition": {
+          "Ice": 62.3308, 
+          "Metal": 9.4758, 
+          "Rock": 19.3642
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 1020.9284579324, 
+        "surfaceTemperature": 167.362366, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-14T02:33:25Z", 
+          "meanAnomaly": "2026-06-14T02:33:25Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-14 02:33:25+00", 
+        "volcanismType": "Water Geysers"
+      }, 
+      {
+        "argOfPeriapsis": 27.799761, 
+        "ascendingNode": 173.28109, 
+        "atmosphereType": null, 
+        "axialTilt": 0.502848, 
+        "bodyId": 41, 
+        "distanceToArrival": 3311.768307, 
+        "earthMasses": 0.00027, 
+        "gravity": 0.0335977363107984, 
+        "id64": 1477181924591094420, 
+        "isLandable": true, 
+        "materials": {
+          "Carbon": 22.853079, 
+          "Chromium": 5.505285, 
+          "Iron": 12.241225, 
+          "Mercury": 0.534554, 
+          "Nickel": 9.258749, 
+          "Phosphorus": 14.630932, 
+          "Sulphur": 27.177042, 
+          "Tin": 0.735247, 
+          "Vanadium": 3.006019, 
+          "Yttrium": 0.731154, 
+          "Zinc": 3.326707
+        }, 
+        "meanAnomaly": 149.243257, 
+        "name": "Eimbaith LW-W e1-290 6 a", 
+        "orbitalEccentricity": 4.3e-05, 
+        "orbitalInclination": 0.191925, 
+        "orbitalPeriod": 4.29511822208333, 
+        "parents": [
+          {
+            "Planet": 39
+          }, 
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 571.85775, 
+        "rotationalPeriod": 4.18435448001157, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00156200617419551, 
+        "solidComposition": {
+          "Ice": 82.4309, 
+          "Metal": 1.5659, 
+          "Rock": 16.0032
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 112.621704, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-14T02:33:28Z", 
+          "meanAnomaly": "2026-06-14T02:33:28Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-14 02:33:28+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 315.876653, 
+        "ascendingNode": -148.383838, 
+        "atmosphereType": null, 
+        "axialTilt": 0.303359, 
+        "bodyId": 42, 
+        "distanceToArrival": 3310.007229, 
+        "earthMasses": 0.000337, 
+        "gravity": 0.0361789538085041, 
+        "id64": 1513210721610058388, 
+        "isLandable": true, 
+        "materials": {
+          "Antimony": 0.74938, 
+          "Cadmium": 0.949215, 
+          "Carbon": 22.820108, 
+          "Germanium": 3.543597, 
+          "Iron": 12.223566, 
+          "Manganese": 5.048208, 
+          "Nickel": 9.245394, 
+          "Phosphorus": 14.609824, 
+          "Sulphur": 27.137835, 
+          "Tungsten": 0.671197, 
+          "Vanadium": 3.001682
+        }, 
+        "meanAnomaly": 353.841985, 
+        "name": "Eimbaith LW-W e1-290 6 b", 
+        "orbitalEccentricity": 0.012743, 
+        "orbitalInclination": 0.350194, 
+        "orbitalPeriod": 10.0969843980324, 
+        "parents": [
+          {
+            "Planet": 39
+          }, 
+          {
+            "Null": 32
+          }, 
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 615.2556875, 
+        "rotationalPeriod": 9.95378034554398, 
+        "rotationalPeriodTidallyLocked": true, 
+        "semiMajorAxis": 0.00276159780172233, 
+        "solidComposition": {
+          "Ice": 82.4309, 
+          "Metal": 1.5659, 
+          "Rock": 16.0032
+        }, 
+        "stations": [], 
+        "subType": "Icy body", 
+        "surfacePressure": 0.0, 
+        "surfaceTemperature": 112.603981, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-14T02:33:30Z", 
+          "meanAnomaly": "2026-06-14T02:33:30Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-14 02:33:30+00", 
+        "volcanismType": "No volcanism"
+      }, 
+      {
+        "argOfPeriapsis": 86.129225, 
+        "ascendingNode": 111.950321, 
+        "atmosphereComposition": {
+          "Ammonia": 0.529072, 
+          "Methane": 0.529072, 
+          "Water": 98.407478
+        }, 
+        "atmosphereType": null, 
+        "axialTilt": 0.006605, 
+        "bodyId": 43, 
+        "distanceToArrival": 4828.113495, 
+        "earthMasses": 23.555542, 
+        "gravity": 2.86998929336188, 
+        "id64": 1549239518629022356, 
+        "isLandable": false, 
+        "meanAnomaly": 97.062847, 
+        "name": "Eimbaith LW-W e1-290 7", 
+        "orbitalEccentricity": 0.010499, 
+        "orbitalInclination": 0.199868, 
+        "orbitalPeriod": 9767.6453491052, 
+        "parents": [
+          {
+            "Star": 0
+          }
+        ], 
+        "radius": 18263.88, 
+        "reserveLevel": "Pristine", 
+        "rings": [
+          {
+            "id64": 1585268315647986324, 
+            "innerRadius": 30135000.0, 
+            "mass": 60908000000.0, 
+            "name": "Eimbaith LW-W e1-290 7 A Ring", 
+            "outerRadius": 103350000.0, 
+            "signals": {
+              "signals": {
+                "Bromellite": 3, 
+                "LowTemperatureDiamond": 1, 
+                "Opal": 2, 
+                "Tritium": 2
+              }, 
+              "updateTime": "2026-02-03 01:22:52+00"
+            }, 
+            "type": "Icy"
+          }
+        ], 
+        "rotationalPeriod": 1.6022530537037, 
+        "rotationalPeriodTidallyLocked": false, 
+        "semiMajorAxis": 9.66196557473495, 
+        "signals": {
+          "signals": {
+            "$SAA_SignalType_Human;": 1
+          }, 
+          "updateTime": "2021-10-14 11:57:53+00"
+        }, 
+        "stations": [], 
+        "subType": "Water giant", 
+        "surfacePressure": 6141367.07947693, 
+        "surfaceTemperature": 158.0, 
+        "terraformingState": "Not terraformable", 
+        "timestamps": {
+          "distanceToArrival": "2026-06-27T12:13:17Z", 
+          "meanAnomaly": "2026-06-27T12:13:17Z"
+        }, 
+        "type": "Planet", 
+        "updateTime": "2026-06-27 12:13:17+00", 
+        "volcanismType": "No volcanism"
+      }
+    ], 
+    "bodyCount": 31, 
+    "coords": {
+      "x": -1421.71875, 
+      "y": 1618.3125, 
+      "z": 30063.0625
+    }, 
+    "date": "2026-06-27 12:15:26+00", 
+    "government": "None", 
+    "id64": 1246813571732, 
+    "name": "Eimbaith LW-W e1-290", 
+    "population": 0, 
+    "primaryEconomy": "None", 
+    "secondaryEconomy": "None", 
+    "security": "Anarchy", 
+    "stations": []
+  }
+}

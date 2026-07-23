@@ -2,9 +2,11 @@
   <div class="body-title">
     <div class="title-left">
       <b>{{ getBodyDisplayName(body().bodyData.name) }}</b>
+      @if (hasBodyLink) {
       <fa-icon [icon]="faLink" class="clickable body-anchor-link" [class.body-anchor-link--copied]="bodyLinkCopied()"
         [attr.aria-label]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'" (click)="copyBodyLink()"
         [matTooltip]="bodyLinkCopied() ? 'Copied!' : 'Copy link to body'"></fa-icon>
+      }
       @if (body().bodyData.subType) {
       <span>-</span>
       }
