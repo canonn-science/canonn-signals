@@ -36,10 +36,10 @@ The RegionMap is used from https://github.com/klightspeed/EliteDangerousRegionMa
 
 ## Credits
 * CMDR Elfener for the original implementation
-* CMDR DarkSession for the Angular implementation
+* CMDR Dark Session for the Angular implementation
 * CMDR Bravada Cadelanne for [EliteDangerousRegionMap](https://github.com/klightspeed/EliteDangerousRegionMap) and the [EDDN Lookup API](https://edgalaxydata.space/eddn-lookup/) used for the Simbad data
 * CMDR [Spansh](https://spansh.co.uk) for use of his APIs and galaxy dumps
-* CMDR Orvidius for use of the [Galactic Exploration Catalog](https://edastro.com/gec) apis.
+* CMDR Orvidius / [EDAstro](https://edastro.com) for use of the [Galactic Exploration Catalog](https://edastro.com/gec) apis, nebulae-coordinates and Green Gas Giant datasets
 * CMDR Robbie for use of the body asset images from [EDDiscovery](https://github.com/EDDiscovery/ImageRepository/)
 * The [EDCD Community](https://edcd.github.io/) for help and advice over the years
 * The [EDDN Network](https://eddn.edcd.io/) and the commanders who contribute to it
@@ -48,3 +48,4 @@ The RegionMap is used from https://github.com/klightspeed/EliteDangerousRegionMa
 * CMDR LCU No Fool Like One for cloud functions and ongoing enhancements
 * CMDR Sovereign Winter for neutron star cone angle research
 * CMDR Chewcat1 for invisible ring research
+* CMDR Vithigar / [Elite Observatory](https://observatory.xjph.net/) for cross-checking orbital collision and synodic-period calculations
