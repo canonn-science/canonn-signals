@@ -827,6 +827,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   public readonly bodies = signal<SystemBody[]>([]);
   public readonly anchorBodyId = signal<number | null>(null);
 
+  // --- Anchor-link scroll correction (see scrollToAnchor) ---
+  private anchorScrollInitialTimer: ReturnType<typeof setTimeout> | null = null;
+  private anchorScrollObserver: ResizeObserver | null = null;
+  private anchorScrollCleanup: (() => void) | null = null;
+
   /** id64 of the loaded system, threaded down to every SystemBodyComponent as a key for the async collision registry. */
   public readonly systemKey = computed<bigint | null>(() => this.data()?.system?.id64 ?? null);
 
@@ -977,6 +982,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   public ngOnDestroy(): void {
     window.removeEventListener('popstate', this.onPopState);
+    this.stopAnchorScrollCorrection();
     if (this.suggestionDebounceTimer !== null) {
       clearTimeout(this.suggestionDebounceTimer);
     }
@@ -1407,18 +1413,65 @@ export class HomeComponent implements OnInit, OnDestroy {
       if (match) {
         this.anchorBodyId.set(parseInt(match[1], 10));
       }
-      // Wait for Angular to render the body elements, then scroll
-      setTimeout(() => {
-        const el = document.querySelector(hash);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 300);
+      this.scrollToAnchor(hash);
     } else {
+      this.stopAnchorScrollCorrection();
       this.anchorBodyId.set(null);
     }
     // Zoneless: the data/bodies/anchorBodyId signal writes above schedule the CD
     // pass that re-reads this method's bound state, even from async HTTP callbacks.
+  }
+
+  /**
+   * Scrolls a `#body-N` deep link into view once Angular has rendered it, then keeps
+   * correcting the scroll position for a few seconds afterwards. The initial scroll alone
+   * (issue #133) lands correctly for an instant, but content that streams in above the body
+   * list — the EdAstro summary/region map/society panel, all fetched async in processBodies —
+   * grows the page and pushes the anchor back out of the viewport. Correction stops as soon
+   * as the user scrolls/touches/presses a key, or after a bounded window, so it never fights
+   * someone who has started reading elsewhere.
+   */
+  private scrollToAnchor(hash: string): void {
+    this.stopAnchorScrollCorrection();
+
+    const scrollIfPresent = () => {
+      document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    // Wait for Angular to render the body elements, then scroll.
+    this.anchorScrollInitialTimer = setTimeout(() => {
+      this.anchorScrollInitialTimer = null;
+      scrollIfPresent();
+
+      const stop = () => this.stopAnchorScrollCorrection();
+      const interactionEvents: (keyof WindowEventMap)[] = ['wheel', 'touchstart', 'keydown'];
+      for (const type of interactionEvents) {
+        window.addEventListener(type, stop, { once: true, passive: true });
+      }
+
+      const observer = new ResizeObserver(scrollIfPresent);
+      observer.observe(document.body);
+      this.anchorScrollObserver = observer;
+
+      const stopTimer = setTimeout(stop, 3000);
+      this.anchorScrollCleanup = () => {
+        for (const type of interactionEvents) {
+          window.removeEventListener(type, stop);
+        }
+        clearTimeout(stopTimer);
+      };
+    }, 300);
+  }
+
+  private stopAnchorScrollCorrection(): void {
+    if (this.anchorScrollInitialTimer !== null) {
+      clearTimeout(this.anchorScrollInitialTimer);
+      this.anchorScrollInitialTimer = null;
+    }
+    this.anchorScrollObserver?.disconnect();
+    this.anchorScrollObserver = null;
+    this.anchorScrollCleanup?.();
+    this.anchorScrollCleanup = null;
   }
 
   private isNumeric(value: string) {
