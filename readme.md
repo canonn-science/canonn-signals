@@ -49,3 +49,4 @@ The RegionMap is used from https://github.com/klightspeed/EliteDangerousRegionMa
 * CMDR Sovereign Winter for neutron star cone angle research
 * CMDR Chewcat1 for invisible ring research
 * CMDR Vithigar / [Elite Observatory](https://observatory.xjph.net/) for cross-checking orbital collision and synodic-period calculations
+* CMDR Esvandiary for [EDTS](https://bitbucket.org/Esvandiary/edts) used for procedurally-generated region naming
