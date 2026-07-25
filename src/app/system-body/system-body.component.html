@@ -929,6 +929,16 @@
               {{ getConfirmedBiologyCount() }}/{{ biologySignalCount || 0 }}
             </div>
           </div>
+          @if (influencingStar) {
+          <div class="body-data-entry clickable" (click)="showInfluencingStarDialog()">
+            <div>
+              Influencing Star<fa-icon class="info-icon" title="Click for more information" [icon]="faInfo"></fa-icon>
+            </div>
+            <div>
+              {{ influencingStar.star.bodyData.subType }}
+            </div>
+          </div>
+          }
           @if (biologySignals.length) {
           @for (biologySignal of biologySignals; track trackByBiologySignal($index, biologySignal)) {
           <div class="body-data-entry">

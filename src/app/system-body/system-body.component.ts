@@ -42,6 +42,9 @@ import type { LagrangeDialogData } from '../dialogs/lagrange-dialog/lagrange-dia
 import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on-foot-safety-dialog.component';
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 import { resolveBodySignalsMap, FilterCommand } from '../data/body-filters';
+import { influencingStar, InfluencingStarResult } from '../data/influencing-star';
+import { influencingStarClassToken, isBiologyGuessAllowed } from '../data/biology-star-class';
+import type { InfluencingStarDialogData } from '../dialogs/influencing-star-dialog/influencing-star-dialog.component';
 import { SPECULATIVE_BODY_TOOLTIP } from '../data/speculative-systems';
 import { SpeculativeValueTooltipDirective } from './speculative-value-tooltip.directive';
 import { BodyInterestRegistryService } from '../data/body-interest-registry.service';
@@ -147,6 +150,8 @@ export class SystemBodyComponent implements OnChanges {
 
   public biologySignalCount: number = 0;
   public biologySignals: BiologySignal[] = [];
+  /** The star governing this body's biology (see {@link influencingStar}), or null when not applicable/resolvable. */
+  public influencingStar: InfluencingStarResult | null = null;
 
   public thargoidSignalCount: number = 0;
   public thargoidSignals: string[] = [];
@@ -379,6 +384,16 @@ export class SystemBodyComponent implements OnChanges {
             isGuess: true,
           });
         }
+      }
+      this.influencingStar = (this.biologySignals.length || this.biologySignalCount) && body.bodyData.type !== BODY_TYPE.Star
+        ? this.resolveInfluencingStar(body)
+        : null;
+      // Guessed (not confirmed) biology whose codex entry names a star class the
+      // Influencing Star doesn't match is implausible — drop it from the guess list.
+      if (this.influencingStar) {
+        const starToken = influencingStarClassToken(this.influencingStar.star.bodyData);
+        this.biologySignals = this.biologySignals.filter(b =>
+          !b.isGuess || isBiologyGuessAllowed(b.signal, b.codex?.name, starToken));
       }
     }
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
@@ -812,6 +827,30 @@ export class SystemBodyComponent implements OnChanges {
     return bodyData.type === BODY_TYPE.Star
       && bodyData.age != null
       && isPlottableStarClass(bodyData.spectralClass, bodyData.subType);
+  }
+
+  /**
+   * Opens the modal explaining how {@link influencingStar} identified this body's governing
+   * star and how that star's class shapes which biology can be present. No-op when the
+   * influencing star hasn't been resolved for this body.
+   */
+  public async showInfluencingStarDialog(): Promise<void> {
+    const result = this.influencingStar;
+    if (!result) { return; }
+    const body = this.body();
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/influencing-star-dialog/influencing-star-dialog.component').then(m => m.InfluencingStarDialogComponent),
+      skeleton: 'text',
+      width: '700px',
+      maxWidth: '95vw',
+      data: {
+        bodyName: this.getBodyDisplayName(body.bodyData.name),
+        starName: this.getBodyDisplayName(result.star.bodyData.name),
+        starSubType: result.star.bodyData.subType,
+        method: result.method,
+        starCount: result.starCount,
+      } satisfies InfluencingStarDialogData,
+    });
   }
 
   // --- Inline dynamic-by-magnitude formatters (delegated to the shared pure module) ---
@@ -1827,6 +1866,10 @@ export class SystemBodyComponent implements OnChanges {
   public readonly collisionPending = signal(false);
   /** The body `collisionStatus` was last requested for, to skip recompute on unrelated re-renders. */
   private collisionBody: SystemBody | null = null;
+  /** The body {@link resolveInfluencingStar} last computed for, to skip recompute on unrelated re-renders. */
+  private influencingStarBody: SystemBody | null = null;
+  /** Cached result for {@link influencingStarBody}. */
+  private influencingStarResult: InfluencingStarResult | null = null;
   /** Generation token: increments per request so a stale worker response for a superseded body is dropped. */
   private collisionRequestId = 0;
   /** Timer that reveals the pending skeleton; cleared when the result arrives or the component is destroyed. */
@@ -1867,6 +1910,20 @@ export class SystemBodyComponent implements OnChanges {
         this.collisionPending.set(false);
         this.reportCollisionCandidate(body, false);
       });
+  }
+
+  /**
+   * Cached wrapper around {@link influencingStar}: the flux-dominance search (up to
+   * numStars × 24 orbital-phase samples on a near-tie) depends only on `body`'s orbital
+   * tree, so it's skipped — like {@link requestCollisionStatus} — on the many ngOnChanges
+   * re-fires (codex load, filter clicks, anchor navigation) that leave `body` unchanged.
+   */
+  private resolveInfluencingStar(body: SystemBody): InfluencingStarResult | null {
+    if (this.influencingStarBody !== body) {
+      this.influencingStarBody = body;
+      this.influencingStarResult = influencingStar(body);
+    }
+    return this.influencingStarResult;
   }
 
   /**
