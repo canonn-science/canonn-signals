@@ -386,7 +386,7 @@ export class SystemBodyComponent implements OnChanges {
         }
       }
       this.influencingStar = (this.biologySignals.length || this.biologySignalCount) && body.bodyData.type !== BODY_TYPE.Star
-        ? influencingStar(body)
+        ? this.resolveInfluencingStar(body)
         : null;
       // Guessed (not confirmed) biology whose codex entry names a star class the
       // Influencing Star doesn't match is implausible — drop it from the guess list.
@@ -1866,6 +1866,10 @@ export class SystemBodyComponent implements OnChanges {
   public readonly collisionPending = signal(false);
   /** The body `collisionStatus` was last requested for, to skip recompute on unrelated re-renders. */
   private collisionBody: SystemBody | null = null;
+  /** The body {@link resolveInfluencingStar} last computed for, to skip recompute on unrelated re-renders. */
+  private influencingStarBody: SystemBody | null = null;
+  /** Cached result for {@link influencingStarBody}. */
+  private influencingStarResult: InfluencingStarResult | null = null;
   /** Generation token: increments per request so a stale worker response for a superseded body is dropped. */
   private collisionRequestId = 0;
   /** Timer that reveals the pending skeleton; cleared when the result arrives or the component is destroyed. */
@@ -1906,6 +1910,20 @@ export class SystemBodyComponent implements OnChanges {
         this.collisionPending.set(false);
         this.reportCollisionCandidate(body, false);
       });
+  }
+
+  /**
+   * Cached wrapper around {@link influencingStar}: the flux-dominance search (up to
+   * numStars × 24 orbital-phase samples on a near-tie) depends only on `body`'s orbital
+   * tree, so it's skipped — like {@link requestCollisionStatus} — on the many ngOnChanges
+   * re-fires (codex load, filter clicks, anchor navigation) that leave `body` unchanged.
+   */
+  private resolveInfluencingStar(body: SystemBody): InfluencingStarResult | null {
+    if (this.influencingStarBody !== body) {
+      this.influencingStarBody = body;
+      this.influencingStarResult = influencingStar(body);
+    }
+    return this.influencingStarResult;
   }
 
   /**
