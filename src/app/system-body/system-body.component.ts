@@ -43,6 +43,7 @@ import type { OnFootSafetyDialogData } from '../dialogs/on-foot-safety-dialog/on
 import { StellarAgeAssessment, assessStellarAge, isPlottableStarClass } from '../data/stellar-reference';
 import { resolveBodySignalsMap, FilterCommand } from '../data/body-filters';
 import { influencingStar, InfluencingStarResult } from '../data/influencing-star';
+import { influencingStarClassToken, isBiologyGuessAllowed } from '../data/biology-star-class';
 import type { InfluencingStarDialogData } from '../dialogs/influencing-star-dialog/influencing-star-dialog.component';
 import { SPECULATIVE_BODY_TOOLTIP } from '../data/speculative-systems';
 import { SpeculativeValueTooltipDirective } from './speculative-value-tooltip.directive';
@@ -387,6 +388,13 @@ export class SystemBodyComponent implements OnChanges {
       this.influencingStar = (this.biologySignals.length || this.biologySignalCount) && body.bodyData.type !== BODY_TYPE.Star
         ? influencingStar(body)
         : null;
+      // Guessed (not confirmed) biology whose codex entry names a star class the
+      // Influencing Star doesn't match is implausible — drop it from the guess list.
+      if (this.influencingStar) {
+        const starToken = influencingStarClassToken(this.influencingStar.star.bodyData);
+        this.biologySignals = this.biologySignals.filter(b =>
+          !b.isGuess || isBiologyGuessAllowed(b.signal, b.codex?.name, starToken));
+      }
     }
     this.hasSignals = this.humanSignalCount > 0 || this.otherSignalCount > 0 || this.geologySignalCount > 0 || this.biologySignalCount > 0 || this.thargoidSignalCount > 0 || this.guardianSignalCount > 0 ||
       this.geologySignals.length > 0 || this.biologySignals.length > 0 || this.thargoidSignals.length > 0 || this.guardianSignals.length > 0;
