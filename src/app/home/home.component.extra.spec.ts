@@ -166,6 +166,47 @@ describe('HomeComponent (extended coverage)', () => {
     });
   });
 
+  describe('credits and feedback panel', () => {
+    async function loadTestSystem(): Promise<void> {
+      httpResponses.set('assets/test-system.json', {
+        system: { name: 'Test System', id64: 42, coords: { x: 1, y: 2, z: 3 }, bodies: [] },
+      });
+      httpResponses.set('/simbad?', { system_address: 42, name: 'Test System' });
+      component.searchControl.setValue('test');
+      component.search();
+      await flushPromises();
+      fixture.detectChanges();
+    }
+
+    it('stays hidden on the landing page (no system loaded)', () => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.credits-panel')).toBeNull();
+    });
+
+    it('titles the panel "Credits and Feedback" once a system is loaded', async () => {
+      await loadTestSystem();
+      expect(fixture.nativeElement.querySelector('.credits-title-text')?.textContent?.trim())
+        .toBe('Credits and Feedback');
+    });
+
+    it('renders bug-report and feature-request links beside the donate button', async () => {
+      await loadTestSystem();
+      const actions = fixture.nativeElement.querySelector('.credits-title .credits-title-actions');
+      expect(actions).not.toBeNull();
+      // Feedback buttons sit alongside the PayPal donate link in the same actions group.
+      expect(actions.querySelector('.paypal-donate-link')).not.toBeNull();
+      const links = actions.querySelectorAll('.feedback-button');
+      const hrefs = Array.from(links).map((a: any) => a.getAttribute('href'));
+      expect(hrefs).toContain('https://github.com/canonn-science/canonn-signals/issues/new?template=bug_report.md');
+      expect(hrefs).toContain('https://github.com/canonn-science/canonn-signals/issues/new?template=feature_request.md');
+      // Open in a new tab without leaking the opener.
+      links.forEach((a: any) => {
+        expect(a.getAttribute('target')).toBe('_blank');
+        expect(a.getAttribute('rel')).toContain('noopener');
+      });
+    });
+  });
+
   describe('ngOnInit wiring', () => {
     it('reacts to the outpost feed', () => {
       component.ngOnInit();
