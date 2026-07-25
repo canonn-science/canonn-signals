@@ -1,0 +1,56 @@
+<app-dialog-shell [heading]="heading">
+  <div class="influencing-star-dialog">
+    <p class="intro">
+      Biology on <strong>{{ data.bodyName }}</strong> is governed by <strong>{{ data.starName }}</strong>,
+      a <strong>{{ data.starSubType }}</strong>.
+    </p>
+
+    <p class="explanation"><strong>How it was identified</strong></p>
+    @if (data.method === 'only-star') {
+    <p>
+      This system has only one star, so it trivially governs the biology of every body in it.
+    </p>
+    }
+    @if (data.method === 'flux-3d' || data.method === 'flux-characteristic') {
+    <p>
+      This system has {{ data.starCount }} stars, so each was scored by the flux it delivers to this
+      body — how strongly it irradiates the body compared with every other star — and the strongest
+      wins. Flux is calculated from each star's radius and surface temperature (Stefan&ndash;Boltzmann:
+      brighter, hotter stars radiate more) divided by its distance to the body, squared.
+    </p>
+    }
+    @if (data.method === 'flux-3d') {
+    <p>
+      The distance used is each star's real position in 3D space at a fixed reference date —
+      following its actual orbit (including tilt and eccentricity) out to the system's centre, not
+      just a straight-line body-to-star measurement. When two stars were close enough in flux to be a
+      near tie, the comparison was averaged across many points along their orbits instead of relying
+      on a single snapshot in time.
+    </p>
+    }
+    @if (data.method === 'flux-characteristic') {
+    <p>
+      A candidate star's exact orbital position couldn't be fully resolved from the available data,
+      so the comparison fell back to a characteristic orbital-scale distance derived from semi-major
+      axes alone — accurate for ranking purposes, though slightly less precise than a full 3D
+      calculation.
+    </p>
+    }
+    <p>
+      Two adjustments correct known biases in the raw flux score: a boost for <strong>Y-class brown
+      dwarfs</strong>, whose faintness the formula would otherwise underrate when they're genuinely
+      close enough to matter, and a larger boost for <strong>neutron stars</strong>, whose microscopic
+      radius makes the formula understate their influence even at their extreme surface temperatures.
+    </p>
+
+    <p class="explanation"><strong>How the influencing star shapes biology</strong></p>
+    <p>
+      A body's biological signals aren't decided by its own properties alone — the class,
+      temperature and luminosity of its governing star are part of what determines which genera and
+      species of life can spawn, alongside the body's own temperature, gravity, atmosphere and
+      volcanism. Many genera and species are only ever found around specific star classes or ranges
+      of stellar temperature, so identifying the influencing star narrows down which biology is
+      plausible on this body before it's even been scanned.
+    </p>
+  </div>
+</app-dialog-shell>
