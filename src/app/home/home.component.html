@@ -512,11 +512,23 @@
     }
     <div class="credits-panel">
       <div class="credits-title">
-        <span class="credits-title-text">Credits</span>
-        <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
-          aria-label="Donate via PayPal (fallback)">
-          <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
-        </a>
+        <span class="credits-title-text">Credits and Feedback</span>
+        <div class="credits-title-actions">
+          <a class="feedback-button feedback-button--bug" [href]="bugReportUrl" target="_blank"
+            rel="noopener noreferrer" aria-label="Report a bug on GitHub">
+            <fa-icon [icon]="faBug" aria-hidden="true"></fa-icon>
+            <span>Report a bug</span>
+          </a>
+          <a class="feedback-button feedback-button--feature" [href]="featureRequestUrl" target="_blank"
+            rel="noopener noreferrer" aria-label="Request a feature on GitHub">
+            <fa-icon [icon]="faLightbulb" aria-hidden="true"></fa-icon>
+            <span>Request a feature</span>
+          </a>
+          <a class="paypal-donate-link" href="https://canonn.science/donate/" target="_blank" rel="noopener noreferrer"
+            aria-label="Donate via PayPal (fallback)">
+            <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" alt="Donate via PayPal" />
+          </a>
+        </div>
       </div>
       <div class="credits-detail">
         <div [innerHTML]="creditsHtml"></div>
@@ -595,3 +607,4 @@
   </div>
 </div>
 }
+

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, HostListener, inject, viewChild, signal, computed, effect } from '@angular/core';
 import { AppService, EdastroData } from '../app.service';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { faChartColumn, faChevronDown, faDownload, faFileCode, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faBug, faChartColumn, faChevronDown, faDownload, faFileCode, faLightbulb, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { MatDialog } from '@angular/material/dialog';
 import { openLazyDialog } from '../dialogs/lazy-dialog';
 import type { HistogramDialogData } from '../dialogs/histogram-dialog/histogram-dialog.component';
@@ -733,6 +733,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   public readonly faMagnifyingGlass = faMagnifyingGlass;
   public readonly faChartColumn = faChartColumn;
   public readonly faChevronDown = faChevronDown;
+  public readonly faBug = faBug;
+  public readonly faLightbulb = faLightbulb;
+  /** GitHub "new issue" links pre-selecting the repo's bug / feature templates. */
+  public readonly bugReportUrl = 'https://github.com/canonn-science/canonn-signals/issues/new?template=bug_report.md';
+  public readonly featureRequestUrl = 'https://github.com/canonn-science/canonn-signals/issues/new?template=feature_request.md';
   private readonly dialog = inject(MatDialog);
 
   /** Opens the body-type histogram for the current system. */

@@ -364,11 +364,15 @@
     width: auto;
 }
 
+.paypal-donate-link {
+    display: flex;
+    align-items: center;
+}
+
 .paypal-donate-link img {
     height: 28px;
     width: auto;
-    display: inline-block;
-    margin-left: 6px;
+    display: block;
 }
 
 .credits-detail {

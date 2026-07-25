@@ -490,3 +490,48 @@ hr {
   width: 120px;
   max-width: 100%;
 }
+
+/* Bug-report / feature-request links, shown next to the donate button in the "Credits and
+   Feedback" title bar (rendered in home.component). Kept global to keep home.component.scss
+   under its per-component style budget. */
+.credits-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-surface-2);
+  color: var(--color-text-bright);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.feedback-button:hover,
+.feedback-button:focus-visible {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.feedback-button fa-icon {
+  font-size: 14px;
+}
+
+.feedback-button--bug fa-icon {
+  color: #ff6b6b;
+}
+
+.feedback-button--feature fa-icon {
+  color: var(--color-accent);
+}
