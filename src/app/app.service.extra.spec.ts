@@ -105,7 +105,7 @@ describe('AppService (HTTP-driven coverage)', () => {
 
   it('loads per-system biostats', async () => {
     await init();
-    route = (url: string) => url.includes('/codex/biostats?id=999') ? ok({ system: { name: 'Sys', id64: 999 } }) : ok({});
+    route = (url: string) => url.includes('/codex/dump?id=999') ? ok({ system: { name: 'Sys', id64: 999 } }) : ok({});
     const result = await service.getBiostats(999);
     expect(result.system.name).toBe('Sys');
   });
@@ -300,7 +300,7 @@ describe('AppService (HTTP-driven coverage)', () => {
     await init();
     let biostatsCalls = 0;
     route = (url: string) => {
-      if (url.includes('/codex/biostats?id=555')) {
+      if (url.includes('/codex/dump?id=555')) {
         biostatsCalls++;
         return ok({ system: { name: 'Croatigae' } });
       }
@@ -318,7 +318,7 @@ describe('AppService (HTTP-driven coverage)', () => {
     await init();
     let biostatsCalls = 0;
     route = (url: string) => {
-      if (url.includes('/codex/biostats?id=777')) {
+      if (url.includes('/codex/dump?id=777')) {
         biostatsCalls++;
         return fail(404, 'not found');
       }
@@ -336,7 +336,7 @@ describe('AppService (HTTP-driven coverage)', () => {
     await init();
     let biostatsCalls = 0;
     route = (url: string) => {
-      if (url.includes('/codex/biostats?id=888')) {
+      if (url.includes('/codex/dump?id=888')) {
         biostatsCalls++;
         return ok({ system: { name: 'Varati' } });
       }

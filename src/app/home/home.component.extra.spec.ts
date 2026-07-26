@@ -85,7 +85,7 @@ describe('HomeComponent (extended coverage)', () => {
             setBackgroundImage,
             galMapSearch: vi.fn((q: string) => httpGet(`/typeahead?q=${q}`)),
             typeahead: vi.fn((q: string) => httpGet(`/typeahead?q=${q}`)),
-            getBiostats: vi.fn((id: number) => httpGet(`/codex/biostats?id=${id}&caller=Signals`)),
+            getBiostats: vi.fn((id: number) => httpGet(`/codex/dump?id=${id}&caller=Signals`)),
             getSimbad: vi.fn((id: number, name: string) => httpGet(`/simbad?system_address=${id}&name=${name}`)),
             megashipSchedule: megashipSchedule$,
             ensureMegaships: vi.fn(),
@@ -258,7 +258,7 @@ describe('HomeComponent (extended coverage)', () => {
     });
 
     it('searches by numeric system address', async () => {
-      httpResponses.set('/biostats?id=999', {
+      httpResponses.set('/dump?id=999', {
         system: { name: 'Numeric Sys', id64: 999, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
       component.searchControl.setValue('999');
@@ -270,7 +270,7 @@ describe('HomeComponent (extended coverage)', () => {
     it('passes a 64-bit system address through as a string (no parseInt precision loss)', async () => {
       // 18 digits — beyond Number.MAX_SAFE_INTEGER, where parseInt would round.
       const big = '123456789012345678';
-      httpResponses.set(`/biostats?id=${big}`, {
+      httpResponses.set(`/dump?id=${big}`, {
         system: { name: 'Big Addr', id64: 1, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
       component.searchControl.setValue(big);
@@ -280,7 +280,7 @@ describe('HomeComponent (extended coverage)', () => {
     });
 
     it('reports a not-found system address gracefully', async () => {
-      httpResponses.set('/biostats?id=111', { system: null });
+      httpResponses.set('/dump?id=111', { system: null });
       component.searchControl.setValue('111');
       component.search();
       await flushPromises();
@@ -289,7 +289,7 @@ describe('HomeComponent (extended coverage)', () => {
     });
 
     it('resolves a name via the EdAstro cache', async () => {
-      httpResponses.set('/biostats?id=555', {
+      httpResponses.set('/dump?id=555', {
         system: { name: 'Cached Sys', id64: 555, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
       // Seed the EdAstro cache before searching; search() reads the current snapshot.
@@ -302,7 +302,7 @@ describe('HomeComponent (extended coverage)', () => {
 
     it('resolves a name via the Canonn typeahead when not in the EdAstro cache', async () => {
       httpResponses.set('/typeahead', { min_max: [{ name: 'Found Sys', id64: 777 }] });
-      httpResponses.set('/biostats?id=777', {
+      httpResponses.set('/dump?id=777', {
         system: { name: 'Found Sys', id64: 777, coords: { x: 0, y: 0, z: 0 }, bodies: [] },
       });
       edastroSystems$.set([]); // not in cache -> falls through to the Canonn typeahead
@@ -322,7 +322,7 @@ describe('HomeComponent (extended coverage)', () => {
     });
 
     it('surfaces a 404 from the biostats API as a not-found error', async () => {
-      httpResponses.set('/biostats?id=404', Object.assign(new Error('nope'), { status: 404 }));
+      httpResponses.set('/dump?id=404', Object.assign(new Error('nope'), { status: 404 }));
       component.searchControl.setValue('404');
       component.search();
       await flushPromises();
@@ -394,7 +394,7 @@ describe('HomeComponent (extended coverage)', () => {
 
   describe('selection & navigation helpers', () => {
     it('routes a known system selection straight to its address', async () => {
-      httpResponses.set('/biostats?id=7', { system: { name: 'Mapped', id64: 7, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
+      httpResponses.set('/dump?id=7', { system: { name: 'Mapped', id64: 7, coords: { x: 0, y: 0, z: 0 }, bodies: [] } });
       edastroSystems$.set([{ name: 'Mapped Display', id64: 7 }]);
       component.onSystemSelected('Mapped Display');
       await flushPromises();

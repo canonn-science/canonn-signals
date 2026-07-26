@@ -85,7 +85,7 @@ export interface FixtureOptions {
 export async function loadFixtureSystem(page: Page, opts: FixtureOptions): Promise<void> {
   const fixturePath = path.join(FIXTURES_DIR, opts.fixture);
 
-  await page.route('**/query/codex/biostats*', (route) => route.fulfill({ path: fixturePath }));
+  await page.route('**/query/codex/dump*', (route) => route.fulfill({ path: fixturePath }));
   await page.route('**/query/typeahead*', (route) =>
     route.fulfill({ json: { min_max: [{ name: opts.systemName, id64: opts.id64 }] } }),
   );

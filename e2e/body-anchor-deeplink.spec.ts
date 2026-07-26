@@ -15,7 +15,7 @@ const FIXTURES_DIR = path.join(__dirname, 'fixtures');
 
 async function stubSystem(page: Page, systemName: string, id64: number, fixture: string): Promise<void> {
   const fixturePath = path.join(FIXTURES_DIR, fixture);
-  await page.route('**/query/codex/biostats*', (route) => route.fulfill({ path: fixturePath }));
+  await page.route('**/query/codex/dump*', (route) => route.fulfill({ path: fixturePath }));
   await page.route('**/query/typeahead*', (route) =>
     route.fulfill({ json: { min_max: [{ name: systemName, id64 }] } }),
   );
