@@ -298,10 +298,13 @@ export class AppService {
     return this.resilientGet<TypeaheadResponse>(`${CANONN_QUERY_BASE}/typeahead?q=${encodeURIComponent(query)}`);
   }
 
-  /** Loads the per-system biostats payload (bodies, signals, coordinates). Accepts the
-   *  address as a string to preserve 64-bit precision for very large system addresses. */
+  /** Loads the per-system biostats payload (bodies, signals, coordinates) from the `codex/dump`
+   *  endpoint — a superset of the old `codex/biostats` shape (adds system-level `factions`/
+   *  `stations`) served gzip-compressed; `fetch()` decodes `Content-Encoding: gzip` transparently,
+   *  so no extra handling is needed here. Accepts the address as a string to preserve 64-bit
+   *  precision for very large system addresses. */
   public getBiostats(systemAddress: number | string | bigint): Promise<CanonnBiostats> {
-    return this.resilientGet<CanonnBiostats>(`${CANONN_QUERY_BASE}/codex/biostats?id=${systemAddress}&caller=Signals`);
+    return this.resilientGet<CanonnBiostats>(`${CANONN_QUERY_BASE}/codex/dump?id=${systemAddress}&caller=Signals`);
   }
 
   /** Looks up Simbad cross-identification / coordinates for a hand-authored system. */
