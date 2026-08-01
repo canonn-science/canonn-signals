@@ -339,6 +339,12 @@ describe('BodyPhysicsService', () => {
       expect(service.angularDiameterDegrees(b)).toBeCloseTo(180, 6);
     });
 
+    it('clamps an overlapping parent radius to a finite 180°', () => {
+      const parent = body({ radius: 2 * KM_PER_AU, type: 'Planet' });
+      const b = body({ semiMajorAxis: 1 }, parent);
+      expect(service.angularDiameterDegrees(b)).toBeCloseTo(180, 6);
+    });
+
     it('returns null without a parent, orbit distance, or parent radius', () => {
       expect(service.angularDiameterDegrees(body({ semiMajorAxis: 1 }))).toBeNull();
       const parent = body({ radius: 70000, type: 'Planet' });
