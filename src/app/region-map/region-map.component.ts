@@ -43,10 +43,12 @@ const FULL_VIEWBOX = `0 0 ${MAP_SIZE} ${MAP_SIZE}`;
   // @if) so `regionMapContainer` resolves before `loadRegionMap` runs.
   template: `
     <div class="region-map-slot">
+      <button type="button" class="region-map-skip-link" (click)="skipMap()">Skip interactive galaxy map</button>
       @if (!mapLoaded()) {
         <div class="region-map-skeleton skeleton" aria-hidden="true"></div>
       }
       <div #regionMapContainer class="region-map"></div>
+      <span #mapEnd class="region-map-skip-target" tabindex="-1"></span>
     </div>
   `,
   styleUrl: './region-map.component.scss',
@@ -61,6 +63,7 @@ export class RegionMapComponent implements OnChanges {
   readonly systemSelected = output<string>();
 
   readonly regionMapContainer = viewChild.required<ElementRef<HTMLDivElement>>('regionMapContainer');
+  readonly mapEnd = viewChild.required<ElementRef<HTMLSpanElement>>('mapEnd');
 
   /** Guards against issuing a second SVG fetch while the first is still in flight. */
   private svgLoading = false;
@@ -82,6 +85,10 @@ export class RegionMapComponent implements OnChanges {
 
   private selectSystem(systemName: string): void {
     this.systemSelected.emit(systemName);
+  }
+
+  public skipMap(): void {
+    this.mapEnd().nativeElement.focus();
   }
 
   /** Applies the shared mouse, keyboard and focus behaviour for selectable SVG markers. */
@@ -231,6 +238,11 @@ export class RegionMapComponent implements OnChanges {
       styleElement.textContent = `
         .regionText { display: none !important; }
         .region { pointer-events: auto !important; cursor: pointer !important; }
+        [role="button"]:focus-visible {
+          outline: 4px solid var(--color-white);
+          outline-offset: 4px;
+          filter: drop-shadow(0 0 5px var(--color-accent));
+        }
       `;
       svgElement.insertBefore(styleElement, svgElement.firstChild);
     }

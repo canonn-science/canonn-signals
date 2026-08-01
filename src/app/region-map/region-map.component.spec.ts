@@ -71,6 +71,16 @@ describe('RegionMapComponent', () => {
     expect(emitted).toEqual(['Sol']);
   });
 
+  it('provides a keyboard control that skips every interactive map element', () => {
+    fixture.detectChanges();
+    const skip = fixture.nativeElement.querySelector('.region-map-skip-link') as HTMLButtonElement;
+    const target = fixture.nativeElement.querySelector('.region-map-skip-target') as HTMLSpanElement;
+
+    skip.click();
+
+    expect(document.activeElement).toBe(target);
+  });
+
   it('maps galactic X/Z coordinates into the SVG viewBox space', () => {
     // Sol is at the galactic origin; check the documented transform constants.
     const tx = (component as any).mapX(0);
@@ -303,8 +313,13 @@ describe('RegionMapComponent', () => {
       const other = svg.querySelector('#Region_07')!;
       expect(current.getAttribute('role')).toBe('button');
       expect(current.getAttribute('tabindex')).toBe('0');
-      expect(current.getAttribute('aria-label')).toBe('Zoom to Inner Orion Spur');
+      expect(current.getAttribute('aria-label')).toBe('Zoom to galaxy region 18, Inner Orion Spur');
       expect(other.getAttribute('aria-label')).toBe('Zoom to galaxy region 7');
+
+      const interactiveStyles = svg.querySelector('style#custom-region-styles')?.textContent ?? '';
+      expect(interactiveStyles).toContain('[role="button"]:focus-visible');
+      expect(interactiveStyles).toContain('outline: 4px solid var(--color-white)');
+      expect(interactiveStyles).toContain('drop-shadow(0 0 5px var(--color-accent))');
 
       other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
       expect(svg.getAttribute('viewBox')).not.toBe('0 0 2048 2048');
