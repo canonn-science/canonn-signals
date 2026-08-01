@@ -1615,9 +1615,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Some GEC GIFs intermittently fail to decode on first load; force a one-shot
     // reload with a cache-busting query param so a transient failure self-heals.
     const img = event.target as HTMLImageElement;
-    if (img.src.toLowerCase().includes('.gif')) {
+    if (img.src.toLowerCase().includes('.gif') && img.dataset['gecRetryAttempted'] !== 'true') {
+      // Mark it before scheduling the retry so repeated error events cannot queue more reloads.
+      img.dataset['gecRetryAttempted'] = 'true';
       setTimeout(() => {
-        img.src = img.src + '?t=' + Date.now();
+        const separator = img.src.includes('?') ? '&' : '?';
+        img.src = `${img.src}${separator}t=${Date.now()}`;
       }, 100);
     }
   }

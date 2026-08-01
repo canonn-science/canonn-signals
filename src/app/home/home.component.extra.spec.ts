@@ -414,11 +414,16 @@ describe('HomeComponent (extended coverage)', () => {
       expect(loadSpy).toHaveBeenCalledWith('Colonia');
     });
 
-    it('reloads a broken GIF after a delay', () => {
-      const img = { src: 'assets/Orbit2.gif' } as HTMLImageElement;
+    it('reloads a broken GIF only once after repeated error events', () => {
+      const img = document.createElement('img');
+      img.src = 'assets/Orbit2.gif';
       component.onGecImageError({ target: img } as unknown as Event);
       vi.runOnlyPendingTimers();
       expect(img.src).toContain('?t=');
+
+      component.onGecImageError({ target: img } as unknown as Event);
+      vi.runOnlyPendingTimers();
+      expect(img.src.match(/[?&]t=/g)).toHaveLength(1);
     });
 
     it('delegates the display name to AppService and tracks bodies by id', () => {
