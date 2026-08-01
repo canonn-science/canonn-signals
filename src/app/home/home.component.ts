@@ -368,6 +368,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       return [];
     }
     return (this.independentOutposts() ?? [])
+      .filter(outpost => outpost.coordinates.length >= 3 && outpost.coordinates.slice(0, 3).every(Number.isFinite))
       .map(outpost => {
         const [ox, oy, oz] = outpost.coordinates;
         return {
