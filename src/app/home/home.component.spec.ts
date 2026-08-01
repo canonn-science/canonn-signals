@@ -132,6 +132,37 @@ describe('HomeComponent', () => {
     }
   });
 
+  it('does not render SIMBAD rows for malformed coordinate values', () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+      ok: true,
+      text: () => Promise.resolve('<svg viewBox="0 0 2048 2048"></svg>'),
+    })));
+    try {
+      component.data.set({
+        system: {
+          name: 'Invalid Coordinates', id64: 1n, coords: { x: 0, y: 0, z: 0 },
+          population: 0, bodies: [], signals: {},
+        },
+      } as any);
+
+      for (const Simbad of [
+        { RAJ2000: NaN, DEJ2000: 'bad' },
+        { RAJ2000: null, DEJ2000: Infinity },
+      ]) {
+        component.edGalaxyData.set({
+          PGName: '', SystemAddress: 1n, Name: 'Invalid Coordinates', Simbad,
+        } as any);
+        fixture.detectChanges();
+
+        const headers = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.system-data-section-header')]
+          .map(header => header.textContent?.trim());
+        expect(headers).not.toContain('Simbad');
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('publishes the PGName synchronously so its row never blanks while Simbad loads', async () => {
     // Merope is a hand-named system, so it routes through the async Simbad lookup rather than the
     // synchronous PG-system fallback. Hold the Simbad promise open to observe the pre-resolve state.

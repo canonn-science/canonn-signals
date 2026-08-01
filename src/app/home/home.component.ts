@@ -86,7 +86,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // Format RAJ2000 (degrees) to '19h 21m 45.0s' (rounded to 0.1s, padded)
   formatRAJ2000(ra: number): string {
-    if (typeof ra !== 'number' || isNaN(ra)) return '';
+    if (!Number.isFinite(ra)) return '';
     const totalSeconds = ra * 240; // 360deg = 24h, so 1deg = 240s
     let hours = Math.floor(totalSeconds / 3600);
     let minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -103,7 +103,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // Format DEJ2000 (degrees) to '+21° 53′ 02.3″' (rounded to 0.1″, padded)
   formatDEJ2000(de: number): string {
-    if (typeof de !== 'number' || isNaN(de)) return '';
+    if (!Number.isFinite(de)) return '';
     const sign = de >= 0 ? '+' : '-';
     const abs = Math.abs(de);
     let degrees = Math.floor(abs);

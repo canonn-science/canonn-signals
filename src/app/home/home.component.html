@@ -34,6 +34,8 @@
 @let edastro = edastroData();
 @let edGalaxy = edGalaxyData();
 @let simbad = edGalaxy?.Simbad;
+@let simbadRA = simbad?.RAJ2000 !== null && simbad?.RAJ2000 !== undefined ? formatRAJ2000(simbad.RAJ2000) : '';
+@let simbadDE = simbad?.DEJ2000 !== null && simbad?.DEJ2000 !== undefined ? formatDEJ2000(simbad.DEJ2000) : '';
 <div class="system-container">
   <div class="system-container-data">
     <div class="system-info-box">
@@ -201,9 +203,7 @@
             }
           </div>
           }
-          @if (simbad && (simbad.Name ||
-            (simbad.RAJ2000 !== null && simbad.RAJ2000 !== undefined) ||
-            (simbad.DEJ2000 !== null && simbad.DEJ2000 !== undefined))) {
+          @if (simbad && (simbad.Name || simbadRA || simbadDE)) {
           <div class="system-data-section">
             <div class="system-data-section-header">Simbad</div>
             @if (simbad.Name) {
@@ -223,16 +223,16 @@
               </div>
             </div>
             }
-            @if (simbad.RAJ2000 !== null && simbad.RAJ2000 !== undefined) {
+            @if (simbadRA) {
             <div class="system-data-entry">
               <div>Right Ascension</div>
-              <div>{{ formatRAJ2000(simbad.RAJ2000) }}</div>
+              <div>{{ simbadRA }}</div>
             </div>
             }
-            @if (simbad.DEJ2000 !== null && simbad.DEJ2000 !== undefined) {
+            @if (simbadDE) {
             <div class="system-data-entry">
               <div>Declination</div>
-              <div>{{ formatDEJ2000(simbad.DEJ2000) }}</div>
+              <div>{{ simbadDE }}</div>
             </div>
             }
           </div>
