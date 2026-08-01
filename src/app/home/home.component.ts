@@ -1615,11 +1615,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Some GEC GIFs intermittently fail to decode on first load; force a one-shot
     // reload with a cache-busting query param so a transient failure self-heals.
     const img = event.target as HTMLImageElement;
-    if (img.src.toLowerCase().includes('.gif')) {
-      setTimeout(() => {
-        img.src = img.src + '?t=' + Date.now();
-      }, 100);
+    const failedUrl = new URL(img.src, document.baseURI);
+    if (!failedUrl.pathname.toLowerCase().endsWith('.gif')) { return; }
+
+    const failedHref = failedUrl.href;
+    if (img.dataset['gecRetrySource'] === failedHref || img.dataset['gecRetryUrl'] === failedHref) {
+      return;
     }
+
+    // Record the specific failed source before scheduling so duplicate error events cannot queue
+    // retries, while a subsequently assigned image URL remains eligible for its own one-shot retry.
+    img.dataset['gecRetrySource'] = failedHref;
+    setTimeout(() => {
+      if (img.src !== failedHref) { return; }
+      const retryUrl = new URL(failedHref);
+      retryUrl.searchParams.set('t', Date.now().toString());
+      img.dataset['gecRetryUrl'] = retryUrl.href;
+      img.src = retryUrl.href;
+    }, 100);
   }
 
   public getBodyDisplayName(bodyName: string): string {
