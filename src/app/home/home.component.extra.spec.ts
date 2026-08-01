@@ -614,6 +614,33 @@ describe('HomeComponent (extended coverage)', () => {
   });
 
   describe('query-param navigation', () => {
+    function setTimeParam(value: string): ReturnType<typeof vi.fn> {
+      const route = TestBed.inject(ActivatedRoute);
+      (route.snapshot.queryParamMap as any).get = (key: string) => key === 't' ? value : null;
+      const setNowOverride = vi.fn();
+      (TestBed.inject(AppService) as any).setNowOverride = setNowOverride;
+      component.ngOnInit();
+      component.ngOnDestroy();
+      return setNowOverride;
+    }
+
+    it('accepts a 13-digit epoch-millisecond override', () => {
+      expect(setTimeParam('1785580800000')).toHaveBeenCalledWith(1785580800000);
+    });
+
+    it('accepts an ISO timestamp override', () => {
+      const iso = '2026-08-01T12:34:56Z';
+      expect(setTimeParam(iso)).toHaveBeenCalledWith(Date.parse(iso));
+    });
+
+    it('treats a short integer as milliseconds instead of a calendar year', () => {
+      expect(setTimeParam('2024')).toHaveBeenCalledWith(2024);
+    });
+
+    it.each(['not-a-time', '9'.repeat(400)])('rejects invalid or non-finite override %s', value => {
+      expect(setTimeParam(value)).not.toHaveBeenCalled();
+    });
+
     it('loads the system named in the initial route snapshot', () => {
       const route = TestBed.inject(ActivatedRoute);
       (route.snapshot.queryParamMap as any).get = () => 'Deep Link Sys';

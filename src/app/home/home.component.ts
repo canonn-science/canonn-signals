@@ -970,7 +970,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Apply optional ?t= timestamp override (ISO-8601 or ms since epoch) for debugging.
     const tParam = this.activatedRoute.snapshot.queryParamMap.get('t');
     if (tParam) {
-      const ms = Date.parse(tParam);
+      const value = tParam.trim();
+      const ms = /^[+-]?\d+$/.test(value) ? Number(value) : Date.parse(value);
       if (Number.isFinite(ms)) { this.appService.setNowOverride(ms); }
     }
     // Handle the initial deep-link (?system=…) from the route snapshot…
