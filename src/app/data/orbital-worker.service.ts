@@ -6,13 +6,16 @@ import type { CollisionStatus, SimultaneousCollision, CollisionWindow, Separatio
 import { serializeCollisionFamily } from './collision-request';
 import type { CollisionWorkerApi } from './collision-worker-api';
 
+const WORKER_CALL_TIMEOUT_MS = 30_000;
+
 /**
  * Main-thread facade for the heavy collision engine, run off the UI thread in a single shared
  * {@link https://github.com/GoogleChromeLabs/comlink Comlink} worker so the 3D orbit search never
  * janks rendering. The worker is created lazily on first use and reused for the app's lifetime.
  *
- * When no `Worker` is available (jsdom unit tests, SSR) — or a body has no parent, so there is
- * nothing to serialize — each method falls back to running the framework-free
+ * When no `Worker` is available (jsdom unit tests, SSR), a worker fails/rejects/times out, or a
+ * body has no parent and there is nothing to serialize, each method falls back to running the
+ * framework-free
  * {@link OrbitalRelationsCore} inline against the live tree and resolving a Promise, so callers get
  * one uniform async API regardless of environment.
  *
@@ -27,6 +30,10 @@ import type { CollisionWorkerApi } from './collision-worker-api';
 export class OrbitalWorkerService {
   /** Comlink proxy to the shared worker; created on first heavy call, null until then. */
   private proxy: Comlink.Remote<CollisionWorkerApi> | null = null;
+  /** Worker backing {@link proxy}, retained so a failed runtime can be terminated. */
+  private worker: Worker | null = null;
+  /** Rejects active RPC races when the worker reports a module/runtime or message error. */
+  private workerFailure: Promise<never> | null = null;
   /** Latched once the worker can't be constructed, so we stop retrying and stay on the inline path. */
   private workerUnavailable = false;
   /** Engine instance for the inline (no-worker) fallback and for bodies with no parent. */
@@ -59,9 +66,69 @@ export class OrbitalWorkerService {
     if (typeof Worker === 'undefined') { return null; }
     try {
       const worker = new Worker(new URL('./collision.worker', import.meta.url), { type: 'module' });
+      this.registerWorker(worker);
       return Comlink.wrap<CollisionWorkerApi>(worker);
     } catch {
+      this.disableWorker();
       return null;
+    }
+  }
+
+  /** Registers runtime failure listeners before the first Comlink request can be made. */
+  private registerWorker(worker: Worker): void {
+    this.worker = worker;
+    let rejectFailure!: (reason: unknown) => void;
+    const failure = new Promise<never>((_, reject) => { rejectFailure = reject; });
+    // A failure can happen between calls. Mark the shared promise handled while retaining its
+    // rejected state so the next/current Promise.race still takes the inline fallback path.
+    void failure.catch(() => undefined);
+    this.workerFailure = failure;
+
+    const fail = (event: Event): void => {
+      const reason = 'error' in event && event.error
+        ? event.error
+        : new Error(event.type === 'messageerror' ? 'Collision worker message error' : 'Collision worker runtime error');
+      rejectFailure(reason);
+      this.disableWorker();
+    };
+    worker.addEventListener('error', fail);
+    worker.addEventListener('messageerror', fail);
+  }
+
+  /** Permanently switches this service instance to inline execution after a worker failure. */
+  private disableWorker(): void {
+    const proxy = this.proxy;
+    const worker = this.worker;
+    this.proxy = null;
+    this.worker = null;
+    this.workerFailure = null;
+    this.workerUnavailable = true;
+
+    try {
+      proxy?.[Comlink.releaseProxy]();
+    } catch {
+      // A broken transport may also reject release; worker termination below is authoritative.
+    }
+    worker?.terminate();
+  }
+
+  /** Runs one worker RPC, retrying inline after rejection, worker failure, or a silent hang. */
+  private async runWithFallback<T>(workerCall: () => Promise<T>, inlineCall: () => T): Promise<T> {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const timedOut = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => reject(new Error('Collision worker call timed out')), WORKER_CALL_TIMEOUT_MS);
+    });
+
+    try {
+      const call = workerCall();
+      const races: Promise<T>[] = [call, timedOut];
+      if (this.workerFailure) { races.push(this.workerFailure); }
+      return await Promise.race(races);
+    } catch {
+      this.disableWorker();
+      return inlineCall();
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -70,7 +137,10 @@ export class OrbitalWorkerService {
     const proxy = this.getProxy();
     const dto = proxy ? serializeCollisionFamily(body) : null;
     if (!proxy || !dto) { return this.inline.detectCollisionStatus(body, now); }
-    return proxy.detectCollisionStatus(dto, now);
+    return this.runWithFallback(
+      () => proxy.detectCollisionStatus(dto, now),
+      () => this.inline.detectCollisionStatus(body, now),
+    );
   }
 
   /** Off-thread {@link OrbitalRelationsCore.simultaneousCollisionsWithin}. */
@@ -78,7 +148,10 @@ export class OrbitalWorkerService {
     const proxy = this.getProxy();
     const dto = proxy ? serializeCollisionFamily(body) : null;
     if (!proxy || !dto) { return this.inline.simultaneousCollisionsWithin(body, horizonDays, now); }
-    return proxy.simultaneousCollisionsWithin(dto, horizonDays, now);
+    return this.runWithFallback(
+      () => proxy.simultaneousCollisionsWithin(dto, horizonDays, now),
+      () => this.inline.simultaneousCollisionsWithin(body, horizonDays, now),
+    );
   }
 
   /** Off-thread {@link OrbitalRelationsCore.upcomingContactsWithin}. */
@@ -86,13 +159,19 @@ export class OrbitalWorkerService {
     const proxy = this.getProxy();
     const dto = proxy ? serializeCollisionFamily(body) : null;
     if (!proxy || !dto) { return this.inline.upcomingContactsWithin(body, horizonDays, now); }
-    return proxy.upcomingContactsWithin(dto, horizonDays, now);
+    return this.runWithFallback(
+      () => proxy.upcomingContactsWithin(dto, horizonDays, now),
+      () => this.inline.upcomingContactsWithin(body, horizonDays, now),
+    );
   }
 
   /** Off-thread {@link OrbitalRelationsCore.separationSeries} (takes flat bodyData — no rehydrate). */
   async separationSeries(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startMs: number, endMs: number, samples: number): Promise<SeparationSample[]> {
     const proxy = this.getProxy();
     if (!proxy) { return this.inline.separationSeries(a, b, startMs, endMs, samples); }
-    return proxy.separationSeries(a, b, startMs, endMs, samples);
+    return this.runWithFallback(
+      () => proxy.separationSeries(a, b, startMs, endMs, samples),
+      () => this.inline.separationSeries(a, b, startMs, endMs, samples),
+    );
   }
 }
