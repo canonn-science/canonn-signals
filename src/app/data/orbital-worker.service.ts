@@ -13,8 +13,8 @@ const WORKER_CALL_TIMEOUT_MS = 30_000;
  * {@link https://github.com/GoogleChromeLabs/comlink Comlink} worker so the 3D orbit search never
  * janks rendering. The worker is created lazily on first use and reused for the app's lifetime.
  *
- * When no `Worker` is available (jsdom unit tests, SSR), a worker fails/rejects/times out, or a
- * body has no parent and there is nothing to serialize, each method falls back to running the
+ * When no `Worker` is available (jsdom unit tests, SSR), a worker fails/rejects, a call times out,
+ * or a body has no parent and there is nothing to serialize, each method falls back to running the
  * framework-free
  * {@link OrbitalRelationsCore} inline against the live tree and resolving a Promise, so callers get
  * one uniform async API regardless of environment.
@@ -112,7 +112,8 @@ export class OrbitalWorkerService {
     rejectFailure?.(reason);
 
     try {
-      proxy?.[Comlink.releaseProxy]();
+      const release = proxy?.[Comlink.releaseProxy]();
+      void Promise.resolve(release).catch(() => undefined);
     } catch {
       // A broken transport may also reject release; worker termination below is authoritative.
     }
@@ -120,19 +121,27 @@ export class OrbitalWorkerService {
   }
 
   /** Runs one worker RPC, retrying inline after rejection, worker failure, or a silent hang. */
-  private async runWithFallback<T>(workerCall: () => Promise<T>, inlineCall: () => T): Promise<T> {
+  private async runWithFallback<T>(
+    workerCall: () => Promise<T>,
+    inlineCall: () => T,
+    workerFailure: Promise<never> | null,
+  ): Promise<T> {
     let timeout: ReturnType<typeof setTimeout> | undefined;
+    const timeoutError = new Error('Collision worker call timed out');
     const timedOut = new Promise<never>((_, reject) => {
-      timeout = setTimeout(() => reject(new Error('Collision worker call timed out')), WORKER_CALL_TIMEOUT_MS);
+      timeout = setTimeout(() => reject(timeoutError), WORKER_CALL_TIMEOUT_MS);
     });
 
     try {
       const call = workerCall();
       const races: Promise<T>[] = [call, timedOut];
-      if (this.workerFailure) { races.push(this.workerFailure); }
+      if (workerFailure) { races.push(workerFailure); }
       return await Promise.race(races);
     } catch (error) {
-      this.disableWorker(error);
+      // A timeout is scoped to this request: the worker may still answer later or serve subsequent
+      // calls, so do not permanently move CPU-heavy work onto the main thread. Transport/runtime
+      // errors still disable the broken worker and wake every RPC sharing its failure signal.
+      if (error !== timeoutError) { this.disableWorker(error); }
       return inlineCall();
     } finally {
       clearTimeout(timeout);
@@ -142,43 +151,51 @@ export class OrbitalWorkerService {
   /** Off-thread {@link OrbitalRelationsCore.detectCollisionStatus}. */
   async detectCollisionStatus(body: SystemBody, now: number): Promise<CollisionStatus> {
     const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
     const dto = proxy ? serializeCollisionFamily(body) : null;
-    if (!proxy || !dto) { return this.inline.detectCollisionStatus(body, now); }
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.detectCollisionStatus(body, now); }
     return this.runWithFallback(
       () => proxy.detectCollisionStatus(dto, now),
       () => this.inline.detectCollisionStatus(body, now),
+      workerFailure,
     );
   }
 
   /** Off-thread {@link OrbitalRelationsCore.simultaneousCollisionsWithin}. */
   async simultaneousCollisionsWithin(body: SystemBody, horizonDays: number, now: number): Promise<SimultaneousCollision[]> {
     const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
     const dto = proxy ? serializeCollisionFamily(body) : null;
-    if (!proxy || !dto) { return this.inline.simultaneousCollisionsWithin(body, horizonDays, now); }
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.simultaneousCollisionsWithin(body, horizonDays, now); }
     return this.runWithFallback(
       () => proxy.simultaneousCollisionsWithin(dto, horizonDays, now),
       () => this.inline.simultaneousCollisionsWithin(body, horizonDays, now),
+      workerFailure,
     );
   }
 
   /** Off-thread {@link OrbitalRelationsCore.upcomingContactsWithin}. */
   async upcomingContactsWithin(body: SystemBody, horizonDays: number, now: number): Promise<CollisionWindow[]> {
     const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
     const dto = proxy ? serializeCollisionFamily(body) : null;
-    if (!proxy || !dto) { return this.inline.upcomingContactsWithin(body, horizonDays, now); }
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.upcomingContactsWithin(body, horizonDays, now); }
     return this.runWithFallback(
       () => proxy.upcomingContactsWithin(dto, horizonDays, now),
       () => this.inline.upcomingContactsWithin(body, horizonDays, now),
+      workerFailure,
     );
   }
 
   /** Off-thread {@link OrbitalRelationsCore.separationSeries} (takes flat bodyData — no rehydrate). */
   async separationSeries(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startMs: number, endMs: number, samples: number): Promise<SeparationSample[]> {
     const proxy = this.getProxy();
-    if (!proxy) { return this.inline.separationSeries(a, b, startMs, endMs, samples); }
+    const workerFailure = this.workerFailure;
+    if (!proxy || this.workerUnavailable) { return this.inline.separationSeries(a, b, startMs, endMs, samples); }
     return this.runWithFallback(
       () => proxy.separationSeries(a, b, startMs, endMs, samples),
       () => this.inline.separationSeries(a, b, startMs, endMs, samples),
+      workerFailure,
     );
   }
 }
