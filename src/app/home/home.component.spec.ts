@@ -100,6 +100,69 @@ describe('HomeComponent', () => {
     expect(component.formatDEJ2000(-1).startsWith('-')).toBe(true);
   });
 
+  it('renders zero-valued SIMBAD right ascension and declination', () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+      ok: true,
+      text: () => Promise.resolve('<svg viewBox="0 0 2048 2048"></svg>'),
+    })));
+    try {
+      component.data.set({
+        system: {
+          name: 'Zero Coordinates', id64: 1n, coords: { x: 0, y: 0, z: 0 },
+          population: 0, bodies: [], signals: {},
+        },
+      } as any);
+      component.edGalaxyData.set({
+        PGName: '', SystemAddress: 1n, Name: 'Zero Coordinates',
+        Simbad: { RAJ2000: 0, DEJ2000: 0 },
+      });
+
+      fixture.detectChanges();
+
+      const sections = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.system-data-section')];
+      const simbadSection = sections.find(section =>
+        section.querySelector('.system-data-section-header')?.textContent?.trim() === 'Simbad');
+      expect(simbadSection).toBeDefined();
+      expect(simbadSection!.textContent).toContain('Right Ascension');
+      expect(simbadSection!.textContent).toContain('0h 00m 00.0s');
+      expect(simbadSection!.textContent).toContain('Declination');
+      expect(simbadSection!.textContent).toContain('+0° 00′ 00.0″');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('does not render SIMBAD rows for malformed coordinate values', () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+      ok: true,
+      text: () => Promise.resolve('<svg viewBox="0 0 2048 2048"></svg>'),
+    })));
+    try {
+      component.data.set({
+        system: {
+          name: 'Invalid Coordinates', id64: 1n, coords: { x: 0, y: 0, z: 0 },
+          population: 0, bodies: [], signals: {},
+        },
+      } as any);
+
+      for (const Simbad of [
+        { RAJ2000: NaN, DEJ2000: 'bad' },
+        { RAJ2000: null, DEJ2000: Infinity },
+      ]) {
+        component.edGalaxyData.set({
+          PGName: '', SystemAddress: 1n, Name: 'Invalid Coordinates', Simbad,
+        } as any);
+        fixture.detectChanges();
+
+        const headers = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.system-data-section-header')]
+          .map(header => header.textContent?.trim());
+        expect(headers).not.toContain('Simbad');
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('publishes the PGName synchronously so its row never blanks while Simbad loads', async () => {
     // Merope is a hand-named system, so it routes through the async Simbad lookup rather than the
     // synchronous PG-system fallback. Hold the Simbad promise open to observe the pre-resolve state.
