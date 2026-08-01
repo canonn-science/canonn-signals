@@ -205,6 +205,27 @@ describe('OrbitalWorkerService', () => {
       expect(proxy.upcomingContactsWithin).not.toHaveBeenCalled();
     });
 
+    it('wakes other pending RPCs immediately when one call rejects', async () => {
+      let rejectFirst!: (reason: unknown) => void;
+      const firstRpc = new Promise<never>((_, reject) => { rejectFirst = reject; });
+      const proxy = fakeProxy();
+      proxy.detectCollisionStatus
+        .mockReturnValueOnce(firstRpc)
+        .mockReturnValueOnce(new Promise(() => undefined));
+      const { svc } = serviceWith(proxy);
+      const worker = fakeWorker();
+      (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
+      const [a, b] = collidingPair();
+
+      const first = svc.detectCollisionStatus(a, now);
+      const second = svc.detectCollisionStatus(b, now);
+      rejectFirst(new Error('first RPC rejected'));
+
+      await expect(first).resolves.toEqual(core.detectCollisionStatus(a, now));
+      await expect(second).resolves.toEqual(core.detectCollisionStatus(b, now));
+      expect(worker.terminate).toHaveBeenCalledOnce();
+    });
+
     it('retries a pending Comlink RPC inline when the worker emits an error', async () => {
       const proxy = fakeProxy();
       proxy.detectCollisionStatus.mockReturnValueOnce(new Promise(() => undefined));

@@ -34,6 +34,8 @@ export class OrbitalWorkerService {
   private worker: Worker | null = null;
   /** Rejects active RPC races when the worker reports a module/runtime or message error. */
   private workerFailure: Promise<never> | null = null;
+  /** Rejector paired with {@link workerFailure}, retained so any disable path wakes all RPCs. */
+  private rejectWorkerFailure: ((reason: unknown) => void) | null = null;
   /** Latched once the worker can't be constructed, so we stop retrying and stay on the inline path. */
   private workerUnavailable = false;
   /** Engine instance for the inline (no-worker) fallback and for bodies with no parent. */
@@ -68,8 +70,8 @@ export class OrbitalWorkerService {
       const worker = new Worker(new URL('./collision.worker', import.meta.url), { type: 'module' });
       this.registerWorker(worker);
       return Comlink.wrap<CollisionWorkerApi>(worker);
-    } catch {
-      this.disableWorker();
+    } catch (error) {
+      this.disableWorker(error);
       return null;
     }
   }
@@ -83,26 +85,31 @@ export class OrbitalWorkerService {
     // rejected state so the next/current Promise.race still takes the inline fallback path.
     void failure.catch(() => undefined);
     this.workerFailure = failure;
+    this.rejectWorkerFailure = rejectFailure;
 
     const fail = (event: Event): void => {
       const reason = 'error' in event && event.error
         ? event.error
         : new Error(event.type === 'messageerror' ? 'Collision worker message error' : 'Collision worker runtime error');
-      rejectFailure(reason);
-      this.disableWorker();
+      this.disableWorker(reason);
     };
     worker.addEventListener('error', fail);
     worker.addEventListener('messageerror', fail);
   }
 
   /** Permanently switches this service instance to inline execution after a worker failure. */
-  private disableWorker(): void {
+  private disableWorker(reason: unknown = new Error('Collision worker disabled')): void {
     const proxy = this.proxy;
     const worker = this.worker;
+    const rejectFailure = this.rejectWorkerFailure;
     this.proxy = null;
     this.worker = null;
     this.workerFailure = null;
+    this.rejectWorkerFailure = null;
     this.workerUnavailable = true;
+    // Wake every RPC racing this shared signal before terminating the transport. Without this,
+    // calls other than the one that observed a rejection/timeout wait for their own watchdogs.
+    rejectFailure?.(reason);
 
     try {
       proxy?.[Comlink.releaseProxy]();
@@ -124,8 +131,8 @@ export class OrbitalWorkerService {
       const races: Promise<T>[] = [call, timedOut];
       if (this.workerFailure) { races.push(this.workerFailure); }
       return await Promise.race(races);
-    } catch {
-      this.disableWorker();
+    } catch (error) {
+      this.disableWorker(error);
       return inlineCall();
     } finally {
       clearTimeout(timeout);
