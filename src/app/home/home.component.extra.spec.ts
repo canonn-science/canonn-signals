@@ -658,6 +658,8 @@ describe('HomeComponent (extended coverage)', () => {
     it.each([
       '2026-08-01',
       '2024-02-29T12:34Z',
+      '2026-08-01T12:30',
+      '2026-08-01T12:30:00',
       '2026-08-01T12:34:56.123+01:30',
       '2026-08-01T12:34:56.123456Z',
     ])('accepts validated ISO override %s', value => {

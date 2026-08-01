@@ -52,7 +52,7 @@ interface MegashipRow {
  *  up there; `openMegashipRouteDialog` special-cases this value instead. */
 const GNOSIS_SIGNAL_NAME = 'The Gnosis';
 
-const ISO_TIME_OVERRIDE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(?:Z|[+-](\d{2}):(\d{2})))?$/;
+const ISO_TIME_OVERRIDE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(?:Z|[+-](\d{2}):(\d{2}))?)?$/;
 
 /** Parses the documented time-override forms without Date.parse's non-ISO coercions. */
 function parseTimeOverride(value: string): number | null {
@@ -998,7 +998,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   });
 
   public ngOnInit(): void {
-    // Apply optional ?t= timestamp override (ISO-8601 or ms since epoch) for debugging.
+    // Apply optional ?t= override for debugging. Signed integer text is always milliseconds
+    // since the epoch (so `2024` means 2.024 seconds after it); ISO timestamps without a zone
+    // retain Date.parse's existing browser-local-time interpretation.
     const tParam = this.activatedRoute.snapshot.queryParamMap.get('t');
     if (tParam) {
       const ms = parseTimeOverride(tParam);
