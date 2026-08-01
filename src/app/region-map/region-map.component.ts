@@ -169,7 +169,7 @@ export class RegionMapComponent implements OnChanges {
   private highlightRegion(): void {
     const regionMapContainer = this.regionMapContainer();
     const system = this.system();
-    if (!regionMapContainer || !system || !system.region) {
+    if (!regionMapContainer || !system) {
       return;
     }
 
@@ -215,17 +215,20 @@ export class RegionMapComponent implements OnChanges {
       }
     });
 
-    // Highlight the current region
-    const regionId = `Region_${String(system.region.region).padStart(2, '0')}`;
-    const regionElement = svgElement.querySelector(`#${regionId}`);
-    if (regionElement) {
-      (regionElement as HTMLElement).style.fill = '#ff9900';
-      (regionElement as HTMLElement).style.fillOpacity = '0.6';
-      (regionElement as HTMLElement).style.stroke = '#ff9900';
-      (regionElement as HTMLElement).style.strokeOpacity = '1';
-      (regionElement as HTMLElement).style.strokeWidth = '2';
-    } else {
-      logger.warn('Region element not found for ID:', regionId);
+    // Highlight the current region when the API supplied one. Coordinates are independently
+    // useful, so missing region metadata must not suppress the system and known-system markers.
+    if (system.region) {
+      const regionId = `Region_${String(system.region.region).padStart(2, '0')}`;
+      const regionElement = svgElement.querySelector(`#${regionId}`);
+      if (regionElement) {
+        (regionElement as HTMLElement).style.fill = '#ff9900';
+        (regionElement as HTMLElement).style.fillOpacity = '0.6';
+        (regionElement as HTMLElement).style.stroke = '#ff9900';
+        (regionElement as HTMLElement).style.strokeOpacity = '1';
+        (regionElement as HTMLElement).style.strokeWidth = '2';
+      } else {
+        logger.warn('Region element not found for ID:', regionId);
+      }
     }
 
     // Add red dot at system coordinates
