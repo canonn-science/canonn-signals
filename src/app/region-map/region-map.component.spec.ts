@@ -220,6 +220,20 @@ describe('RegionMapComponent', () => {
       expect([...svg.querySelectorAll('.known-system-marker text')].some(text => text.textContent === 'Remote Outpost')).toBe(true);
     });
 
+    it('removes the previous system marker when the next regionless system has no coordinates', () => {
+      fixture.componentRef.setInput('system', {
+        name: 'Marked', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
+      });
+      const svg = mountSvg(buildSvg());
+      (component as any).highlightRegion();
+      expect(svg.querySelector('#system-marker')).not.toBeNull();
+
+      fixture.componentRef.setInput('system', { name: 'Unlocated' });
+      (component as any).highlightRegion();
+
+      expect(svg.querySelector('#system-marker')).toBeNull();
+    });
+
     it('binds each region zoom handler exactly once across re-highlights', () => {
       fixture.componentRef.setInput('system', {
         name: 'Sol', region: { name: 'x', region: 7 }, coords: { x: 0, y: 0, z: 0 },

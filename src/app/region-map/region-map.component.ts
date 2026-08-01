@@ -621,15 +621,15 @@ export class RegionMapComponent implements OnChanges {
   }
 
   private addSystemMarker(svgElement: SVGSVGElement): void {
-    const coords = this.system()?.coords;
-    if (!coords) {
-      return;
-    }
-
-    // Remove any existing system marker
+    // Always clear the previous search's marker, even when the new system has no coordinates.
     const existingMarker = svgElement.querySelector('#system-marker');
     if (existingMarker) {
       existingMarker.remove();
+    }
+
+    const coords = this.system()?.coords;
+    if (!coords) {
+      return;
     }
 
     // The region map uses X and Z galactic coordinates (X horizontal, Z vertical).
