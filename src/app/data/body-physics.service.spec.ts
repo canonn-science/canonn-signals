@@ -332,11 +332,11 @@ describe('BodyPhysicsService', () => {
   });
 
   describe('angularDiameterDegrees', () => {
-    it('returns 90° when the parent radius equals the orbital distance', () => {
-      // atan(1) = 45°; the full angular diameter is twice the half-angle.
+    it('returns 180° when the parent radius equals the orbital distance', () => {
+      // asin(1) = 90°; the full angular diameter is twice the half-angle.
       const parent = body({ radius: KM_PER_AU, type: 'Planet' });
       const b = body({ semiMajorAxis: 1 }, parent);
-      expect(service.angularDiameterDegrees(b)).toBeCloseTo(90, 6);
+      expect(service.angularDiameterDegrees(b)).toBeCloseTo(180, 6);
     });
 
     it('returns null without a parent, orbit distance, or parent radius', () => {
@@ -379,6 +379,14 @@ describe('BodyPhysicsService', () => {
       expect(service.highAngularDiameterAssessment(distantMoon)).toBeNull();
     });
 
+    it('uses spherical geometry near the planet threshold', () => {
+      const gasGiant = body({ type: 'Planet', subType: 'Sudarsky class I gas giant', radius: 0.4 * KM_PER_AU });
+      const moon = body({ type: 'Planet', isLandable: true, semiMajorAxis: 1 }, gasGiant);
+      const result = service.highAngularDiameterAssessment(moon);
+      expect(result).not.toBeNull();
+      expect(result!.angularDiameterDegrees).toBeCloseTo(47.16, 2);
+    });
+
     it('does not flag a body that is not landable', () => {
       const star = body({ type: 'Star', solarRadius: 1 });
       const nonLandable = body({ type: 'Planet', isLandable: false, semiMajorAxis: 0.02 }, star);
@@ -401,7 +409,7 @@ describe('BodyPhysicsService', () => {
       const result = service.highAngularDiameterAssessment(moon);
       expect(result).not.toBeNull();
       expect(result!.parentType).toBe('Planet');
-      expect(result!.angularDiameterDegrees).toBeCloseTo(51.25, 1);
+      expect(result!.angularDiameterDegrees).toBeCloseTo(57.33, 1);
     });
   });
 });
