@@ -178,13 +178,23 @@ describe('RegionMapComponent', () => {
 
       knownCircle.dispatchEvent(new FocusEvent('focus'));
       expect(knownText.style.display).toBe('block');
+      knownCircle.dispatchEvent(new MouseEvent('mouseenter'));
+      knownCircle.dispatchEvent(new MouseEvent('mouseleave'));
+      expect(knownText.style.display).toBe('block'); // focus still owns the description
       knownCircle.dispatchEvent(new FocusEvent('blur'));
       expect(knownText.style.display).toBe('none');
+
+      (component as any).bindSvgReset(svg);
+      svg.setAttribute('viewBox', '100 200 300 300');
       knownCircle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
       expect(emitted).toContain('Varati');
+      expect(svg.getAttribute('viewBox')).toBe('0 0 2048 2048');
 
       const outpostCircle = groups[groups.length - 1].querySelector('circle')!;
       expect(outpostCircle.getAttribute('aria-label')).toContain('Outpost & One');
+      expect(outpostCircle.getAttribute('tabindex')).toBe('-1');
+      (component as any).updateMarkerScales(svg, 4);
+      expect(outpostCircle.getAttribute('tabindex')).toBe('0');
       outpostCircle.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
       expect(emitted).toContain('PG Sys 1');
     });
@@ -198,6 +208,7 @@ describe('RegionMapComponent', () => {
       always.setAttribute('class', 'known-system-marker');
       const ac = document.createElementNS(SVG_NS, 'circle');
       ac.setAttribute('cx', '100'); ac.setAttribute('cy', '200');
+      ac.setAttribute('role', 'button');
       always.appendChild(ac);
       svg.appendChild(always);
 
@@ -206,15 +217,18 @@ describe('RegionMapComponent', () => {
       zoomed.setAttribute('data-zoom-level', 'zoomed');
       const zc = document.createElementNS(SVG_NS, 'circle');
       zc.setAttribute('cx', '50'); zc.setAttribute('cy', '60');
+      zc.setAttribute('role', 'button');
       zoomed.appendChild(zc);
       svg.appendChild(zoomed);
 
       (component as any).updateMarkerScales(svg, 4);
       expect(always.getAttribute('transform')).toContain('scale(0.25)');
       expect(zoomed.style.display).toBe('block'); // visible when zoomed in
+      expect(zc.getAttribute('tabindex')).toBe('0');
 
       (component as any).updateMarkerScales(svg, 1);
       expect(zoomed.style.display).toBe('none'); // hidden at full view
+      expect(zc.getAttribute('tabindex')).toBe('-1');
     });
   });
 
@@ -224,6 +238,7 @@ describe('RegionMapComponent', () => {
         name: 'Sol', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
       });
       const svg = mountSvg(buildSvg());
+      (component as any).bindSvgReset(svg);
       (component as any).highlightRegion();
 
       const active = svg.querySelector('#Region_18') as HTMLElement;
@@ -281,6 +296,7 @@ describe('RegionMapComponent', () => {
         name: 'Sol', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
       });
       const svg = mountSvg(buildSvg());
+      (component as any).bindSvgReset(svg);
       (component as any).highlightRegion();
 
       const current = svg.querySelector('#Region_18')!;
@@ -292,8 +308,14 @@ describe('RegionMapComponent', () => {
 
       other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
       expect(svg.getAttribute('viewBox')).not.toBe('0 0 2048 2048');
+      expect(other.getAttribute('tabindex')).toBe('0');
+      expect(current.getAttribute('tabindex')).toBe('-1');
 
-      svg.setAttribute('viewBox', '0 0 2048 2048');
+      other.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
+      expect(svg.getAttribute('viewBox')).toBe('0 0 2048 2048');
+      expect(other.getAttribute('tabindex')).toBe('0');
+      expect(current.getAttribute('tabindex')).toBe('0');
+
       current.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
       expect(svg.getAttribute('viewBox')).not.toBe('0 0 2048 2048');
     });

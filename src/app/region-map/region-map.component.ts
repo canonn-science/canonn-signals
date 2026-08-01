@@ -99,13 +99,44 @@ export class RegionMapComponent implements OnChanges {
     circle.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        this.selectSystem(systemName);
+        circle.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       }
     });
-    circle.addEventListener('mouseenter', showDescription);
-    circle.addEventListener('focus', showDescription);
-    circle.addEventListener('mouseleave', hideDescription);
-    circle.addEventListener('blur', hideDescription);
+    let hovered = false;
+    let focused = false;
+    let descriptionVisible = false;
+    const updateDescription = (): void => {
+      const shouldShow = hovered || focused;
+      if (shouldShow === descriptionVisible) { return; }
+      descriptionVisible = shouldShow;
+      if (shouldShow) { showDescription(); } else { hideDescription(); }
+    };
+    circle.addEventListener('mouseenter', () => { hovered = true; updateDescription(); });
+    circle.addEventListener('focus', () => { focused = true; updateDescription(); });
+    circle.addEventListener('mouseleave', () => { hovered = false; updateDescription(); });
+    circle.addEventListener('blur', () => { focused = false; updateDescription(); });
+  }
+
+  /** Binds the full-map reset once; keyboard controls dispatch the same bubbling click path. */
+  private bindSvgReset(svgElement: SVGSVGElement): void {
+    if (svgElement.hasAttribute('data-reset-bound')) { return; }
+    svgElement.setAttribute('data-reset-bound', 'true');
+    svgElement.addEventListener('click', event => {
+      if (svgElement.getAttribute('viewBox') !== FULL_VIEWBOX) {
+        event.stopPropagation();
+        svgElement.setAttribute('viewBox', FULL_VIEWBOX);
+        delete svgElement.dataset['zoomedRegionId'];
+        this.updateRegionTabStops(svgElement, null);
+        this.updateMarkerScales(svgElement, 1);
+      }
+    });
+  }
+
+  /** Keeps clipped region paths out of the tab order while one region is zoomed. */
+  private updateRegionTabStops(svgElement: SVGSVGElement, activeRegion: SVGPathElement | null): void {
+    svgElement.querySelectorAll('path[id^="Region_"]').forEach(region => {
+      region.setAttribute('tabindex', !activeRegion || region === activeRegion ? '0' : '-1');
+    });
   }
 
   private async loadRegionMap(): Promise<void> {
@@ -170,16 +201,7 @@ export class RegionMapComponent implements OnChanges {
         svgElement.style.height = 'auto';
         svgElement.style.borderRadius = '8px';
 
-        // Add click handler to reset zoom
-        svgElement.addEventListener('click', (event) => {
-          const currentViewBox = svgElement.getAttribute('viewBox');
-          // If we're zoomed in, any click resets to full view
-          if (currentViewBox !== FULL_VIEWBOX) {
-            event.stopPropagation();
-            svgElement.setAttribute('viewBox', FULL_VIEWBOX);
-            this.updateMarkerScales(svgElement, 1);
-          }
-        });
+        this.bindSvgReset(svgElement);
       }
 
       this.highlightRegion();
@@ -244,11 +266,16 @@ export class RegionMapComponent implements OnChanges {
           const key = (event as KeyboardEvent).key;
           if (key === 'Enter' || key === ' ') {
             event.preventDefault();
-            zoom(event);
+            region.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
           }
         });
       }
     });
+    const zoomedRegionId = svgElement.dataset['zoomedRegionId'];
+    const zoomedRegion = zoomedRegionId
+      ? svgElement.querySelector<SVGPathElement>(`#${zoomedRegionId}`)
+      : null;
+    this.updateRegionTabStops(svgElement, zoomedRegion);
 
     // Highlight the current region when the API supplied one. Coordinates are independently
     // useful, so missing region metadata must not suppress the system and known-system markers.
@@ -296,6 +323,8 @@ export class RegionMapComponent implements OnChanges {
 
     // Set the viewBox to a square zoom
     svgElement.setAttribute('viewBox', `${x} ${y} ${size} ${size}`);
+    svgElement.dataset['zoomedRegionId'] = regionPath.id;
+    this.updateRegionTabStops(svgElement, regionPath);
 
     // Get region ID from the path element
     const regionId = regionPath.id; // e.g., "Region_01"
@@ -345,6 +374,9 @@ export class RegionMapComponent implements OnChanges {
       if (zoomLevel === 'zoomed') {
         // Show zoom-only markers when zoomed in (scaleFactor > 1)
         (marker as HTMLElement).style.display = scaleFactor > 1 ? 'block' : 'none';
+      }
+      if (circle?.getAttribute('role') === 'button') {
+        circle.setAttribute('tabindex', zoomLevel !== 'zoomed' || scaleFactor > 1 ? '0' : '-1');
       }
     });
   }
@@ -442,6 +474,7 @@ export class RegionMapComponent implements OnChanges {
       if (system.zoomLevel === 'zoomed') {
         group.style.display = currentScaleFactor > 1 ? 'block' : 'none';
         group.setAttribute('data-zoom-level', 'zoomed');
+        circle.setAttribute('tabindex', currentScaleFactor > 1 ? '0' : '-1');
       } else {
         group.setAttribute('data-zoom-level', 'always');
       }
@@ -534,6 +567,7 @@ export class RegionMapComponent implements OnChanges {
       // Set visibility - only show when zoomed in
       group.style.display = currentScaleFactor > 1 ? 'block' : 'none';
       group.setAttribute('data-zoom-level', 'zoomed');
+      circle.setAttribute('tabindex', currentScaleFactor > 1 ? '0' : '-1');
 
       // Apply current scale immediately
       if (currentScaleFactor !== 1) {
