@@ -637,8 +637,31 @@ describe('HomeComponent (extended coverage)', () => {
       expect(setTimeParam('2024')).toHaveBeenCalledWith(2024);
     });
 
-    it.each(['not-a-time', '9'.repeat(400)])('rejects invalid or non-finite override %s', value => {
+    it.each([
+      [' -1 ', -1],
+      ['+2024', 2024],
+      ['8640000000000000', 8640000000000000],
+    ])('accepts signed, trimmed, and boundary epoch override %s', (value, expected) => {
+      expect(setTimeParam(value as string)).toHaveBeenCalledWith(expected);
+    });
+
+    it.each([
+      'not-a-time', '9'.repeat(400), '8640000000000001', '-8640000000000001',
+      '1.5', '+1.0', '1e3', '-2e2',
+      '01/02/2024', '2026-02-30', '2025-02-29',
+      '2026-08-01T24:00:00Z', '2026-08-01T12:60:00Z', '2026-08-01T12:34:60Z',
+      '2026-08-01T12:34:56+24:00', '2026-08-01T12:34:56+01:60',
+    ])('rejects invalid, out-of-range, or non-ISO override %s', value => {
       expect(setTimeParam(value)).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      '2026-08-01',
+      '2024-02-29T12:34Z',
+      '2026-08-01T12:34:56.123+01:30',
+      '2026-08-01T12:34:56.123456Z',
+    ])('accepts validated ISO override %s', value => {
+      expect(setTimeParam(value)).toHaveBeenCalledWith(Date.parse(value));
     });
 
     it('loads the system named in the initial route snapshot', () => {

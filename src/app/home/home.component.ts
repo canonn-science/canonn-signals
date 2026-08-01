@@ -52,6 +52,37 @@ interface MegashipRow {
  *  up there; `openMegashipRouteDialog` special-cases this value instead. */
 const GNOSIS_SIGNAL_NAME = 'The Gnosis';
 
+const ISO_TIME_OVERRIDE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(?:Z|[+-](\d{2}):(\d{2})))?$/;
+
+/** Parses the documented time-override forms without Date.parse's non-ISO coercions. */
+function parseTimeOverride(value: string): number | null {
+  const trimmed = value.trim();
+  if (/^[+-]?\d+$/.test(trimmed)) {
+    const epochMs = Number(trimmed);
+    return Number.isFinite(epochMs) && Number.isFinite(new Date(epochMs).getTime()) ? epochMs : null;
+  }
+
+  const match = ISO_TIME_OVERRIDE.exec(trimmed);
+  if (!match) { return null; }
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, , offsetHourText, offsetMinuteText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) { return null; }
+
+  if (hourText !== undefined && (
+    Number(hourText) > 23 || Number(minuteText) > 59 ||
+    (secondText !== undefined && Number(secondText) > 59) ||
+    (offsetHourText !== undefined && (Number(offsetHourText) > 23 || Number(offsetMinuteText) > 59))
+  )) { return null; }
+
+  const epochMs = Date.parse(trimmed);
+  return Number.isFinite(epochMs) && Number.isFinite(new Date(epochMs).getTime()) ? epochMs : null;
+}
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -970,9 +1001,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Apply optional ?t= timestamp override (ISO-8601 or ms since epoch) for debugging.
     const tParam = this.activatedRoute.snapshot.queryParamMap.get('t');
     if (tParam) {
-      const value = tParam.trim();
-      const ms = /^[+-]?\d+$/.test(value) ? Number(value) : Date.parse(value);
-      if (Number.isFinite(ms)) { this.appService.setNowOverride(ms); }
+      const ms = parseTimeOverride(tParam);
+      if (ms !== null) { this.appService.setNowOverride(ms); }
     }
     // Handle the initial deep-link (?system=…) from the route snapshot…
     this.handleSystemParam(this.activatedRoute.snapshot.queryParamMap.get('system') ?? undefined);
