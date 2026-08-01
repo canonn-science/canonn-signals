@@ -426,6 +426,33 @@ describe('HomeComponent (extended coverage)', () => {
       expect(img.src.match(/[?&]t=/g)).toHaveLength(1);
     });
 
+    it('does not retry a replacement source but lets that source handle its own error', () => {
+      const img = document.createElement('img');
+      img.src = 'assets/first.gif';
+      component.onGecImageError({ target: img } as unknown as Event);
+
+      img.src = 'assets/second.gif';
+      vi.runOnlyPendingTimers();
+      expect(img.src).toContain('/assets/second.gif');
+      expect(img.src).not.toContain('?t=');
+
+      component.onGecImageError({ target: img } as unknown as Event);
+      vi.runOnlyPendingTimers();
+      expect(img.src).toContain('/assets/second.gif?t=');
+    });
+
+    it('places the cache-buster before a URL fragment and preserves existing parameters', () => {
+      const img = document.createElement('img');
+      img.src = 'https://example.com/image.gif?size=large#preview';
+      component.onGecImageError({ target: img } as unknown as Event);
+      vi.runOnlyPendingTimers();
+
+      const retried = new URL(img.src);
+      expect(retried.searchParams.get('size')).toBe('large');
+      expect(retried.searchParams.get('t')).not.toBeNull();
+      expect(retried.hash).toBe('#preview');
+    });
+
     it('delegates the display name to AppService and tracks bodies by id', () => {
       expect(component.getBodyDisplayName('Foo')).toBe('Foo*');
       expect(component.trackByBody(0, { bodyData: { bodyId: 8 } } as any)).toBe(8);
