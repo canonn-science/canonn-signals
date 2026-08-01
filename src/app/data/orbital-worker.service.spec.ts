@@ -1,6 +1,7 @@
 import { OrbitalWorkerService } from './orbital-worker.service';
 import { OrbitalRelationsCore } from './orbital-relations.core';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
+import * as Comlink from 'comlink';
 
 /**
  * The main-thread facade. Its `createProxy()` seam is stubbed per test so these cases never touch
@@ -127,6 +128,20 @@ describe('OrbitalWorkerService', () => {
       return { svc, createSpy };
     }
 
+    function fakeWorker() {
+      const listeners = new Map<string, (event: Event) => void>();
+      return {
+        addEventListener: vi.fn((type: string, listener: (event: Event) => void) => listeners.set(type, listener)),
+        terminate: vi.fn(),
+        fail(type: 'error' | 'messageerror' = 'error') {
+          const event = type === 'error'
+            ? Object.assign(new Event(type), { error: new Error('worker crashed') })
+            : new Event(type);
+          listeners.get(type)?.(event);
+        },
+      };
+    }
+
     it('routes every method through a single shared proxy instead of the inline core', async () => {
       const proxy = fakeProxy();
       const { svc, createSpy } = serviceWith(proxy);
@@ -173,6 +188,130 @@ describe('OrbitalWorkerService', () => {
       // A second call does not retry construction — the unavailable state is latched.
       await svc.upcomingContactsWithin(a, 365, now);
       expect(createSpy).toHaveBeenCalledOnce();
+    });
+
+    it('terminates the worker and retries inline when a Comlink RPC rejects', async () => {
+      const proxy = fakeProxy();
+      proxy.detectCollisionStatus.mockRejectedValueOnce(new Error('RPC rejected'));
+      const { svc, createSpy } = serviceWith(proxy);
+      const worker = fakeWorker();
+      (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
+      const [a] = collidingPair();
+
+      await expect(svc.detectCollisionStatus(a, now)).resolves.toEqual(core.detectCollisionStatus(a, now));
+      expect(worker.terminate).toHaveBeenCalledOnce();
+
+      await svc.upcomingContactsWithin(a, 365, now);
+      expect(createSpy).toHaveBeenCalledOnce();
+      expect(proxy.upcomingContactsWithin).not.toHaveBeenCalled();
+    });
+
+    it('wakes other pending RPCs immediately when one call rejects', async () => {
+      let rejectFirst!: (reason: unknown) => void;
+      const firstRpc = new Promise<never>((_, reject) => { rejectFirst = reject; });
+      const proxy = fakeProxy();
+      proxy.detectCollisionStatus
+        .mockReturnValueOnce(firstRpc)
+        .mockReturnValueOnce(new Promise(() => undefined));
+      const { svc } = serviceWith(proxy);
+      const worker = fakeWorker();
+      (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
+      const [a, b] = collidingPair();
+
+      const first = svc.detectCollisionStatus(a, now);
+      const second = svc.detectCollisionStatus(b, now);
+      rejectFirst(new Error('first RPC rejected'));
+
+      await expect(first).resolves.toEqual(core.detectCollisionStatus(a, now));
+      await expect(second).resolves.toEqual(core.detectCollisionStatus(b, now));
+      expect(worker.terminate).toHaveBeenCalledOnce();
+    });
+
+    it('uses the captured failure signal when the worker is disabled as an RPC starts', async () => {
+      const proxy = fakeProxy();
+      const { svc } = serviceWith(proxy);
+      const worker = fakeWorker();
+      (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
+      proxy.detectCollisionStatus.mockImplementationOnce(() => {
+        (svc as unknown as { disableWorker(reason: unknown): void }).disableWorker(new Error('disabled during call'));
+        return new Promise(() => undefined);
+      });
+      const [a] = collidingPair();
+
+      await expect(svc.detectCollisionStatus(a, now)).resolves.toEqual(core.detectCollisionStatus(a, now));
+      expect(worker.terminate).toHaveBeenCalledOnce();
+    });
+
+    it('handles an asynchronous Comlink proxy-release rejection', async () => {
+      const proxy = fakeProxy() as ReturnType<typeof fakeProxy> & { [Comlink.releaseProxy]: ReturnType<typeof vi.fn> };
+      proxy[Comlink.releaseProxy] = vi.fn().mockRejectedValue(new Error('release failed'));
+      proxy.detectCollisionStatus.mockRejectedValueOnce(new Error('RPC rejected'));
+      const { svc } = serviceWith(proxy);
+      const worker = fakeWorker();
+      (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
+      const [a] = collidingPair();
+
+      await expect(svc.detectCollisionStatus(a, now)).resolves.toEqual(core.detectCollisionStatus(a, now));
+      await Promise.resolve();
+      expect(proxy[Comlink.releaseProxy]).toHaveBeenCalledOnce();
+      expect(worker.terminate).toHaveBeenCalledOnce();
+    });
+
+    it('retries a pending Comlink RPC inline when the worker emits an error', async () => {
+      const proxy = fakeProxy();
+      proxy.detectCollisionStatus.mockReturnValueOnce(new Promise(() => undefined));
+      const { svc } = serviceWith(proxy);
+      const worker = fakeWorker();
+      (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
+      const [a] = collidingPair();
+
+      const result = svc.detectCollisionStatus(a, now);
+      worker.fail();
+
+      await expect(result).resolves.toEqual(core.detectCollisionStatus(a, now));
+      expect(worker.terminate).toHaveBeenCalledOnce();
+    });
+
+    it('times out a silently pending RPC and retries inline', async () => {
+      vi.useFakeTimers();
+      try {
+        const proxy = fakeProxy();
+        proxy.detectCollisionStatus.mockReturnValueOnce(new Promise(() => undefined));
+        const { svc } = serviceWith(proxy);
+        const [a] = collidingPair();
+
+        const result = svc.detectCollisionStatus(a, now);
+        await vi.advanceTimersByTimeAsync(30_000);
+
+        await expect(result).resolves.toEqual(core.detectCollisionStatus(a, now));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does not permanently disable the worker after one timed-out RPC', async () => {
+      vi.useFakeTimers();
+      try {
+        const proxy = fakeProxy();
+        proxy.detectCollisionStatus
+          .mockReturnValueOnce(new Promise(() => undefined))
+          .mockResolvedValueOnce({
+            isCandidate: true, partnerName: 'Recovered Worker', synodicPeriodDays: 1,
+            nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
+          });
+        const { svc, createSpy } = serviceWith(proxy);
+        const [a] = collidingPair();
+
+        const first = svc.detectCollisionStatus(a, now);
+        await vi.advanceTimersByTimeAsync(30_000);
+        await expect(first).resolves.toEqual(core.detectCollisionStatus(a, now));
+
+        await expect(svc.detectCollisionStatus(a, now)).resolves.toMatchObject({ partnerName: 'Recovered Worker' });
+        expect(proxy.detectCollisionStatus).toHaveBeenCalledTimes(2);
+        expect(createSpy).toHaveBeenCalledOnce();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
