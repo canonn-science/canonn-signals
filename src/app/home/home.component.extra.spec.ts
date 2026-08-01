@@ -221,6 +221,8 @@ describe('HomeComponent (extended coverage)', () => {
       component.data.set({ system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any);
       independentOutposts$.set([
         { name: 'Missing', galMapSearch: 'Missing', coordinates: [], type: 'independentOutpost' },
+        { name: 'Non-array', galMapSearch: 'Non-array', coordinates: '1,2,3' as any, type: 'independentOutpost' },
+        { name: 'Sparse', galMapSearch: 'Sparse', coordinates: [1, , 3] as any, type: 'independentOutpost' },
         { name: 'NaN', galMapSearch: 'NaN', coordinates: [NaN, 0, 0], type: 'independentOutpost' },
         { name: 'Infinite', galMapSearch: 'Infinite', coordinates: [0, Infinity, 0], type: 'independentOutpost' },
         { name: 'Fourth', galMapSearch: 'Fourth', coordinates: [4, 0, 0], type: 'independentOutpost' },
