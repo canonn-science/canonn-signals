@@ -84,6 +84,30 @@ export class RegionMapComponent implements OnChanges {
     this.systemSelected.emit(systemName);
   }
 
+  /** Applies the shared mouse, keyboard and focus behaviour for selectable SVG markers. */
+  private bindMarkerInteractions(
+    circle: SVGCircleElement,
+    accessibleName: string,
+    systemName: string,
+    showDescription: () => void,
+    hideDescription: () => void,
+  ): void {
+    circle.setAttribute('role', 'button');
+    circle.setAttribute('tabindex', '0');
+    circle.setAttribute('aria-label', accessibleName);
+    circle.addEventListener('click', () => this.selectSystem(systemName));
+    circle.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.selectSystem(systemName);
+      }
+    });
+    circle.addEventListener('mouseenter', showDescription);
+    circle.addEventListener('focus', showDescription);
+    circle.addEventListener('mouseleave', hideDescription);
+    circle.addEventListener('blur', hideDescription);
+  }
+
   private async loadRegionMap(): Promise<void> {
     const regionMapContainer = this.regionMapContainer();
     if (!regionMapContainer || !this.system()) {
@@ -172,7 +196,6 @@ export class RegionMapComponent implements OnChanges {
     if (!regionMapContainer || !system) {
       return;
     }
-
     const svgElement = regionMapContainer.nativeElement.querySelector('svg');
     if (!svgElement) {
       return;
@@ -190,7 +213,7 @@ export class RegionMapComponent implements OnChanges {
       svgElement.insertBefore(styleElement, svgElement.firstChild);
     }
 
-    // Reset all regions to default style and add click handlers
+    // Reset all regions to default style and add mouse/keyboard zoom handlers.
     const allRegions = svgElement.querySelectorAll('path[id^="Region_"]');
     allRegions.forEach(region => {
       (region as HTMLElement).style.fill = 'darkorange';
@@ -198,18 +221,30 @@ export class RegionMapComponent implements OnChanges {
       (region as HTMLElement).style.stroke = 'orange';
       (region as HTMLElement).style.strokeOpacity = '1';
       (region as HTMLElement).style.strokeWidth = '';
+      const regionNumber = Number.parseInt(region.id.replace('Region_', ''), 10);
+      region.setAttribute('role', 'button');
+      region.setAttribute('tabindex', '0');
+      region.setAttribute('aria-label', `Zoom to galaxy region ${regionNumber}`);
 
       // Add click handler for zooming exactly once per region. The SVG is loaded
       // once and reused across searches, so without this guard each search would
       // stack another duplicate listener on every region path.
       if (!region.hasAttribute('data-zoom-bound')) {
         region.setAttribute('data-zoom-bound', 'true');
-        region.addEventListener('click', (event) => {
+        const zoom = (event: Event): void => {
           const currentViewBox = svgElement.getAttribute('viewBox');
           // Only zoom in if we're not already zoomed
           if (currentViewBox === FULL_VIEWBOX) {
             event.stopPropagation();
             this.zoomToRegion(region as SVGPathElement, svgElement);
+          }
+        };
+        region.addEventListener('click', zoom);
+        region.addEventListener('keydown', event => {
+          const key = (event as KeyboardEvent).key;
+          if (key === 'Enter' || key === ' ') {
+            event.preventDefault();
+            zoom(event);
           }
         });
       }
@@ -218,16 +253,18 @@ export class RegionMapComponent implements OnChanges {
     // Highlight the current region when the API supplied one. Coordinates are independently
     // useful, so missing region metadata must not suppress the system and known-system markers.
     if (system.region) {
-      const regionId = `Region_${String(system.region.region).padStart(2, '0')}`;
-      const regionElement = svgElement.querySelector(`#${regionId}`);
+      const currentRegionId = `Region_${String(system.region.region).padStart(2, '0')}`;
+      const regionElement = svgElement.querySelector(`#${currentRegionId}`);
       if (regionElement) {
+        const namedSuffix = system.region.name ? `, ${system.region.name}` : '';
+        regionElement.setAttribute('aria-label', `Zoom to galaxy region ${system.region.region}${namedSuffix}`);
         (regionElement as HTMLElement).style.fill = '#ff9900';
         (regionElement as HTMLElement).style.fillOpacity = '0.6';
         (regionElement as HTMLElement).style.stroke = '#ff9900';
         (regionElement as HTMLElement).style.strokeOpacity = '1';
         (regionElement as HTMLElement).style.strokeWidth = '2';
       } else {
-        logger.warn('Region element not found for ID:', regionId);
+        logger.warn('Region element not found for ID:', currentRegionId);
       }
     }
 
@@ -352,9 +389,6 @@ export class RegionMapComponent implements OnChanges {
       circle.setAttribute('opacity', '0.9');
       circle.style.cursor = 'pointer';
 
-      // Add click handler to navigate to system
-      circle.addEventListener('click', () => this.selectSystem(system.systemName));
-
       // Check viewBox to determine if we should position tooltip on left
       // When zoomed, use viewBox bounds instead of full map coordinates
       const viewBoxCenterX = viewBoxValues[0] + (viewBoxValues[2] / 2);
@@ -380,8 +414,7 @@ export class RegionMapComponent implements OnChanges {
       rect.setAttribute('pointer-events', 'none');
       rect.style.display = 'none';
 
-      // Add hover events
-      circle.addEventListener('mouseenter', () => {
+      const showDescription = (): void => {
         // Show the text first: getBBox() returns a zero rect (Chromium) or throws
         // (Firefox) for a display:none element, so it must be measured while visible.
         text.style.display = 'block';
@@ -392,12 +425,13 @@ export class RegionMapComponent implements OnChanges {
         rect.setAttribute('y', (bbox.y - 2).toString());
         rect.setAttribute('width', (bbox.width + 8).toString());
         rect.setAttribute('height', (bbox.height + 4).toString());
-      });
+      };
 
-      circle.addEventListener('mouseleave', () => {
+      const hideDescription = (): void => {
         rect.style.display = 'none';
         text.style.display = 'none';
-      });
+      };
+      this.bindMarkerInteractions(circle, `Open ${system.name}`, system.systemName, showDescription, hideDescription);
 
       // Add elements to group
       group.appendChild(circle);
@@ -430,6 +464,7 @@ export class RegionMapComponent implements OnChanges {
       const [x, , z] = outpost.coordinates;
       const tx = this.mapX(x);
       const finalY = this.mapY(z);
+      const outpostName = decodeHtmlEntities(outpost.name);
 
       // Create a group for the marker and label
       const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -445,9 +480,6 @@ export class RegionMapComponent implements OnChanges {
       circle.setAttribute('stroke-width', '1.5');
       circle.setAttribute('opacity', '0.9');
       circle.style.cursor = 'pointer';
-
-      // Add click handler to navigate to system
-      circle.addEventListener('click', () => this.selectSystem(outpost.galMapSearch));
 
       // Check viewBox to determine tooltip position based on distance from edges
       const viewBoxLeft = viewBoxValues[0];
@@ -467,7 +499,7 @@ export class RegionMapComponent implements OnChanges {
       text.setAttribute('pointer-events', 'none');
       text.setAttribute('text-anchor', isRightSide ? 'end' : 'start');
       text.style.display = 'none';
-      text.textContent = decodeHtmlEntities(outpost.name);
+      text.textContent = outpostName;
 
       // Create background rect for text
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -476,8 +508,7 @@ export class RegionMapComponent implements OnChanges {
       rect.setAttribute('pointer-events', 'none');
       rect.style.display = 'none';
 
-      // Add hover events
-      circle.addEventListener('mouseenter', () => {
+      const showDescription = (): void => {
         // Show the text first: getBBox() returns a zero rect (Chromium) or throws
         // (Firefox) for a display:none element, so it must be measured while visible.
         text.style.display = 'block';
@@ -487,12 +518,13 @@ export class RegionMapComponent implements OnChanges {
         rect.setAttribute('y', (bbox.y - 1).toString());
         rect.setAttribute('width', (bbox.width + 6).toString());
         rect.setAttribute('height', (bbox.height + 2).toString());
-      });
+      };
 
-      circle.addEventListener('mouseleave', () => {
+      const hideDescription = (): void => {
         rect.style.display = 'none';
         text.style.display = 'none';
-      });
+      };
+      this.bindMarkerInteractions(circle, `Open ${outpostName}`, outpost.galMapSearch, showDescription, hideDescription);
 
       // Add elements to group
       group.appendChild(circle);
@@ -561,9 +593,6 @@ export class RegionMapComponent implements OnChanges {
     circle.setAttribute('opacity', '0.9');
     circle.style.cursor = 'pointer';
 
-    // Add click handler to navigate to system
-    circle.addEventListener('click', () => this.selectSystem(gnosisData.system));
-
     // Position tooltip - use more conservative positioning for long text
     // Check if we're in the right 60% of the map (not just right half)
     const isRightSide = tx > 819; // 2048 * 0.4 = 819
@@ -588,8 +617,7 @@ export class RegionMapComponent implements OnChanges {
     rect.setAttribute('pointer-events', 'none');
     rect.style.display = 'none';
 
-    // Add hover events
-    circle.addEventListener('mouseenter', () => {
+    const showDescription = (): void => {
       // Show the text first: getBBox() returns a zero rect (Chromium) or throws
       // (Firefox) for a display:none element, so it must be measured while visible.
       text.style.display = 'block';
@@ -599,12 +627,19 @@ export class RegionMapComponent implements OnChanges {
       rect.setAttribute('y', (bbox.y - 2).toString());
       rect.setAttribute('width', (bbox.width + 8).toString());
       rect.setAttribute('height', (bbox.height + 4).toString());
-    });
+    };
 
-    circle.addEventListener('mouseleave', () => {
+    const hideDescription = (): void => {
       rect.style.display = 'none';
       text.style.display = 'none';
-    });
+    };
+    this.bindMarkerInteractions(
+      circle,
+      `Open The Gnosis at ${gnosisData.system}`,
+      gnosisData.system,
+      showDescription,
+      hideDescription,
+    );
 
     // Add elements to group
     group.appendChild(circle);

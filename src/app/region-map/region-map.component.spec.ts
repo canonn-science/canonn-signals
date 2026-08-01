@@ -158,6 +158,36 @@ describe('RegionMapComponent', () => {
       (outpostCircles[outpostCircles.length - 1] as Element).dispatchEvent(new MouseEvent('click'));
       expect(emitted).toContain('PG Sys 1');
     });
+
+    it('makes known and outpost markers keyboard accessible and shows descriptions on focus', () => {
+      const emitted: string[] = [];
+      component.systemSelected.subscribe(n => emitted.push(n));
+      fixture.componentRef.setInput('outposts', [
+        { name: 'Outpost &amp; One', galMapSearch: 'PG Sys 1', coordinates: [10, 0, 20], type: 'independentOutpost' },
+      ]);
+      const svg = buildSvg();
+      (component as any).addKnownSystemMarkers(svg);
+
+      const groups = svg.querySelectorAll('.known-system-marker');
+      const knownCircle = groups[0].querySelector('circle')!;
+      const knownText = groups[0].querySelector('text')!;
+      (knownText as any).getBBox = () => ({ x: 1, y: 2, width: 30, height: 10 });
+      expect(knownCircle.getAttribute('role')).toBe('button');
+      expect(knownCircle.getAttribute('tabindex')).toBe('0');
+      expect(knownCircle.getAttribute('aria-label')).toContain('Varati');
+
+      knownCircle.dispatchEvent(new FocusEvent('focus'));
+      expect(knownText.style.display).toBe('block');
+      knownCircle.dispatchEvent(new FocusEvent('blur'));
+      expect(knownText.style.display).toBe('none');
+      knownCircle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      expect(emitted).toContain('Varati');
+
+      const outpostCircle = groups[groups.length - 1].querySelector('circle')!;
+      expect(outpostCircle.getAttribute('aria-label')).toContain('Outpost & One');
+      outpostCircle.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
+      expect(emitted).toContain('PG Sys 1');
+    });
   });
 
   describe('updateMarkerScales', () => {
@@ -245,6 +275,28 @@ describe('RegionMapComponent', () => {
         expect(p.getAttribute('data-zoom-bound')).toBe('true');
       });
     });
+
+    it('makes regions named keyboard controls with Enter and Space zoom activation', () => {
+      fixture.componentRef.setInput('system', {
+        name: 'Sol', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
+      });
+      const svg = mountSvg(buildSvg());
+      (component as any).highlightRegion();
+
+      const current = svg.querySelector('#Region_18')!;
+      const other = svg.querySelector('#Region_07')!;
+      expect(current.getAttribute('role')).toBe('button');
+      expect(current.getAttribute('tabindex')).toBe('0');
+      expect(current.getAttribute('aria-label')).toBe('Zoom to Inner Orion Spur');
+      expect(other.getAttribute('aria-label')).toBe('Zoom to galaxy region 7');
+
+      other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      expect(svg.getAttribute('viewBox')).not.toBe('0 0 2048 2048');
+
+      svg.setAttribute('viewBox', '0 0 2048 2048');
+      current.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
+      expect(svg.getAttribute('viewBox')).not.toBe('0 0 2048 2048');
+    });
   });
 
   describe('zoomToRegion + Gnosis', () => {
@@ -292,7 +344,17 @@ describe('RegionMapComponent', () => {
 
       const marker = svg.querySelector('#gnosis-marker');
       expect(marker).not.toBeNull();
-      marker!.querySelector('circle')!.dispatchEvent(new MouseEvent('click'));
+      const circle = marker!.querySelector('circle')!;
+      const text = marker!.querySelector('text')!;
+      (text as any).getBBox = () => ({ x: 1, y: 2, width: 30, height: 10 });
+      expect(circle.getAttribute('role')).toBe('button');
+      expect(circle.getAttribute('tabindex')).toBe('0');
+      expect(circle.getAttribute('aria-label')).toBe('Open The Gnosis at Varati');
+      circle.dispatchEvent(new FocusEvent('focus'));
+      expect(text.style.display).toBe('block');
+      circle.dispatchEvent(new FocusEvent('blur'));
+      expect(text.style.display).toBe('none');
+      circle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
       expect(emitted).toEqual(['Varati']);
     });
 
