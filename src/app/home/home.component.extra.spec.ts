@@ -217,6 +217,24 @@ describe('HomeComponent (extended coverage)', () => {
       expect(component.getNearestOutposts().length).toBe(1);
     });
 
+    it('excludes malformed outpost coordinates before choosing the nearest three', () => {
+      component.data.set({ system: { name: 'Sol', id64: 1, coords: { x: 0, y: 0, z: 0 } } } as any);
+      independentOutposts$.set([
+        { name: 'Missing', galMapSearch: 'Missing', coordinates: [], type: 'independentOutpost' },
+        { name: 'Non-array', galMapSearch: 'Non-array', coordinates: '1,2,3' as any, type: 'independentOutpost' },
+        { name: 'Sparse', galMapSearch: 'Sparse', coordinates: [1, , 3] as any, type: 'independentOutpost' },
+        { name: 'NaN', galMapSearch: 'NaN', coordinates: [NaN, 0, 0], type: 'independentOutpost' },
+        { name: 'Infinite', galMapSearch: 'Infinite', coordinates: [0, Infinity, 0], type: 'independentOutpost' },
+        { name: 'Fourth', galMapSearch: 'Fourth', coordinates: [4, 0, 0], type: 'independentOutpost' },
+        { name: 'Second', galMapSearch: 'Second', coordinates: [2, 0, 0], type: 'independentOutpost' },
+        { name: 'First', galMapSearch: 'First', coordinates: [1, 0, 0], type: 'independentOutpost' },
+        { name: 'Third', galMapSearch: 'Third', coordinates: [3, 0, 0], type: 'independentOutpost' },
+      ]);
+
+      expect(component.getNearestOutposts().map(outpost => outpost.name)).toEqual(['First', 'Second', 'Third']);
+      expect(component.getNearestOutposts().every(outpost => Number.isFinite(outpost.distance))).toBe(true);
+    });
+
     it('derives the display-name -> systemName/id64 map from the EdAstro feed', () => {
       edastroSystems$.set([{ name: 'Display Name', galMapSearch: 'Real Sys', id64: 42 }]);
       expect((component as any).systemMapping().get('Display Name')).toEqual({ systemName: 'Real Sys', id64: 42 });
