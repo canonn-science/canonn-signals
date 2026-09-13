@@ -32,6 +32,8 @@ const AMBIGUOUS_BODY_OVERRIDES: Readonly<Record<string, string>> = {
     'wredgo bq-y f0': 'Wredgo BQ-Y f0 D 8 a',
     'pheia aewsy lv-y d11': 'Pheia Aewsy LV-Y d11 B 4',
     'phrio hype bb-w e2-8': 'Phrio Hype BB-W e2-8 12 a',
+    'dryaa blou er-v d2-2967': 'Dryaa Blou ER-V d2-2967 A 1',
+    'eoch flyuae in-j d9-1112': 'Eoch Flyuae IN-J d9-1112 AB 5',
 };
 
 export interface ResolvedGreenGasGiant {
@@ -42,13 +44,26 @@ export interface ResolvedGreenGasGiant {
     slug: string;
 }
 
-export const RESOLVED_GREEN_GAS_GIANTS: readonly ResolvedGreenGasGiant[] = GREEN_GAS_GIANTS.map(g => ({
-    system: g.system,
-    body: g.body.toLowerCase() === g.system.toLowerCase()
-        ? (AMBIGUOUS_BODY_OVERRIDES[g.system.toLowerCase()] ?? g.body)
-        : g.body,
-    slug: slugify(g.body),
-}));
+/**
+ * Confirmed Green Gas Giants not yet present in EDAstro's POI CSV (the catalogue lags
+ * behind fresh discoveries), added by hand so they aren't lost on the next
+ * `generate-green-gas-giants` regeneration. Each entry is verified against live Spansh
+ * data before being added here.
+ */
+const MANUAL_ADDITIONS: readonly ResolvedGreenGasGiant[] = [
+    { system: 'Phrio Phoea DM-U c19-5', body: 'Phrio Phoea DM-U c19-5 6', slug: 'phrio-phoea-dm-u-c19-5-6' },
+];
+
+export const RESOLVED_GREEN_GAS_GIANTS: readonly ResolvedGreenGasGiant[] = [
+    ...GREEN_GAS_GIANTS.map(g => ({
+        system: g.system,
+        body: g.body.toLowerCase() === g.system.toLowerCase()
+            ? (AMBIGUOUS_BODY_OVERRIDES[g.system.toLowerCase()] ?? g.body)
+            : g.body,
+        slug: slugify(g.body),
+    })),
+    ...MANUAL_ADDITIONS,
+];
 
 /** The catalogued Green Gas Giant matching `bodyName`, or `null` if it isn't one. */
 export function findGreenGasGiant(bodyName: string): ResolvedGreenGasGiant | null {
