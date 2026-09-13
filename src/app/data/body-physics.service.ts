@@ -439,7 +439,7 @@ export class BodyPhysicsService {
   /**
    * Angular diameter (degrees) the parent body subtends in `body`'s sky, i.e. how large the
    * parent appears from `body` at its orbital distance (centre-to-centre). Computed exactly as
-   * `2 * atan(parentRadius / distance)` — CCFE's original Lua script instead uses the
+   * `2 * asin(parentRadius / distance)` — CCFE's original Lua script instead uses the
    * small-angle approximation `57.3 * (2 * radius / distance)`, which diverges by a few
    * percent at the angles this badge cares about (see AGENTS.md's "physical accuracy" rule).
    * `distance` is `body`'s own orbital semi-major axis (its average distance from the parent
@@ -451,7 +451,7 @@ export class BodyPhysicsService {
     if (parentRadiusKm === null) { return null; }
     const distanceKm = body.bodyData.semiMajorAxis * KM_PER_AU;
     if (distanceKm <= 0) { return null; }
-    return 2 * Math.atan(parentRadiusKm / distanceKm) * (180 / Math.PI);
+    return 2 * Math.asin(Math.min(parentRadiusKm / distanceKm, 1)) * (180 / Math.PI);
   }
 
   /**
