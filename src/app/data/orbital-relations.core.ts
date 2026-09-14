@@ -793,7 +793,7 @@ export class OrbitalRelationsCore {
    * Not every close approach is a collision — many conjunctions miss the orbits' mutual node
    * — so each synodic event is evaluated individually rather than assumed to collide.
    */
-  private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number, horizonMs: number = Infinity): CollisionWindow[] {
+  private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number, horizonMs: number = Infinity, minContactKm: number = 0): CollisionWindow[] {
     const sep = this.separationFunction(a, b);
     if (!sep || !Number.isFinite(synodicDays)) { return []; }
 
@@ -863,35 +863,73 @@ export class OrbitalRelationsCore {
       // De-duplicate: skip if this minimum falls inside the last recorded contact window.
       if (results.length > 0 && min.t <= results[results.length - 1].end.getTime()) { continue; }
 
-      // Root-find the contact window start (backward bisection from min.t).
-      let lo = min.t;
-      let hi = min.t - stepMs;
-      while (min.t - hi <= maxSpanMs && sep(hi) <= contactKm) { lo = hi; hi -= stepMs; }
-      for (let i = 0; i < 40; i++) {
-        const mid = (hi + lo) / 2;
-        if (sep(mid) > contactKm) { hi = mid; } else { lo = mid; }
+      // The conjunction's contact windows. With the default minContactKm of 0 there is exactly
+      // one — separation simply dips below contactKm and back — but a ring pair has a contact
+      // *band* (see ringContactBand): once the bodies come closer than the band's inner edge,
+      // one ring has passed inside the other's central hole along the line joining them and they
+      // separate again, so a single conjunction yields two windows either side of the minimum.
+      const conjunctionWindows: { startMs: number; endMs: number; minSepKm: number }[] = [];
+      if (min.sepKm >= minContactKm) {
+        const startMs = this.contactCrossing(sep, min.t, -1, contactKm, stepMs, maxSpanMs);
+        const endMs = this.contactCrossing(sep, min.t, 1, contactKm, stepMs, maxSpanMs);
+        conjunctionWindows.push({ startMs, endMs, minSepKm: min.sepKm });
+      } else {
+        // Approaching: contact opens at the band's outer edge and closes at its inner edge.
+        conjunctionWindows.push({
+          startMs: this.contactCrossing(sep, min.t, -1, contactKm, stepMs, maxSpanMs),
+          endMs: this.contactCrossing(sep, min.t, -1, minContactKm, stepMs, maxSpanMs),
+          minSepKm: minContactKm,
+        });
+        // Receding: contact re-opens at the inner edge and closes at the outer edge.
+        conjunctionWindows.push({
+          startMs: this.contactCrossing(sep, min.t, 1, minContactKm, stepMs, maxSpanMs),
+          endMs: this.contactCrossing(sep, min.t, 1, contactKm, stepMs, maxSpanMs),
+          minSepKm: minContactKm,
+        });
       }
-      const startMs = lo;
-      if (results.length > 0 && startMs <= results[results.length - 1].end.getTime()) { continue; }
 
-      // Root-find the contact window end (forward bisection from min.t).
-      let elo = min.t;
-      let ehi = min.t + stepMs;
-      while (ehi - min.t <= maxSpanMs && sep(ehi) <= contactKm) { elo = ehi; ehi += stepMs; }
-      for (let i = 0; i < 40; i++) {
-        const mid = (elo + ehi) / 2;
-        if (sep(mid) > contactKm) { ehi = mid; } else { elo = mid; }
+      for (const w of conjunctionWindows) {
+        if (results.length >= count) { break; }
+        if (!(w.endMs > w.startMs)) { continue; }
+        // Skip contacts whose window ended entirely before now (historical events; days < 0
+        // and the window is over). Contacts in progress (endMs > now, startMs ≤ now) are kept:
+        // days will be slightly negative, which CollisionWindow.days documents as intentional.
+        if (w.endMs < now) { continue; }
+        if (results.length > 0 && w.startMs <= results[results.length - 1].end.getTime()) { continue; }
+        results.push({
+          start: new Date(w.startMs), end: new Date(w.endMs),
+          days: (w.startMs - now) / MS_PER_DAY,
+          minSeparationKm: w.minSepKm, partnerName: b.name, combinedRadiiKm: contactKm,
+        });
       }
-      const endMs = elo;
-
-      // Skip contacts whose window ended entirely before now (historical events; days < 0
-      // and the window is over). Contacts in progress (endMs > now, startMs ≤ now) are kept:
-      // days will be slightly negative, which CollisionWindow.days documents as intentional.
-      if (endMs < now) { continue; }
-
-      results.push({ start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: min.sepKm, partnerName: b.name, combinedRadiiKm: contactKm });
     }
     return results;
+  }
+
+  /**
+   * Time at which `sep` first rises above `threshold`, walking away from `fromMs` in `dir`
+   * (+1 forward, −1 backward) from a point known to be at or below it: coarse 30-second probes
+   * out to `maxSpanMs`, then bisection. Used to root-find the edges of a contact window.
+   */
+  private contactCrossing(
+    sep: (tMs: number) => number,
+    fromMs: number,
+    dir: 1 | -1,
+    threshold: number,
+    stepMs: number,
+    maxSpanMs: number,
+  ): number {
+    let inside = fromMs;
+    let outside = fromMs + dir * stepMs;
+    while (Math.abs(outside - fromMs) <= maxSpanMs && sep(outside) <= threshold) {
+      inside = outside;
+      outside += dir * stepMs;
+    }
+    for (let i = 0; i < 40; i++) {
+      const mid = (inside + outside) / 2;
+      if (sep(mid) > threshold) { outside = mid; } else { inside = mid; }
+    }
+    return inside;
   }
 
   /**
@@ -1197,10 +1235,31 @@ export class OrbitalRelationsCore {
     return bestS;
   }
 
-  /** Sum of two objects' physical extents: a ring's outer radius, or a body's own radius. */
-  private ringContactKm(a: SystemBody, b: SystemBody): number {
-    const extent = (n: SystemBody): number => n.bodyData.type === BODY_TYPE.Ring ? (n.bodyData.outerRadius ?? 0) : (n.bodyData.radius ?? 0);
-    return extent(a) + extent(b);
+  /**
+   * The centre-to-centre separation band within which two objects physically overlap, treating
+   * each as the radial band it actually occupies: `[innerRadius, outerRadius]` for a ring, or
+   * `[0, radius]` for a solid body.
+   *
+   * Contact is tested along the line joining the two bodies, which is where two rings in
+   * *different* planes can meet — a real ring is a flat disc, so it only has material where its
+   * plane cuts the other's, not spread over a sphere. Along that line object A occupies
+   * `[innerA, outerA]` from A and object B occupies `[D − outerB, D − innerB]`, so they overlap
+   * exactly when `innerA + innerB ≤ D ≤ outerA + outerB`.
+   *
+   * The upper edge is the familiar combined-radii contact threshold. The lower edge is what a
+   * sphere-shaped approximation misses: once the bodies are closer than that, one ring has passed
+   * *inside* the other's central hole along the connecting line and they are no longer touching —
+   * which is why a close ring-on-ring pass registers as two collisions either side of closest
+   * approach rather than one continuous one (observed in Musca Dark Region SO-Q b5-5, whose 1 & 2
+   * rings meet at D ∈ [15,558.5, 15,594.2] km while their periapsis separation is 15,499.9 km).
+   * For two solid bodies both inner radii are 0, collapsing this back to the plain `D ≤ rA + rB`
+   * test used for planetary collisions.
+   */
+  private ringContactBand(a: SystemBody, b: SystemBody): { minKm: number; maxKm: number } {
+    const isRing = (n: SystemBody): boolean => n.bodyData.type === BODY_TYPE.Ring;
+    const inner = (n: SystemBody): number => isRing(n) ? (n.bodyData.innerRadius ?? 0) : 0;
+    const outer = (n: SystemBody): number => isRing(n) ? (n.bodyData.outerRadius ?? 0) : (n.bodyData.radius ?? 0);
+    return { minKm: inner(a) + inner(b), maxKm: outer(a) + outer(b) };
   }
 
   /**
@@ -1262,8 +1321,8 @@ export class OrbitalRelationsCore {
       const pair = this.resolveRingOrbitPair(node, other);
       if (!pair) { continue; }
 
-      const contactKm = this.ringContactKm(node, other);
-      if (!(contactKm > 0)) { continue; }
+      const band = this.ringContactBand(node, other);
+      if (!(band.maxKm > 0)) { continue; }
 
       // Cheap pre-filter: the pair's true minimum separation must come within contact range
       // before paying for the full conjunction search below. A phase-locked pair (equal orbital
@@ -1273,13 +1332,13 @@ export class OrbitalRelationsCore {
       const prefilterKm = pair.a.orbitalPeriod === pair.b.orbitalPeriod
         ? this.minLockedSeparationKm(pair.a, pair.b, pair.synodicDays)
         : this.minOrbitDistanceKm(pair.a, pair.b);
-      if (prefilterKm > contactKm) { continue; }
+      if (prefilterKm > band.maxKm) { continue; }
 
-      const windows = this.nextContacts(pair.a, pair.b, contactKm, pair.synodicDays, now, MAX_UPCOMING_CONTACTS);
+      const windows = this.nextContacts(pair.a, pair.b, band.maxKm, pair.synodicDays, now, MAX_UPCOMING_CONTACTS, Infinity, band.minKm);
       if (windows.length === 0) { continue; }
 
       if (!best || windows[0].days < best.windows[0].days) {
-        best = { other, contactKm, synodicDays: pair.synodicDays, windows };
+        best = { other, contactKm: band.maxKm, synodicDays: pair.synodicDays, windows };
       }
     }
 

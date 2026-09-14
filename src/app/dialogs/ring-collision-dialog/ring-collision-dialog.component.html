@@ -148,16 +148,17 @@
         other and carry on in their orbits.
       </p>
       <p>
-        Overlap is the depth of the intersection at closest approach, as a percentage of the two objects'
-        combined extents: 0% means the surfaces merely graze, 100% means the centres pass through one another.
-        Rings are treated as a shell around their host rather than a flat disc, so this flags whether the
-        objects can physically coincide, not the finer detail of exactly which part of the ring they cross.
+        Contact is measured along the line joining the two bodies, where a ring — a flat disc, not a shell —
+        can actually meet another. Each object occupies a radial band there (a ring between its inner and
+        outer edge; a solid body from its centre to its surface), so they touch while the separation lies
+        between the sum of the two inner edges and the sum of the two outer ones.
       </p>
       <p>
-        A real ring is a thin disc tilted to its host's own equator, not a shell — a tilt this model has no
-        data to measure. Where the predicted window is a close graze, that unmodelled tilt can in practice
-        split it into two shorter collisions, separated by a brief gap right at closest approach, rather than
-        one continuous one.
+        That lower edge is why a close ring-on-ring pass can register <em>twice</em>: the rings meet on the
+        way in, then one passes inside the other's central hole at closest approach — genuinely no longer
+        touching — before meeting again on the way out. Overlap is how deep the intersection runs as a
+        percentage of the combined extents. Ring tilt is not modelled (the data gives a tilt magnitude but
+        not its direction), so exact durations are approximate.
       </p>
     </div>
   </div>

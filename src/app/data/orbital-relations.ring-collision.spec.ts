@@ -150,5 +150,47 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     const status2 = service.detectRingCollisionStatus(ring2, now);
     expect(status2.isCandidate).toBe(true);
     expect(status2.partner?.name).toBe('1 A Ring');
+
+    // Each close approach yields *two* collisions, not one: the rings meet on the way in, pass
+    // inside one another along the connecting line at closest approach (no contact), then meet
+    // again on the way out. So consecutive windows alternate short gap / long gap, and the pair
+    // of windows straddling one periapsis is much closer together than one orbital period.
+    const gapsHours = status.upcomingCollisions.slice(1).map(
+      (w, i) => (w.start.getTime() - status.upcomingCollisions[i].end.getTime()) / 3_600_000,
+    );
+    const shortGap = Math.min(...gapsHours);
+    const longGap = Math.max(...gapsHours);
+    expect(shortGap).toBeLessThan(1);            // the two halves of a single approach
+    expect(longGap).toBeGreaterThan(5);          // waiting out the rest of the 6.79 h orbit
+    expect(longGap).toBeLessThan(6.79);
+  });
+
+  it('splits a close ring-on-ring pass into two contacts either side of closest approach', () => {
+    // Contact along the line joining the bodies needs innerA + innerB <= D <= outerA + outerB.
+    // These orbits close to 15,499.9 km at periapsis — inside the band's lower edge — so the
+    // rings part company at closest approach and touch twice per approach instead of once.
+    const barycentre = makeBody('Barycentre', null, { type: BODY_TYPE.Barycentre });
+    const body1 = makeBody('1', barycentre, {
+      semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+      argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+      orbitalPeriod: 0.283064148217593, radius: 5610.1045, timestamps: ts,
+    });
+    const body2 = makeBody('2', barycentre, {
+      semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+      argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+      orbitalPeriod: 0.283064148217593, radius: 4723.183, timestamps: ts,
+    });
+    const ring1 = makeRing('1 B Ring', body1, 8454.5, 8470.4);
+    makeRing('2 A Ring', body2, 7104, 7123.8);
+
+    const status = service.detectRingCollisionStatus(ring1, now);
+    expect(status.isCandidate).toBe(true);
+    // Closest approach within a window is the band's inner edge, not the orbit's true minimum —
+    // the bodies keep closing after contact breaks.
+    expect(status.nextCollision!.minSeparationKm).toBeCloseTo(8454.5 + 7104, 0);
+    // Each contact is short (minutes), far shorter than the 6.79 h orbit.
+    const durationMinutes = (status.nextCollision!.end.getTime() - status.nextCollision!.start.getTime()) / 60_000;
+    expect(durationMinutes).toBeGreaterThan(0.5);
+    expect(durationMinutes).toBeLessThan(15);
   });
 });
