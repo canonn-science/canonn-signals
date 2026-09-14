@@ -6,25 +6,14 @@
       <ul>
         <li><strong>Type:</strong> {{ kindLabel }}</li>
         <li><strong>Bodies:</strong> {{ shortName(data.self.name) }} &amp; {{ shortName(data.partner.name) }}</li>
-        <li><strong>{{ shortName(data.self.name) }}'s {{ rangeLabel(data.self) }}:</strong>
-          {{ data.self.rangeKm.lo | number:'1.0-0' }} – {{ data.self.rangeKm.hi | number:'1.0-0' }} km
-          <span class="hint">from their common host</span>
-        </li>
-        <li><strong>{{ shortName(data.partner.name) }}'s {{ rangeLabel(data.partner) }}:</strong>
-          {{ data.partner.rangeKm.lo | number:'1.0-0' }} – {{ data.partner.rangeKm.hi | number:'1.0-0' }} km
-          <span class="hint">from their common host</span>
-        </li>
-        @if (data.overlapKm) {
-        <li><strong>Overlapping band:</strong>
-          {{ data.overlapKm.lo | number:'1.0-0' }} – {{ data.overlapKm.hi | number:'1.0-0' }} km
-        </li>
-        }
 
         @if (data.synodicPeriodDays !== null) {
-        <li><strong>Synodic period:</strong>
-          {{ data.synodicPeriodDays | number:'1.0-0' }} days
+        <li><strong>Recurs every:</strong>
+          {{ data.synodicPeriodDays * 24 | number:'1.0-1' }} hours
           @if (synodicPeriodYears !== null && synodicPeriodYears >= 1) {
           ({{ synodicPeriodYears | number:'1.1-1' }} years)
+          } @else {
+          ({{ data.synodicPeriodDays | number:'1.0-2' }} days)
           }
           <span class="hint">— the interval between successive close approaches</span>
         </li>
@@ -60,15 +49,6 @@
         @if (overlapPercent !== null) {
         <li><strong>Overlap:</strong> {{ overlapPercent | number:'1.0-1' }}%</li>
         }
-        } @else {
-        <li><strong>Status:</strong> radial-band candidate
-          <span class="hint">— the two radial reaches overlap, but a contact date can't be computed
-            @if (data.self.kind === 'ring' || data.partner.kind === 'ring') {
-              for this configuration (the objects don't share an immediate orbital frame, e.g. they cross a
-              shared ancestor several levels up) or the bodies' mean-anomaly (phase) data is missing.
-            }
-          </span>
-        </li>
         }
       </ul>
     </div>
@@ -77,8 +57,8 @@
     <div class="distance-diagram">
       <h3>Distance over time</h3>
       <p class="hint">
-        Separation through the synodic cycle (log scale). The curve dips at each conjunction; a dip below
-        the dashed contact threshold — marked &times; — is a collision.
+        Separation through the synodic cycle (log scale). The curve dips at each close approach; a dip
+        below the dashed contact threshold — marked &times; — is a collision.
       </p>
       <svg [attr.viewBox]="'0 0 ' + dg.width + ' ' + dg.height" class="separation-chart" role="img"
         aria-label="Distance between the bodies over time">
@@ -95,7 +75,7 @@
         <line class="tick" [attr.x1]="t.x" [attr.y1]="dg.plot.y + dg.plot.h"
           [attr.x2]="t.x" [attr.y2]="dg.plot.y + dg.plot.h + 3" />
         <text class="axis-label x" [attr.x]="t.x" [attr.y]="dg.plot.y + dg.plot.h + 14" [attr.text-anchor]="t.anchor">{{
-          t.tMs | date:'MMM d, y':'UTC' }}</text>
+          t.tMs | date:'MMM d, y, HH:mm':'UTC' }}</text>
         }
 
         @if (dg.nowX !== null) {
@@ -145,7 +125,7 @@
               @if (w.days < 0) {
                 <span class="hint">In progress</span>
               } @else {
-                {{ w.days | number:'1.0-0' }}
+                {{ w.days | number:'1.0-2' }}
                 @if (yearsUntilFor(w) >= 1) {<span class="hint">({{ yearsUntilFor(w) | number:'1.1-1' }} yr)</span>}
               }
             </td>
@@ -168,9 +148,10 @@
         other and carry on in their orbits.
       </p>
       <p>
-        This is a simplified radial-band check, not a full 3D simulation of the ring's plane — it treats the
-        ring as a shell around its host rather than a flat disc, so it flags whether the objects can coincide
-        at all, and (when the pair's orbits share a single frame) roughly when.
+        Overlap is the depth of the intersection at closest approach, as a percentage of the two objects'
+        combined extents: 0% means the surfaces merely graze, 100% means the centres pass through one another.
+        Rings are treated as a shell around their host rather than a flat disc, so this flags whether the
+        objects can physically coincide, not the finer detail of exactly which part of the ring they cross.
       </p>
     </div>
   </div>

@@ -287,9 +287,13 @@ export class SystemBodyComponent implements OnChanges {
     this.trojanStatus = trojan.lagrangePoint;
     this.trojanHostStatus = trojan.isHost;
     this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
-    // Cheap radial-band check (no 3D search), so it runs synchronously on every change like the
-    // other light detectors above rather than going through the collision worker.
-    this.ringCollisionStatus = this.orbitalRelations.detectRingCollisionStatus(body);
+    // Ring-collision detection can run the same costly 3D orbital search as planetary collision
+    // detection (minOrbitDistanceKm + nextContacts) for any pair with a single orbital frame to
+    // time, so — like the collision search below — only redo it when the body itself changes.
+    if (this.ringCollisionBody !== body) {
+      this.ringCollisionBody = body;
+      this.ringCollisionStatus = this.orbitalRelations.detectRingCollisionStatus(body);
+    }
     // Collision detection runs a costly 3D orbital search, so only redo it when the body
     // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
     // the async codex effect, which leave the orbital geometry untouched.
@@ -1517,7 +1521,6 @@ export class SystemBodyComponent implements OnChanges {
       data: {
         self: status.self,
         partner: status.partner,
-        overlapKm: status.overlapKm,
         combinedRadiiKm: status.combinedRadiiKm,
         synodicPeriodDays: status.synodicPeriodDays,
         nextCollision: status.nextCollision,
@@ -1532,9 +1535,9 @@ export class SystemBodyComponent implements OnChanges {
    * Builds the distance-over-time samples for the ring collision dialog's diagram: a single
    * centre-to-centre (or moon-to-host, for a body orbiting directly around the ring's host)
    * separation curve over ten synodic periods, mirroring {@link buildCollisionDistanceDiagram}
-   * but for a ring-collision pair — this runs synchronously since the ring-collision search is
-   * a cheap radial-band check, not the costly 3D search the planetary-collision worker handles.
-   * Returns null when the pair can't be timed or lacks the phase data to place it.
+   * but for a ring-collision pair. Returns null when the pair can't be timed or lacks the phase
+   * data to place it — in practice this shouldn't happen here, since {@link ringCollisionStatus}
+   * already required a real detected contact window before flagging a candidate at all.
    */
   private buildRingCollisionDistanceDiagram(status: RingCollisionStatus): SynodicDiagramInput | null {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -1915,8 +1918,10 @@ export class SystemBodyComponent implements OnChanges {
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
-  /** Result of the ring-collision radial-band check for the current body (see {@link ngOnChanges}). */
+  /** Result of the ring-collision search for the current body (see {@link ngOnChanges}). */
   public ringCollisionStatus: RingCollisionStatus | null = null;
+  /** The body {@link ringCollisionStatus} was last computed for, to skip recompute on unrelated re-renders. */
+  private ringCollisionBody: SystemBody | null = null;
   /**
    * Result of the off-thread collision search for the current body, or null while it is still
    * running (or when the body isn't a collision candidate). A signal, not a plain field, because

@@ -6,11 +6,11 @@ import { RingCollisionDialogComponent, RingCollisionDialogData } from './ring-co
 import { RingCollisionExtent } from '../../data/orbital-relations.service';
 import { SystemBody } from '../../home/home.component';
 
-/** A placeholder node — the dialog never dereferences it, only the extent's name/kind/rangeKm. */
+/** A placeholder node — the dialog never dereferences it, only the extent's name/kind. */
 const fakeNode = {} as SystemBody;
 
-function extent(name: string, kind: 'body' | 'ring', lo: number, hi: number): RingCollisionExtent {
-  return { name, kind, rangeKm: { lo, hi }, node: fakeNode };
+function extent(name: string, kind: 'body' | 'ring'): RingCollisionExtent {
+  return { name, kind, node: fakeNode };
 }
 
 function setup(data: RingCollisionDialogData): ComponentFixture<RingCollisionDialogComponent> {
@@ -28,19 +28,18 @@ describe('RingCollisionDialogComponent', () => {
 
   it('labels a body-vs-ring pair as "Body on Ring" and shows a predicted contact window with a table and chart', () => {
     const fixture = setup({
-      self: extent('Test 1 a', 'body', 0, 4_495_979),
-      partner: extent('Test 2 Ring', 'ring', 1_395_979, 1_595_979),
-      overlapKm: { lo: 1_395_979, hi: 1_595_979 },
+      self: extent('Test 1 a', 'body'),
+      partner: extent('Test 2 Ring', 'ring'),
       combinedRadiiKm: 100_000,
       synodicPeriodDays: 5,
       nextCollision: {
         start: new Date('2026-12-15T14:00:00Z'),
         end: new Date('2026-12-15T15:30:00Z'),
         days: 170,
-        minSeparationKm: 1_400_000,
+        minSeparationKm: 90_000,
       },
       upcomingCollisions: [
-        { start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'), days: 170, minSeparationKm: 1_400_000 },
+        { start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'), days: 170, minSeparationKm: 90_000 },
       ],
       systemName: 'Test',
       separationDiagram: {
@@ -51,11 +50,11 @@ describe('RingCollisionDialogComponent', () => {
           partnerName: 'Test 2 Ring',
           combinedRadiiKm: 100_000,
           samples: [
-            { tMs: Date.parse('2026-01-01T00:00:00Z'), sepKm: 2_000_000 },
-            { tMs: Date.parse('2026-12-15T14:00:00Z'), sepKm: 1_400_000 },
-            { tMs: Date.parse('2027-01-01T00:00:00Z'), sepKm: 2_000_000 },
+            { tMs: Date.parse('2026-01-01T00:00:00Z'), sepKm: 200_000 },
+            { tMs: Date.parse('2026-12-15T14:00:00Z'), sepKm: 90_000 },
+            { tMs: Date.parse('2027-01-01T00:00:00Z'), sepKm: 200_000 },
           ],
-          contacts: [{ tMs: Date.parse('2026-12-15T14:00:00Z'), sepKm: 1_400_000 }],
+          contacts: [{ tMs: Date.parse('2026-12-15T14:00:00Z'), sepKm: 90_000 }],
         }],
       },
     });
@@ -72,32 +71,36 @@ describe('RingCollisionDialogComponent', () => {
     expect(el.querySelector('svg.separation-chart')).not.toBeNull();
   });
 
-  it('labels a ring-vs-ring pair as "Ring on Ring" and falls back to the static candidate status when the pair can\'t be timed', () => {
+  it('labels a ring-vs-ring pair as "Ring on Ring"', () => {
     const fixture = setup({
-      self: extent('Test A Ring', 'ring', 99_900_000, 100_100_000),
-      partner: extent('Test B Ring', 'ring', 100_050_000, 100_950_000),
-      overlapKm: { lo: 100_050_000, hi: 100_100_000 },
-      combinedRadiiKm: null,
-      synodicPeriodDays: null,
-      nextCollision: null,
-      upcomingCollisions: [],
+      self: extent('Test A Ring', 'ring'),
+      partner: extent('Test B Ring', 'ring'),
+      combinedRadiiKm: 15_594,
+      synodicPeriodDays: 0.283064148217593,
+      nextCollision: {
+        start: new Date('2026-09-15T00:00:00Z'),
+        end: new Date('2026-09-15T00:10:00Z'),
+        days: 0.1,
+        minSeparationKm: 15_500,
+      },
+      upcomingCollisions: [
+        { start: new Date('2026-09-15T00:00:00Z'), end: new Date('2026-09-15T00:10:00Z'), days: 0.1, minSeparationKm: 15_500 },
+      ],
       systemName: 'Test',
     });
 
-    expect(fixture.componentInstance.heading).toBe('Ring Collision Candidate');
     expect(fixture.componentInstance.kindLabel).toBe('Ring on Ring');
-    expect(fixture.componentInstance.diagram).toBeNull();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.textContent).toContain('Ring on Ring');
-    expect(el.textContent).toContain('radial-band candidate');
-    expect(el.querySelector('svg.separation-chart')).toBeNull();
+    // A recurring sub-day synodic period (6.79 hours) should read in hours, not "0 days".
+    expect(el.textContent).toContain('Recurs every');
+    expect(fixture.componentInstance.diagram).toBeNull();
   });
 
   it('strips the system name prefix from displayed names', () => {
     const fixture = setup({
-      self: extent('Test 1 a', 'body', 0, 100),
-      partner: extent('Test 2 Ring', 'ring', 0, 100),
-      overlapKm: { lo: 0, hi: 100 },
+      self: extent('Test 1 a', 'body'),
+      partner: extent('Test 2 Ring', 'ring'),
       combinedRadiiKm: null,
       synodicPeriodDays: null,
       nextCollision: null,

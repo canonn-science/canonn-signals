@@ -103,52 +103,41 @@ export interface CollisionStatus {
   simultaneousPartners: string[];
 }
 
-/** One side of a ring collision: either a solid body (its own bound orbit) or a ring (a static radial band around its host). */
+/** One side of a ring collision: either a solid body (its own bound orbit) or a ring (a static band around its host). */
 export interface RingCollisionExtent {
   /** Full name of the body or ring. */
   name: string;
   /** 'body' for a planet/moon/star, 'ring' for a ring. */
   kind: 'body' | 'ring';
-  /** Radial-distance-from-the-shared-ancestor range (km) this object can occupy. */
-  rangeKm: { lo: number; hi: number };
   /** The tree node itself, so a caller can re-run {@link OrbitalRelationsCore.ringSeparationSeries} for the distance diagram. */
   node: SystemBody;
 }
 
 /**
- * Result of ring-collision analysis for a body or ring: whether it can ever come within radial
- * range of some other body's rings (a "Body on Ring" collision) or another ring (a "Ring on
- * Ring" collision) — see {@link OrbitalRelationsCore.detectRingCollisionStatus}.
+ * Result of ring-collision analysis for a body or ring: whether a genuine, timeable collision was
+ * found with some other body's rings (a "Body on Ring" collision) or another ring ("Ring on
+ * Ring") — see {@link OrbitalRelationsCore.detectRingCollisionStatus}. Unlike
+ * {@link CollisionStatus}, there is no untimed "geometric candidate" state: a pair is only ever
+ * reported here once an actual contact window has been found, since rings are static (they don't
+ * move relative to their host) and only two configurations have a single orbital frame to search
+ * precisely — one object orbiting the other directly, or both sharing an immediate parent — so
+ * anything else (e.g. requiring a shared ancestor several levels up, such as a barycentre) simply
+ * isn't evaluated at all rather than surfaced as an unconfirmed guess.
  */
 export interface RingCollisionStatus {
-  /** True when this object's radial reach overlaps a ring belonging to a different body. */
+  /** True when a genuine, timed collision was found with another body's rings. */
   isCandidate: boolean;
-  /** This object's own radial extent (from the shared ancestor with {@link partner}); null when not a candidate. */
+  /** This object, when {@link isCandidate}; null otherwise. */
   self: RingCollisionExtent | null;
   /** The other object involved — a ring, or the body whose orbit reaches this ring; null when not a candidate. */
   partner: RingCollisionExtent | null;
-  /** The overlapping radial band (km), shared by both extents; null when not a candidate. */
-  overlapKm: { lo: number; hi: number } | null;
-  /**
-   * Sum of the two objects' physical extents (a ring's outer radius, or a body's radius) — the
-   * contact threshold used for {@link nextCollision}/{@link upcomingCollisions}. Null when not a
-   * candidate.
-   */
+  /** Sum of the two objects' physical extents (a ring's outer radius, or a body's radius) — the contact threshold. Null when not a candidate. */
   combinedRadiiKm: number | null;
-  /**
-   * Synodic period (days) between the pair's orbital timing — the interval between successive
-   * close approaches. Null when not a candidate, or when the pair's configuration can't be timed
-   * (see {@link nextCollision}).
-   */
+  /** Synodic period (days) between the pair's orbital timing — the interval between successive close approaches. Null when not a candidate. */
   synodicPeriodDays: number | null;
-  /**
-   * Next timed contact window, or null when either there is no candidate, the pair's
-   * configuration can't be timed (the two objects don't share an immediate parent and don't
-   * orbit one another directly — e.g. crossing a shared barycentre several levels up), or the
-   * phase data (mean anomaly + timestamp) needed to place them in time is missing.
-   */
+  /** The soonest contact window; never null when {@link isCandidate} is true. */
   nextCollision: CollisionWindow | null;
-  /** Up to 10 upcoming contact windows in chronological order; empty when {@link nextCollision} is null. */
+  /** Up to 10 upcoming contact windows in chronological order; empty when not a candidate. */
   upcomingCollisions: CollisionWindow[];
 }
 
@@ -1108,60 +1097,6 @@ export class OrbitalRelationsCore {
   }
 
   /**
-   * Radial-distance-from-`ancestor` range (km) `node` can occupy, walking up its parent chain.
-   * A direct child of `ancestor` gets its exact [periapsis, apoapsis]; a body further down the
-   * chain gets the looser triangle-inequality envelope around its parent's range instead of an
-   * exact figure (its true position also depends on where its parent sits within *that* range,
-   * and on the relative phase between the two orbits — which the "simple rule of thumb" in
-   * {@link detectRingCollisionStatus} deliberately ignores, matching the Canonn reference
-   * spreadsheet's radial-band approach for planetary collisions). Returns null when a link in
-   * the chain up to `ancestor` isn't on a bound, recurring orbit, or `ancestor` isn't actually
-   * an ancestor of `node`.
-   */
-  private radialRangeFromAncestor(node: SystemBody, ancestor: SystemBody): { lo: number; hi: number } | null {
-    if (node === ancestor) { return { lo: 0, hi: 0 }; }
-    if (!node.parent) { return null; }
-    const range = this.orbitalRadialRange(node.bodyData);
-    if (!range) { return null; }
-    const periKm = range.peri * KM_PER_AU, apoKm = range.apo * KM_PER_AU;
-    if (node.parent === ancestor) { return { lo: periKm, hi: apoKm }; }
-    const parentRange = this.radialRangeFromAncestor(node.parent, ancestor);
-    if (!parentRange) { return null; }
-    // Triangle inequality: the closest `node` can get to `ancestor` is its parent's closest
-    // approach minus node's own furthest reach from its parent (using the furthest reach, not
-    // the nearest, to cancel as much of the parent's offset as possible); the furthest is the
-    // sum of both. This is a conservative envelope, not an exact position.
-    return { lo: Math.max(0, parentRange.lo - apoKm), hi: parentRange.hi + apoKm };
-  }
-
-  /**
-   * Radial-distance-from-`ancestor` range (km) a ring's annulus can occupy. When the ring's own
-   * host body *is* `ancestor`, this is exact — the ring's [innerRadius, outerRadius] band around
-   * a fixed point. Otherwise it's the same triangle-inequality envelope as
-   * {@link radialRangeFromAncestor}, widened by the ring's outer radius rather than a body's
-   * apoapsis. Returns null when the ring has no parent, or the host's chain up to `ancestor`
-   * lacks a bound orbit.
-   */
-  private ringRangeFromAncestor(ring: SystemBody, ancestor: SystemBody): { lo: number; hi: number } | null {
-    const host = ring.parent;
-    if (!host) { return null; }
-    const innerKm = ring.bodyData.innerRadius ?? 0;
-    const outerKm = ring.bodyData.outerRadius ?? 0;
-    if (host === ancestor) { return { lo: innerKm, hi: outerKm }; }
-    const hostRange = this.radialRangeFromAncestor(host, ancestor);
-    if (!hostRange) { return null; }
-    return { lo: Math.max(0, hostRange.lo - outerKm), hi: hostRange.hi + outerKm };
-  }
-
-  /** Nearest shared ancestor of two nodes in the same system tree, or null when there is none. */
-  private commonAncestor(a: SystemBody, b: SystemBody): SystemBody | null {
-    const ancestorsOfA = new Set<SystemBody>();
-    for (let n: SystemBody | null = a; n; n = n.parent) { ancestorsOfA.add(n); }
-    for (let n: SystemBody | null = b; n; n = n.parent) { if (ancestorsOfA.has(n)) { return n; } }
-    return null;
-  }
-
-  /**
    * A degenerate a=0 "orbit" that {@link orbitalStateVector} places permanently at (0,0,0)
    * regardless of mean anomaly — used as a stand-in for a fixed reference point (another body's
    * position) so the existing time-stepped separation search ({@link separationFunction}/
@@ -1180,16 +1115,28 @@ export class OrbitalRelationsCore {
 
   /**
    * Resolves a ring-collision pair (either or both sides possibly rings) into the two orbiting
-   * bodies and synodic period {@link nextContacts}/{@link separationSeries} need to time it —
-   * or null when the pair's configuration can't be timed with a single-orbit model:
-   *  - one orbits the other directly (e.g. a moon crossing its own planet's rings): the
+   * bodies and synodic period {@link nextContacts}/{@link separationSeries} need to time it — or
+   * null when the pair doesn't have a single orbital frame to search precisely. Exactly two
+   * configurations qualify:
+   *  - one orbits the other *directly* (e.g. a moon crossing its own planet's rings): the
    *    non-orbiting side becomes a {@link stationaryOrigin} stand-in for its position, and the
    *    "distance" is simply the orbiter's own orbital radius over time;
-   *  - the two share an immediate parent (e.g. two ringed sibling planets): both sides' real
-   *    orbits are used directly, exactly like planet-planet collision timing;
-   *  - otherwise (a shared ancestor further up, e.g. a barycentre) there's no single orbital
-   *    plane/phase relationship to search, so timing isn't attempted (only the static radial-band
-   *    candidacy applies).
+   *  - the two share an *immediate* parent (e.g. two ringed planets orbiting the same star, or —
+   *    just as validly — two components of a binary orbiting their shared barycentre): both
+   *    sides' real orbits are used directly. The parent itself, whatever it is, never becomes one
+   *    of the two colliding objects; it's only used to confirm the pair shares one orbital plane.
+   *
+   * Anything else (e.g. a shared ancestor several levels further up, such as a moon of one
+   * barycentre component reaching toward the other component's rings) has no single orbital frame
+   * to search and is deliberately not resolved — "there's nothing physical to collide" beyond what
+   * a direct or sibling relationship already covers, so such pairs are skipped entirely rather
+   * than reported as an unconfirmed guess.
+   *
+   * A pair sharing an immediate parent with *equal* orbital periods (typical of two components of
+   * a binary, which by construction complete one loop of their mutual orbit together) is still
+   * resolved: unlike {@link collisionPartners}'s Trojan/rosette exclusion for bodies co-orbiting a
+   * *third*, real central body, two siblings with the same period here simply repeat their whole
+   * relative geometry once per shared period — so that period itself is used as the synodic step.
    */
   private resolveRingOrbitPair(self: SystemBody, partner: SystemBody): { a: CanonnBiostatsBody; b: CanonnBiostatsBody; synodicDays: number } | null {
     const selfOrbitBody = self.bodyData.type === BODY_TYPE.Ring ? self.parent : self;
@@ -1208,10 +1155,46 @@ export class OrbitalRelationsCore {
     }
     if (selfOrbitBody.parent && selfOrbitBody.parent === partnerOrbitBody.parent) {
       const a = selfOrbitBody.bodyData, b = partnerOrbitBody.bodyData;
-      if (!a.orbitalPeriod || !b.orbitalPeriod || a.orbitalPeriod === b.orbitalPeriod) { return null; }
-      return { a, b, synodicDays: 1 / Math.abs(1 / a.orbitalPeriod - 1 / b.orbitalPeriod) };
+      if (!a.orbitalPeriod || !b.orbitalPeriod) { return null; }
+      const synodicDays = a.orbitalPeriod === b.orbitalPeriod ? a.orbitalPeriod : 1 / Math.abs(1 / a.orbitalPeriod - 1 / b.orbitalPeriod);
+      return { a, b, synodicDays };
     }
     return null;
+  }
+
+  /**
+   * Minimum separation (km) between two bodies that share an identical orbital period — a
+   * phase-locked pair (e.g. two components of a binary), whose relative geometry repeats exactly
+   * once per period rather than sweeping through every possible relative phase the way a normal
+   * (unequal-period) pair eventually does. {@link minOrbitDistanceKm}'s unconstrained two-body
+   * search isn't a valid stand-in here: it freely varies each body's phase independently to find
+   * the closest the two *orbit curves* could ever come, which can be smaller than what a
+   * phase-locked pair — confined to a single, fixed relative phase — actually ever reaches. This
+   * instead samples the real, single-degree-of-freedom separation-over-time curve directly
+   * (a coarse scan over one shared period, then a few halving refine passes around the minimum).
+   */
+  private minLockedSeparationKm(a: CanonnBiostatsBody, b: CanonnBiostatsBody, periodDays: number): number {
+    const sep = this.separationFunction(a, b);
+    if (!sep) { return Infinity; }
+    const periodMs = periodDays * MS_PER_DAY;
+    const SAMPLES = 360;
+    let bestT = 0, bestS = Infinity;
+    for (let i = 0; i < SAMPLES; i++) {
+      const t = (i / SAMPLES) * periodMs;
+      const s = sep(t);
+      if (s < bestS) { bestS = s; bestT = t; }
+    }
+    let half = periodMs / SAMPLES;
+    for (let pass = 0; pass < 8; pass++) {
+      const lo = bestT - half, hi = bestT + half;
+      const step = (hi - lo) / 20;
+      for (let t = lo; t <= hi; t += step) {
+        const s = sep(t);
+        if (s < bestS) { bestS = s; bestT = t; }
+      }
+      half /= 2;
+    }
+    return bestS;
   }
 
   /** Sum of two objects' physical extents: a ring's outer radius, or a body's own radius. */
@@ -1234,31 +1217,31 @@ export class OrbitalRelationsCore {
   }
 
   /**
-   * Flags a body or ring as a "ring collision" candidate when its radial reach (from whatever
-   * ancestor it shares with the other object) overlaps a ring belonging to a *different* body —
-   * either a solid body's orbit passing through another body's ring ("Body on Ring") or two
-   * different bodies' rings whose bands overlap ("Ring on Ring").
-   *
-   * This is deliberately a simple radial-band rule of thumb, not the full 3D orbit-crossing
-   * search {@link detectCollisionStatus} runs for planet-planet collisions: rings are static
-   * (they don't move around their host), and the bodies involved often don't share an immediate
-   * parent (e.g. a moon of one binary component crossing the other component's rings), so there
-   * is no single shared orbital plane/phase to search precisely. Per the feature request, this
-   * intentionally does not attempt to model the whole system — just whether the two radial bands
-   * can ever coincide.
+   * Flags a body or ring as a "ring collision" candidate only once an actual, timed contact
+   * window has been found with a ring belonging to a *different* body — either a solid body's
+   * orbit passing through another body's ring ("Body on Ring") or two different bodies' rings
+   * whose extents overlap in 3D ("Ring on Ring"). There is no untimed "might overlap" state:
+   * per the feature request, a candidate is only ever surfaced when a genuine collision is
+   * actually detected, using the same 3D orbit-crossing search {@link detectCollisionStatus}
+   * runs for planet-planet collisions — just with each ring's outer radius (or a plain body's own
+   * radius) as the contact threshold, and only for the two pair configurations
+   * {@link resolveRingOrbitPair} can actually time (see its docs for why others, like crossing a
+   * shared barycentre several levels up, are skipped rather than guessed at).
    */
   detectRingCollisionStatus(node: SystemBody, now: number = Date.now()): RingCollisionStatus {
     const none: RingCollisionStatus = {
-      isCandidate: false, self: null, partner: null, overlapKm: null,
+      isCandidate: false, self: null, partner: null,
       combinedRadiiKm: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [],
     };
+    // A barycentre has no physical surface or rings of its own — nothing to collide with.
+    if (node.bodyData.type === BODY_TYPE.Barycentre) { return none; }
     const isRing = node.bodyData.type === BODY_TYPE.Ring;
 
     let root = node;
     while (root.parent) { root = root.parent; }
     const candidates = this.flattenSystem(root);
 
-    let best: { other: SystemBody; selfRange: { lo: number; hi: number }; otherRange: { lo: number; hi: number }; overlap: { lo: number; hi: number } } | null = null;
+    let best: { other: SystemBody; contactKm: number; synodicDays: number; windows: CollisionWindow[] } | null = null;
 
     for (const other of candidates) {
       if (other === node) { continue; }
@@ -1267,49 +1250,52 @@ export class OrbitalRelationsCore {
       if (isRing && node.parent === other) { continue; } // a ring can't collide with its own host
       if (otherIsRing && other.parent === node) { continue; } // a body can't collide with its own ring
       if (isRing && otherIsRing && node.parent === other.parent) { continue; } // adjacent rings of the same host — a gap, not a collision
+      // A barycentre is a mathematical point (the centre of mass of its children), not a physical
+      // body — it has no surface or rings of its own, so it can never be one of the two colliding
+      // objects (only ever a legitimate *shared parent* for two of its real children, handled by
+      // resolveRingOrbitPair below).
+      if (other.bodyData.type === BODY_TYPE.Barycentre) { continue; }
 
-      const ancestor = this.commonAncestor(node, other);
-      if (!ancestor) { continue; }
+      // Only pairs with a single orbital frame to search are ever evaluated (see
+      // resolveRingOrbitPair's docs) — this is the "rule of thumb" that skips everything else
+      // (e.g. crossing a shared barycentre several levels up) without costing a single flop.
+      const pair = this.resolveRingOrbitPair(node, other);
+      if (!pair) { continue; }
 
-      const selfRange = isRing ? this.ringRangeFromAncestor(node, ancestor) : this.radialRangeFromAncestor(node, ancestor);
-      if (!selfRange) { continue; }
-      const otherRange = otherIsRing ? this.ringRangeFromAncestor(other, ancestor) : this.radialRangeFromAncestor(other, ancestor);
-      if (!otherRange) { continue; }
+      const contactKm = this.ringContactKm(node, other);
+      if (!(contactKm > 0)) { continue; }
 
-      const overlapLo = Math.max(selfRange.lo, otherRange.lo);
-      const overlapHi = Math.min(selfRange.hi, otherRange.hi);
-      if (overlapLo > overlapHi) { continue; }
+      // Cheap pre-filter: the pair's true minimum separation must come within contact range
+      // before paying for the full conjunction search below. A phase-locked pair (equal orbital
+      // periods, e.g. two components of a binary) needs the real time-evolved minimum — its
+      // relative phase is fixed forever, so the unconstrained two-orbit search below would
+      // under-report how close they actually ever get.
+      const prefilterKm = pair.a.orbitalPeriod === pair.b.orbitalPeriod
+        ? this.minLockedSeparationKm(pair.a, pair.b, pair.synodicDays)
+        : this.minOrbitDistanceKm(pair.a, pair.b);
+      if (prefilterKm > contactKm) { continue; }
 
-      if (!best || (overlapHi - overlapLo) > (best.overlap.hi - best.overlap.lo)) {
-        best = { other, selfRange, otherRange, overlap: { lo: overlapLo, hi: overlapHi } };
+      const windows = this.nextContacts(pair.a, pair.b, contactKm, pair.synodicDays, now, MAX_UPCOMING_CONTACTS);
+      if (windows.length === 0) { continue; }
+
+      if (!best || windows[0].days < best.windows[0].days) {
+        best = { other, contactKm, synodicDays: pair.synodicDays, windows };
       }
     }
 
     if (!best) { return none; }
-
-    // Timing is a strict bonus over the static candidacy above: it only succeeds for the pair
-    // configurations resolveRingOrbitPair understands (see its docs), and gracefully yields no
-    // windows (rather than failing the whole candidacy) when phase data is missing.
-    const combinedRadiiKm = this.ringContactKm(node, best.other);
-    const pair = this.resolveRingOrbitPair(node, best.other);
-    const upcomingCollisions = pair
-      ? this.nextContacts(pair.a, pair.b, combinedRadiiKm, pair.synodicDays, now, MAX_UPCOMING_CONTACTS)
-      : [];
-
     return {
       isCandidate: true,
-      self: { name: node.bodyData.name, kind: isRing ? 'ring' : 'body', rangeKm: best.selfRange, node },
+      self: { name: node.bodyData.name, kind: isRing ? 'ring' : 'body', node },
       partner: {
         name: best.other.bodyData.name,
         kind: best.other.bodyData.type === BODY_TYPE.Ring ? 'ring' : 'body',
-        rangeKm: best.otherRange,
         node: best.other,
       },
-      overlapKm: best.overlap,
-      combinedRadiiKm,
-      synodicPeriodDays: pair?.synodicDays ?? null,
-      nextCollision: upcomingCollisions[0] ?? null,
-      upcomingCollisions,
+      combinedRadiiKm: best.contactKm,
+      synodicPeriodDays: best.synodicDays,
+      nextCollision: best.windows[0],
+      upcomingCollisions: best.windows,
     };
   }
 }

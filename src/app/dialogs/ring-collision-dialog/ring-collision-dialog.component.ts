@@ -10,40 +10,34 @@ import { localDateTime, localZoneLabel, formatContactDuration } from '../collisi
 export interface RingCollisionDialogData {
   /** The body/ring the badge was shown on. */
   self: RingCollisionExtent;
-  /** The other body/ring its radial reach overlaps. */
+  /** The other body/ring it collides with. */
   partner: RingCollisionExtent;
-  /** The overlapping radial band (km), shared by both extents. */
-  overlapKm: { lo: number; hi: number } | null;
   /** Sum of the two objects' physical extents (a ring's outer radius, or a body's radius) — the contact threshold. */
   combinedRadiiKm: number | null;
-  /** Synodic period (days) between the pair, when the configuration could be timed. */
+  /** Synodic period (days) between the pair. */
   synodicPeriodDays: number | null;
-  /** Next contact window, or null when timing isn't available for this pair. */
+  /** The soonest contact window. */
   nextCollision: CollisionWindow | null;
   /** Up to 10 upcoming contact windows in chronological order. */
   upcomingCollisions: CollisionWindow[];
   /** System name, used to strip the prefix from body names for display. */
   systemName: string;
   /**
-   * Centre-to-centre distance-over-time samples driving the diagram, or null/omitted when the
-   * pair can't be timed or lacks the phase data needed to place it (in which case the diagram is
-   * hidden and the dialog falls back to the static radial-overlap description only).
+   * Centre-to-centre distance-over-time samples driving the diagram, or null when the phase data
+   * needed to place the pair in time is unexpectedly missing (in which case the diagram is
+   * hidden) — the dialog is only ever opened for a pair with an already-detected contact window.
    */
   separationDiagram?: SynodicDiagramInput | null;
 }
 
-/** Days in a Julian year, used to express long intervals (synodic period, time-to-collision) in years. */
-const DAYS_PER_YEAR = 365.25;
-
 /**
- * Details of a predicted ring collision — either a body's orbit reaching into another body's
- * rings ("Body on Ring") or two different bodies' rings whose radial bands overlap ("Ring on
- * Ring"). Mirrors the planetary {@link CollisionDialogComponent}'s level of detail (a predicted
- * contact window, distance-over-time chart and upcoming-contacts table) when the pair's
- * configuration can be timed with a single-orbit model — see
- * {@link OrbitalRelationsCore.resolveRingOrbitPair}. When it can't (e.g. the two objects only
- * share an ancestor several levels up, such as a shared barycentre), the dialog falls back to
- * just the static radial-band overlap, since there's no single orbital plane/phase to search.
+ * Details of a detected ring collision — either a body's orbit reaching into another body's rings
+ * ("Body on Ring") or two different bodies' rings whose extents overlap in 3D ("Ring on Ring").
+ * Mirrors the planetary {@link CollisionDialogComponent}'s level of detail (a predicted contact
+ * window, distance-over-time chart and upcoming-contacts table): unlike planetary collisions,
+ * ring collisions are only ever surfaced once a genuine, timed contact has actually been found —
+ * see {@link OrbitalRelationsCore.detectRingCollisionStatus} — so this dialog always has a date,
+ * never just a "might overlap" guess.
  */
 @Component({
   selector: 'app-ring-collision-dialog',
@@ -55,7 +49,7 @@ const DAYS_PER_YEAR = 365.25;
 export class RingCollisionDialogComponent {
   public readonly data = inject<RingCollisionDialogData>(MAT_DIALOG_DATA);
 
-  public readonly heading = this.data.nextCollision ? 'Predicted Ring Collision' : 'Ring Collision Candidate';
+  public readonly heading = 'Predicted Ring Collision';
 
   /** "Body on Ring" or "Ring on Ring", depending on which side(s) are rings. */
   public get kindLabel(): string {
@@ -69,19 +63,13 @@ export class RingCollisionDialogComponent {
     return name.startsWith(prefix) ? name.slice(prefix.length) : name;
   }
 
-  /** Plain-language description of an extent's radial reach, for the summary list. */
-  public rangeLabel(extent: RingCollisionExtent): string {
-    return extent.kind === 'ring' ? 'ring band' : 'orbital reach';
-  }
-
   public get description(): string {
     const { self, partner } = this.data;
     const selfShort = this.shortName(self.name);
     const partnerShort = this.shortName(partner.name);
     const selfNoun = self.kind === 'ring' ? 'ring' : 'orbit';
     const partnerNoun = partner.kind === 'ring' ? 'rings' : 'orbit';
-    return `${selfShort}'s ${selfNoun} and ${partnerShort}'s ${partnerNoun} can both occupy the same ` +
-      `radial distance from their common host, so they may physically intersect.`;
+    return `${selfShort}'s ${selfNoun} and ${partnerShort}'s ${partnerNoun} physically intersect at closest approach.`;
   }
 
   public localDateTime(d: Date): string {
@@ -104,17 +92,17 @@ export class RingCollisionDialogComponent {
 
   /** Time from now until the contact window opens, expressed in years. */
   public get yearsUntil(): number | null {
-    return this.data.nextCollision ? this.data.nextCollision.days / DAYS_PER_YEAR : null;
+    return this.data.nextCollision ? this.data.nextCollision.days / 365.25 : null;
   }
 
   /** Synodic period expressed in years (for context alongside the day count). */
   public get synodicPeriodYears(): number | null {
-    return this.data.synodicPeriodDays === null ? null : this.data.synodicPeriodDays / DAYS_PER_YEAR;
+    return this.data.synodicPeriodDays === null ? null : this.data.synodicPeriodDays / 365.25;
   }
 
   /** Years until the start of a contact window (for display alongside day counts). */
   public yearsUntilFor(w: CollisionWindow): number {
-    return w.days / DAYS_PER_YEAR;
+    return w.days / 365.25;
   }
 
   /**
