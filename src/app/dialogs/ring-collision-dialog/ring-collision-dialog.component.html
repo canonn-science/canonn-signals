@@ -1,0 +1,25 @@
+<app-dialog-shell [heading]="heading" [fitContent]="true">
+  <div class="ring-collision-dialog">
+    <p class="summary">{{ description }}</p>
+
+    <div class="values">
+      <ul>
+        <li><strong>Type:</strong> {{ kindLabel }}</li>
+        <li><strong>Bodies:</strong> {{ shortName(data.self.name) }} &amp; {{ shortName(data.partner.name) }}</li>
+        <li><strong>{{ shortName(data.self.name) }}'s {{ rangeLabel(data.self) }}:</strong>
+          {{ data.self.rangeKm.lo | number:'1.0-0' }} – {{ data.self.rangeKm.hi | number:'1.0-0' }} km
+          <span class="hint">from their common host</span>
+        </li>
+        <li><strong>{{ shortName(data.partner.name) }}'s {{ rangeLabel(data.partner) }}:</strong>
+          {{ data.partner.rangeKm.lo | number:'1.0-0' }} – {{ data.partner.rangeKm.hi | number:'1.0-0' }} km
+          <span class="hint">from their common host</span>
+        </li>
+        @if (data.overlapKm) {
+        <li><strong>Overlapping band:</strong>
+          {{ data.overlapKm.lo | number:'1.0-0' }} – {{ data.overlapKm.hi | number:'1.0-0' }} km
+        </li>
+        }
+      </ul>
+    </div>
+  </div>
+</app-dialog-shell>

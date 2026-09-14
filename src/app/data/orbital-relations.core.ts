@@ -103,6 +103,32 @@ export interface CollisionStatus {
   simultaneousPartners: string[];
 }
 
+/** One side of a ring collision: either a solid body (its own bound orbit) or a ring (a static radial band around its host). */
+export interface RingCollisionExtent {
+  /** Full name of the body or ring. */
+  name: string;
+  /** 'body' for a planet/moon/star, 'ring' for a ring. */
+  kind: 'body' | 'ring';
+  /** Radial-distance-from-the-shared-ancestor range (km) this object can occupy. */
+  rangeKm: { lo: number; hi: number };
+}
+
+/**
+ * Result of ring-collision analysis for a body or ring: whether it can ever come within radial
+ * range of some other body's rings (a "Body on Ring" collision) or another ring (a "Ring on
+ * Ring" collision) — see {@link OrbitalRelationsCore.detectRingCollisionStatus}.
+ */
+export interface RingCollisionStatus {
+  /** True when this object's radial reach overlaps a ring belonging to a different body. */
+  isCandidate: boolean;
+  /** This object's own radial extent (from the shared ancestor with {@link partner}); null when not a candidate. */
+  self: RingCollisionExtent | null;
+  /** The other object involved — a ring, or the body whose orbit reaches this ring; null when not a candidate. */
+  partner: RingCollisionExtent | null;
+  /** The overlapping radial band (km), shared by both extents; null when not a candidate. */
+  overlapKm: { lo: number; hi: number } | null;
+}
+
 /**
  * A timed multi-body pile-up: an interval in which a reference body is simultaneously in
  * contact with two or more siblings. Detected over a fixed time horizon rather than from the
@@ -1055,6 +1081,122 @@ export class OrbitalRelationsCore {
       upcomingCollisions: upcoming,
       combinedRadiiKm: primary.contactKm,
       simultaneousPartners,
+    };
+  }
+
+  /**
+   * Radial-distance-from-`ancestor` range (km) `node` can occupy, walking up its parent chain.
+   * A direct child of `ancestor` gets its exact [periapsis, apoapsis]; a body further down the
+   * chain gets the looser triangle-inequality envelope around its parent's range instead of an
+   * exact figure (its true position also depends on where its parent sits within *that* range,
+   * and on the relative phase between the two orbits — which the "simple rule of thumb" in
+   * {@link detectRingCollisionStatus} deliberately ignores, matching the Canonn reference
+   * spreadsheet's radial-band approach for planetary collisions). Returns null when a link in
+   * the chain up to `ancestor` isn't on a bound, recurring orbit, or `ancestor` isn't actually
+   * an ancestor of `node`.
+   */
+  private radialRangeFromAncestor(node: SystemBody, ancestor: SystemBody): { lo: number; hi: number } | null {
+    if (node === ancestor) { return { lo: 0, hi: 0 }; }
+    if (!node.parent) { return null; }
+    const range = this.orbitalRadialRange(node.bodyData);
+    if (!range) { return null; }
+    const periKm = range.peri * KM_PER_AU, apoKm = range.apo * KM_PER_AU;
+    if (node.parent === ancestor) { return { lo: periKm, hi: apoKm }; }
+    const parentRange = this.radialRangeFromAncestor(node.parent, ancestor);
+    if (!parentRange) { return null; }
+    // Triangle inequality: the closest `node` can get to `ancestor` is its parent's closest
+    // approach minus node's own furthest reach from its parent (using the furthest reach, not
+    // the nearest, to cancel as much of the parent's offset as possible); the furthest is the
+    // sum of both. This is a conservative envelope, not an exact position.
+    return { lo: Math.max(0, parentRange.lo - apoKm), hi: parentRange.hi + apoKm };
+  }
+
+  /**
+   * Radial-distance-from-`ancestor` range (km) a ring's annulus can occupy. When the ring's own
+   * host body *is* `ancestor`, this is exact — the ring's [innerRadius, outerRadius] band around
+   * a fixed point. Otherwise it's the same triangle-inequality envelope as
+   * {@link radialRangeFromAncestor}, widened by the ring's outer radius rather than a body's
+   * apoapsis. Returns null when the ring has no parent, or the host's chain up to `ancestor`
+   * lacks a bound orbit.
+   */
+  private ringRangeFromAncestor(ring: SystemBody, ancestor: SystemBody): { lo: number; hi: number } | null {
+    const host = ring.parent;
+    if (!host) { return null; }
+    const innerKm = ring.bodyData.innerRadius ?? 0;
+    const outerKm = ring.bodyData.outerRadius ?? 0;
+    if (host === ancestor) { return { lo: innerKm, hi: outerKm }; }
+    const hostRange = this.radialRangeFromAncestor(host, ancestor);
+    if (!hostRange) { return null; }
+    return { lo: Math.max(0, hostRange.lo - outerKm), hi: hostRange.hi + outerKm };
+  }
+
+  /** Nearest shared ancestor of two nodes in the same system tree, or null when there is none. */
+  private commonAncestor(a: SystemBody, b: SystemBody): SystemBody | null {
+    const ancestorsOfA = new Set<SystemBody>();
+    for (let n: SystemBody | null = a; n; n = n.parent) { ancestorsOfA.add(n); }
+    for (let n: SystemBody | null = b; n; n = n.parent) { if (ancestorsOfA.has(n)) { return n; } }
+    return null;
+  }
+
+  /**
+   * Flags a body or ring as a "ring collision" candidate when its radial reach (from whatever
+   * ancestor it shares with the other object) overlaps a ring belonging to a *different* body —
+   * either a solid body's orbit passing through another body's ring ("Body on Ring") or two
+   * different bodies' rings whose bands overlap ("Ring on Ring").
+   *
+   * This is deliberately a simple radial-band rule of thumb, not the full 3D orbit-crossing
+   * search {@link detectCollisionStatus} runs for planet-planet collisions: rings are static
+   * (they don't move around their host), and the bodies involved often don't share an immediate
+   * parent (e.g. a moon of one binary component crossing the other component's rings), so there
+   * is no single shared orbital plane/phase to search precisely. Per the feature request, this
+   * intentionally does not attempt to model the whole system — just whether the two radial bands
+   * can ever coincide.
+   */
+  detectRingCollisionStatus(node: SystemBody): RingCollisionStatus {
+    const none: RingCollisionStatus = { isCandidate: false, self: null, partner: null, overlapKm: null };
+    const isRing = node.bodyData.type === BODY_TYPE.Ring;
+
+    let root = node;
+    while (root.parent) { root = root.parent; }
+    const candidates = this.flattenSystem(root);
+
+    let best: { other: SystemBody; selfRange: { lo: number; hi: number }; otherRange: { lo: number; hi: number }; overlap: { lo: number; hi: number } } | null = null;
+
+    for (const other of candidates) {
+      if (other === node) { continue; }
+      const otherIsRing = other.bodyData.type === BODY_TYPE.Ring;
+      if (!isRing && !otherIsRing) { continue; } // body-body pairs are planetary collisions, not this feature
+      if (isRing && node.parent === other) { continue; } // a ring can't collide with its own host
+      if (otherIsRing && other.parent === node) { continue; } // a body can't collide with its own ring
+      if (isRing && otherIsRing && node.parent === other.parent) { continue; } // adjacent rings of the same host — a gap, not a collision
+
+      const ancestor = this.commonAncestor(node, other);
+      if (!ancestor) { continue; }
+
+      const selfRange = isRing ? this.ringRangeFromAncestor(node, ancestor) : this.radialRangeFromAncestor(node, ancestor);
+      if (!selfRange) { continue; }
+      const otherRange = otherIsRing ? this.ringRangeFromAncestor(other, ancestor) : this.radialRangeFromAncestor(other, ancestor);
+      if (!otherRange) { continue; }
+
+      const overlapLo = Math.max(selfRange.lo, otherRange.lo);
+      const overlapHi = Math.min(selfRange.hi, otherRange.hi);
+      if (overlapLo > overlapHi) { continue; }
+
+      if (!best || (overlapHi - overlapLo) > (best.overlap.hi - best.overlap.lo)) {
+        best = { other, selfRange, otherRange, overlap: { lo: overlapLo, hi: overlapHi } };
+      }
+    }
+
+    if (!best) { return none; }
+    return {
+      isCandidate: true,
+      self: { name: node.bodyData.name, kind: isRing ? 'ring' : 'body', rangeKm: best.selfRange },
+      partner: {
+        name: best.other.bodyData.name,
+        kind: best.other.bodyData.type === BODY_TYPE.Ring ? 'ring' : 'body',
+        rangeKm: best.otherRange,
+      },
+      overlapKm: best.overlap,
     };
   }
 }

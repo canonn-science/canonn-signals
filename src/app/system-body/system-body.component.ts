@@ -16,7 +16,7 @@ import {
   NARROW_RING_SPAN_RADII, PAUPER_RING_MIN_INNER_EDGE_RADII, PAUPER_RING_MAX_SPAN_RADII, HighAngularDiameterAssessment,
 } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
-import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
+import { OrbitalRelationsService, CollisionStatus, RingCollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
 import { OrbitalWorkerService } from '../data/orbital-worker.service';
 import { logger } from '../data/logger';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
@@ -34,6 +34,7 @@ import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dial
 import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
 import type { ParentDistanceDialogData } from '../dialogs/parent-distance-dialog/parent-distance-dialog.component';
 import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
+import type { RingCollisionDialogData } from '../dialogs/ring-collision-dialog/ring-collision-dialog.component';
 import type { SynodicDiagramInput } from '../data/collision-diagram';
 import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
 import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
@@ -286,6 +287,9 @@ export class SystemBodyComponent implements OnChanges {
     this.trojanStatus = trojan.lagrangePoint;
     this.trojanHostStatus = trojan.isHost;
     this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
+    // Cheap radial-band check (no 3D search), so it runs synchronously on every change like the
+    // other light detectors above rather than going through the collision worker.
+    this.ringCollisionStatus = this.orbitalRelations.detectRingCollisionStatus(body);
     // Collision detection runs a costly 3D orbital search, so only redo it when the body
     // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
     // the async codex effect, which leave the orbital geometry untouched.
@@ -1498,6 +1502,27 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
+  /** Opens the ring collision dialog with this body's/ring's radial-overlap details. */
+  public showRingCollisionDialog(): void {
+    const status = this.ringCollisionStatus;
+    if (!status?.isCandidate || !status.self || !status.partner) { return; }
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/ring-collision-dialog/ring-collision-dialog.component').then(m => m.RingCollisionDialogComponent),
+      skeleton: 'text',
+      width: '600px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        self: status.self,
+        partner: status.partner,
+        overlapKm: status.overlapKm,
+        systemName: this.edGalaxyData()?.Name ?? '',
+      } satisfies RingCollisionDialogData,
+    });
+  }
+
   /**
    * Builds the distance-over-time samples for the collision dialog's synodic-period diagram:
    * one centre-to-centre separation curve from this body to each sibling it directly collides
@@ -1855,6 +1880,8 @@ export class SystemBodyComponent implements OnChanges {
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
+  /** Result of the ring-collision radial-band check for the current body (see {@link ngOnChanges}). */
+  public ringCollisionStatus: RingCollisionStatus | null = null;
   /**
    * Result of the off-thread collision search for the current body, or null while it is still
    * running (or when the body isn't a collision candidate). A signal, not a plain field, because
