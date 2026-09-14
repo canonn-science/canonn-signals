@@ -124,4 +124,78 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
 
     expect(service.detectRingCollisionStatus(planetA).isCandidate).toBe(false);
   });
+
+  describe('timed contact windows', () => {
+    const now = Date.parse('2026-06-27T00:00:00Z');
+
+    it('times a moon crossing its own planet\'s rings using the moon\'s own orbital radius', () => {
+      const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
+      makeRing('Planet Ring', planet, 100_000, 200_000);
+      // Periapsis 150,000 km sits inside the ring band, and the moon is at periapsis right now
+      // (meanAnomaly 0), so it should already be in contact.
+      const moon = makeBody('Moon', planet, {
+        semiMajorAxis: 200_000 / KM_PER_AU, orbitalEccentricity: 0.25, orbitalPeriod: 5,
+        meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0,
+        timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      });
+
+      const status = service.detectRingCollisionStatus(moon, now);
+      expect(status.isCandidate).toBe(true);
+      expect(status.combinedRadiiKm).toBe(200_000); // ring outer radius + moon's (unset) radius
+      expect(status.nextCollision).not.toBeNull();
+      expect(status.nextCollision!.days).toBeLessThan(1);
+      expect(status.upcomingCollisions.length).toBeGreaterThan(0);
+    });
+
+    it('times two sibling ringed planets using their real orbits, like planet-planet collisions', () => {
+      const star = makeBody('Star', null, { type: BODY_TYPE.Star });
+      // Circular, coplanar, aligned right now (both at meanAnomaly 0): planet A is 100,000,000 km
+      // out and planet B 100,500,000 km out along the same ray, so their current separation is
+      // exactly 500,000 km — inside the rings' combined 550,000 km reach (100,000 + 450,000).
+      const planetA = makeBody('A', star, {
+        semiMajorAxis: 100_000_000 / KM_PER_AU, orbitalEccentricity: 0, orbitalPeriod: 100,
+        meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0,
+        timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      });
+      const planetB = makeBody('B', star, {
+        semiMajorAxis: 100_500_000 / KM_PER_AU, orbitalEccentricity: 0, orbitalPeriod: 105,
+        meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0,
+        timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      });
+      const ringA = makeRing('A Ring', planetA, 50_000, 100_000);
+      makeRing('B Ring', planetB, 50_000, 450_000);
+
+      const status = service.detectRingCollisionStatus(ringA, now);
+      expect(status.isCandidate).toBe(true);
+      expect(status.partner?.name).toBe('B Ring');
+      expect(status.combinedRadiiKm).toBe(550_000);
+      expect(status.nextCollision).not.toBeNull();
+      expect(status.nextCollision!.days).toBeLessThan(1);
+    });
+
+    it('leaves the contact windows empty for a collision across a shared barycentre (no single orbital frame to time it)', () => {
+      const barycentre = makeBody('Barycentre', null, { type: BODY_TYPE.Barycentre });
+      const body1 = makeBody('1', barycentre, {
+        semiMajorAxis: 0.01, orbitalEccentricity: 0, orbitalPeriod: 10,
+        meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0,
+        timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      });
+      const body2 = makeBody('2', barycentre, {
+        semiMajorAxis: 0.01, orbitalEccentricity: 0, orbitalPeriod: 10,
+        meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0,
+        timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      });
+      makeRing('2 Ring', body2, 50_000, 100_000);
+      const moon1a = makeBody('1 a', body1, {
+        semiMajorAxis: 3_000_000 / KM_PER_AU, orbitalEccentricity: 0, orbitalPeriod: 2,
+        meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0,
+        timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      });
+
+      const status = service.detectRingCollisionStatus(moon1a, now);
+      expect(status.isCandidate).toBe(true);
+      expect(status.nextCollision).toBeNull();
+      expect(status.upcomingCollisions).toEqual([]);
+    });
+  });
 });

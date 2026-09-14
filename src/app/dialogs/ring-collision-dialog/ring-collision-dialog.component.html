@@ -1,4 +1,4 @@
-<app-dialog-shell [heading]="heading" [fitContent]="true">
+<app-dialog-shell [heading]="heading">
   <div class="ring-collision-dialog">
     <p class="summary">{{ description }}</p>
 
@@ -19,7 +19,159 @@
           {{ data.overlapKm.lo | number:'1.0-0' }} – {{ data.overlapKm.hi | number:'1.0-0' }} km
         </li>
         }
+
+        @if (data.synodicPeriodDays !== null) {
+        <li><strong>Synodic period:</strong>
+          {{ data.synodicPeriodDays | number:'1.0-0' }} days
+          @if (synodicPeriodYears !== null && synodicPeriodYears >= 1) {
+          ({{ synodicPeriodYears | number:'1.1-1' }} years)
+          }
+          <span class="hint">— the interval between successive close approaches</span>
+        </li>
+        }
+
+        @if (data.nextCollision; as c) {
+        <li>
+          @if (c.days < 0) {
+            <strong>Status:</strong> <span class="hint">Collision in progress now</span>
+          } @else {
+            <strong>Next collision in:</strong>
+            {{ c.days | number:'1.0-0' }} days
+            @if (yearsUntil !== null && yearsUntil >= 1) { ({{ yearsUntil | number:'1.1-1' }} years) }
+          }
+        </li>
+        <li><strong>Contact starts:</strong><br>
+          <span class="time">{{ localDateTime(c.start) }} <span class="tz">{{ localZoneLabel(c.start) }}
+              (your time)</span></span><br>
+          <span class="time">{{ c.start | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
+        </li>
+        <li><strong>Contact ends:</strong><br>
+          <span class="time">{{ localDateTime(c.end) }} <span class="tz">{{ localZoneLabel(c.end) }} (your
+              time)</span></span><br>
+          <span class="time">{{ c.end | date:'yyyy-MM-dd HH:mm:ss':'UTC' }} <span class="tz">UTC</span></span>
+        </li>
+        @if (durationMinutes !== null) {
+        <li><strong>Duration:</strong> {{ durationMinutes | number:'1.0-1' }} minutes</li>
+        }
+        <li><strong>Closest approach:</strong> {{ c.minSeparationKm | number:'1.0-0' }} km centre-to-centre</li>
+        @if (data.combinedRadiiKm !== null) {
+        <li><strong>Combined extents (contact threshold):</strong> {{ data.combinedRadiiKm | number:'1.0-0' }} km</li>
+        }
+        @if (overlapPercent !== null) {
+        <li><strong>Overlap:</strong> {{ overlapPercent | number:'1.0-1' }}%</li>
+        }
+        } @else {
+        <li><strong>Status:</strong> radial-band candidate
+          <span class="hint">— the two radial reaches overlap, but a contact date can't be computed
+            @if (data.self.kind === 'ring' || data.partner.kind === 'ring') {
+              for this configuration (the objects don't share an immediate orbital frame, e.g. they cross a
+              shared ancestor several levels up) or the bodies' mean-anomaly (phase) data is missing.
+            }
+          </span>
+        </li>
+        }
       </ul>
+    </div>
+
+    @if (diagram; as dg) {
+    <div class="distance-diagram">
+      <h3>Distance over time</h3>
+      <p class="hint">
+        Separation through the synodic cycle (log scale). The curve dips at each conjunction; a dip below
+        the dashed contact threshold — marked &times; — is a collision.
+      </p>
+      <svg [attr.viewBox]="'0 0 ' + dg.width + ' ' + dg.height" class="separation-chart" role="img"
+        aria-label="Distance between the bodies over time">
+        <rect class="plot-frame" [attr.x]="dg.plot.x" [attr.y]="dg.plot.y"
+          [attr.width]="dg.plot.w" [attr.height]="dg.plot.h" />
+
+        @for (t of dg.yTicks; track t.y) {
+        <line class="gridline" [attr.x1]="dg.plot.x" [attr.y1]="t.y"
+          [attr.x2]="dg.plot.x + dg.plot.w" [attr.y2]="t.y" />
+        <text class="axis-label y" [attr.x]="dg.plot.x - 4" [attr.y]="t.y + 3" text-anchor="end">{{ t.label }}</text>
+        }
+
+        @for (t of dg.xTicks; track t.tMs) {
+        <line class="tick" [attr.x1]="t.x" [attr.y1]="dg.plot.y + dg.plot.h"
+          [attr.x2]="t.x" [attr.y2]="dg.plot.y + dg.plot.h + 3" />
+        <text class="axis-label x" [attr.x]="t.x" [attr.y]="dg.plot.y + dg.plot.h + 14" [attr.text-anchor]="t.anchor">{{
+          t.tMs | date:'MMM d, y':'UTC' }}</text>
+        }
+
+        @if (dg.nowX !== null) {
+        <line class="now-line" [attr.x1]="dg.nowX" [attr.y1]="dg.plot.y"
+          [attr.x2]="dg.nowX" [attr.y2]="dg.plot.y + dg.plot.h" />
+        <text class="now-label" [attr.x]="dg.nowX" [attr.y]="dg.plot.y - 3" text-anchor="middle">now</text>
+        }
+
+        @for (s of dg.series; track s.partnerName) {
+        <line class="threshold" [attr.x1]="dg.plot.x" [attr.y1]="s.thresholdY"
+          [attr.x2]="dg.plot.x + dg.plot.w" [attr.y2]="s.thresholdY" [attr.stroke]="s.color" />
+        <polyline class="curve" [attr.points]="s.points" [attr.stroke]="s.color" />
+        @for (m of s.markers; track $index) {
+        <path class="marker" [attr.transform]="'translate(' + m.cx + ' ' + m.cy + ')'"
+          [attr.stroke]="s.color" d="M -2.6 -2.6 L 2.6 2.6 M -2.6 2.6 L 2.6 -2.6" />
+        }
+        }
+      </svg>
+
+      <ul class="legend">
+        @for (s of dg.series; track s.partnerName) {
+        <li><span class="swatch" [style.background]="s.color"></span>{{ shortName(data.self.name) }} ↔ {{ shortName(s.partnerName) }}</li>
+        }
+      </ul>
+    </div>
+    }
+
+    @if (data.upcomingCollisions.length > 0) {
+    <div class="upcoming-collisions">
+      <h3>Upcoming contacts</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Contact start (UTC)</th>
+            <th>Days until</th>
+            <th>Duration</th>
+            <th>Overlap</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of data.upcomingCollisions; track w.start.getTime(); let i = $index) {
+          <tr>
+            <td class="num">{{ i + 1 }}</td>
+            <td class="date">{{ w.start | date:'yyyy-MM-dd HH:mm':'UTC' }} UTC</td>
+            <td class="num">
+              @if (w.days < 0) {
+                <span class="hint">In progress</span>
+              } @else {
+                {{ w.days | number:'1.0-0' }}
+                @if (yearsUntilFor(w) >= 1) {<span class="hint">({{ yearsUntilFor(w) | number:'1.1-1' }} yr)</span>}
+              }
+            </td>
+            <td>{{ formatDuration(w) }}</td>
+            <td class="num">
+              @if (overlapPercentFor(w); as pct) { {{ pct | number:'1.0-1' }}% }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+    <div class="explanation">
+      <p><strong>What does this mean?</strong></p>
+      <p>
+        These aren't real physics events. The stellar forge is programmed to prevent collisions, but a few
+        slip through. When two objects are on a collision course, they simply pass straight through each
+        other and carry on in their orbits.
+      </p>
+      <p>
+        This is a simplified radial-band check, not a full 3D simulation of the ring's plane — it treats the
+        ring as a shell around its host rather than a flat disc, so it flags whether the objects can coincide
+        at all, and (when the pair's orbits share a single frame) roughly when.
+      </p>
     </div>
   </div>
 </app-dialog-shell>

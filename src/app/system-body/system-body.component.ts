@@ -1502,15 +1502,15 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
-  /** Opens the ring collision dialog with this body's/ring's radial-overlap details. */
+  /** Opens the ring collision dialog with this body's/ring's radial-overlap and (when timeable) contact-window details. */
   public showRingCollisionDialog(): void {
     const status = this.ringCollisionStatus;
     if (!status?.isCandidate || !status.self || !status.partner) { return; }
 
     openLazyDialog(this.dialog, {
       loader: () => import('../dialogs/ring-collision-dialog/ring-collision-dialog.component').then(m => m.RingCollisionDialogComponent),
-      skeleton: 'text',
-      width: '600px',
+      skeleton: 'diagram',
+      width: '900px',
       maxWidth: '95vw',
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
@@ -1518,9 +1518,44 @@ export class SystemBodyComponent implements OnChanges {
         self: status.self,
         partner: status.partner,
         overlapKm: status.overlapKm,
+        combinedRadiiKm: status.combinedRadiiKm,
+        synodicPeriodDays: status.synodicPeriodDays,
+        nextCollision: status.nextCollision,
+        upcomingCollisions: status.upcomingCollisions,
         systemName: this.edGalaxyData()?.Name ?? '',
+        separationDiagram: this.buildRingCollisionDistanceDiagram(status),
       } satisfies RingCollisionDialogData,
     });
+  }
+
+  /**
+   * Builds the distance-over-time samples for the ring collision dialog's diagram: a single
+   * centre-to-centre (or moon-to-host, for a body orbiting directly around the ring's host)
+   * separation curve over ten synodic periods, mirroring {@link buildCollisionDistanceDiagram}
+   * but for a ring-collision pair — this runs synchronously since the ring-collision search is
+   * a cheap radial-band check, not the costly 3D search the planetary-collision worker handles.
+   * Returns null when the pair can't be timed or lacks the phase data to place it.
+   */
+  private buildRingCollisionDistanceDiagram(status: RingCollisionStatus): SynodicDiagramInput | null {
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
+    if (!(synMs > 0) || !status.self || !status.partner || !status.combinedRadiiKm) { return null; }
+
+    const now = this.appService.nowOverride() ?? Date.now();
+    const endMs = now + synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const samples = this.orbitalRelations.ringSeparationSeries(status.self.node, status.partner.node, now, endMs, COLLISION_DIAGRAM_SAMPLES);
+    if (samples.length === 0) { return null; }
+
+    const contacts = status.upcomingCollisions
+      .filter(w => w.start.getTime() <= endMs)
+      .map(w => ({ tMs: (w.start.getTime() + w.end.getTime()) / 2, sepKm: w.minSeparationKm }));
+
+    return {
+      startMs: now,
+      endMs,
+      nowMs: now,
+      series: [{ partnerName: status.partner.name, combinedRadiiKm: status.combinedRadiiKm, samples, contacts }],
+    };
   }
 
   /**

@@ -111,6 +111,8 @@ export interface RingCollisionExtent {
   kind: 'body' | 'ring';
   /** Radial-distance-from-the-shared-ancestor range (km) this object can occupy. */
   rangeKm: { lo: number; hi: number };
+  /** The tree node itself, so a caller can re-run {@link OrbitalRelationsCore.ringSeparationSeries} for the distance diagram. */
+  node: SystemBody;
 }
 
 /**
@@ -127,6 +129,27 @@ export interface RingCollisionStatus {
   partner: RingCollisionExtent | null;
   /** The overlapping radial band (km), shared by both extents; null when not a candidate. */
   overlapKm: { lo: number; hi: number } | null;
+  /**
+   * Sum of the two objects' physical extents (a ring's outer radius, or a body's radius) — the
+   * contact threshold used for {@link nextCollision}/{@link upcomingCollisions}. Null when not a
+   * candidate.
+   */
+  combinedRadiiKm: number | null;
+  /**
+   * Synodic period (days) between the pair's orbital timing — the interval between successive
+   * close approaches. Null when not a candidate, or when the pair's configuration can't be timed
+   * (see {@link nextCollision}).
+   */
+  synodicPeriodDays: number | null;
+  /**
+   * Next timed contact window, or null when either there is no candidate, the pair's
+   * configuration can't be timed (the two objects don't share an immediate parent and don't
+   * orbit one another directly — e.g. crossing a shared barycentre several levels up), or the
+   * phase data (mean anomaly + timestamp) needed to place them in time is missing.
+   */
+  nextCollision: CollisionWindow | null;
+  /** Up to 10 upcoming contact windows in chronological order; empty when {@link nextCollision} is null. */
+  upcomingCollisions: CollisionWindow[];
 }
 
 /**
@@ -1139,6 +1162,78 @@ export class OrbitalRelationsCore {
   }
 
   /**
+   * A degenerate a=0 "orbit" that {@link orbitalStateVector} places permanently at (0,0,0)
+   * regardless of mean anomaly — used as a stand-in for a fixed reference point (another body's
+   * position) so the existing time-stepped separation search ({@link separationFunction}/
+   * {@link nextContacts}, which expect two independently orbiting bodies) can be reused for a
+   * body orbiting directly around that reference instead of two siblings orbiting a shared parent.
+   */
+  private stationaryOrigin(name: string, referencePeriodDays: number): CanonnBiostatsBody {
+    return {
+      bodyId: -1, name, id64: 0n, subType: '', type: BODY_TYPE.Planet,
+      semiMajorAxis: 0, orbitalEccentricity: 0, orbitalInclination: 0,
+      argOfPeriapsis: 0, ascendingNode: 0, meanAnomaly: 0,
+      orbitalPeriod: referencePeriodDays,
+      timestamps: { meanAnomaly: '1970-01-01T00:00:00.000Z' },
+    } as CanonnBiostatsBody;
+  }
+
+  /**
+   * Resolves a ring-collision pair (either or both sides possibly rings) into the two orbiting
+   * bodies and synodic period {@link nextContacts}/{@link separationSeries} need to time it —
+   * or null when the pair's configuration can't be timed with a single-orbit model:
+   *  - one orbits the other directly (e.g. a moon crossing its own planet's rings): the
+   *    non-orbiting side becomes a {@link stationaryOrigin} stand-in for its position, and the
+   *    "distance" is simply the orbiter's own orbital radius over time;
+   *  - the two share an immediate parent (e.g. two ringed sibling planets): both sides' real
+   *    orbits are used directly, exactly like planet-planet collision timing;
+   *  - otherwise (a shared ancestor further up, e.g. a barycentre) there's no single orbital
+   *    plane/phase relationship to search, so timing isn't attempted (only the static radial-band
+   *    candidacy applies).
+   */
+  private resolveRingOrbitPair(self: SystemBody, partner: SystemBody): { a: CanonnBiostatsBody; b: CanonnBiostatsBody; synodicDays: number } | null {
+    const selfOrbitBody = self.bodyData.type === BODY_TYPE.Ring ? self.parent : self;
+    const partnerOrbitBody = partner.bodyData.type === BODY_TYPE.Ring ? partner.parent : partner;
+    if (!selfOrbitBody || !partnerOrbitBody || selfOrbitBody === partnerOrbitBody) { return null; }
+
+    if (selfOrbitBody.parent === partnerOrbitBody) {
+      const orbiter = selfOrbitBody.bodyData;
+      if (!orbiter.orbitalPeriod) { return null; }
+      return { a: orbiter, b: this.stationaryOrigin(partnerOrbitBody.bodyData.name, orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
+    }
+    if (partnerOrbitBody.parent === selfOrbitBody) {
+      const orbiter = partnerOrbitBody.bodyData;
+      if (!orbiter.orbitalPeriod) { return null; }
+      return { a: orbiter, b: this.stationaryOrigin(selfOrbitBody.bodyData.name, orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
+    }
+    if (selfOrbitBody.parent && selfOrbitBody.parent === partnerOrbitBody.parent) {
+      const a = selfOrbitBody.bodyData, b = partnerOrbitBody.bodyData;
+      if (!a.orbitalPeriod || !b.orbitalPeriod || a.orbitalPeriod === b.orbitalPeriod) { return null; }
+      return { a, b, synodicDays: 1 / Math.abs(1 / a.orbitalPeriod - 1 / b.orbitalPeriod) };
+    }
+    return null;
+  }
+
+  /** Sum of two objects' physical extents: a ring's outer radius, or a body's own radius. */
+  private ringContactKm(a: SystemBody, b: SystemBody): number {
+    const extent = (n: SystemBody): number => n.bodyData.type === BODY_TYPE.Ring ? (n.bodyData.outerRadius ?? 0) : (n.bodyData.radius ?? 0);
+    return extent(a) + extent(b);
+  }
+
+  /**
+   * Centre-to-centre distance-over-time samples for a ring-collision pair's distance diagram —
+   * the ring-collision analogue of {@link separationSeries}, resolving the pair via
+   * {@link resolveRingOrbitPair} first so it also covers a body orbiting directly around the
+   * other's ring host, not just two siblings. Returns [] when the pair can't be timed or lacks
+   * the phase data needed to place it.
+   */
+  ringSeparationSeries(self: SystemBody, partner: SystemBody, startMs: number, endMs: number, samples: number): SeparationSample[] {
+    const pair = this.resolveRingOrbitPair(self, partner);
+    if (!pair) { return []; }
+    return this.separationSeries(pair.a, pair.b, startMs, endMs, samples);
+  }
+
+  /**
    * Flags a body or ring as a "ring collision" candidate when its radial reach (from whatever
    * ancestor it shares with the other object) overlaps a ring belonging to a *different* body —
    * either a solid body's orbit passing through another body's ring ("Body on Ring") or two
@@ -1152,8 +1247,11 @@ export class OrbitalRelationsCore {
    * intentionally does not attempt to model the whole system — just whether the two radial bands
    * can ever coincide.
    */
-  detectRingCollisionStatus(node: SystemBody): RingCollisionStatus {
-    const none: RingCollisionStatus = { isCandidate: false, self: null, partner: null, overlapKm: null };
+  detectRingCollisionStatus(node: SystemBody, now: number = Date.now()): RingCollisionStatus {
+    const none: RingCollisionStatus = {
+      isCandidate: false, self: null, partner: null, overlapKm: null,
+      combinedRadiiKm: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [],
+    };
     const isRing = node.bodyData.type === BODY_TYPE.Ring;
 
     let root = node;
@@ -1188,15 +1286,30 @@ export class OrbitalRelationsCore {
     }
 
     if (!best) { return none; }
+
+    // Timing is a strict bonus over the static candidacy above: it only succeeds for the pair
+    // configurations resolveRingOrbitPair understands (see its docs), and gracefully yields no
+    // windows (rather than failing the whole candidacy) when phase data is missing.
+    const combinedRadiiKm = this.ringContactKm(node, best.other);
+    const pair = this.resolveRingOrbitPair(node, best.other);
+    const upcomingCollisions = pair
+      ? this.nextContacts(pair.a, pair.b, combinedRadiiKm, pair.synodicDays, now, MAX_UPCOMING_CONTACTS)
+      : [];
+
     return {
       isCandidate: true,
-      self: { name: node.bodyData.name, kind: isRing ? 'ring' : 'body', rangeKm: best.selfRange },
+      self: { name: node.bodyData.name, kind: isRing ? 'ring' : 'body', rangeKm: best.selfRange, node },
       partner: {
         name: best.other.bodyData.name,
         kind: best.other.bodyData.type === BODY_TYPE.Ring ? 'ring' : 'body',
         rangeKm: best.otherRange,
+        node: best.other,
       },
       overlapKm: best.overlap,
+      combinedRadiiKm,
+      synodicPeriodDays: pair?.synodicDays ?? null,
+      nextCollision: upcomingCollisions[0] ?? null,
+      upcomingCollisions,
     };
   }
 }
