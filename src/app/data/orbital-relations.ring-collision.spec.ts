@@ -46,7 +46,8 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(status.partner?.name).toBe('Planet Ring');
     expect(status.partner?.kind).toBe('ring');
     expect(status.self?.kind).toBe('body');
-    expect(status.combinedRadiiKm).toBe(200_000);
+    // Ring outer radius + the moon's (unset) radius, plus the ring's half-thickness reach.
+    expect(status.combinedRadiiKm).toBe(200_007.5);
     expect(status.nextCollision).not.toBeNull();
     expect(status.nextCollision!.days).toBeLessThan(1);
     expect(status.upcomingCollisions.length).toBeGreaterThan(0);
@@ -135,7 +136,8 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     const status = service.detectRingCollisionStatus(ring1, now);
     expect(status.isCandidate).toBe(true);
     expect(status.partner?.name).toBe('2 A Ring');
-    expect(status.combinedRadiiKm).toBeCloseTo(8454.4 + 7123.8, 5);
+    // Both rings' outer edges, each reaching half a ring thickness further out.
+    expect(status.combinedRadiiKm).toBeCloseTo(8454.4 + 7123.8 + 15, 5);
     // Equal periods aren't treated as "never lap" here (unlike Trojan/rosette exclusion) — the
     // shared period is the recurrence interval itself: 0.283064148217593 days ≈ 6.79 hours.
     expect(status.synodicPeriodDays).toBeCloseTo(0.283064148217593, 9);
@@ -186,8 +188,9 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     const status = service.detectRingCollisionStatus(ring1, now);
     expect(status.isCandidate).toBe(true);
     // Closest approach within a window is the band's inner edge, not the orbit's true minimum —
-    // the bodies keep closing after contact breaks.
-    expect(status.nextCollision!.minSeparationKm).toBeCloseTo(8454.5 + 7104, 0);
+    // the bodies keep closing after contact breaks. Both rings' edges reach half a ring thickness
+    // inward, so the edge sits 15 km below the bare sum of the inner radii.
+    expect(status.nextCollision!.minSeparationKm).toBeCloseTo(8454.5 + 7104 - 15, 0);
     // Each contact is short (minutes), far shorter than the 6.79 h orbit.
     const durationMinutes = (status.nextCollision!.end.getTime() - status.nextCollision!.start.getTime()) / 60_000;
     expect(durationMinutes).toBeGreaterThan(0.5);

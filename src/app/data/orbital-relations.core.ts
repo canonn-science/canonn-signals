@@ -189,6 +189,18 @@ const MAX_CONJUNCTIONS_SCANNED = 300;
 /** Cap on how many upcoming contact windows are surfaced (merged across all crossing partners). */
 const MAX_UPCOMING_CONTACTS = 10;
 
+/**
+ * Vertical thickness (km) assumed for a planetary ring. Elite's rings run a little under 15 km
+ * thick, of which roughly the inner 5 km is what actually reads as visible material. The dumps
+ * carry no thickness field, so this stands in for it.
+ *
+ * It matters because a ring is a slab, not a razor-thin annulus: its edges reach about half a
+ * thickness beyond `outerRadius` and half a thickness inside `innerRadius`, which widens the
+ * contact band at both ends in {@link OrbitalRelationsCore.ringContactBand} — lengthening each
+ * contact slightly and shortening the no-contact gap through closest approach.
+ */
+const RING_THICKNESS_KM = 15;
+
 /** Angular tolerance (degrees) for matching a Lagrange geometry. */
 const ANGLE_TOLERANCE_DEG = 1;
 /** Tolerance (degrees) for L1/L2 alignment of argument-of-periapsis and ascending node. */
@@ -1254,12 +1266,21 @@ export class OrbitalRelationsCore {
    * rings meet at D ∈ [15,558.5, 15,594.2] km while their periapsis separation is 15,499.9 km).
    * For two solid bodies both inner radii are 0, collapsing this back to the plain `D ≤ rA + rB`
    * test used for planetary collisions.
+   *
+   * Each ring's edges are then relaxed by half of {@link RING_THICKNESS_KM}, since a ring is a
+   * slab with real vertical extent rather than a razor-thin annulus, and so has a little reach
+   * beyond the radii the dumps report.
    */
   private ringContactBand(a: SystemBody, b: SystemBody): { minKm: number; maxKm: number } {
     const isRing = (n: SystemBody): boolean => n.bodyData.type === BODY_TYPE.Ring;
     const inner = (n: SystemBody): number => isRing(n) ? (n.bodyData.innerRadius ?? 0) : 0;
     const outer = (n: SystemBody): number => isRing(n) ? (n.bodyData.outerRadius ?? 0) : (n.bodyData.radius ?? 0);
-    return { minKm: inner(a) + inner(b), maxKm: outer(a) + outer(b) };
+    const reach = (n: SystemBody): number => isRing(n) ? RING_THICKNESS_KM / 2 : 0;
+    const edgeKm = reach(a) + reach(b);
+    return {
+      minKm: Math.max(0, inner(a) + inner(b) - edgeKm),
+      maxKm: outer(a) + outer(b) + edgeKm,
+    };
   }
 
   /**
