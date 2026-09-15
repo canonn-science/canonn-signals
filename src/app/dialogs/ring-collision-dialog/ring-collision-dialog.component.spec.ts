@@ -31,6 +31,7 @@ describe('RingCollisionDialogComponent', () => {
       self: extent('Test 1 a', 'body'),
       partner: extent('Test 2 Ring', 'ring'),
       combinedRadiiKm: 100_000,
+      combinedRadiiMinKm: 0,
       synodicPeriodDays: 5,
       nextCollision: {
         start: new Date('2026-12-15T14:00:00Z'),
@@ -61,6 +62,7 @@ describe('RingCollisionDialogComponent', () => {
 
     expect(fixture.componentInstance.heading).toBe('Predicted Ring Collision');
     expect(fixture.componentInstance.kindLabel).toBe('Body on Ring');
+    expect(fixture.componentInstance.isSplitPass).toBe(false);
     expect(fixture.componentInstance.diagram).not.toBeNull();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.textContent).toContain('1 a');
@@ -68,7 +70,10 @@ describe('RingCollisionDialogComponent', () => {
     expect(el.textContent).toContain('Body on Ring');
     expect(el.textContent).toContain('Distance over time');
     expect(el.textContent).toContain('Upcoming contacts');
+    expect(el.textContent).toContain('Closest approach');
     expect(el.querySelector('svg.separation-chart')).not.toBeNull();
+    // A plain combined-radii threshold — only the upper dashed line, no lower one.
+    expect(el.querySelector('.threshold-min')).toBeNull();
   });
 
   it('labels a ring-vs-ring pair as "Ring on Ring"', () => {
@@ -76,6 +81,7 @@ describe('RingCollisionDialogComponent', () => {
       self: extent('Test A Ring', 'ring'),
       partner: extent('Test B Ring', 'ring'),
       combinedRadiiKm: 15_594,
+      combinedRadiiMinKm: 0,
       synodicPeriodDays: 0.283064148217593,
       nextCollision: {
         start: new Date('2026-09-15T00:00:00Z'),
@@ -97,11 +103,60 @@ describe('RingCollisionDialogComponent', () => {
     expect(fixture.componentInstance.diagram).toBeNull();
   });
 
+  it('describes a split pass as two collisions and renders the lower contact-band threshold', () => {
+    const fixture = setup({
+      self: extent('Test A Ring', 'ring'),
+      partner: extent('Test B Ring', 'ring'),
+      combinedRadiiKm: 15_594,
+      combinedRadiiMinKm: 15_558,
+      synodicPeriodDays: 0.283064148217593,
+      nextCollision: {
+        start: new Date('2026-09-15T00:00:00Z'),
+        end: new Date('2026-09-15T00:05:00Z'),
+        days: 0.1,
+        minSeparationKm: 15_558,
+        minSeparationAt: new Date('2026-09-15T00:05:00Z'),
+      },
+      upcomingCollisions: [
+        {
+          start: new Date('2026-09-15T00:00:00Z'), end: new Date('2026-09-15T00:05:00Z'), days: 0.1,
+          minSeparationKm: 15_558, minSeparationAt: new Date('2026-09-15T00:05:00Z'),
+        },
+      ],
+      systemName: 'Test',
+      separationDiagram: {
+        startMs: Date.parse('2026-09-15T00:00:00Z'),
+        endMs: Date.parse('2026-09-15T02:00:00Z'),
+        nowMs: Date.parse('2026-09-15T00:00:00Z'),
+        series: [{
+          partnerName: 'Test B Ring',
+          combinedRadiiKm: 15_594,
+          combinedRadiiMinKm: 15_558,
+          samples: [
+            { tMs: Date.parse('2026-09-15T00:00:00Z'), sepKm: 20_000 },
+            { tMs: Date.parse('2026-09-15T00:05:00Z'), sepKm: 15_558 },
+            { tMs: Date.parse('2026-09-15T00:10:00Z'), sepKm: 20_000 },
+          ],
+          contacts: [{ tMs: Date.parse('2026-09-15T00:05:00Z'), sepKm: 15_558 }],
+        }],
+      },
+    });
+
+    expect(fixture.componentInstance.isSplitPass).toBe(true);
+    const el: HTMLElement = fixture.nativeElement;
+    // The description should not claim the objects intersect at closest approach.
+    expect(el.textContent).toContain('pass inside one another at closest approach');
+    expect(el.textContent).toContain('two separate collisions');
+    expect(el.textContent).toContain('Contact band');
+    expect(el.querySelector('.threshold-min')).not.toBeNull();
+  });
+
   it('strips the system name prefix from displayed names', () => {
     const fixture = setup({
       self: extent('Test 1 a', 'body'),
       partner: extent('Test 2 Ring', 'ring'),
       combinedRadiiKm: null,
+      combinedRadiiMinKm: null,
       synodicPeriodDays: null,
       nextCollision: null,
       upcomingCollisions: [],

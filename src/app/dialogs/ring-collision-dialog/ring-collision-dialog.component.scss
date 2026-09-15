@@ -97,6 +97,13 @@
                 opacity: 0.7;
             }
 
+            // The lower contact-band edge (a split ring pass only): a tighter dash so it reads
+            // as distinct from the upper (outer-edge) threshold line above it.
+            .threshold-min {
+                stroke-dasharray: 2 2;
+                opacity: 0.5;
+            }
+
             .curve {
                 fill: none;
                 stroke-width: 1.4;

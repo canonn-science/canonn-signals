@@ -58,6 +58,31 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(ringStatus.partner?.name).toBe('Moon');
   });
 
+  it('extends a body-on-ring contact by the body\'s own radius, unlike a ring-on-ring pair', () => {
+    // A solid body isn't confined to a plane the way a ring is, so it can reach a ring's inner
+    // edge from its far side too. Periapsis (≈97,000 km) sits just inside the ring's inner edge
+    // (100,000 km) — a bare centre-distance test would call this a near-miss below the band — but
+    // is within reach once the moon's own 5,000 km radius is added: 97,000 + 5,000 = 102,000 km,
+    // comfortably past the inner edge. So contact should stay one continuous window through
+    // periapsis, not split into two around it. Apoapsis (210,000 km) is well past the outer edge
+    // (200,000 km — also widened by the moon's own radius, to 205,007.5 km) so the window still
+    // closes normally on both sides rather than never breaking contact at all.
+    const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
+    makeRing('Planet Ring', planet, 100_000, 200_000);
+    const moon = makeBody('Moon', planet, {
+      semiMajorAxis: (97_000 + 210_000) / 2 / KM_PER_AU,
+      orbitalEccentricity: (210_000 - 97_000) / (210_000 + 97_000), orbitalPeriod: 5,
+      radius: 5_000,
+      meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0, timestamps: ts,
+    });
+
+    const status = service.detectRingCollisionStatus(moon, now);
+    expect(status.isCandidate).toBe(true);
+    expect(status.nextCollision).not.toBeNull();
+    // The window's own true minimum (periapsis), not a band edge — confirming it wasn't clipped.
+    expect(status.nextCollision!.minSeparationKm).toBeCloseTo(97_000, 0);
+  });
+
   it('does not flag a moon whose orbit never comes close enough to the rings', () => {
     const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
     makeRing('Planet Ring', planet, 100_000, 200_000);

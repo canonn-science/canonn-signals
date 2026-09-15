@@ -292,7 +292,8 @@ export class SystemBodyComponent implements OnChanges {
     // time, so — like the collision search below — only redo it when the body itself changes.
     if (this.ringCollisionBody !== body) {
       this.ringCollisionBody = body;
-      this.ringCollisionStatus = this.orbitalRelations.detectRingCollisionStatus(body);
+      const ringNow = this.appService.nowOverride() ?? Date.now();
+      this.ringCollisionStatus = this.orbitalRelations.detectRingCollisionStatus(body, ringNow);
     }
     // Collision detection runs a costly 3D orbital search, so only redo it when the body
     // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
@@ -1522,6 +1523,7 @@ export class SystemBodyComponent implements OnChanges {
         self: status.self,
         partner: status.partner,
         combinedRadiiKm: status.combinedRadiiKm,
+        combinedRadiiMinKm: status.combinedRadiiMinKm,
         synodicPeriodDays: status.synodicPeriodDays,
         nextCollision: status.nextCollision,
         upcomingCollisions: status.upcomingCollisions,
@@ -1535,9 +1537,13 @@ export class SystemBodyComponent implements OnChanges {
    * Builds the distance-over-time samples for the ring collision dialog's diagram: a single
    * centre-to-centre (or moon-to-host, for a body orbiting directly around the ring's host)
    * separation curve over ten synodic periods, mirroring {@link buildCollisionDistanceDiagram}
-   * but for a ring-collision pair. Returns null when the pair can't be timed or lacks the phase
-   * data to place it — in practice this shouldn't happen here, since {@link ringCollisionStatus}
-   * already required a real detected contact window before flagging a candidate at all.
+   * but for a ring-collision pair. Every contact within the window is marked — via
+   * {@link OrbitalRelationsCore.ringContactsWithin}'s uncapped list, not the 10-row
+   * {@link RingCollisionStatus.upcomingCollisions} — since a ring pass can yield two windows per
+   * approach, so the 10-row cap alone would leave later in-view dips unmarked. Returns null when
+   * the pair can't be timed or lacks the phase data to place it — in practice this shouldn't
+   * happen here, since {@link ringCollisionStatus} already required a real detected contact
+   * window before flagging a candidate at all.
    */
   private buildRingCollisionDistanceDiagram(status: RingCollisionStatus): SynodicDiagramInput | null {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -1545,19 +1551,28 @@ export class SystemBodyComponent implements OnChanges {
     if (!(synMs > 0) || !status.self || !status.partner || !status.combinedRadiiKm) { return null; }
 
     const now = this.appService.nowOverride() ?? Date.now();
-    const endMs = now + synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const endMs = now + spanMs;
     const samples = this.orbitalRelations.ringSeparationSeries(status.self.node, status.partner.node, now, endMs, COLLISION_DIAGRAM_SAMPLES);
     if (samples.length === 0) { return null; }
 
-    const contacts = status.upcomingCollisions
-      .filter(w => w.start.getTime() <= endMs)
-      .map(w => ({ tMs: (w.start.getTime() + w.end.getTime()) / 2, sepKm: w.minSeparationKm }));
+    const windowContacts = this.orbitalRelations.ringContactsWithin(status.self.node, status.partner.node, spanMs / MS_PER_DAY, now)
+      .filter(w => w.start.getTime() <= endMs);
+    const contacts = windowContacts.map(w => ({
+      tMs: (w.minSeparationAt ?? new Date((w.start.getTime() + w.end.getTime()) / 2)).getTime(),
+      sepKm: w.minSeparationKm,
+    }));
 
     return {
       startMs: now,
       endMs,
       nowMs: now,
-      series: [{ partnerName: status.partner.name, combinedRadiiKm: status.combinedRadiiKm, samples, contacts }],
+      series: [{
+        partnerName: status.partner.name,
+        combinedRadiiKm: status.combinedRadiiKm,
+        combinedRadiiMinKm: status.combinedRadiiMinKm ?? undefined,
+        samples, contacts,
+      }],
     };
   }
 
@@ -1610,7 +1625,7 @@ export class SystemBodyComponent implements OnChanges {
         ?? status.combinedRadiiKm
         ?? ((body.bodyData.radius ?? 0) + (sibling.bodyData.radius ?? 0));
       const contacts = partnerWindows.map(w => ({
-        tMs: (w.start.getTime() + w.end.getTime()) / 2,
+        tMs: (w.minSeparationAt ?? new Date((w.start.getTime() + w.end.getTime()) / 2)).getTime(),
         sepKm: w.minSeparationKm,
       }));
       return { partnerName: name, combinedRadiiKm, samples: samplesArr, contacts };

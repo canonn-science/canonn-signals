@@ -42,9 +42,19 @@
         @if (durationMinutes !== null) {
         <li><strong>Duration:</strong> {{ durationMinutes | number:'1.0-1' }} minutes</li>
         }
-        <li><strong>Closest approach:</strong> {{ c.minSeparationKm | number:'1.0-0' }} km centre-to-centre</li>
+        <li><strong>{{ isSplitPass ? 'This window\'s deepest point' : 'Closest approach' }}:</strong>
+          {{ c.minSeparationKm | number:'1.0-0' }} km centre-to-centre
+        </li>
         @if (data.combinedRadiiKm !== null) {
-        <li><strong>Combined extents (contact threshold):</strong> {{ data.combinedRadiiKm | number:'1.0-0' }} km</li>
+        <li><strong>Contact band:</strong>
+          @if (isSplitPass) {
+            {{ data.combinedRadiiMinKm | number:'1.0-0' }} – {{ data.combinedRadiiKm | number:'1.0-0' }} km
+            <span class="hint">— they touch only within this range; closer than {{ data.combinedRadiiMinKm | number:'1.0-0' }} km, one has passed inside the other</span>
+          } @else {
+            up to {{ data.combinedRadiiKm | number:'1.0-0' }} km
+            <span class="hint">— the combined-extents contact threshold</span>
+          }
+        </li>
         }
         @if (overlapPercent !== null) {
         <li><strong>Overlap:</strong> {{ overlapPercent | number:'1.0-1' }}%</li>
@@ -59,6 +69,11 @@
       <p class="hint">
         Separation through the synodic cycle (log scale). The curve dips at each close approach; a dip
         below the dashed contact threshold — marked &times; — is a collision.
+        @if (isSplitPass) {
+        For this pair, contact only holds between the <em>two</em> dashed lines shown: dipping below the
+        lower one means the objects have passed inside one another and are no longer touching, even
+        though the curve is still below the upper line.
+        }
       </p>
       <svg [attr.viewBox]="'0 0 ' + dg.width + ' ' + dg.height" class="separation-chart" role="img"
         aria-label="Distance between the bodies over time">
@@ -87,6 +102,10 @@
         @for (s of dg.series; track s.partnerName) {
         <line class="threshold" [attr.x1]="dg.plot.x" [attr.y1]="s.thresholdY"
           [attr.x2]="dg.plot.x + dg.plot.w" [attr.y2]="s.thresholdY" [attr.stroke]="s.color" />
+        @if (s.thresholdMinY !== null) {
+        <line class="threshold threshold-min" [attr.x1]="dg.plot.x" [attr.y1]="s.thresholdMinY"
+          [attr.x2]="dg.plot.x + dg.plot.w" [attr.y2]="s.thresholdMinY" [attr.stroke]="s.color" />
+        }
         <polyline class="curve" [attr.points]="s.points" [attr.stroke]="s.color" />
         @for (m of s.markers; track $index) {
         <path class="marker" [attr.transform]="'translate(' + m.cx + ' ' + m.cy + ')'"
@@ -154,11 +173,13 @@
         between the sum of the two inner edges and the sum of the two outer ones.
       </p>
       <p>
-        That lower edge is why a close ring-on-ring pass can register <em>twice</em>: the rings meet on the
-        way in, then one passes inside the other's central hole at closest approach — genuinely no longer
-        touching — before meeting again on the way out. Overlap is how deep the intersection runs as a
-        percentage of the combined extents. Ring tilt is not modelled (the data gives a tilt magnitude but
-        not its direction), so exact durations are approximate.
+        That lower edge is why a close pass can register <em>twice</em>: the objects meet on the way in,
+        then one passes inside the other's central hole — genuinely no longer touching — before meeting
+        again on the way out. When that happens, "closest approach" isn't itself a collision; each of the
+        two windows has its own deepest point instead, pinned to the edge of the band nearest closest
+        approach. Overlap is how deep a given window's contact runs as a percentage of the combined
+        extents. Ring tilt is not modelled (the data gives a tilt magnitude but not its direction), so exact
+        durations are approximate.
       </p>
     </div>
   </div>

@@ -14,6 +14,13 @@ export interface RingCollisionDialogData {
   partner: RingCollisionExtent;
   /** Sum of the two objects' physical extents (a ring's outer radius, or a body's radius) — the contact threshold. */
   combinedRadiiKm: number | null;
+  /**
+   * The contact band's lower edge (km), when the pair has one: closer than this, one side has
+   * passed inside the other's central hole and is no longer touching — the source of a close
+   * ring-on-ring pass registering as two collisions either side of closest approach. Null when
+   * the pair has no lower edge (a plain combined-radii threshold is enough).
+   */
+  combinedRadiiMinKm: number | null;
   /** Synodic period (days) between the pair. */
   synodicPeriodDays: number | null;
   /** The soonest contact window. */
@@ -63,13 +70,26 @@ export class RingCollisionDialogComponent {
     return name.startsWith(prefix) ? name.slice(prefix.length) : name;
   }
 
+  /**
+   * True when the pair has a lower contact-band edge, i.e. closer than that they pass *inside*
+   * one another rather than staying in contact — see {@link RingCollisionDialogData.combinedRadiiMinKm}.
+   * This is what makes a close pass register as two collisions either side of closest approach
+   * instead of one continuous window.
+   */
+  public get isSplitPass(): boolean {
+    return !!this.data.combinedRadiiMinKm && this.data.combinedRadiiMinKm > 0;
+  }
+
   public get description(): string {
     const { self, partner } = this.data;
     const selfShort = this.shortName(self.name);
     const partnerShort = this.shortName(partner.name);
     const selfNoun = self.kind === 'ring' ? 'ring' : 'orbit';
     const partnerNoun = partner.kind === 'ring' ? 'rings' : 'orbit';
-    return `${selfShort}'s ${selfNoun} and ${partnerShort}'s ${partnerNoun} physically intersect at closest approach.`;
+    const contact = `${selfShort}'s ${selfNoun} and ${partnerShort}'s ${partnerNoun} come into contact as they pass each other`;
+    return this.isSplitPass
+      ? `${contact}, but pass inside one another at closest approach — so this is actually two separate collisions, one on approach and one receding.`
+      : `${contact}.`;
   }
 
   public localDateTime(d: Date): string {
@@ -106,7 +126,8 @@ export class RingCollisionDialogComponent {
   }
 
   /**
-   * How deeply the two objects overlap at closest approach, as a percentage of their combined
+   * How deep this particular window's contact runs at its own deepest point (not necessarily the
+   * pair's overall closest approach — see {@link isSplitPass}), as a percentage of their combined
    * extents: 0% = surfaces just grazing, 100% = centres coincident. Null when unavailable.
    */
   public overlapPercentFor(w: CollisionWindow): number | null {
