@@ -56,9 +56,6 @@
           }
         </li>
         }
-        @if (overlapPercent !== null) {
-        <li><strong>Overlap:</strong> {{ overlapPercent | number:'1.0-1' }}%</li>
-        }
         }
       </ul>
     </div>
@@ -132,7 +129,6 @@
             <th>Contact start (UTC)</th>
             <th>Days until</th>
             <th>Duration</th>
-            <th>Overlap</th>
           </tr>
         </thead>
         <tbody>
@@ -149,9 +145,6 @@
               }
             </td>
             <td>{{ formatDuration(w) }}</td>
-            <td class="num">
-              @if (overlapPercentFor(w); as pct) { {{ pct | number:'1.0-1' }}% }
-            </td>
           </tr>
           }
         </tbody>
@@ -177,9 +170,8 @@
         then one passes inside the other's central hole — genuinely no longer touching — before meeting
         again on the way out. When that happens, "closest approach" isn't itself a collision; each of the
         two windows has its own deepest point instead, pinned to the edge of the band nearest closest
-        approach. Overlap is how deep a given window's contact runs as a percentage of the combined
-        extents. Ring tilt is not modelled (the data gives a tilt magnitude but not its direction), so exact
-        durations are approximate.
+        approach. Ring tilt is not modelled (the data gives a tilt magnitude but not its direction), so
+        exact durations are approximate.
       </p>
     </div>
   </div>

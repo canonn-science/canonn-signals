@@ -126,22 +126,6 @@ export class RingCollisionDialogComponent {
   }
 
   /**
-   * How deep this particular window's contact runs at its own deepest point (not necessarily the
-   * pair's overall closest approach — see {@link isSplitPass}), as a percentage of their combined
-   * extents: 0% = surfaces just grazing, 100% = centres coincident. Null when unavailable.
-   */
-  public overlapPercentFor(w: CollisionWindow): number | null {
-    const combined = w.combinedRadiiKm ?? this.data.combinedRadiiKm;
-    if (!combined) { return null; }
-    return Math.max(0, (1 - w.minSeparationKm / combined) * 100);
-  }
-
-  public get overlapPercent(): number | null {
-    const c = this.data.nextCollision;
-    return c ? this.overlapPercentFor(c) : null;
-  }
-
-  /**
    * Laid-out distance-over-time diagram, or null when there is no plottable data. Cached because
    * the template reads it several times per change-detection pass and the input is static for
    * the dialog's lifetime.
