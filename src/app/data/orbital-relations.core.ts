@@ -1331,9 +1331,9 @@ export class OrbitalRelationsCore {
    *
    * Contact is tested along the line joining the two bodies, which is where two rings in
    * *different* planes can meet — a real ring is a flat disc, so it only has material where its
-   * plane cuts the other's, not spread over a sphere. Along that line object A occupies
-   * `[innerA, outerA]` from A and object B occupies `[D − outerB, D − innerB]`, so they overlap
-   * exactly when `innerA + innerB ≤ D ≤ outerA + outerB`.
+   * plane cuts the other's. Along that line object A occupies `[innerA, outerA]` from A and
+   * object B occupies `[D − outerB, D − innerB]`, so they overlap exactly when
+   * `innerA + innerB ≤ D ≤ outerA + outerB`.
    *
    * The upper edge is the familiar combined-radii contact threshold. The lower edge is what a
    * sphere-shaped approximation misses: once the bodies are closer than that, one ring has passed
