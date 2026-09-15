@@ -113,14 +113,19 @@ export interface CollisionStatus {
   simultaneousPartners: string[];
 }
 
-/** One side of a ring collision: either a solid body (its own bound orbit) or a ring (a static band around its host). */
+/**
+ * One side of a ring collision: either a solid body (its own bound orbit) or a ring (a static
+ * band around its host). Deliberately just a name + kind, not a `SystemBody` reference — this
+ * status crosses the worker boundary (see {@link OrbitalWorkerService}), so a caller that needs
+ * the live node back (to build the distance diagram) re-resolves it by name against its own
+ * system tree via {@link findBodyInTree}, the same way a planetary collision dialog already
+ * re-resolves its partner name against the live sibling list.
+ */
 export interface RingCollisionExtent {
   /** Full name of the body or ring. */
   name: string;
   /** 'body' for a planet/moon/star, 'ring' for a ring. */
   kind: 'body' | 'ring';
-  /** The tree node itself, so a caller can re-run {@link OrbitalRelationsCore.ringSeparationSeries} for the distance diagram. */
-  node: SystemBody;
 }
 
 /**
@@ -1487,11 +1492,10 @@ export class OrbitalRelationsCore {
     if (!best) { return none; }
     return {
       isCandidate: true,
-      self: { name: node.bodyData.name, kind: isRing ? 'ring' : 'body', node },
+      self: { name: node.bodyData.name, kind: isRing ? 'ring' : 'body' },
       partner: {
         name: best.other.bodyData.name,
         kind: best.other.bodyData.type === BODY_TYPE.Ring ? 'ring' : 'body',
-        node: best.other,
       },
       combinedRadiiKm: best.contactKm,
       combinedRadiiMinKm: best.contactMinKm,

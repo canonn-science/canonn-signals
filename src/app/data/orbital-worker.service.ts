@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import * as Comlink from 'comlink';
 import type { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import type { CollisionStatus, SimultaneousCollision, CollisionWindow, SeparationSample } from './orbital-relations.core';
-import { serializeCollisionFamily } from './collision-request';
+import type { CollisionStatus, SimultaneousCollision, CollisionWindow, SeparationSample, RingCollisionStatus } from './orbital-relations.core';
+import { serializeCollisionFamily, serializeSystemTree } from './collision-request';
 import type { CollisionWorkerApi } from './collision-worker-api';
 
 const WORKER_CALL_TIMEOUT_MS = 30_000;
@@ -195,6 +195,50 @@ export class OrbitalWorkerService {
     return this.runWithFallback(
       () => proxy.separationSeries(a, b, startMs, endMs, samples),
       () => this.inline.separationSeries(a, b, startMs, endMs, samples),
+      workerFailure,
+    );
+  }
+
+  /**
+   * Off-thread {@link OrbitalRelationsCore.detectRingCollisionStatus}. Unlike the planetary methods
+   * above (which only ever need `body`'s shared parent and its direct siblings), ring collisions
+   * scan the whole system tree, so the DTO here ({@link serializeSystemTree}) carries every body,
+   * not just one family.
+   */
+  async detectRingCollisionStatus(body: SystemBody, now: number): Promise<RingCollisionStatus> {
+    const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
+    const dto = proxy ? serializeSystemTree(body) : null;
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.detectRingCollisionStatus(body, now); }
+    return this.runWithFallback(
+      () => proxy.detectRingCollisionStatus(dto, now),
+      () => this.inline.detectRingCollisionStatus(body, now),
+      workerFailure,
+    );
+  }
+
+  /** Off-thread {@link OrbitalRelationsCore.ringContactsWithin}. */
+  async ringContactsWithin(self: SystemBody, partner: SystemBody, horizonDays: number, now: number): Promise<CollisionWindow[]> {
+    const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
+    const dto = proxy ? serializeSystemTree(self) : null;
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.ringContactsWithin(self, partner, horizonDays, now); }
+    return this.runWithFallback(
+      () => proxy.ringContactsWithin(dto, partner.bodyData.name, horizonDays, now),
+      () => this.inline.ringContactsWithin(self, partner, horizonDays, now),
+      workerFailure,
+    );
+  }
+
+  /** Off-thread {@link OrbitalRelationsCore.ringSeparationSeries}. */
+  async ringSeparationSeries(self: SystemBody, partner: SystemBody, startMs: number, endMs: number, samples: number): Promise<SeparationSample[]> {
+    const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
+    const dto = proxy ? serializeSystemTree(self) : null;
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.ringSeparationSeries(self, partner, startMs, endMs, samples); }
+    return this.runWithFallback(
+      () => proxy.ringSeparationSeries(dto, partner.bodyData.name, startMs, endMs, samples),
+      () => this.inline.ringSeparationSeries(self, partner, startMs, endMs, samples),
       workerFailure,
     );
   }

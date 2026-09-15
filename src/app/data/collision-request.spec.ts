@@ -1,5 +1,5 @@
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import { serializeCollisionFamily, rehydrateCollisionFamily } from './collision-request';
+import { serializeCollisionFamily, rehydrateCollisionFamily, serializeSystemTree, rehydrateSystemTree, findBodyInTree } from './collision-request';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 
 /**
@@ -97,6 +97,91 @@ describe('collision-request (worker serialization boundary)', () => {
       const direct = core.upcomingContactsWithin(a, 365, now);
       const viaWire = core.upcomingContactsWithin(rehydrateCollisionFamily(serializeCollisionFamily(a)!), 365, now);
       expect(direct.length).toBeGreaterThan(0);
+      expect(viaWire).toEqual(direct);
+    });
+  });
+
+  /**
+   * Ring collisions scan the *whole* system tree (direct orbit, siblings, and nesting through a
+   * sibling's own parent — see resolveRingOrbitPair), unlike planetary collision's single family,
+   * so they need the whole tree serialized, not just one parent + its children.
+   */
+  describe('SystemTreeDto (whole-tree serialization for ring collisions)', () => {
+    /** star -> [planetA -> [moonA1], planetB -> [ring]] — three levels, to exercise real nesting. */
+    function multiLevelTree(): { star: SystemBody; planetA: SystemBody; moonA1: SystemBody; planetB: SystemBody; ring: SystemBody } {
+      const star: SystemBody = { bodyData: { bodyId: 0, name: 'Star', id64: 0n, subType: '', type: 'Star' } as CanonnBiostatsBody, subBodies: [], parent: null };
+      const planetA: SystemBody = { bodyData: { bodyId: 1, name: 'A', id64: 0n, subType: '', type: 'Planet' } as CanonnBiostatsBody, subBodies: [], parent: star };
+      const planetB: SystemBody = { bodyData: { bodyId: 2, name: 'B', id64: 0n, subType: '', type: 'Planet' } as CanonnBiostatsBody, subBodies: [], parent: star };
+      const moonA1: SystemBody = { bodyData: { bodyId: 3, name: 'A 1', id64: 0n, subType: '', type: 'Planet' } as CanonnBiostatsBody, subBodies: [], parent: planetA };
+      const ring: SystemBody = { bodyData: { bodyId: -1, name: 'B Ring', id64: 0n, subType: '', type: 'Ring' } as CanonnBiostatsBody, subBodies: [], parent: planetB };
+      star.subBodies = [planetA, planetB];
+      planetA.subBodies = [moonA1];
+      planetB.subBodies = [ring];
+      return { star, planetA, moonA1, planetB, ring };
+    }
+
+    it('serializeSystemTree captures every body with correct parent links and the focus index', () => {
+      const { moonA1 } = multiLevelTree();
+      const dto = serializeSystemTree(moonA1);
+      expect(dto).not.toBeNull();
+      // Depth-first: A's subtree (A 1) is visited before B's.
+      expect(dto!.bodies.map(b => b.name)).toEqual(['Star', 'A', 'A 1', 'B', 'B Ring']);
+      expect(dto!.focusIndex).toBe(2); // "A 1"
+      expect(dto!.parentIndex).toEqual([-1, 0, 1, 0, 3]);
+    });
+
+    it('rehydrateSystemTree rebuilds the whole tree, reachable in every direction from the focus', () => {
+      const { moonA1 } = multiLevelTree();
+      const focus = rehydrateSystemTree(serializeSystemTree(moonA1)!);
+      expect(focus.bodyData.name).toBe('A 1');
+      const planetA = focus.parent!;
+      expect(planetA.bodyData.name).toBe('A');
+      expect(planetA.subBodies).toContain(focus);
+      const star = planetA.parent!;
+      expect(star.bodyData.name).toBe('Star');
+      expect(star.subBodies.map(b => b.bodyData.name)).toEqual(['A', 'B']);
+      const planetB = star.subBodies.find(b => b.bodyData.name === 'B')!;
+      expect(planetB.subBodies[0].bodyData.name).toBe('B Ring');
+    });
+
+    it('findBodyInTree finds a body anywhere in the same system by name, or null when absent', () => {
+      const { moonA1 } = multiLevelTree();
+      const found = findBodyInTree(moonA1, 'B Ring');
+      expect(found?.bodyData.name).toBe('B Ring');
+      expect(findBodyInTree(moonA1, 'Does Not Exist')).toBeNull();
+    });
+
+    it('detectRingCollisionStatus is identical on the original and the rehydrated tree', () => {
+      const barycentre: SystemBody = { bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: 'Barycentre' } as CanonnBiostatsBody, subBodies: [], parent: null };
+      const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+      const body1: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const body2: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const ring1: SystemBody = { bodyData: { bodyId: -1, name: '1 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
+      const ring2: SystemBody = { bodyData: { bodyId: -1, name: '2 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
+      barycentre.subBodies = [body1, body2];
+      body1.subBodies = [ring1];
+      body2.subBodies = [ring2];
+
+      const direct = core.detectRingCollisionStatus(ring1, now);
+      expect(direct.isCandidate).toBe(true);
+      expect(direct.partner?.name).toBe('2 Ring');
+      const viaWire = core.detectRingCollisionStatus(rehydrateSystemTree(serializeSystemTree(ring1)!), now);
       expect(viaWire).toEqual(direct);
     });
   });

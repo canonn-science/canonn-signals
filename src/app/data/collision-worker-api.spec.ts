@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink';
 import { createCollisionApi, CollisionWorkerApi } from './collision-worker-api';
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import { serializeCollisionFamily } from './collision-request';
+import { serializeCollisionFamily, serializeSystemTree } from './collision-request';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 
 /**
@@ -71,6 +71,78 @@ describe('collision-worker-api', () => {
     const [a] = collidingPair();
     const api = createCollisionApi();
     expect(api.detectCollisionStatus(serializeCollisionFamily(a)!, now).isCandidate).toBe(true);
+  });
+
+  /** A ring-bearing binary pair orbiting a shared barycentre (Musca Dark Region SO-Q b5-5 1 & 2). */
+  function ringCollidingPair(): { ring1: SystemBody; ring2: SystemBody } {
+    const barycentre: SystemBody = { bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: 'Barycentre' } as CanonnBiostatsBody, subBodies: [], parent: null };
+    const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+    const body1: SystemBody = {
+      bodyData: {
+        bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    const body2: SystemBody = {
+      bodyData: {
+        bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    const ring1: SystemBody = { bodyData: { bodyId: -1, name: '1 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
+    const ring2: SystemBody = { bodyData: { bodyId: -1, name: '2 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
+    barycentre.subBodies = [body1, body2];
+    body1.subBodies = [ring1];
+    body2.subBodies = [ring2];
+    return { ring1, ring2 };
+  }
+
+  it('exposes the ring-collision methods, each matching the core on the same inputs', () => {
+    const { ring1, ring2 } = ringCollidingPair();
+    const api = createCollisionApi(core);
+    const dto = serializeSystemTree(ring1)!;
+    const endMs = now + 5 * 24 * 60 * 60 * 1000;
+
+    const direct = core.detectRingCollisionStatus(ring1, now);
+    expect(direct.isCandidate).toBe(true);
+    expect(api.detectRingCollisionStatus(dto, now)).toEqual(direct);
+    expect(api.ringContactsWithin(dto, '2 Ring', 5, now)).toEqual(core.ringContactsWithin(ring1, ring2, 5, now));
+    expect(api.ringSeparationSeries(dto, '2 Ring', now, endMs, 20).length).toBe(20);
+  });
+
+  it('ring-collision methods return [] for an unresolvable partner name (never crashes the worker)', () => {
+    const { ring1 } = ringCollidingPair();
+    const api = createCollisionApi(core);
+    const dto = serializeSystemTree(ring1)!;
+    expect(api.ringContactsWithin(dto, 'Nonexistent', 5, now)).toEqual([]);
+    expect(api.ringSeparationSeries(dto, 'Nonexistent', now, now + 1000, 10)).toEqual([]);
+  });
+
+  it('round-trips detectRingCollisionStatus over a real Comlink MessagePort', async () => {
+    const { ring1 } = ringCollidingPair();
+    const dto = serializeSystemTree(ring1)!;
+
+    const { port1, port2 } = new MessageChannel();
+    Comlink.expose(createCollisionApi(), port1);
+    const proxy = Comlink.wrap<CollisionWorkerApi>(port2);
+
+    try {
+      const result = await proxy.detectRingCollisionStatus(dto, now);
+      expect(result.isCandidate).toBe(true);
+      expect(result.partner?.name).toBe('2 Ring');
+      expect(result.nextCollision!.start).toBeInstanceOf(Date);
+      expect(result).toEqual(core.detectRingCollisionStatus(ring1, now));
+    } finally {
+      proxy[Comlink.releaseProxy]();
+      port1.close();
+      port2.close();
+    }
   });
 
   it('round-trips detectCollisionStatus over a real Comlink MessagePort', async () => {

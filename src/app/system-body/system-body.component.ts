@@ -18,6 +18,7 @@ import {
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService, CollisionStatus, RingCollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
 import { OrbitalWorkerService } from '../data/orbital-worker.service';
+import { findBodyInTree } from '../data/collision-request';
 import { logger } from '../data/logger';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
@@ -292,8 +293,7 @@ export class SystemBodyComponent implements OnChanges {
     // time, so — like the collision search below — only redo it when the body itself changes.
     if (this.ringCollisionBody !== body) {
       this.ringCollisionBody = body;
-      const ringNow = this.appService.nowOverride() ?? Date.now();
-      this.ringCollisionStatus = this.orbitalRelations.detectRingCollisionStatus(body, ringNow);
+      this.requestRingCollisionStatus(body);
     }
     // Collision detection runs a costly 3D orbital search, so only redo it when the body
     // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
@@ -1112,6 +1112,8 @@ export class SystemBodyComponent implements OnChanges {
     this.destroyRef.onDestroy(() => {
       this.collisionRequestId++;
       clearTimeout(this.collisionPendingTimer);
+      this.ringCollisionRequestId++;
+      clearTimeout(this.ringCollisionPendingTimer);
     });
 
     // Codex reference data loads asynchronously. When it changes, refresh the
@@ -1508,9 +1510,10 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   /** Opens the ring collision dialog with this body's/ring's radial-overlap and (when timeable) contact-window details. */
-  public showRingCollisionDialog(): void {
-    const status = this.ringCollisionStatus;
+  public async showRingCollisionDialog(): Promise<void> {
+    const status = this.ringCollisionStatus();
     if (!status?.isCandidate || !status.self || !status.partner) { return; }
+    const body = this.body();
 
     openLazyDialog(this.dialog, {
       loader: () => import('../dialogs/ring-collision-dialog/ring-collision-dialog.component').then(m => m.RingCollisionDialogComponent),
@@ -1528,7 +1531,7 @@ export class SystemBodyComponent implements OnChanges {
         nextCollision: status.nextCollision,
         upcomingCollisions: status.upcomingCollisions,
         systemName: this.edGalaxyData()?.Name ?? '',
-        separationDiagram: this.buildRingCollisionDistanceDiagram(status),
+        separationDiagram: await this.buildRingCollisionDistanceDiagram(body, status),
       } satisfies RingCollisionDialogData,
     });
   }
@@ -1540,24 +1543,31 @@ export class SystemBodyComponent implements OnChanges {
    * but for a ring-collision pair. Every contact within the window is marked — via
    * {@link OrbitalRelationsCore.ringContactsWithin}'s uncapped list, not the 10-row
    * {@link RingCollisionStatus.upcomingCollisions} — since a ring pass can yield two windows per
-   * approach, so the 10-row cap alone would leave later in-view dips unmarked. Returns null when
-   * the pair can't be timed or lacks the phase data to place it — in practice this shouldn't
-   * happen here, since {@link ringCollisionStatus} already required a real detected contact
-   * window before flagging a candidate at all.
+   * approach, so the 10-row cap alone would leave later in-view dips unmarked. Both off-thread
+   * calls run through {@link OrbitalWorkerService}, matching the planetary collision path; the
+   * partner is re-resolved from `status.partner.name` against `body`'s live system tree, since
+   * {@link RingCollisionExtent} deliberately carries a name rather than a worker-crossed node.
+   * Returns null when the pair can't be timed or lacks the phase data to place it — in practice
+   * this shouldn't happen here, since {@link ringCollisionStatus} already required a real
+   * detected contact window before flagging a candidate at all.
    */
-  private buildRingCollisionDistanceDiagram(status: RingCollisionStatus): SynodicDiagramInput | null {
+  private async buildRingCollisionDistanceDiagram(body: SystemBody, status: RingCollisionStatus): Promise<SynodicDiagramInput | null> {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
     if (!(synMs > 0) || !status.self || !status.partner || !status.combinedRadiiKm) { return null; }
+    const partner = findBodyInTree(body, status.partner.name);
+    if (!partner) { return null; }
 
     const now = this.appService.nowOverride() ?? Date.now();
     const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
     const endMs = now + spanMs;
-    const samples = this.orbitalRelations.ringSeparationSeries(status.self.node, status.partner.node, now, endMs, COLLISION_DIAGRAM_SAMPLES);
+    const [samples, windowContactsRaw] = await Promise.all([
+      this.orbitalWorker.ringSeparationSeries(body, partner, now, endMs, COLLISION_DIAGRAM_SAMPLES),
+      this.orbitalWorker.ringContactsWithin(body, partner, spanMs / MS_PER_DAY, now),
+    ]);
     if (samples.length === 0) { return null; }
 
-    const windowContacts = this.orbitalRelations.ringContactsWithin(status.self.node, status.partner.node, spanMs / MS_PER_DAY, now)
-      .filter(w => w.start.getTime() <= endMs);
+    const windowContacts = windowContactsRaw.filter(w => w.start.getTime() <= endMs);
     const contacts = windowContacts.map(w => ({
       tMs: (w.minSeparationAt ?? new Date((w.start.getTime() + w.end.getTime()) / 2)).getTime(),
       sepKm: w.minSeparationKm,
@@ -1933,10 +1943,51 @@ export class SystemBodyComponent implements OnChanges {
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
-  /** Result of the ring-collision search for the current body (see {@link ngOnChanges}). */
-  public ringCollisionStatus: RingCollisionStatus | null = null;
-  /** The body {@link ringCollisionStatus} was last computed for, to skip recompute on unrelated re-renders. */
+  /**
+   * Result of the off-thread ring-collision search for the current body, or null while it is
+   * still running (or when the body isn't a candidate). A signal, not a plain field, for the same
+   * reason as {@link collisionStatus}: the worker resolves asynchronously and setting it is what
+   * schedules change detection under zoneless. See {@link requestRingCollisionStatus}.
+   */
+  public readonly ringCollisionStatus = signal<RingCollisionStatus | null>(null);
+  /** True once a ring-collision search has been outstanding longer than {@link COLLISION_SKELETON_DELAY_MS}. */
+  public readonly ringCollisionPending = signal(false);
+  /** The body {@link ringCollisionStatus} was last requested for, to skip recompute on unrelated re-renders. */
   private ringCollisionBody: SystemBody | null = null;
+  /** Generation token: increments per request so a stale worker response for a superseded body is dropped. */
+  private ringCollisionRequestId = 0;
+  /** Timer that reveals the pending skeleton; cleared when the result arrives or the component is destroyed. */
+  private ringCollisionPendingTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Runs {@link OrbitalRelationsCore.detectRingCollisionStatus} for `body` off the main thread and
+   * lands the result in {@link ringCollisionStatus}, mirroring {@link requestCollisionStatus}
+   * exactly (per-request generation token, delayed pending skeleton).
+   */
+  private requestRingCollisionStatus(body: SystemBody): void {
+    const requestId = ++this.ringCollisionRequestId;
+    this.ringCollisionStatus.set(null);
+    const now = this.appService.nowOverride() ?? Date.now();
+
+    clearTimeout(this.ringCollisionPendingTimer);
+    this.ringCollisionPendingTimer = setTimeout(() => {
+      if (requestId === this.ringCollisionRequestId) { this.ringCollisionPending.set(true); }
+    }, COLLISION_SKELETON_DELAY_MS);
+
+    this.orbitalWorker.detectRingCollisionStatus(body, now)
+      .then(status => {
+        if (requestId !== this.ringCollisionRequestId) { return; }
+        clearTimeout(this.ringCollisionPendingTimer);
+        this.ringCollisionStatus.set(status);
+        this.ringCollisionPending.set(false);
+      })
+      .catch((err: unknown) => {
+        logger.error('Ring collision search failed', err);
+        if (requestId !== this.ringCollisionRequestId) { return; }
+        clearTimeout(this.ringCollisionPendingTimer);
+        this.ringCollisionPending.set(false);
+      });
+  }
   /**
    * Result of the off-thread collision search for the current body, or null while it is still
    * running (or when the body isn't a collision candidate). A signal, not a plain field, because

@@ -54,3 +54,73 @@ export function rehydrateCollisionFamily(dto: CollisionFamilyDto): SystemBody {
   parent.subBodies = dto.siblings.map(bodyData => ({ bodyData, subBodies: [], parent }));
   return parent.subBodies[dto.focusIndex];
 }
+
+/**
+ * The structured-clone-safe form of a *whole* system tree, for the ring-collision engine, which —
+ * unlike planetary collision's single "parent + its children" family — walks the entire tree
+ * (direct orbit, siblings, and one level of nesting through a sibling's own parent; see
+ * {@link OrbitalRelationsCore.resolveRingOrbitPair}). `bodies[i]`'s parent is `bodies[parentIndex[i]]`,
+ * or it's the root when `parentIndex[i]` is -1.
+ */
+export interface SystemTreeDto {
+  /** Every body in the system, in a fixed (flattened, depth-first) order. */
+  bodies: CanonnBiostatsBody[];
+  /** Parallel to {@link bodies}: each entry's index of its own parent within this array, or -1 for the root. */
+  parentIndex: number[];
+  /** Index within {@link bodies} of the body the requested operation is for. */
+  focusIndex: number;
+}
+
+/** Depth-first flatten of `root` and every descendant, in a fixed, repeatable order. */
+function flattenTree(root: SystemBody): SystemBody[] {
+  const out: SystemBody[] = [root];
+  for (const child of root.subBodies) { out.push(...flattenTree(child)); }
+  return out;
+}
+
+/**
+ * Extracts a {@link SystemTreeDto} for `body`'s whole system, ready to post to the worker. Returns
+ * null only if `body` is somehow not part of the flattened tree from its own root (should not
+ * happen for a real tree), meaning there is nothing to serialize.
+ */
+export function serializeSystemTree(body: SystemBody): SystemTreeDto | null {
+  let root = body;
+  while (root.parent) { root = root.parent; }
+  const flat = flattenTree(root);
+  const focusIndex = flat.indexOf(body);
+  if (focusIndex < 0) { return null; }
+  const indexOf = new Map(flat.map((node, i) => [node, i]));
+  return {
+    bodies: flat.map(node => node.bodyData),
+    parentIndex: flat.map(node => node.parent ? indexOf.get(node.parent)! : -1),
+    focusIndex,
+  };
+}
+
+/**
+ * Rebuilds a minimal {@link SystemBody} tree from a {@link SystemTreeDto} inside the worker (or the
+ * fallback path) and returns the focus body. Every other body in the tree is also reachable from
+ * it via `parent`/`subBodies`, exactly as {@link OrbitalRelationsCore.detectRingCollisionStatus}'s
+ * whole-tree scan needs.
+ */
+export function rehydrateSystemTree(dto: SystemTreeDto): SystemBody {
+  const nodes: SystemBody[] = dto.bodies.map(bodyData => ({ bodyData, subBodies: [], parent: null }));
+  dto.parentIndex.forEach((parentIdx, i) => {
+    if (parentIdx < 0) { return; }
+    nodes[i].parent = nodes[parentIdx];
+    nodes[parentIdx].subBodies.push(nodes[i]);
+  });
+  return nodes[dto.focusIndex];
+}
+
+/**
+ * Finds the body named `name` anywhere in the tree containing `node` (searching from its root),
+ * for re-resolving a {@link RingCollisionExtent}'s partner by name after crossing the worker
+ * boundary, the same way planetary collision dialogs already re-resolve a partner name against
+ * the live sibling list. Returns null when no body has that name.
+ */
+export function findBodyInTree(node: SystemBody, name: string): SystemBody | null {
+  let root = node;
+  while (root.parent) { root = root.parent; }
+  return flattenTree(root).find(n => n.bodyData.name === name) ?? null;
+}

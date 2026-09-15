@@ -4,13 +4,9 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { RingCollisionDialogComponent, RingCollisionDialogData } from './ring-collision-dialog.component';
 import { RingCollisionExtent } from '../../data/orbital-relations.service';
-import { SystemBody } from '../../home/home.component';
-
-/** A placeholder node — the dialog never dereferences it, only the extent's name/kind. */
-const fakeNode = {} as SystemBody;
 
 function extent(name: string, kind: 'body' | 'ring'): RingCollisionExtent {
-  return { name, kind, node: fakeNode };
+  return { name, kind };
 }
 
 function setup(data: RingCollisionDialogData): ComponentFixture<RingCollisionDialogComponent> {

@@ -54,6 +54,36 @@ describe('OrbitalWorkerService', () => {
     ]);
   }
 
+  /** A ring-bearing binary pair orbiting a shared barycentre (Musca Dark Region SO-Q b5-5 1 & 2). */
+  function ringCollidingPair(): { ring1: SystemBody; ring2: SystemBody } {
+    const barycentre: SystemBody = { bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: 'Barycentre' } as CanonnBiostatsBody, subBodies: [], parent: null };
+    const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+    const body1: SystemBody = {
+      bodyData: {
+        bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    const body2: SystemBody = {
+      bodyData: {
+        bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    const ring1: SystemBody = { bodyData: { bodyId: -1, name: '1 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
+    const ring2: SystemBody = { bodyData: { bodyId: -1, name: '2 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
+    barycentre.subBodies = [body1, body2];
+    body1.subBodies = [ring1];
+    body2.subBodies = [ring2];
+    return { ring1, ring2 };
+  }
+
   /** A service whose worker seam is forced off, so every method runs the engine inline. */
   function inlineService(): OrbitalWorkerService {
     const svc = new OrbitalWorkerService();
@@ -105,6 +135,28 @@ describe('OrbitalWorkerService', () => {
       const result = await service.detectCollisionStatus(orphan, now);
       expect(result.isCandidate).toBe(false);
     });
+
+    it('resolves detectRingCollisionStatus with the same result as the core', async () => {
+      const { ring1 } = ringCollidingPair();
+      const result = await service.detectRingCollisionStatus(ring1, now);
+      expect(result.isCandidate).toBe(true);
+      expect(result).toEqual(core.detectRingCollisionStatus(ring1, now));
+    });
+
+    it('resolves ringContactsWithin identically to the core', async () => {
+      const { ring1, ring2 } = ringCollidingPair();
+      const result = await service.ringContactsWithin(ring1, ring2, 5, now);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result).toEqual(core.ringContactsWithin(ring1, ring2, 5, now));
+    });
+
+    it('resolves ringSeparationSeries identically to the core', async () => {
+      const { ring1, ring2 } = ringCollidingPair();
+      const endMs = now + 5 * 24 * 60 * 60 * 1000;
+      const result = await service.ringSeparationSeries(ring1, ring2, now, endMs, 20);
+      expect(result.length).toBe(20);
+      expect(result).toEqual(core.ringSeparationSeries(ring1, ring2, now, endMs, 20));
+    });
   });
 
   describe('worker path (proxy available)', () => {
@@ -118,6 +170,12 @@ describe('OrbitalWorkerService', () => {
         simultaneousCollisionsWithin: vi.fn().mockResolvedValue([]),
         upcomingContactsWithin: vi.fn().mockResolvedValue([]),
         separationSeries: vi.fn().mockResolvedValue([]),
+        detectRingCollisionStatus: vi.fn().mockResolvedValue({
+          isCandidate: true, self: { name: 'Self', kind: 'ring' }, partner: { name: 'From Worker', kind: 'ring' },
+          combinedRadiiKm: 1, combinedRadiiMinKm: 0, synodicPeriodDays: 1, nextCollision: null, upcomingCollisions: [],
+        }),
+        ringContactsWithin: vi.fn().mockResolvedValue([]),
+        ringSeparationSeries: vi.fn().mockResolvedValue([]),
       };
     }
 
@@ -157,6 +215,15 @@ describe('OrbitalWorkerService', () => {
       expect(proxy.simultaneousCollisionsWithin).toHaveBeenCalledOnce();
       expect(proxy.upcomingContactsWithin).toHaveBeenCalledOnce();
       expect(proxy.separationSeries).toHaveBeenCalledOnce();
+
+      const { ring1, ring2 } = ringCollidingPair();
+      const ringStatus = await svc.detectRingCollisionStatus(ring1, now);
+      expect(ringStatus.partner?.name).toBe('From Worker'); // came from the proxy, not the local core
+      await svc.ringContactsWithin(ring1, ring2, 5, now);
+      await svc.ringSeparationSeries(ring1, ring2, now, now + 1000, 10);
+      expect(proxy.detectRingCollisionStatus).toHaveBeenCalledOnce();
+      expect(proxy.ringContactsWithin).toHaveBeenCalledWith(expect.anything(), '2 Ring', 5, now);
+      expect(proxy.ringSeparationSeries).toHaveBeenCalledWith(expect.anything(), '2 Ring', now, now + 1000, 10);
 
       // The worker + its proxy are created once and reused across every call.
       expect(createSpy).toHaveBeenCalledOnce();
