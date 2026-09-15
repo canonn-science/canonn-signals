@@ -1196,10 +1196,16 @@ export class OrbitalRelationsCore {
     } as CanonnBiostatsBody;
   }
 
+  /** {@link orbitalRadialRange}, converted to km. */
+  private orbitalRadialRangeKm(bd: CanonnBiostatsBody): { peri: number; apo: number } | null {
+    const range = this.orbitalRadialRange(bd);
+    return range ? { peri: range.peri * KM_PER_AU, apo: range.apo * KM_PER_AU } : null;
+  }
+
   /**
    * Resolves a ring-collision pair (either or both sides possibly rings) into the two orbiting
    * bodies and synodic period {@link nextContacts}/{@link separationSeries} need to time it — or
-   * null when the pair doesn't have a single orbital frame to search precisely. Exactly two
+   * null when the pair doesn't have a single orbital frame to search precisely. Four
    * configurations qualify:
    *  - one orbits the other *directly* (e.g. a moon crossing its own planet's rings): the
    *    non-orbiting side becomes a {@link stationaryOrigin} stand-in for its position, and the
@@ -1207,13 +1213,22 @@ export class OrbitalRelationsCore {
    *  - the two share an *immediate* parent (e.g. two ringed planets orbiting the same star, or —
    *    just as validly — two components of a binary orbiting their shared barycentre): both
    *    sides' real orbits are used directly. The parent itself, whatever it is, never becomes one
-   *    of the two colliding objects; it's only used to confirm the pair shares one orbital plane.
+   *    of the two colliding objects; it's only used to confirm the pair shares one orbital plane;
+   *  - one is *nested* one level under a sibling of the other (the feature request's own example:
+   *    a moon of one binary component reaching into the rings of the *other* component). The
+   *    nested side's own absolute motion is a superposition of two orbits, not a single Kepler
+   *    ellipse, so — rather than attempting a full N-body solve — its real parent is tracked
+   *    instead (a genuine sibling of the other side) and the nested body's own orbital reach
+   *    around that parent (its periapsis/apoapsis, which is exact regardless of orbital
+   *    orientation) is folded into the contact band in {@link detectRingCollisionStatus} as an
+   *    extra allowance, the same way a body's own radius already widens it in
+   *    {@link ringContactBand}. This is still "nothing physical to collide with the barycentre" —
+   *    the barycentre itself never becomes `a`, `b`, or either returned object, only ever a
+   *    shared reference the two real, physical bodies happen to orbit.
    *
-   * Anything else (e.g. a shared ancestor several levels further up, such as a moon of one
-   * barycentre component reaching toward the other component's rings) has no single orbital frame
-   * to search and is deliberately not resolved — "there's nothing physical to collide" beyond what
-   * a direct or sibling relationship already covers, so such pairs are skipped entirely rather
-   * than reported as an unconfirmed guess.
+   * Anything needing a shared ancestor two or more levels further up than that (e.g. a moon of one
+   * barycentre component reaching toward a *moon* of the other) has no tractable single orbital
+   * frame to search and is deliberately not resolved, rather than reported as an unconfirmed guess.
    *
    * A pair sharing an immediate parent with *equal* orbital periods (typical of two components of
    * a binary, which by construction complete one loop of their mutual orbit together) is still
@@ -1221,7 +1236,13 @@ export class OrbitalRelationsCore {
    * *third*, real central body, two siblings with the same period here simply repeat their whole
    * relative geometry once per shared period — so that period itself is used as the synodic step.
    */
-  private resolveRingOrbitPair(self: SystemBody, partner: SystemBody): { a: CanonnBiostatsBody; b: CanonnBiostatsBody; synodicDays: number } | null {
+  private resolveRingOrbitPair(self: SystemBody, partner: SystemBody): {
+    a: CanonnBiostatsBody; b: CanonnBiostatsBody; synodicDays: number;
+    /** Self's own orbital reach (periapsis/apoapsis, km) around `a`, when self is the nested side. */
+    selfRangeKm?: { peri: number; apo: number };
+    /** Partner's own orbital reach (periapsis/apoapsis, km) around `b`, when partner is the nested side. */
+    partnerRangeKm?: { peri: number; apo: number };
+  } | null {
     const selfOrbitBody = self.bodyData.type === BODY_TYPE.Ring ? self.parent : self;
     const partnerOrbitBody = partner.bodyData.type === BODY_TYPE.Ring ? partner.parent : partner;
     if (!selfOrbitBody || !partnerOrbitBody || selfOrbitBody === partnerOrbitBody) { return null; }
@@ -1241,6 +1262,24 @@ export class OrbitalRelationsCore {
       if (!a.orbitalPeriod || !b.orbitalPeriod) { return null; }
       const synodicDays = a.orbitalPeriod === b.orbitalPeriod ? a.orbitalPeriod : 1 / Math.abs(1 / a.orbitalPeriod - 1 / b.orbitalPeriod);
       return { a, b, synodicDays };
+    }
+    // Nested: self orbits a real body (its own parent) that is itself a sibling of partner.
+    if (selfOrbitBody.parent && selfOrbitBody.parent !== partnerOrbitBody && selfOrbitBody.parent.parent === partnerOrbitBody.parent) {
+      const x = selfOrbitBody.parent.bodyData, b = partnerOrbitBody.bodyData;
+      if (!x.orbitalPeriod || !b.orbitalPeriod) { return null; }
+      const selfRangeKm = this.orbitalRadialRangeKm(selfOrbitBody.bodyData);
+      if (!selfRangeKm) { return null; }
+      const synodicDays = x.orbitalPeriod === b.orbitalPeriod ? x.orbitalPeriod : 1 / Math.abs(1 / x.orbitalPeriod - 1 / b.orbitalPeriod);
+      return { a: x, b, synodicDays, selfRangeKm };
+    }
+    // Symmetric: partner orbits a real body that is itself a sibling of self.
+    if (partnerOrbitBody.parent && partnerOrbitBody.parent !== selfOrbitBody && partnerOrbitBody.parent.parent === selfOrbitBody.parent) {
+      const a = selfOrbitBody.bodyData, y = partnerOrbitBody.parent.bodyData;
+      if (!a.orbitalPeriod || !y.orbitalPeriod) { return null; }
+      const partnerRangeKm = this.orbitalRadialRangeKm(partnerOrbitBody.bodyData);
+      if (!partnerRangeKm) { return null; }
+      const synodicDays = a.orbitalPeriod === y.orbitalPeriod ? a.orbitalPeriod : 1 / Math.abs(1 / a.orbitalPeriod - 1 / y.orbitalPeriod);
+      return { a, b: y, synodicDays, partnerRangeKm };
     }
     return null;
   }
@@ -1316,19 +1355,34 @@ export class OrbitalRelationsCore {
    * Each ring's edges are then relaxed by half of {@link RING_THICKNESS_KM}, since a ring is a
    * slab with real vertical extent rather than a razor-thin annulus, and so has a little reach
    * beyond the radii the dumps report.
+   *
+   * `aOrbitKm`/`bOrbitKm` cover the *nested* case from {@link resolveRingOrbitPair}: `a` or `b`
+   * isn't itself the tracked body but orbits it, so its own [periapsis, apoapsis] (exact,
+   * regardless of orbital orientation) replaces its plain radius as the "far side" reach — the
+   * same relief a solid body's own radius gets, since a nested body's orbit isn't confined to the
+   * line the way two rings are either.
    */
-  private ringContactBand(a: SystemBody, b: SystemBody): { minKm: number; maxKm: number } {
+  private ringContactBand(
+    a: SystemBody, b: SystemBody,
+    aOrbitKm?: { peri: number; apo: number },
+    bOrbitKm?: { peri: number; apo: number },
+  ): { minKm: number; maxKm: number } {
     const isRing = (n: SystemBody): boolean => n.bodyData.type === BODY_TYPE.Ring;
     const inner = (n: SystemBody): number => isRing(n) ? (n.bodyData.innerRadius ?? 0) : 0;
     const outer = (n: SystemBody): number => isRing(n) ? (n.bodyData.outerRadius ?? 0) : (n.bodyData.radius ?? 0);
     const reach = (n: SystemBody): number => isRing(n) ? RING_THICKNESS_KM / 2 : 0;
     const edgeKm = reach(a) + reach(b);
-    const rawMinKm = (isRing(a) && isRing(b))
-      ? inner(a) + inner(b)
-      : Math.max(inner(a) - outer(b), inner(b) - outer(a));
+    const innerA = aOrbitKm ? Math.max(0, aOrbitKm.peri - outer(a)) : inner(a);
+    const outerA = aOrbitKm ? aOrbitKm.apo + outer(a) : outer(a);
+    const innerB = bOrbitKm ? Math.max(0, bOrbitKm.peri - outer(b)) : inner(b);
+    const outerB = bOrbitKm ? bOrbitKm.apo + outer(b) : outer(b);
+    const bothConfinedToLine = isRing(a) && isRing(b) && !aOrbitKm && !bOrbitKm;
+    const rawMinKm = bothConfinedToLine
+      ? innerA + innerB
+      : Math.max(innerA - outerB, innerB - outerA);
     return {
       minKm: Math.max(0, rawMinKm - edgeKm),
-      maxKm: outer(a) + outer(b) + edgeKm,
+      maxKm: outerA + outerB + edgeKm,
     };
   }
 
@@ -1357,7 +1411,7 @@ export class OrbitalRelationsCore {
   ringContactsWithin(self: SystemBody, partner: SystemBody, horizonDays: number, now: number = Date.now()): CollisionWindow[] {
     const pair = this.resolveRingOrbitPair(self, partner);
     if (!pair) { return []; }
-    const band = this.ringContactBand(self, partner);
+    const band = this.ringContactBand(self, partner, pair.selfRangeKm, pair.partnerRangeKm);
     if (!(band.maxKm > 0)) { return []; }
     return this.nextContacts(pair.a, pair.b, band.maxKm, pair.synodicDays, now, MAX_CONJUNCTIONS_SCANNED, horizonDays * MS_PER_DAY, band.minKm)
       .sort((a, b) => a.start.getTime() - b.start.getTime());
@@ -1409,7 +1463,7 @@ export class OrbitalRelationsCore {
       const pair = this.resolveRingOrbitPair(node, other);
       if (!pair) { continue; }
 
-      const band = this.ringContactBand(node, other);
+      const band = this.ringContactBand(node, other, pair.selfRangeKm, pair.partnerRangeKm);
       if (!(band.maxKm > 0)) { continue; }
 
       // Cheap pre-filter: the pair's true minimum separation must come within contact range

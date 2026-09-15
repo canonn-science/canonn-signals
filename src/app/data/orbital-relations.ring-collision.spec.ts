@@ -115,12 +115,47 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(service.detectRingCollisionStatus(planetA, now).isCandidate).toBe(false);
   });
 
-  it('does not flag a collision that would require crossing a shared barycentre several levels up', () => {
-    // Mirrors the feature request's original example: bodies 1 and 2 orbit a shared barycentre,
-    // body 2 has rings, and 1a is a moon of body 1 (not of the barycentre directly). 1a and the
-    // ring don't share an immediate parent and 1a doesn't orbit the ring's host directly, so
-    // there's no single orbital frame to time this — nothing physical is being compared, so it's
-    // skipped entirely rather than guessed at.
+  it('flags a moon of one binary component reaching into the rings of the other ("nested" — the feature request\'s own example)', () => {
+    // The exact #151 scenario: bodies 1 and 2 orbit a shared barycentre, body 2 has rings, and 1a
+    // is a moon of body 1 (not of the barycentre directly). 1a's absolute motion isn't a single
+    // Kepler ellipse in this frame, so its own parent (a real sibling of body 2) is tracked
+    // instead, with 1a's own orbital reach around it folded in as an extra allowance — the
+    // periapsis/apoapsis of that reach is exact regardless of orbital orientation, unlike ring
+    // tilt. The barycentre itself is never one of the two colliding objects, only ever the shared
+    // reference 1 and 2 happen to orbit — there's still nothing physical to collide with *it*.
+    const barycentre = makeBody('Barycentre', null, { type: BODY_TYPE.Barycentre });
+    const body1 = makeBody('1', barycentre, {
+      semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+      argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+      orbitalPeriod: 0.283064148217593, timestamps: ts,
+    });
+    const body2 = makeBody('2', barycentre, {
+      semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+      argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+      orbitalPeriod: 0.283064148217593, timestamps: ts,
+    });
+    // Body 1 & 2's own separation dips to ≈15,499.9 km at their shared periapsis (see the binary
+    // test above) and rises to ≈23,172.2 km at apoapsis. 1a's own 1,000 km circular reach around
+    // body 1, combined with a small ring on body 2, brackets a band around that periapsis value —
+    // wide enough to register only near periapsis, not for the whole orbit.
+    makeRing('2 Ring', body2, 14_000, 15_000);
+    const moon1a = makeBody('1 a', body1, {
+      semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0,
+    });
+
+    const status = service.detectRingCollisionStatus(moon1a, now);
+    expect(status.isCandidate).toBe(true);
+    expect(status.partner?.name).toBe('2 Ring');
+    expect(status.self?.kind).toBe('body');
+    expect(status.nextCollision).not.toBeNull();
+    // Recurs with body 1 & 2's own shared period (6.79 hours), not 1a's own orbit.
+    expect(status.synodicPeriodDays).toBeCloseTo(0.283064148217593, 9);
+  });
+
+  it('does not flag a collision needing a shared ancestor two or more levels further up than that', () => {
+    // A moon of a moon of body 1, reaching toward body 2's rings — one hop further than the
+    // nested case above resolves. Still nothing physical is being compared at that remove, so
+    // it's skipped entirely rather than guessed at.
     const barycentre = makeBody('Barycentre', null, { type: BODY_TYPE.Barycentre });
     const body1 = makeBody('1', barycentre, {
       semiMajorAxis: 0.01, orbitalEccentricity: 0, orbitalPeriod: 10,
@@ -131,12 +166,10 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
       meanAnomaly: 0, argOfPeriapsis: 180, ascendingNode: 0, timestamps: ts,
     });
     makeRing('2 Ring', body2, 50_000, 100_000);
-    const moon1a = makeBody('1 a', body1, {
-      semiMajorAxis: 3_000_000 / KM_PER_AU, orbitalEccentricity: 0, orbitalPeriod: 2,
-      meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0, timestamps: ts,
-    });
+    const moon1a = makeBody('1 a', body1, { semiMajorAxis: 3_000_000 / KM_PER_AU, orbitalEccentricity: 0 });
+    const moon1aMoon = makeBody('1 a 1', moon1a, { semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0 });
 
-    expect(service.detectRingCollisionStatus(moon1a, now).isCandidate).toBe(false);
+    expect(service.detectRingCollisionStatus(moon1aMoon, now).isCandidate).toBe(false);
   });
 
   it('flags two components of a binary — same period, 180° opposed, orbiting a shared barycentre — whose rings collide near their shared periapsis', () => {
