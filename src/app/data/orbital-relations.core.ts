@@ -980,8 +980,12 @@ export class OrbitalRelationsCore {
       if (s < initBestS) { initBestS = s; initBestT = t; }
     }
 
-    // Step 2: refine the coarse best with ±½syn halving to sub-second precision.
-    const ref = this.zoomToMinimum(sep, initBestT, synodicMs / 2);
+    // Equal-period pairs repeat every orbit. Use bracketed refinement for that bounded
+    // cycle; retain the broad zoom for unequal periods (potentially many fast orbits).
+    const minimum = a.orbitalPeriod === b.orbitalPeriod
+      ? (t: number) => this.periodicMinimum(sep, t, synodicMs / 2)
+      : (t: number) => this.zoomToMinimum(sep, t, synodicMs / 2);
+    const ref = minimum(initBestT);
 
     // Step 3: step backward in synodic-period increments until t < now.
     let t0 = ref.t;
@@ -1001,7 +1005,7 @@ export class OrbitalRelationsCore {
       // Stop once conjunctions march past the caller's time horizon (later ones only recede
       // further). Used by the simultaneity scan to bound work to the next N days.
       if (candidateMs - now > horizonMs) { break; }
-      const min = this.zoomToMinimum(sep, candidateMs, synodicMs / 2);
+      const min = minimum(candidateMs);
       const { didExpensiveWork } = this.appendMinimumWindows(sep, min.t, min.sepKm, contactKm, minContactKm, stepMs, maxSpanMs, now, count, b.name, results);
       // See MAX_EXPENSIVE_CONTACT_ATTEMPTS: caps a pair whose every conjunction pays the full
       // edge-search cost without ever resolving a window from running all 300 attempts anyway.
@@ -1032,6 +1036,68 @@ export class OrbitalRelationsCore {
         if (s < bestS) { bestS = s; bestT = t; }
       }
       half /= 2;
+    }
+    return { t: bestT, sepKm: bestS };
+  }
+
+  /**
+   * Refine all sampled basins of an equal-period pair using golden-section search.
+   * These pairs repeat over one orbital period, so the coarse scan covers their cycle.
+   * Unequal-period and nested searches retain the wider iterative zoom: their initial
+   * windows can span many fast orbits, whose narrow minima need repeated coarse scans.
+   * Retain the best evaluated point, including endpoints, so refinement cannot worsen
+   * the coarse result. The final bracket is narrower than one millisecond.
+   */
+  private periodicMinimum(sep: (tMs: number) => number, centerMs: number, halfMs: number): { t: number; sepKm: number } {
+    const STEPS = 2000;
+    let bestT = centerMs;
+    let bestS = sep(centerMs);
+    if (!(halfMs > 0)) { return { t: bestT, sepKm: bestS }; }
+    const lo = centerMs - halfMs;
+    const step = 2 * halfMs / STEPS;
+    const evaluate = (t: number): number => {
+      const s = sep(t);
+      if (s < bestS) { bestS = s; bestT = t; }
+      return s;
+    };
+    // Refine every sampled local minimum, not only the lowest coarse sample. A
+    // narrow, deeper dip can sample higher than a broad, shallower neighbouring dip.
+    const seeds: number[] = [];
+    let previousPrevious = evaluate(lo);
+    let previous = evaluate(lo + step);
+    if (previousPrevious < previous) { seeds.push(lo); }
+    for (let i = 2; i <= STEPS; i++) {
+      const current = evaluate(lo + i * step);
+      if (previous <= previousPrevious && previous <= current
+        && (previous < previousPrevious || previous < current)) {
+        seeds.push(lo + (i - 1) * step);
+      }
+      previousPrevious = previous;
+      previous = current;
+    }
+    if (previous < previousPrevious) { seeds.push(lo + STEPS * step); }
+
+    const ratio = (Math.sqrt(5) - 1) / 2;
+    for (const seed of seeds) {
+      let left = seed - step;
+      let right = seed + step;
+      let x1 = right - ratio * (right - left);
+      let x2 = left + ratio * (right - left);
+      let s1 = evaluate(x1);
+      let s2 = evaluate(x2);
+      for (let i = 0; i < 80 && right - left > 1; i++) {
+        if (s1 <= s2) {
+          right = x2;
+          x2 = x1; s2 = s1;
+          x1 = right - ratio * (right - left);
+          s1 = evaluate(x1);
+        } else {
+          left = x1;
+          x1 = x2; s1 = s2;
+          x2 = left + ratio * (right - left);
+          s2 = evaluate(x2);
+        }
+      }
     }
     return { t: bestT, sepKm: bestS };
   }

@@ -230,6 +230,26 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(status.nextCollision!.minSeparationKm).toBeGreaterThan(15_000);
     expect(status.upcomingCollisions.length).toBeGreaterThan(0);
 
+    // Fixed-epoch regression baseline recorded before optimizing minimum refinement.
+    // Preserve all ten windows, including the short gap through the rings' inner holes.
+    const expectedWindows = [
+      ['2026-08-17T21:51:04.156Z', '2026-08-17T21:54:57.616Z'],
+      ['2026-08-17T22:10:12.333Z', '2026-08-17T22:14:05.793Z'],
+      ['2026-08-18T04:38:40.898Z', '2026-08-18T04:42:34.359Z'],
+      ['2026-08-18T04:57:49.075Z', '2026-08-18T05:01:42.536Z'],
+      ['2026-08-18T11:26:17.641Z', '2026-08-18T11:30:11.101Z'],
+      ['2026-08-18T11:45:25.818Z', '2026-08-18T11:49:19.278Z'],
+      ['2026-08-18T18:13:54.383Z', '2026-08-18T18:17:47.844Z'],
+      ['2026-08-18T18:33:02.560Z', '2026-08-18T18:36:56.021Z'],
+      ['2026-08-19T01:01:31.126Z', '2026-08-19T01:05:24.586Z'],
+      ['2026-08-19T01:20:39.302Z', '2026-08-19T01:24:32.763Z'],
+    ];
+    expect(status.upcomingCollisions).toHaveLength(expectedWindows.length);
+    status.upcomingCollisions.forEach((window, i) => {
+      expect(Math.abs(window.start.getTime() - Date.parse(expectedWindows[i][0]))).toBeLessThanOrEqual(1);
+      expect(Math.abs(window.end.getTime() - Date.parse(expectedWindows[i][1]))).toBeLessThanOrEqual(1);
+    });
+
     // The other ring reports the same collision from its side.
     const status2 = service.detectRingCollisionStatus(ring2, now);
     expect(status2.isCandidate).toBe(true);
