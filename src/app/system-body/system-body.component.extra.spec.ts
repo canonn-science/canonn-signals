@@ -1421,6 +1421,37 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(dialogOpenCalls).toBe(before);
     });
 
+    it('resolves a "nested" collision partner (a sibling of this body\'s own parent, not a direct sibling) for the partner panel and distance diagram', async () => {
+      // Body 2 is not among moon 1a's own siblings (moon 1a has none) — it's a sibling of moon
+      // 1a's parent, body 1, reachable only via OrbitalRelationsCore.nestedCollisionPartners.
+      const grandparent = makeBody({ name: 'Barycentre', bodyId: 0 });
+      const body1 = makeBody({ name: '1' }, grandparent);
+      const body2 = makeBody({ name: '2' }, grandparent);
+      grandparent.subBodies = [body1, body2];
+      const moon1a = makeBody({ name: '1 a' }, body1);
+      body1.subBodies = [moon1a];
+
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+      render(moon1a);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: '2', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 1, minSeparationKm: 1000,
+        },
+      });
+
+      await component.showCollisionDialog();
+      expect(lastDialogData().bodyName).toBe('1 a');
+      expect(lastDialogData().partnerName).toBe('2');
+      // Before the fix, siblings only searched body.parent.subBodies (empty for 1a), so this
+      // would silently resolve to null and the diagram would drop the only partner entirely.
+      expect(lastDialogData().partnerInfo).not.toBeNull();
+      expect(lastDialogData().partnerInfos.find((p: { name: string }) => p.name === '2')?.info).not.toBeNull();
+      expect(lastDialogData().separationDiagram).not.toBeNull();
+    });
+
     it('formats the badge countdown in days, adding years past a year, and flags in-progress', () => {
       render(makeBody({}));
       expect(component.formatCollisionCountdown(-1)).toBe('in progress now');
