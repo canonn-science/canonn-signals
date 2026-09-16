@@ -1006,6 +1006,14 @@ export class OrbitalRelationsCore {
    * by marching in fixed synodic-period steps) and {@link nestedContactWindows} (which finds them
    * by scanning a dense local-minima search instead) — everything downstream of "here is a
    * conjunction's minimum" is identical between the two.
+   *
+   * Returns whether the forward-most edge search came back null — i.e. contact is still open
+   * going forward, {@link contactCrossing} couldn't find where it ends within `maxSpanMs`. A
+   * marching caller ({@link nextContacts}) doesn't need this (it always advances a full synodic
+   * period next regardless); a dense-scan caller ({@link nestedContactWindows}) does — without it,
+   * every subsequent sample still inside that same unresolved stretch would re-trigger the same
+   * expensive, equally-fruitless edge search, since a null edge is never recorded to de-duplicate
+   * against the way a resolved one is.
    */
   private appendMinimumWindows(
     sep: (tMs: number) => number,
@@ -1014,16 +1022,16 @@ export class OrbitalRelationsCore {
     stepMs: number, maxSpanMs: number,
     now: number, count: number, partnerName: string,
     results: CollisionWindow[],
-  ): void {
+  ): boolean {
     // Allow minT to be slightly before now: a contact whose minimum lands at now±ε (e.g. bodies
     // aligned at the reference epoch) must not be discarded. We only reject a conjunction whose
     // minimum is older than maxSpanMs; contacts whose window has already ended are filtered below
     // after computing endMs.
-    if (minT < now - maxSpanMs || !Number.isFinite(minSepKm)) { return; }
-    if (minSepKm > contactKm) { return; }
+    if (minT < now - maxSpanMs || !Number.isFinite(minSepKm)) { return false; }
+    if (minSepKm > contactKm) { return false; }
 
     // De-duplicate: skip if this minimum falls inside the last recorded contact window.
-    if (results.length > 0 && minT <= results[results.length - 1].end.getTime()) { return; }
+    if (results.length > 0 && minT <= results[results.length - 1].end.getTime()) { return false; }
 
     // The conjunction's contact windows. With the default minContactKm of 0 there is exactly
     // one — separation simply dips below contactKm and back, bottoming out at minT — but a
@@ -1073,6 +1081,10 @@ export class OrbitalRelationsCore {
         partnerName, combinedRadiiKm: contactKm,
       });
     }
+
+    // The forward-most edge is always the last entry's endMs (the "not in the hole" case has one
+    // entry; the split-window case's second, receding entry closes at the true outer edge).
+    return conjunctionWindows[conjunctionWindows.length - 1].endMs === null;
   }
 
   /**
@@ -1111,13 +1123,24 @@ export class OrbitalRelationsCore {
     // Three-point local-minimum scan: a sample that's no larger than both neighbours seeds a
     // zoom-refine to the true nearby minimum. Every candidate is refined (not just ones already
     // under contactKm) since a coarse sample can sit noticeably above the true dip beside it.
+    //
+    // `suppressed` guards against a genuinely wide contact — one that outlasts maxSpanMs, so
+    // appendMinimumWindows can't bound its forward edge and returns true. Without this, every
+    // later sample still inside that same still-unresolved stretch would trigger its own full,
+    // equally fruitless edge search (a null edge is never recorded to de-duplicate against the
+    // way a resolved one is) — turning one wide contact into thousands of expensive searches
+    // instead of one. While suppressed, only the (already-computed) coarse sample is checked
+    // against contactKm — cheap — until it naturally exits, at which point detection resumes.
     let prevPrev = sep(scanStart);
     let prev = sep(scanStart + stepMs);
+    let suppressed = false;
     for (let t = scanStart + 2 * stepMs; t <= scanEnd && results.length < count; t += stepMs) {
       const curr = sep(t);
-      if (prev <= prevPrev && prev <= curr) {
+      if (suppressed) {
+        if (curr > contactKm) { suppressed = false; }
+      } else if (prev <= prevPrev && prev <= curr) {
         const refined = this.zoomToMinimum(sep, t - stepMs, stepMs);
-        this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
+        suppressed = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
       }
       prevPrev = prev; prev = curr;
     }

@@ -1051,6 +1051,50 @@ describe('OrbitalRelationsService', () => {
       const windows = service.upcomingContactsWithin(a, 90, nowHere);
       expect(windows).toEqual([]);
     });
+
+    it('bounds the number of expensive edge searches for a nested pair whose contact genuinely outlasts one fast period', () => {
+      // Regression test for a real production slowdown: a "nested" moon-vs-sibling pair whose
+      // true contact duration exceeds nestedContactWindows' own search bound (one fast period —
+      // see the test above) used to re-run the full, equally fruitless edge search on *every*
+      // subsequent dense-scan sample still inside that same unresolved stretch, because a null
+      // (unresolved) edge was never recorded to de-duplicate against the way a resolved one is.
+      // For this exact setup that meant ~2,100 contactCrossing calls and ~24 seconds — appendMinimumWindows
+      // now reports back when an edge came back unresolved so the scan can suppress re-triggering
+      // until separation naturally rises back above the threshold, cutting this to ~300 calls.
+      const nowHere = Date.parse('2026-06-27T00:00:00Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Star', id64: 0n, subType: '', type: 'Star' } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const shared = {
+        orbitalEccentricity: 0.9, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0,
+        meanAnomaly: 180, semiMajorAxis: 1, timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      };
+      const bodyA: SystemBody = {
+        bodyData: { bodyId: 1, name: 'A', id64: 0n, subType: '', type: 'Planet', ...shared, orbitalPeriod: 100, radius: 0 } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const bodyB: SystemBody = {
+        bodyData: { bodyId: 2, name: 'B', id64: 0n, subType: '', type: 'Planet', ...shared, orbitalPeriod: 250, radius: 140_000_000 } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      barycentre.subBodies = [bodyA, bodyB];
+      const moon: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: 'A moon', id64: 0n, subType: '', type: 'Planet',
+          orbitalEccentricity: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0, meanAnomaly: 0,
+          semiMajorAxis: 100 / 149597870.7, orbitalPeriod: 1, radius: 140_000_000, timestamps: shared.timestamps,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: bodyA,
+      };
+      bodyA.subBodies = [moon];
+
+      const spy = vi.spyOn(Object.getPrototypeOf(service), 'contactCrossing' as any);
+      const status = service.detectCollisionStatus(moon, nowHere);
+
+      expect(status.isCandidate).toBe(true);
+      expect(spy.mock.calls.length).toBeLessThan(500);
+    });
   });
 
   describe('simultaneousCollisionsWithin', () => {
