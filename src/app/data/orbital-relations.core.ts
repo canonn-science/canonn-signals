@@ -1349,6 +1349,65 @@ export class OrbitalRelationsCore {
   }
 
   /**
+   * True when `a` and `b` — always direct siblings under a shared parent, in every caller —
+   * themselves have a genuine orbit-curve proximity: the same radial-range pre-filter then exact
+   * 3D {@link minOrbitDistanceKm} check {@link collisionPartners} itself uses, *without*
+   * `collisionPartners`' equal-period (Trojan/co-orbital) exclusion. That exclusion exists there
+   * to stop a phase-locked binary from being reported as directly colliding (it never will — the
+   * phase is fixed), but a locked binary's own moon can still independently cross the other side
+   * via its composite motion (see the "flags a moon colliding with its parent's sibling body
+   * directly" spec) — reusing `collisionPartners`' own output as this gate would wrongly suppress
+   * that already-supported case, so this checks the raw geometry instead.
+   *
+   * Gates {@link nestedCollisionPartners}, {@link cousinCollisionPartners}, and
+   * {@link nieceNephewCollisionPartners}: searching a whole family branch — every one of a
+   * sibling's own children, potentially several — is only worth paying for when that sibling is
+   * itself at least a plausible candidate against the anchor body. Without this, a body with many
+   * siblings (each with their own children) pays for a full nested-motion search against every
+   * sibling's every child regardless of whether that sibling is anywhere near it at all.
+   */
+  private siblingsInReach(a: SystemBody, b: SystemBody): boolean {
+    const ad = a.bodyData, bd = b.bodyData;
+    const contactKm = (ad.radius ?? 0) + (bd.radius ?? 0);
+    if (!(contactKm > 0)) { return false; }
+    const rangeA = this.orbitalRadialRange(ad);
+    const rangeB = this.orbitalRadialRange(bd);
+    if (!rangeA || !rangeB) { return false; }
+    const radialGapAu = Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo);
+    if (radialGapAu > contactKm / KM_PER_AU) { return false; }
+    return this.minOrbitDistanceKm(ad, bd) <= contactKm;
+  }
+
+  /**
+   * The ring half of {@link siblingsInReach}'s gate: true when either side's rings genuinely reach
+   * the other (body-on-ring or ring-on-ring), `a` and `b` again always direct siblings. Reuses
+   * {@link ringContactBand} + {@link resolveRingOrbitPair} + {@link minOrbitDistanceKm} — the
+   * `'simple'` case always applies here since `a`/`b` share a parent in every caller, so no new
+   * ring physics and no timing/`now` needed, matching the rest of this gate. A `'nested'` ring pair
+   * (needs a real timed search to resolve at all) is conservatively left ungated — this only ever
+   * widens the search, never narrows it below what {@link nestedPairOutOfReach} already allows.
+   */
+  private ringsCollide(a: SystemBody, b: SystemBody): boolean {
+    const reallyCollides = (x: SystemBody, y: SystemBody): boolean => {
+      const band = this.ringContactBand(x, y);
+      if (!(band.maxKm > 0)) { return false; }
+      const pair = this.resolveRingOrbitPair(x, y, band.maxKm);
+      return !!pair && pair.kind === 'simple' && this.minOrbitDistanceKm(pair.a, pair.b) <= band.maxKm;
+    };
+    const aRings = a.subBodies.filter(n => n.bodyData.type === BODY_TYPE.Ring);
+    const bRings = b.subBodies.filter(n => n.bodyData.type === BODY_TYPE.Ring);
+    if (aRings.length === 0 && bRings.length === 0) { return false; }
+    for (const ring of aRings) {
+      if (reallyCollides(ring, b)) { return true; }
+      for (const bRing of bRings) { if (reallyCollides(ring, bRing)) { return true; } }
+    }
+    for (const ring of bRings) {
+      if (reallyCollides(a, ring)) { return true; }
+    }
+    return false;
+  }
+
+  /**
    * Every "aunt/uncle" collision candidate for `body`: a sibling of `body`'s own parent (i.e. a
    * body two colliding siblings would each call a "sibling"), checked against `body`'s exact
    * composite motion — its own orbit superposed on its parent's (see {@link nestedPositionFunction})
@@ -1364,11 +1423,15 @@ export class OrbitalRelationsCore {
   private nestedCollisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
     const grandparent = body.parent?.parent;
     if (!body.parent || !grandparent) { return []; }
+    const parent = body.parent;
 
     const partners: CollisionPartnerDescriptor[] = [];
     for (const aunt of grandparent.subBodies) {
-      if (aunt === body.parent) { continue; }
+      if (aunt === parent) { continue; }
       if (aunt.bodyData.type === BODY_TYPE.Ring || aunt.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+      // Only worth searching this whole branch — aunt's own composite-motion search below — when
+      // body's own parent and this aunt are themselves a plausible pair. See siblingsInReach.
+      if (!this.siblingsInReach(parent, aunt) && !this.ringsCollide(parent, aunt)) { continue; }
       const contactKm = (body.bodyData.radius ?? 0) + (aunt.bodyData.radius ?? 0);
       if (!(contactKm > 0)) { continue; }
 
@@ -1406,12 +1469,16 @@ export class OrbitalRelationsCore {
   private cousinCollisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
     const grandparent = body.parent?.parent;
     if (!body.parent || !grandparent) { return []; }
-    const bodyRange = this.nestedRangeKm(body.bodyData, body.parent.bodyData);
+    const parent = body.parent;
+    const bodyRange = this.nestedRangeKm(body.bodyData, parent.bodyData);
 
     const partners: CollisionPartnerDescriptor[] = [];
     for (const aunt of grandparent.subBodies) {
-      if (aunt === body.parent) { continue; }
+      if (aunt === parent) { continue; }
       if (aunt.bodyData.type === BODY_TYPE.Ring || aunt.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+      // Only worth searching this aunt's children as cousins when body's own parent and this
+      // aunt are themselves a plausible pair — see siblingsInReach.
+      if (!this.siblingsInReach(parent, aunt) && !this.ringsCollide(parent, aunt)) { continue; }
 
       for (const cousin of aunt.subBodies) {
         if (cousin.bodyData.type === BODY_TYPE.Ring || cousin.bodyData.type === BODY_TYPE.Barycentre) { continue; }
@@ -1461,6 +1528,9 @@ export class OrbitalRelationsCore {
     for (const sibling of body.parent.subBodies) {
       if (sibling === body) { continue; }
       if (sibling.bodyData.type === BODY_TYPE.Ring || sibling.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+      // Only worth searching this sibling's children as nieces/nephews when body and this
+      // sibling are themselves a plausible pair — see siblingsInReach.
+      if (!this.siblingsInReach(body, sibling) && !this.ringsCollide(body, sibling)) { continue; }
 
       for (const niece of sibling.subBodies) {
         if (niece.bodyData.type === BODY_TYPE.Ring || niece.bodyData.type === BODY_TYPE.Barycentre) { continue; }

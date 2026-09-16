@@ -1142,6 +1142,68 @@ describe('OrbitalRelationsService', () => {
       expect(cousinWindow!.days).toBeLessThan(230);
     });
 
+    it('does not search a family branch whose own root siblings are radially-overlapping but 3D-apart', () => {
+      // A and B share a radial band (same semiMajorAxis) but a relative tilt holds their orbit
+      // curves apart in 3D — the exact fixture from "does not flag radially-overlapping orbits
+      // that a relative tilt holds 3D-apart" above, so A/B are a genuine non-candidate pair, not
+      // just "far apart" (which the existing cheap radial pre-filter already handles on its own).
+      // Each has a moon with a large-enough orbit that the per-candidate nestedPairOutOfReach
+      // reach filter alone would *not* reject a nested/cousin/niece-nephew search between them —
+      // only the new sibling-proximity gate does. Regression test for the "way too greedy" report:
+      // before this gate, every one of a body's siblings' whole moon families was searched
+      // regardless of whether that sibling was anywhere near it.
+      const star: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Star', id64: 0n, subType: '', type: BODY_TYPE.Star } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const ts = { meanAnomaly: '2026-01-01T00:00:00Z' } as CanonnBiostatsBody['timestamps'];
+      const bodyA: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: 'A', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.001, radius: 3000,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: star,
+      };
+      const bodyB: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: 'B', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 11, semiMajorAxis: 1, orbitalEccentricity: 0.001, radius: 3000,
+          orbitalInclination: 60, ascendingNode: 90, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: star,
+      };
+      star.subBodies = [bodyA, bodyB];
+      expect(service.detectCollisionStatus(bodyA, Date.now()).isCandidate).toBe(false); // sanity: A/B don't collide
+      const moonA: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: 'A a', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 5, semiMajorAxis: 0.05, orbitalEccentricity: 0, radius: 1000,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: bodyA,
+      };
+      const moonB: SystemBody = {
+        bodyData: {
+          bodyId: 4, name: 'B a', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 5, semiMajorAxis: 0.05, orbitalEccentricity: 0, radius: 1000,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: bodyB,
+      };
+      bodyA.subBodies = [moonA];
+      bodyB.subBodies = [moonB];
+
+      const priv = service as unknown as {
+        nestedCollisionPartners(body: SystemBody): unknown[];
+        cousinCollisionPartners(body: SystemBody): unknown[];
+        nieceNephewCollisionPartners(body: SystemBody): unknown[];
+      };
+      expect(priv.nestedCollisionPartners(moonA)).toEqual([]); // moonA vs aunt B
+      expect(priv.cousinCollisionPartners(moonA)).toEqual([]); // moonA vs cousin moonB (via aunt B)
+      expect(priv.nieceNephewCollisionPartners(bodyA)).toEqual([]); // A vs niece moonB (via sibling B)
+    });
+
     /** The same real Swoiwns TR-T b8-1 6/6a/6b/6aa/6ba family used by the "cousin" test above. */
     function swoiwnsFamily(): { grandparent: SystemBody; parentA: SystemBody; parentB: SystemBody; cousinA: SystemBody; cousinB: SystemBody } {
       const ts = { meanAnomaly: '2026-03-31T02:37:13Z' } as CanonnBiostatsBody['timestamps'];
