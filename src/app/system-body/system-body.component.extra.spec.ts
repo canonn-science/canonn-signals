@@ -32,6 +32,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
     detectRingCollisionStatus: ReturnType<typeof vi.fn>;
     ringContactsWithin: ReturnType<typeof vi.fn>;
     ringSeparationSeries: ReturnType<typeof vi.fn>;
+    ringCollisionDiagram: ReturnType<typeof vi.fn>;
   };
 
   /** The inner data the most recent dialog.open routes to its lazily-loaded dialog body. */
@@ -56,6 +57,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
       }),
       ringContactsWithin: vi.fn().mockResolvedValue([]),
       ringSeparationSeries: vi.fn().mockResolvedValue([]),
+      ringCollisionDiagram: vi.fn().mockResolvedValue({ series: [], contacts: [] }),
     };
     const dialogStub = {
       open: (component: unknown, config: { data?: any } = {}) => {
@@ -1500,17 +1502,19 @@ describe('SystemBodyComponent (extended coverage)', () => {
 
       let resolveStatus!: (status: any) => void;
       orbitalWorkerStub.detectRingCollisionStatus.mockReturnValueOnce(new Promise(resolve => { resolveStatus = resolve; }));
-      orbitalWorkerStub.ringSeparationSeries.mockResolvedValue([
-        { tMs: now, sepKm: 100 },
-        { tMs: now + 60_000, sepKm: 90 },
-      ]);
-      orbitalWorkerStub.ringContactsWithin.mockResolvedValue([{
-        start: new Date(now + 10_000),
-        end: new Date(now + 20_000),
-        days: 10 / 86_400,
-        minSeparationKm: 90,
-        minSeparationAt: new Date(now + 20_000),
-      }]);
+      orbitalWorkerStub.ringCollisionDiagram.mockResolvedValue({
+        series: [
+          { tMs: now, sepKm: 100 },
+          { tMs: now + 60_000, sepKm: 90 },
+        ],
+        contacts: [{
+          start: new Date(now + 10_000),
+          end: new Date(now + 20_000),
+          days: 10 / 86_400,
+          minSeparationKm: 90,
+          minSeparationAt: new Date(now + 20_000),
+        }],
+      });
 
       render(focus, { systemKey: 1n, edGalaxyData: { Name: 'Test System' } });
       expect(fixture.nativeElement.textContent).not.toContain('Ring Collision');
@@ -1539,7 +1543,9 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(ringBadge).toBeTruthy();
 
       await component.showRingCollisionDialog();
-      expect(orbitalWorkerStub.ringSeparationSeries).toHaveBeenCalledWith(focus, partnerRing, now, now + 2 * 24 * 60 * 60 * 1000 * 10, 1000);
+      expect(orbitalWorkerStub.ringCollisionDiagram).toHaveBeenCalledWith(
+        focus, partnerRing, now, now + 2 * 24 * 60 * 60 * 1000 * 10, 1000, 2 * 10, now,
+      );
       expect(lastDialogData().partner.path).toEqual([1, 0]);
       expect(lastDialogData().separationDiagram.series[0].partnerName).toBe('A Ring');
     });

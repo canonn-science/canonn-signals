@@ -314,4 +314,42 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(durationMinutes).toBeGreaterThan(0.5);
     expect(durationMinutes).toBeLessThan(15);
   });
+
+  it('prunes a narrower ring via its host\'s widest ring, without corrupting other partners\' results', () => {
+    // PlanetH hosts two rings: a narrow "A Ring" and a wider "B Ring" that reaches farther out. A
+    // moon orbiting PlanetH directly sits right on B Ring's band, so it should be flagged as a
+    // ring-collision candidate against B Ring specifically, never reaching A Ring's much smaller
+    // radius at all. PlanetFar is a distant sibling of PlanetH whose orbit can never reach even B
+    // Ring's (wider) band, let alone A Ring's — so the outer-ring-first pruning should rule out
+    // *both* rings against PlanetFar using only B Ring's cheap reject, while leaving B Ring's real
+    // collision with the moon untouched. This guards against a cache keyed by ring alone (ignoring
+    // which "other" body it was checked against) silently applying one partner's verdict to another.
+    const star = makeBody('Star', null, { type: BODY_TYPE.Star });
+    const planetH = makeBody('PlanetH', star, {
+      semiMajorAxis: 0.01, orbitalEccentricity: 0, orbitalInclination: 0,
+      argOfPeriapsis: 0, ascendingNode: 0, meanAnomaly: 0, orbitalPeriod: 100, timestamps: ts,
+    });
+    makeRing('A Ring', planetH, 50_000, 50_050);
+    makeRing('B Ring', planetH, 100_000, 100_050);
+    // Periapsis (100,000 km) sits just inside B Ring's band and meanAnomaly 0 places the moon
+    // there right now (as the very first test in this file does); apoapsis (150,000 km) clears
+    // the band entirely, so the moon crosses the band's edges each orbit rather than sitting
+    // inside it permanently — giving the contact search a real entry/exit to find.
+    const moon = makeBody('Moon', planetH, {
+      semiMajorAxis: 125_000 / KM_PER_AU, orbitalEccentricity: 0.2, orbitalInclination: 0,
+      argOfPeriapsis: 0, ascendingNode: 0, meanAnomaly: 0, orbitalPeriod: 1, timestamps: ts,
+    });
+    const planetFar = makeBody('PlanetFar', star, {
+      semiMajorAxis: 1000, orbitalEccentricity: 0, orbitalInclination: 0,
+      argOfPeriapsis: 0, ascendingNode: 0, meanAnomaly: 0, orbitalPeriod: 100_000, timestamps: ts,
+    });
+
+    const moonStatus = service.detectRingCollisionStatus(moon, now);
+    expect(moonStatus.isCandidate).toBe(true);
+    expect(moonStatus.partner?.name).toBe('PlanetH B Ring');
+
+    const ringAStatus = service.detectRingCollisionStatus(planetH.subBodies[0], now);
+    expect(ringAStatus.isCandidate).toBe(false);
+    expect(service.detectRingCollisionStatus(planetFar, now).isCandidate).toBe(false);
+  });
 });

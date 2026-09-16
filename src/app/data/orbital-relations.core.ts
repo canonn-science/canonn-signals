@@ -1725,6 +1725,34 @@ export class OrbitalRelationsCore {
   }
 
   /**
+   * Cheaply proves `ring` can never contact `other`, without paying for a contact-window search:
+   * either there's no tractable orbital frame at all ({@link resolveRingOrbitPair} returns null,
+   * which already runs {@link nestedPairOutOfReach}'s cheap nested-side reject internally), or —
+   * for a `'simple'` pair — the two orbits' periapsis/apoapsis ranges can never come within the
+   * contact band regardless of phase. A `false` result only means "not ruled out this way", not
+   * that the pair actually touches.
+   *
+   * Both rejects are one-directional in the same useful way: they only ever compare against
+   * {@link ringContactBand}'s `maxKm` (the *largest* separation that could still count as
+   * contact), so shrinking `maxKm` — which is exactly what happens when this same test is reused
+   * for a *narrower* ring of the same host, see {@link ringCollisionStatusesFor} — can only make
+   * the reject easier to trigger, never harder. That's what lets a widest-ring result stand in for
+   * every narrower ring sharing its host and orbit.
+   */
+  private ringPairCheaplyUnreachable(ring: SystemBody, other: SystemBody): boolean {
+    const band = this.ringContactBand(ring, other);
+    if (!(band.maxKm > 0)) { return true; }
+    const pair = this.resolveRingOrbitPair(ring, other, band.maxKm);
+    if (!pair) { return true; }
+    if (pair.kind !== 'simple') { return false; }
+    const rangeA = this.orbitalRadialRange(pair.a);
+    const rangeB = this.orbitalRadialRange(pair.b);
+    if (!rangeA || !rangeB) { return false; }
+    const radialGapAu = Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo);
+    return radialGapAu > band.maxKm / KM_PER_AU;
+  }
+
+  /**
    * Centre-to-centre distance-over-time samples for a ring-collision pair's distance diagram —
    * the ring-collision analogue of {@link separationSeries}, resolving the pair via
    * {@link resolveRingOrbitPair} first so it also covers a body orbiting directly around the
@@ -1761,6 +1789,29 @@ export class OrbitalRelationsCore {
   }
 
   /**
+   * Combines {@link ringSeparationSeries} and {@link ringContactsWithin} for the ring-collision
+   * dialog's diagram into one call, so opening it costs one tree walk instead of two: across the
+   * worker boundary each of those methods is handed its own rehydrated copy of the whole system
+   * tree, so calling both independently (as `Promise.all([ringSeparationSeries(...),
+   * ringContactsWithin(...)])` used to) serializes, structured-clones, and rehydrates the entire
+   * system twice for what is conceptually one "build this pair's diagram" request.
+   */
+  ringCollisionDiagram(
+    self: SystemBody,
+    partner: SystemBody,
+    startMs: number,
+    endMs: number,
+    samples: number,
+    horizonDays: number,
+    now: number = Date.now(),
+  ): { series: SeparationSample[]; contacts: CollisionWindow[] } {
+    return {
+      series: this.ringSeparationSeries(self, partner, startMs, endMs, samples),
+      contacts: this.ringContactsWithin(self, partner, horizonDays, now),
+    };
+  }
+
+  /**
    * Flags a body or ring as a "ring collision" candidate only once an actual, timed contact
    * window has been found with a ring belonging to a *different* body — either a solid body's
    * orbit passing through another body's ring ("Body on Ring") or two different bodies' rings
@@ -1786,6 +1837,39 @@ export class OrbitalRelationsCore {
   private ringCollisionStatusesFor(candidates: SystemBody[], now: number): RingCollisionStatus[] {
     const statuses = candidates.map(() => this.emptyRingCollisionStatus());
     if (!candidates.some(candidate => candidate.bodyData.type === BODY_TYPE.Ring)) { return statuses; }
+
+    // Outer-ring-first pruning: every ring under the same host shares that host's exact orbit —
+    // only each ring's own inner/outer radius (and so its contact band) differs — so if the
+    // *widest* ring of a multi-ring host is cheaply proven unreachable against some partner (see
+    // ringPairCheaplyUnreachable's monotonic-in-maxKm argument), every narrower ring of that same
+    // host is unreachable against that same partner too, and the pair can be skipped without
+    // paying for its own band/orbit-pair/prefilter work at all. Hosts with only one ring get no
+    // entry here, since there's nothing narrower to prune.
+    const widestRingOf = new Map<SystemBody, SystemBody>();
+    {
+      const ringsByHost = new Map<SystemBody, SystemBody[]>();
+      for (const candidate of candidates) {
+        if (candidate.bodyData.type === BODY_TYPE.Ring && candidate.parent) {
+          const rings = ringsByHost.get(candidate.parent);
+          if (rings) { rings.push(candidate); } else { ringsByHost.set(candidate.parent, [candidate]); }
+        }
+      }
+      for (const rings of ringsByHost.values()) {
+        if (rings.length < 2) { continue; }
+        widestRingOf.set(rings[0].parent!, rings.reduce((a, b) => (b.bodyData.outerRadius ?? 0) > (a.bodyData.outerRadius ?? 0) ? b : a));
+      }
+    }
+    const widestUnreachableCache = new Map<SystemBody, Map<SystemBody, boolean>>();
+    const isWidestUnreachable = (widest: SystemBody, other: SystemBody): boolean => {
+      let againstOther = widestUnreachableCache.get(widest);
+      if (!againstOther) { againstOther = new Map(); widestUnreachableCache.set(widest, againstOther); }
+      let result = againstOther.get(other);
+      if (result === undefined) {
+        result = this.ringPairCheaplyUnreachable(widest, other);
+        againstOther.set(other, result);
+      }
+      return result;
+    };
 
     const updateBest = (subjectIndex: number, other: SystemBody, contactKm: number, contactMinKm: number, synodicDays: number, windows: CollisionWindow[]): void => {
       const current = statuses[subjectIndex];
@@ -1815,6 +1899,11 @@ export class OrbitalRelationsCore {
         if (isRingB && nodeB.parent === nodeA) { continue; }
         if (isRingA && isRingB && nodeA.parent === nodeB.parent) { continue; }
         if (nodeB.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+
+        const widestA = isRingA ? widestRingOf.get(nodeA.parent!) : undefined;
+        if (widestA && widestA !== nodeA && isWidestUnreachable(widestA, nodeB)) { continue; }
+        const widestB = isRingB ? widestRingOf.get(nodeB.parent!) : undefined;
+        if (widestB && widestB !== nodeB && isWidestUnreachable(widestB, nodeA)) { continue; }
 
         const band = this.ringContactBand(nodeA, nodeB);
         if (!(band.maxKm > 0)) { continue; }

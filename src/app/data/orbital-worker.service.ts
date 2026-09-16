@@ -7,7 +7,7 @@ import { bodyPathFromRoot, serializeCollisionFamily, serializeSystemTree } from 
 import type { CollisionWorkerApi } from './collision-worker-api';
 
 const WORKER_CALL_TIMEOUT_MS = 30_000;
-const RING_ANALYSIS_CACHE_WINDOW_MS = 1000;
+const RING_ANALYSIS_CACHE_WINDOW_MS = 3000;
 
 /**
  * Main-thread facade for the heavy collision engine, run off the UI thread in a single shared
@@ -41,11 +41,29 @@ export class OrbitalWorkerService {
   private workerUnavailable = false;
   /** Engine instance for the inline (no-worker) fallback and for bodies with no parent. */
   private readonly inline = new OrbitalRelationsCore();
-  /** Shared per-system ring-analysis cache so one worker job feeds every recursively rendered row. */
+  /**
+   * Shared per-system ring-analysis cache so one worker job feeds every recursively rendered row.
+   * Freshness is judged by real wall-clock time elapsed since the entry was created (`createdAt`),
+   * not by how close the caller's `now` argument is to the cached one — `now` can be a simulated
+   * time (see `AppService.nowOverride`), and even when it's real, comparing two caller-supplied
+   * timestamps meant a large system whose rows took longer than the window to mount would have
+   * later rows miss the cache and each kick off their own redundant whole-tree scan. Using actual
+   * elapsed time means every row asking "now" (in whatever clock) while a scan is in flight, or
+   * shortly after one lands, shares that one result regardless of how long mounting takes.
+   */
   private readonly ringCollisionStatusCache = new WeakMap<SystemBody, {
-    now: number;
+    createdAt: number;
     promise: Promise<RingCollisionStatus[]>;
   }>();
+  /**
+   * Per-root cache of each body's index within its system's fixed flattened order, so recursively
+   * rendered rows share one tree flatten instead of each re-walking the whole tree (and doing a
+   * linear `indexOf`) just to find their own index — turning what was O(bodies²) main-thread work
+   * per system into O(bodies). Safe to keep for the root's lifetime: the flattened order only
+   * depends on tree shape, which doesn't change while a loaded system's `SystemBody` nodes are
+   * being rendered.
+   */
+  private readonly systemIndexCache = new WeakMap<SystemBody, Map<SystemBody, number>>();
 
   /** Lazily spins up the shared worker and its Comlink proxy; null when a worker can't be used. */
   private getProxy(): Comlink.Remote<CollisionWorkerApi> | null {
@@ -213,15 +231,14 @@ export class OrbitalWorkerService {
    */
   async detectRingCollisionStatus(body: SystemBody, now: number): Promise<RingCollisionStatus> {
     const root = this.systemRoot(body);
-    const bodies = this.flattenSystem(root);
-    const focusIndex = bodies.indexOf(body);
+    const focusIndex = this.indexInSystem(root, body);
     if (focusIndex < 0) { return this.inline.detectRingCollisionStatus(body, now); }
 
     const cached = this.ringCollisionStatusCache.get(root);
-    let promise = cached && Math.abs(cached.now - now) < RING_ANALYSIS_CACHE_WINDOW_MS ? cached.promise : null;
+    let promise = cached && (Date.now() - cached.createdAt) < RING_ANALYSIS_CACHE_WINDOW_MS ? cached.promise : null;
     if (!promise) {
       promise = this.detectRingCollisionStatuses(root, now);
-      this.ringCollisionStatusCache.set(root, { now, promise });
+      this.ringCollisionStatusCache.set(root, { createdAt: Date.now(), promise });
     }
     return promise.then(statuses => statuses[focusIndex] ?? this.inline.detectRingCollisionStatus(body, now));
   }
@@ -252,6 +269,35 @@ export class OrbitalWorkerService {
     );
   }
 
+  /**
+   * Off-thread {@link OrbitalRelationsCore.ringCollisionDiagram}. Combines what used to be a
+   * `Promise.all` of {@link ringSeparationSeries} and {@link ringContactsWithin} into a single
+   * worker call sharing one serialized/rehydrated copy of the system tree, instead of each of the
+   * two independently paying the full tree serialize + structured-clone + rehydrate cost for the
+   * same dialog-open request.
+   */
+  async ringCollisionDiagram(
+    self: SystemBody,
+    partner: SystemBody,
+    startMs: number,
+    endMs: number,
+    samples: number,
+    horizonDays: number,
+    now: number,
+  ): Promise<{ series: SeparationSample[]; contacts: CollisionWindow[] }> {
+    const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
+    const dto = proxy ? serializeSystemTree(self) : null;
+    const inlineCall = (): { series: SeparationSample[]; contacts: CollisionWindow[] } =>
+      this.inline.ringCollisionDiagram(self, partner, startMs, endMs, samples, horizonDays, now);
+    if (!proxy || this.workerUnavailable || !dto) { return inlineCall(); }
+    return this.runWithFallback(
+      () => proxy.ringCollisionDiagram(dto, bodyPathFromRoot(partner), startMs, endMs, samples, horizonDays, now),
+      inlineCall,
+      workerFailure,
+    );
+  }
+
   private async detectRingCollisionStatuses(body: SystemBody, now: number): Promise<RingCollisionStatus[]> {
     const proxy = this.getProxy();
     const workerFailure = this.workerFailure;
@@ -274,5 +320,15 @@ export class OrbitalWorkerService {
     const out: SystemBody[] = [root];
     for (const child of root.subBodies) { out.push(...this.flattenSystem(child)); }
     return out;
+  }
+
+  /** `body`'s index in `root`'s flattened system order, computed once per root and reused. */
+  private indexInSystem(root: SystemBody, body: SystemBody): number {
+    let index = this.systemIndexCache.get(root);
+    if (!index) {
+      index = new Map(this.flattenSystem(root).map((node, i) => [node, i]));
+      this.systemIndexCache.set(root, index);
+    }
+    return index.get(body) ?? -1;
   }
 }

@@ -22,6 +22,20 @@ export interface CollisionWorkerApi {
   ringContactsWithin(dto: SystemTreeDto, partnerPath: number[], horizonDays: number, now: number): CollisionWindow[];
   /** `partnerPath` is re-resolved against the rehydrated tree — see {@link findBodyByPath}. */
   ringSeparationSeries(dto: SystemTreeDto, partnerPath: number[], startMs: number, endMs: number, samples: number): SeparationSample[];
+  /**
+   * `partnerPath` is re-resolved against the rehydrated tree — see {@link findBodyByPath}. Combines
+   * {@link ringSeparationSeries} and {@link ringContactsWithin} against one rehydrated tree, so the
+   * ring-collision dialog's diagram needs only one round trip instead of two.
+   */
+  ringCollisionDiagram(
+    dto: SystemTreeDto,
+    partnerPath: number[],
+    startMs: number,
+    endMs: number,
+    samples: number,
+    horizonDays: number,
+    now: number,
+  ): { series: SeparationSample[]; contacts: CollisionWindow[] };
 }
 
 /**
@@ -54,6 +68,13 @@ export function createCollisionApi(core: OrbitalRelationsCore = new OrbitalRelat
       const self = rehydrateSystemTree(dto);
       const partner = findBodyByPath(self, partnerPath);
       return partner ? core.ringSeparationSeries(self, partner, startMs, endMs, samples) : [];
+    },
+    ringCollisionDiagram: (dto, partnerPath, startMs, endMs, samples, horizonDays, now) => {
+      const self = rehydrateSystemTree(dto);
+      const partner = findBodyByPath(self, partnerPath);
+      return partner
+        ? core.ringCollisionDiagram(self, partner, startMs, endMs, samples, horizonDays, now)
+        : { series: [], contacts: [] };
     },
   };
 }

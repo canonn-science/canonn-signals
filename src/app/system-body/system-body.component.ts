@@ -1588,10 +1588,9 @@ export class SystemBodyComponent implements OnChanges {
     const now = this.appService.nowOverride() ?? Date.now();
     const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
     const endMs = now + spanMs;
-    const [samples, windowContactsRaw] = await Promise.all([
-      this.orbitalWorker.ringSeparationSeries(body, partner, now, endMs, COLLISION_DIAGRAM_SAMPLES),
-      this.orbitalWorker.ringContactsWithin(body, partner, spanMs / MS_PER_DAY, now),
-    ]);
+    const { series: samples, contacts: windowContactsRaw } = await this.orbitalWorker.ringCollisionDiagram(
+      body, partner, now, endMs, COLLISION_DIAGRAM_SAMPLES, spanMs / MS_PER_DAY, now,
+    );
     if (samples.length === 0) { return null; }
 
     const windowContacts = windowContactsRaw.filter(w => w.start.getTime() <= endMs);
