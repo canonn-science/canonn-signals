@@ -192,9 +192,6 @@ type RingOrbitPair =
     /** Each side's own display name, for the resulting {@link CollisionWindow.partnerName}. */
     labelA: string;
     labelB: string;
-    /** Each side's radial reach (km) from the shared barycentre — a conservative (never too small) bound, used only as a cheap reject before the real scan; null when the underlying orbit isn't a bound ellipse. */
-    rangeA: { peri: number; apo: number } | null;
-    rangeB: { peri: number; apo: number } | null;
   };
 
 /**
@@ -1233,16 +1230,14 @@ export class OrbitalRelationsCore {
       const contactKm = (body.bodyData.radius ?? 0) + (aunt.bodyData.radius ?? 0);
       if (!(contactKm > 0)) { continue; }
 
-      const nested = this.buildNestedPair(body, body.parent, aunt);
-      if (!nested) { continue; }
-
       // Cheap radial pre-filter, mirroring collisionPartners' — a loose (never-too-small) bound
       // on the composite side's reach from the shared grandparent, so it can never miss a real
-      // collision, only skip pairs that provably can't touch.
-      if (nested.rangeA && nested.rangeB) {
-        const gapKm = Math.max(nested.rangeA.peri, nested.rangeB.peri) - Math.min(nested.rangeA.apo, nested.rangeB.apo);
-        if (gapKm > contactKm) { continue; }
-      }
+      // collision, only skip pairs that provably can't touch — checked before paying for
+      // buildNestedPair's position-function construction, not after.
+      if (this.nestedPairOutOfReach(body.bodyData, body.parent.bodyData, aunt.bodyData, contactKm)) { continue; }
+
+      const nested = this.buildNestedPair(body, body.parent, aunt);
+      if (!nested) { continue; }
 
       partners.push({
         kind: 'nested', partner: aunt, contactKm,
@@ -1447,25 +1442,47 @@ export class OrbitalRelationsCore {
   }
 
   /**
+   * A nested body's own radial reach (km) from the shared grandparent, bounded by the triangle
+   * inequality: at least `nestedParent`'s periapsis minus the nested body's apoapsis, at most
+   * `nestedParent`'s apoapsis plus the nested body's apoapsis. This can only be loose, never
+   * tight — it drops the (irrelevant, for a reject test) direction each orbit points in — so a
+   * gap check built on it can only skip pairs that provably can't touch, never miss a real one.
+   */
+  private nestedRangeKm(nested: CanonnBiostatsBody, nestedParent: CanonnBiostatsBody): { peri: number; apo: number } | null {
+    const parentRangeKm = this.orbitalRadialRangeKm(nestedParent);
+    const nestedBodyRangeKm = this.orbitalRadialRangeKm(nested);
+    return parentRangeKm && nestedBodyRangeKm
+      ? { peri: Math.max(0, parentRangeKm.peri - nestedBodyRangeKm.apo), apo: parentRangeKm.apo + nestedBodyRangeKm.apo }
+      : null;
+  }
+
+  /**
+   * Cheap reject for a nested pair — using only the component orbits' own periapsis/apoapsis via
+   * {@link nestedRangeKm}, before paying for {@link buildNestedPair}'s position-function
+   * construction (two Kepler evaluators plus, downstream, a dense conjunction scan). Mirrors
+   * {@link collisionPartners}'s own radial pre-filter; a `false` here is not a guarantee the pair
+   * touches, only that it isn't ruled out yet.
+   */
+  private nestedPairOutOfReach(nested: CanonnBiostatsBody, nestedParent: CanonnBiostatsBody, other: CanonnBiostatsBody, contactKm: number): boolean {
+    const rangeA = this.nestedRangeKm(nested, nestedParent);
+    const rangeB = this.orbitalRadialRangeKm(other);
+    if (!rangeA || !rangeB) { return false; }
+    return Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo) > contactKm;
+  }
+
+  /**
    * Builds the `'nested'` half of {@link resolveRingOrbitPair}: `nested` orbits `nestedParent`
    * (a real body, sharing an immediate parent with `other`), so its absolute motion is the exact
    * superposition of the two orbits (see {@link nestedPositionFunction}) — tracked directly
    * rather than approximated by widening the contact threshold with its periapsis/apoapsis reach,
    * which is what an earlier version of this feature did and which review found false-positive
    * prone: it let *any* conjunction of `nestedParent` and `other` count as a hit, regardless of
-   * where the nested body actually was at that moment.
-   *
-   * `rangeA`/`rangeB` (used only for a cheap pre-filter reject, never for the real search) bound
-   * the nested side's own reach from the shared grandparent by the triangle inequality: at least
-   * `nestedParent`'s periapsis minus the nested body's apoapsis, at most `nestedParent`'s apoapsis
-   * plus the nested body's apoapsis. This can only be loose, never tight — so it never produces a
-   * false negative — because it drops the (irrelevant, for a reject test) direction each orbit
-   * points in.
+   * where the nested body actually was at that moment. Callers are expected to have already
+   * rejected the pair via {@link nestedPairOutOfReach} where a contact threshold is known.
    */
   private buildNestedPair(nested: SystemBody, nestedParent: SystemBody, other: SystemBody): {
     posA: (tMs: number) => Vec3; posB: (tMs: number) => Vec3;
     fastPeriodDays: number; slowPeriodDays: number;
-    rangeA: { peri: number; apo: number } | null; rangeB: { peri: number; apo: number } | null;
   } | null {
     const nestedBody = nested.bodyData, parentBody = nestedParent.bodyData, otherBody = other.bodyData;
     if (!nestedBody.orbitalPeriod || !parentBody.orbitalPeriod || !otherBody.orbitalPeriod) { return null; }
@@ -1477,14 +1494,7 @@ export class OrbitalRelationsCore {
     const fastPeriodDays = Math.min(nestedBody.orbitalPeriod, parentBody.orbitalPeriod);
     const slowPeriodDays = Math.max(nestedBody.orbitalPeriod, parentBody.orbitalPeriod, otherBody.orbitalPeriod);
 
-    const parentRangeKm = this.orbitalRadialRangeKm(parentBody);
-    const nestedRangeKm = this.orbitalRadialRangeKm(nestedBody);
-    const rangeA = parentRangeKm && nestedRangeKm
-      ? { peri: Math.max(0, parentRangeKm.peri - nestedRangeKm.apo), apo: parentRangeKm.apo + nestedRangeKm.apo }
-      : null;
-    const rangeB = this.orbitalRadialRangeKm(otherBody);
-
-    return { posA, posB, fastPeriodDays, slowPeriodDays, rangeA, rangeB };
+    return { posA, posB, fastPeriodDays, slowPeriodDays };
   }
 
   /**
@@ -1513,8 +1523,13 @@ export class OrbitalRelationsCore {
    * resolved: unlike {@link collisionPartners}'s Trojan/rosette exclusion for bodies co-orbiting a
    * *third*, real central body, two siblings with the same period here simply repeat their whole
    * relative geometry once per shared period — so that period itself is used as the synodic step.
+   *
+   * `contactKm` — the pair's contact threshold, known to every caller via {@link ringContactBand}
+   * before it needs the resolved pair itself — is used only to reject an out-of-reach *nested*
+   * side cheaply (see {@link nestedPairOutOfReach}), before paying for its position-function
+   * construction; the simple cases don't need it.
    */
-  private resolveRingOrbitPair(self: SystemBody, partner: SystemBody): RingOrbitPair | null {
+  private resolveRingOrbitPair(self: SystemBody, partner: SystemBody, contactKm: number): RingOrbitPair | null {
     const selfOrbitBody = self.bodyData.type === BODY_TYPE.Ring ? self.parent : self;
     const partnerOrbitBody = partner.bodyData.type === BODY_TYPE.Ring ? partner.parent : partner;
     if (!selfOrbitBody || !partnerOrbitBody || selfOrbitBody === partnerOrbitBody) { return null; }
@@ -1522,31 +1537,40 @@ export class OrbitalRelationsCore {
     if (selfOrbitBody.parent === partnerOrbitBody) {
       const orbiter = selfOrbitBody.bodyData;
       if (!orbiter.orbitalPeriod) { return null; }
-      return { kind: 'simple', a: orbiter, b: this.stationaryOrigin(partnerOrbitBody.bodyData.name, orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
+      // b's own .name feeds nextContacts' CollisionWindow.partnerName directly — for the
+      // stationary-origin stand-in that's otherwise just the ring's *host* name (e.g. "Planet"
+      // rather than "Planet A Ring") whenever partner is a ring, so it's named via
+      // ringDisplayName here rather than off partnerOrbitBody.bodyData.name directly.
+      return { kind: 'simple', a: orbiter, b: this.stationaryOrigin(this.ringDisplayName(partner), orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
     }
     if (partnerOrbitBody.parent === selfOrbitBody) {
       const orbiter = partnerOrbitBody.bodyData;
       if (!orbiter.orbitalPeriod) { return null; }
-      return { kind: 'simple', a: orbiter, b: this.stationaryOrigin(selfOrbitBody.bodyData.name, orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
+      // Here it's self that plays b's role (partner is the real orbiter, a) — same naming fix.
+      return { kind: 'simple', a: orbiter, b: this.stationaryOrigin(this.ringDisplayName(self), orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
     }
     if (selfOrbitBody.parent && selfOrbitBody.parent === partnerOrbitBody.parent) {
       const a = selfOrbitBody.bodyData, b = partnerOrbitBody.bodyData;
       if (!a.orbitalPeriod || !b.orbitalPeriod) { return null; }
       const synodicDays = a.orbitalPeriod === b.orbitalPeriod ? a.orbitalPeriod : 1 / Math.abs(1 / a.orbitalPeriod - 1 / b.orbitalPeriod);
-      return { kind: 'simple', a, b, synodicDays };
+      // b is partnerOrbitBody's own data (the ring's *host*, when partner is a ring) — override
+      // just its display name, not its physics, to match ringCollisionExtent's convention.
+      return { kind: 'simple', a, b: { ...b, name: this.ringDisplayName(partner) }, synodicDays };
     }
-    // Nested: self orbits a real body (its own parent) that is itself a sibling of partner.
+    // Nested: self orbits a real body (its own parent) that is itself a sibling of partner. The
+    // cheap radial reject runs before buildNestedPair pays for its position-function closures.
     if (selfOrbitBody.parent && selfOrbitBody.parent !== partnerOrbitBody && selfOrbitBody.parent.parent === partnerOrbitBody.parent) {
+      if (this.nestedPairOutOfReach(selfOrbitBody.bodyData, selfOrbitBody.parent.bodyData, partnerOrbitBody.bodyData, contactKm)) { return null; }
       const nested = this.buildNestedPair(selfOrbitBody, selfOrbitBody.parent, partnerOrbitBody);
       return nested && { kind: 'nested', ...nested, labelA: self.bodyData.name, labelB: partner.bodyData.name };
     }
     // Symmetric: partner orbits a real body that is itself a sibling of self.
     if (partnerOrbitBody.parent && partnerOrbitBody.parent !== selfOrbitBody && partnerOrbitBody.parent.parent === selfOrbitBody.parent) {
+      if (this.nestedPairOutOfReach(partnerOrbitBody.bodyData, partnerOrbitBody.parent.bodyData, selfOrbitBody.bodyData, contactKm)) { return null; }
       const nested = this.buildNestedPair(partnerOrbitBody, partnerOrbitBody.parent, selfOrbitBody);
       return nested && {
         kind: 'nested', posA: nested.posB, posB: nested.posA,
         fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
-        rangeA: nested.rangeB, rangeB: nested.rangeA,
         labelA: self.bodyData.name, labelB: partner.bodyData.name,
       };
     }
@@ -1656,7 +1680,8 @@ export class OrbitalRelationsCore {
    * the phase data needed to place it.
    */
   ringSeparationSeries(self: SystemBody, partner: SystemBody, startMs: number, endMs: number, samples: number): SeparationSample[] {
-    const pair = this.resolveRingOrbitPair(self, partner);
+    const band = this.ringContactBand(self, partner);
+    const pair = this.resolveRingOrbitPair(self, partner, band.maxKm);
     if (!pair) { return []; }
     if (pair.kind === 'simple') { return this.separationSeries(pair.a, pair.b, startMs, endMs, samples); }
     return this.sampleSeparation(this.separationFunctionFromPositions(pair.posA, pair.posB), startMs, endMs, samples);
@@ -1672,10 +1697,10 @@ export class OrbitalRelationsCore {
    * already found) or lacks the phase data to place it.
    */
   ringContactsWithin(self: SystemBody, partner: SystemBody, horizonDays: number, now: number = Date.now()): CollisionWindow[] {
-    const pair = this.resolveRingOrbitPair(self, partner);
-    if (!pair) { return []; }
     const band = this.ringContactBand(self, partner);
     if (!(band.maxKm > 0)) { return []; }
+    const pair = this.resolveRingOrbitPair(self, partner, band.maxKm);
+    if (!pair) { return []; }
     const horizonMs = horizonDays * MS_PER_DAY;
     const windows = pair.kind === 'simple'
       ? this.nextContacts(pair.a, pair.b, band.maxKm, pair.synodicDays, now, MAX_CONJUNCTIONS_SCANNED, horizonMs, band.minKm)
@@ -1739,16 +1764,25 @@ export class OrbitalRelationsCore {
         if (isRingA && isRingB && nodeA.parent === nodeB.parent) { continue; }
         if (nodeB.bodyData.type === BODY_TYPE.Barycentre) { continue; }
 
-        const pair = this.resolveRingOrbitPair(nodeA, nodeB);
-        if (!pair) { continue; }
-
         const band = this.ringContactBand(nodeA, nodeB);
         if (!(band.maxKm > 0)) { continue; }
+
+        // resolveRingOrbitPair rejects an out-of-reach nested side itself (see
+        // nestedPairOutOfReach) before building its position functions; the 'simple' case still
+        // needs its own cheap reject below, ahead of the costlier orbit-curve search.
+        const pair = this.resolveRingOrbitPair(nodeA, nodeB, band.maxKm);
+        if (!pair) { continue; }
 
         let windows: CollisionWindow[];
         let synodicDays: number;
         if (pair.kind === 'simple') {
           synodicDays = pair.synodicDays;
+          const rangeA = this.orbitalRadialRange(pair.a);
+          const rangeB = this.orbitalRadialRange(pair.b);
+          if (rangeA && rangeB) {
+            const radialGapAu = Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo);
+            if (radialGapAu > band.maxKm / KM_PER_AU) { continue; }
+          }
           const prefilterKm = pair.a.orbitalPeriod === pair.b.orbitalPeriod
             ? this.minLockedSeparationKm(pair.a, pair.b, pair.synodicDays)
             : this.minOrbitDistanceKm(pair.a, pair.b);
@@ -1758,10 +1792,6 @@ export class OrbitalRelationsCore {
           // The dominant recurrence driver — displayed as this pair's "synodic period" even
           // though a nested pair's true recurrence is quasi-periodic (see nestedContactWindows).
           synodicDays = pair.fastPeriodDays;
-          if (pair.rangeA && pair.rangeB) {
-            const gapKm = Math.max(pair.rangeA.peri, pair.rangeB.peri) - Math.min(pair.rangeA.apo, pair.rangeB.apo);
-            if (gapKm > band.maxKm) { continue; }
-          }
           windows = this.nestedContactWindows(pair.posA, pair.posB, pair.fastPeriodDays, pair.slowPeriodDays, band.maxKm, band.minKm, now, MAX_UPCOMING_CONTACTS, Infinity, pair.labelB);
         }
         if (windows.length === 0) { continue; }
@@ -1791,14 +1821,20 @@ export class OrbitalRelationsCore {
    * A ring's own `bodyData.name` is stripped down to its bare identifier at parse time (e.g.
    * "A Ring", not "<host> A Ring" — see `HomeComponent.stripParentName`), unlike a body's, which
    * keeps its full system-prefixed name. Bare, that's ambiguous once two different bodies' rings
-   * are shown side by side (a "Ring on Ring" collision), so a ring's extent is named after its
-   * host instead, matching a body's own naming convention exactly (and so working the same way
+   * are shown side by side (a "Ring on Ring" collision), so a ring is displayed under its host's
+   * name instead, matching a body's own naming convention exactly (and so working the same way
    * with {@link RingCollisionDialogComponent.shortName}'s system-prefix stripping).
    */
+  private ringDisplayName(node: SystemBody): string {
+    return node.bodyData.type === BODY_TYPE.Ring && node.parent
+      ? `${node.parent.bodyData.name} ${node.bodyData.name}`
+      : node.bodyData.name;
+  }
+
   private ringCollisionExtent(node: SystemBody): RingCollisionExtent {
     const isRing = node.bodyData.type === BODY_TYPE.Ring;
     return {
-      name: isRing && node.parent ? `${node.parent.bodyData.name} ${node.bodyData.name}` : node.bodyData.name,
+      name: this.ringDisplayName(node),
       kind: isRing ? 'ring' : 'body',
       path: bodyPathFromRoot(node),
     };

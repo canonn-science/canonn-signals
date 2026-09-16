@@ -1025,6 +1025,32 @@ describe('OrbitalRelationsService', () => {
       expect(status.nextCollision!.days).toBeGreaterThan(0.05);
       expect(status.nextCollision!.days).toBeLessThan(0.15);
     });
+
+    it('drops a contact window rather than fabricating an edge when the true contact outlasts half the synodic period', () => {
+      // Two identically-shaped, highly eccentric orbits (same semiMajorAxis/eccentricity, just
+      // out of phase via different periods) with a deliberately huge combined radius. Verified
+      // numerically (replicating this exact Kepler math offline): true separation at the shared
+      // conjunction (both at apoapsis, t=0) first exceeds this contactKm only at t≈+/-248.8 days —
+      // far past this pair's own maxSpanMs bound (half the ~166.7-day synodic period, ≈83.3 days).
+      // nextContacts must recognise it can't find that edge within its search bound and drop the
+      // window entirely, rather than reporting a fabricated boundary pinned at the search cap
+      // (the bug appendMinimumWindows'/contactCrossing's null-return path exists to prevent).
+      const nowHere = Date.parse('2026-06-27T00:00:00Z');
+      const shared = {
+        orbitalEccentricity: 0.9, semiMajorAxis: 1, argOfPeriapsis: 0, ascendingNode: 0,
+        orbitalInclination: 0, meanAnomaly: 180, timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      };
+      const [a, b] = makeFamily([
+        { ...shared, orbitalPeriod: 100, radius: 140_000_000 },
+        { ...shared, orbitalPeriod: 250, radius: 140_000_000 },
+      ]);
+
+      // A horizon comfortably covering the dropped conjunction's neighbourhood (well under the
+      // true, far-off exit at ~249 days) but nowhere near the next synodic recurrence (~167 days),
+      // so this conjunction is the only one in view — it must be dropped, not fabricated.
+      const windows = service.upcomingContactsWithin(a, 90, nowHere);
+      expect(windows).toEqual([]);
+    });
   });
 
   describe('simultaneousCollisionsWithin', () => {

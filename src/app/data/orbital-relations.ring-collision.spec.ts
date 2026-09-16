@@ -58,6 +58,23 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(ringStatus.partner?.name).toBe('Moon');
   });
 
+  it('names the ring, not its host body, in the CollisionWindow.partnerName of a direct body-on-ring contact', () => {
+    // resolveRingOrbitPair's direct-orbit branch stands the ring's host in as a stationary
+    // reference point — its display name must still be the ring's own (ringDisplayName-derived)
+    // name, not the host body's bare name, since a ring's own bodyData.name is already stripped
+    // of that host prefix at parse time (see ringCollisionExtent's docs).
+    const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
+    makeRing('Ring', planet, 100_000, 200_000);
+    const moon = makeBody('Moon', planet, {
+      semiMajorAxis: 200_000 / KM_PER_AU, orbitalEccentricity: 0.25, orbitalPeriod: 5,
+      meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0, timestamps: ts,
+    });
+
+    const windows = service.ringContactsWithin(moon, planet.subBodies[0], 30, now);
+    expect(windows.length).toBeGreaterThan(0);
+    expect(windows[0].partnerName).toBe('Planet Ring');
+  });
+
   it('extends a body-on-ring contact by the body\'s own radius, unlike a ring-on-ring pair', () => {
     // A solid body isn't confined to a plane the way a ring is, so it can reach a ring's inner
     // edge from its far side too. Periapsis (≈97,000 km) sits just inside the ring's inner edge
