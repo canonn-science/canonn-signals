@@ -3,10 +3,11 @@ import * as Comlink from 'comlink';
 import type { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 import { OrbitalRelationsCore } from './orbital-relations.core';
 import type { CollisionStatus, SimultaneousCollision, CollisionWindow, SeparationSample, RingCollisionStatus } from './orbital-relations.core';
-import { serializeCollisionFamily, serializeSystemTree } from './collision-request';
+import { bodyPathFromRoot, serializeCollisionFamily, serializeSystemTree } from './collision-request';
 import type { CollisionWorkerApi } from './collision-worker-api';
 
 const WORKER_CALL_TIMEOUT_MS = 30_000;
+const RING_ANALYSIS_CACHE_WINDOW_MS = 1000;
 
 /**
  * Main-thread facade for the heavy collision engine, run off the UI thread in a single shared
@@ -40,6 +41,11 @@ export class OrbitalWorkerService {
   private workerUnavailable = false;
   /** Engine instance for the inline (no-worker) fallback and for bodies with no parent. */
   private readonly inline = new OrbitalRelationsCore();
+  /** Shared per-system ring-analysis cache so one worker job feeds every recursively rendered row. */
+  private readonly ringCollisionStatusCache = new WeakMap<SystemBody, {
+    now: number;
+    promise: Promise<RingCollisionStatus[]>;
+  }>();
 
   /** Lazily spins up the shared worker and its Comlink proxy; null when a worker can't be used. */
   private getProxy(): Comlink.Remote<CollisionWorkerApi> | null {
@@ -202,19 +208,22 @@ export class OrbitalWorkerService {
   /**
    * Off-thread {@link OrbitalRelationsCore.detectRingCollisionStatus}. Unlike the planetary methods
    * above (which only ever need `body`'s shared parent and its direct siblings), ring collisions
-   * scan the whole system tree, so the DTO here ({@link serializeSystemTree}) carries every body,
-   * not just one family.
+   * scan the whole system tree. Cache one whole-system analysis per root/time so the recursive body
+   * rows share a single worker job instead of each queueing its own full-tree scan.
    */
   async detectRingCollisionStatus(body: SystemBody, now: number): Promise<RingCollisionStatus> {
-    const proxy = this.getProxy();
-    const workerFailure = this.workerFailure;
-    const dto = proxy ? serializeSystemTree(body) : null;
-    if (!proxy || this.workerUnavailable || !dto) { return this.inline.detectRingCollisionStatus(body, now); }
-    return this.runWithFallback(
-      () => proxy.detectRingCollisionStatus(dto, now),
-      () => this.inline.detectRingCollisionStatus(body, now),
-      workerFailure,
-    );
+    const root = this.systemRoot(body);
+    const bodies = this.flattenSystem(root);
+    const focusIndex = bodies.indexOf(body);
+    if (focusIndex < 0) { return this.inline.detectRingCollisionStatus(body, now); }
+
+    const cached = this.ringCollisionStatusCache.get(root);
+    let promise = cached && Math.abs(cached.now - now) < RING_ANALYSIS_CACHE_WINDOW_MS ? cached.promise : null;
+    if (!promise) {
+      promise = this.detectRingCollisionStatuses(root, now);
+      this.ringCollisionStatusCache.set(root, { now, promise });
+    }
+    return promise.then(statuses => statuses[focusIndex] ?? this.inline.detectRingCollisionStatus(body, now));
   }
 
   /** Off-thread {@link OrbitalRelationsCore.ringContactsWithin}. */
@@ -224,7 +233,7 @@ export class OrbitalWorkerService {
     const dto = proxy ? serializeSystemTree(self) : null;
     if (!proxy || this.workerUnavailable || !dto) { return this.inline.ringContactsWithin(self, partner, horizonDays, now); }
     return this.runWithFallback(
-      () => proxy.ringContactsWithin(dto, partner.bodyData.name, horizonDays, now),
+      () => proxy.ringContactsWithin(dto, bodyPathFromRoot(partner), horizonDays, now),
       () => this.inline.ringContactsWithin(self, partner, horizonDays, now),
       workerFailure,
     );
@@ -237,9 +246,33 @@ export class OrbitalWorkerService {
     const dto = proxy ? serializeSystemTree(self) : null;
     if (!proxy || this.workerUnavailable || !dto) { return this.inline.ringSeparationSeries(self, partner, startMs, endMs, samples); }
     return this.runWithFallback(
-      () => proxy.ringSeparationSeries(dto, partner.bodyData.name, startMs, endMs, samples),
+      () => proxy.ringSeparationSeries(dto, bodyPathFromRoot(partner), startMs, endMs, samples),
       () => this.inline.ringSeparationSeries(self, partner, startMs, endMs, samples),
       workerFailure,
     );
+  }
+
+  private async detectRingCollisionStatuses(body: SystemBody, now: number): Promise<RingCollisionStatus[]> {
+    const proxy = this.getProxy();
+    const workerFailure = this.workerFailure;
+    const dto = proxy ? serializeSystemTree(body) : null;
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.detectRingCollisionStatuses(body, now); }
+    return this.runWithFallback(
+      () => proxy.detectRingCollisionStatuses(dto, now),
+      () => this.inline.detectRingCollisionStatuses(body, now),
+      workerFailure,
+    );
+  }
+
+  private systemRoot(body: SystemBody): SystemBody {
+    let root = body;
+    while (root.parent) { root = root.parent; }
+    return root;
+  }
+
+  private flattenSystem(root: SystemBody): SystemBody[] {
+    const out: SystemBody[] = [root];
+    for (const child of root.subBodies) { out.push(...this.flattenSystem(child)); }
+    return out;
   }
 }

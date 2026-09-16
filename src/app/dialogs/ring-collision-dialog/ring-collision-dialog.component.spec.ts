@@ -6,7 +6,7 @@ import { RingCollisionDialogComponent, RingCollisionDialogData } from './ring-co
 import { RingCollisionExtent } from '../../data/orbital-relations.service';
 
 function extent(name: string, kind: 'body' | 'ring'): RingCollisionExtent {
-  return { name, kind };
+  return { name, kind, path: [] };
 }
 
 function setup(data: RingCollisionDialogData): ComponentFixture<RingCollisionDialogComponent> {

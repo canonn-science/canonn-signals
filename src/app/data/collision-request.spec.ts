@@ -1,5 +1,5 @@
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import { serializeCollisionFamily, rehydrateCollisionFamily, serializeSystemTree, rehydrateSystemTree, findBodyInTree } from './collision-request';
+import { bodyPathFromRoot, serializeCollisionFamily, rehydrateCollisionFamily, serializeSystemTree, rehydrateSystemTree, findBodyByPath, findBodyInTree } from './collision-request';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 
 /**
@@ -149,6 +149,14 @@ describe('collision-request (worker serialization boundary)', () => {
       const found = findBodyInTree(moonA1, 'B Ring');
       expect(found?.bodyData.name).toBe('B Ring');
       expect(findBodyInTree(moonA1, 'Does Not Exist')).toBeNull();
+    });
+
+    it('bodyPathFromRoot and findBodyByPath round-trip a non-unique ring identity', () => {
+      const { moonA1, ring } = multiLevelTree();
+      const path = bodyPathFromRoot(ring);
+      expect(path).toEqual([1, 0]);
+      expect(findBodyByPath(moonA1, path)?.bodyData.name).toBe('B Ring');
+      expect(findBodyByPath(moonA1, [9, 9])).toBeNull();
     });
 
     it('detectRingCollisionStatus is identical on the original and the rehydrated tree', () => {

@@ -18,7 +18,7 @@ import {
 import { StellarPhysicsService } from '../data/stellar-physics.service';
 import { OrbitalRelationsService, CollisionStatus, RingCollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
 import { OrbitalWorkerService } from '../data/orbital-worker.service';
-import { findBodyInTree } from '../data/collision-request';
+import { findBodyByPath } from '../data/collision-request';
 import { logger } from '../data/logger';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
@@ -1545,8 +1545,8 @@ export class SystemBodyComponent implements OnChanges {
    * {@link RingCollisionStatus.upcomingCollisions} — since a ring pass can yield two windows per
    * approach, so the 10-row cap alone would leave later in-view dips unmarked. Both off-thread
    * calls run through {@link OrbitalWorkerService}, matching the planetary collision path; the
-   * partner is re-resolved from `status.partner.name` against `body`'s live system tree, since
-   * {@link RingCollisionExtent} deliberately carries a name rather than a worker-crossed node.
+   * partner is re-resolved from `status.partner.path` against `body`'s live system tree so rings
+   * with duplicate display names still resolve to the correct node after the worker round-trip.
    * Returns null when the pair can't be timed or lacks the phase data to place it — in practice
    * this shouldn't happen here, since {@link ringCollisionStatus} already required a real
    * detected contact window before flagging a candidate at all.
@@ -1555,7 +1555,7 @@ export class SystemBodyComponent implements OnChanges {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
     if (!(synMs > 0) || !status.self || !status.partner || !status.combinedRadiiKm) { return null; }
-    const partner = findBodyInTree(body, status.partner.name);
+    const partner = findBodyByPath(body, status.partner.path);
     if (!partner) { return null; }
 
     const now = this.appService.nowOverride() ?? Date.now();
@@ -1980,12 +1980,14 @@ export class SystemBodyComponent implements OnChanges {
         clearTimeout(this.ringCollisionPendingTimer);
         this.ringCollisionStatus.set(status);
         this.ringCollisionPending.set(false);
+        this.reportRingCollisionCandidate(body, status.isCandidate);
       })
       .catch((err: unknown) => {
         logger.error('Ring collision search failed', err);
         if (requestId !== this.ringCollisionRequestId) { return; }
         clearTimeout(this.ringCollisionPendingTimer);
         this.ringCollisionPending.set(false);
+        this.reportRingCollisionCandidate(body, false);
       });
   }
   /**
@@ -2068,6 +2070,12 @@ export class SystemBodyComponent implements OnChanges {
     const key = this.systemKey();
     if (key === null) { return; }
     this.interestRegistry.reportCollisionCandidate(key, body, isCandidate);
+  }
+
+  private reportRingCollisionCandidate(body: SystemBody, isCandidate: boolean): void {
+    const key = this.systemKey();
+    if (key === null) { return; }
+    this.interestRegistry.reportRingCollisionCandidate(key, body, isCandidate);
   }
 
   /**

@@ -78,6 +78,17 @@ function flattenTree(root: SystemBody): SystemBody[] {
   return out;
 }
 
+/** Child-index path from the system root to `node` (root = []). */
+export function bodyPathFromRoot(node: SystemBody): number[] {
+  const path: number[] = [];
+  for (let current: SystemBody | null = node; current.parent; current = current.parent) {
+    const idx = current.parent.subBodies.indexOf(current);
+    if (idx < 0) { return []; }
+    path.push(idx);
+  }
+  return path.reverse();
+}
+
 /**
  * Extracts a {@link SystemTreeDto} for `body`'s whole system, ready to post to the worker. Returns
  * null only if `body` is somehow not part of the flattened tree from its own root (should not
@@ -111,6 +122,18 @@ export function rehydrateSystemTree(dto: SystemTreeDto): SystemBody {
     nodes[parentIdx].subBodies.push(nodes[i]);
   });
   return nodes[dto.focusIndex];
+}
+
+/** Re-resolves a body anywhere in `node`'s system tree by its child-index path from the root. */
+export function findBodyByPath(node: SystemBody, path: readonly number[]): SystemBody | null {
+  let root = node;
+  while (root.parent) { root = root.parent; }
+  let current: SystemBody | null = root;
+  for (const index of path) {
+    current = current?.subBodies[index] ?? null;
+    if (!current) { return null; }
+  }
+  return current;
 }
 
 /**

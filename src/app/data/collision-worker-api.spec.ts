@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink';
 import { createCollisionApi, CollisionWorkerApi } from './collision-worker-api';
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import { serializeCollisionFamily, serializeSystemTree } from './collision-request';
+import { bodyPathFromRoot, serializeCollisionFamily, serializeSystemTree } from './collision-request';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 
 /**
@@ -112,16 +112,17 @@ describe('collision-worker-api', () => {
     const direct = core.detectRingCollisionStatus(ring1, now);
     expect(direct.isCandidate).toBe(true);
     expect(api.detectRingCollisionStatus(dto, now)).toEqual(direct);
-    expect(api.ringContactsWithin(dto, '2 Ring', 5, now)).toEqual(core.ringContactsWithin(ring1, ring2, 5, now));
-    expect(api.ringSeparationSeries(dto, '2 Ring', now, endMs, 20).length).toBe(20);
+    expect(api.detectRingCollisionStatuses(dto, now)).toEqual(core.detectRingCollisionStatuses(ring1, now));
+    expect(api.ringContactsWithin(dto, bodyPathFromRoot(ring2), 5, now)).toEqual(core.ringContactsWithin(ring1, ring2, 5, now));
+    expect(api.ringSeparationSeries(dto, bodyPathFromRoot(ring2), now, endMs, 20).length).toBe(20);
   });
 
   it('ring-collision methods return [] for an unresolvable partner name (never crashes the worker)', () => {
     const { ring1 } = ringCollidingPair();
     const api = createCollisionApi(core);
     const dto = serializeSystemTree(ring1)!;
-    expect(api.ringContactsWithin(dto, 'Nonexistent', 5, now)).toEqual([]);
-    expect(api.ringSeparationSeries(dto, 'Nonexistent', now, now + 1000, 10)).toEqual([]);
+    expect(api.ringContactsWithin(dto, [9, 9], 5, now)).toEqual([]);
+    expect(api.ringSeparationSeries(dto, [9, 9], now, now + 1000, 10)).toEqual([]);
   });
 
   it('round-trips detectRingCollisionStatus over a real Comlink MessagePort', async () => {
