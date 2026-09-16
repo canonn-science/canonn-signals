@@ -230,6 +230,26 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(status.nextCollision!.minSeparationKm).toBeGreaterThan(15_000);
     expect(status.upcomingCollisions.length).toBeGreaterThan(0);
 
+    // Fixed-epoch regression baseline recorded before optimizing minimum refinement.
+    // Preserve all ten windows, including the short gap through the rings' inner holes.
+    const expectedWindows = [
+      ['2026-08-17T21:51:04.156Z', '2026-08-17T21:54:57.616Z'],
+      ['2026-08-17T22:10:12.333Z', '2026-08-17T22:14:05.793Z'],
+      ['2026-08-18T04:38:40.898Z', '2026-08-18T04:42:34.359Z'],
+      ['2026-08-18T04:57:49.075Z', '2026-08-18T05:01:42.536Z'],
+      ['2026-08-18T11:26:17.641Z', '2026-08-18T11:30:11.101Z'],
+      ['2026-08-18T11:45:25.818Z', '2026-08-18T11:49:19.278Z'],
+      ['2026-08-18T18:13:54.383Z', '2026-08-18T18:17:47.844Z'],
+      ['2026-08-18T18:33:02.560Z', '2026-08-18T18:36:56.021Z'],
+      ['2026-08-19T01:01:31.126Z', '2026-08-19T01:05:24.586Z'],
+      ['2026-08-19T01:20:39.302Z', '2026-08-19T01:24:32.763Z'],
+    ];
+    expect(status.upcomingCollisions).toHaveLength(expectedWindows.length);
+    status.upcomingCollisions.forEach((window, i) => {
+      expect(Math.abs(window.start.getTime() - Date.parse(expectedWindows[i][0]))).toBeLessThanOrEqual(1);
+      expect(Math.abs(window.end.getTime() - Date.parse(expectedWindows[i][1]))).toBeLessThanOrEqual(1);
+    });
+
     // The other ring reports the same collision from its side.
     const status2 = service.detectRingCollisionStatus(ring2, now);
     expect(status2.isCandidate).toBe(true);
@@ -279,7 +299,30 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(status.self?.kind).toBe('body');
     expect(['2 A Ring', '2 B Ring']).toContain(status.partner?.name);
     expect(status.nextCollision).not.toBeNull();
-    // The next close approach is under one binary orbit (6.79 h ≈ 0.228 d) away.
+    // Pre-optimization fixed-epoch baseline. Includes split windows through the
+    // ring's inner hole, plus contacts with an interior minimum rather than an edge.
+    const expectedWindows: [string, string, string, number][] = [
+      ['2026-08-18T00:43:29.310Z', '2026-08-18T01:05:30.844Z', '2026-08-18T00:54:41.242Z', 8021.200975838642],
+      ['2026-08-18T05:24:55.260Z', '2026-08-18T05:35:44.868Z', '2026-08-18T05:35:44.868Z', 7814.182187500000],
+      ['2026-08-18T05:40:39.364Z', '2026-08-18T05:51:49.352Z', '2026-08-18T05:40:39.364Z', 7814.182187500000],
+      ['2026-08-19T15:00:15.482Z', '2026-08-19T15:23:55.869Z', '2026-08-19T15:12:17.133Z', 7948.599977648201],
+      ['2026-08-19T19:43:03.131Z', '2026-08-19T20:08:55.287Z', '2026-08-19T19:55:47.639Z', 7840.019392719154],
+      ['2026-08-21T05:17:09.247Z', '2026-08-21T05:42:13.788Z', '2026-08-21T05:29:52.670Z', 7883.301996964467],
+      ['2026-08-21T10:01:17.254Z', '2026-08-21T10:25:54.516Z', '2026-08-21T10:13:23.828Z', 7899.799498662277],
+      ['2026-08-22T19:34:10.094Z', '2026-08-22T20:00:25.224Z', '2026-08-22T19:47:27.942Z', 7826.018128698040],
+      ['2026-08-23T00:19:38.068Z', '2026-08-23T00:42:46.649Z', '2026-08-23T00:31:00.382Z', 7967.565120392717],
+      ['2026-08-24T09:51:17.694Z', '2026-08-24T10:02:04.323Z', '2026-08-24T10:02:04.323Z', 7814.182187500000],
+    ];
+    expect(status.partner?.name).toBe('2 B Ring');
+    expect(status.upcomingCollisions).toHaveLength(expectedWindows.length);
+    status.upcomingCollisions.forEach((window, i) => {
+      const [start, end, minimumAt, minimumKm] = expectedWindows[i];
+      expect(Math.abs(window.start.getTime() - Date.parse(start))).toBeLessThanOrEqual(1);
+      expect(Math.abs(window.end.getTime() - Date.parse(end))).toBeLessThanOrEqual(1);
+      expect(Math.abs(window.minSeparationAt!.getTime() - Date.parse(minimumAt))).toBeLessThanOrEqual(1);
+      expect(window.minSeparationKm).toBeCloseTo(minimumKm, 6);
+    });
+    // The next close approach is under one binary orbit (5.48 h ≈ 0.228 d) away.
     expect(status.nextCollision!.days).toBeGreaterThan(0);
     expect(status.nextCollision!.days).toBeLessThan(0.228280919016204);
     expect(status.upcomingCollisions.length).toBeGreaterThan(0);
