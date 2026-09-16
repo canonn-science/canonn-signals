@@ -954,6 +954,77 @@ describe('OrbitalRelationsService', () => {
       expect(r.upcomingCollisions[0].partnerName).toBe(r.partnerName);
       expect(r.nextCollision).toBe(r.upcomingCollisions[0]);
     });
+
+    it('flags a moon colliding with its parent\'s sibling body directly ("nested" body-on-body collision)', () => {
+      // The plain-body analogue of the ring-collision engine's "nested" case (see
+      // orbital-relations.ring-collision.spec.ts): 1 and 2 are a locked binary pair sharing a
+      // barycentre (identical period, 180° opposed argument of periapsis), and 1 a is a moon of
+      // body 1 (not of the barycentre). 1 a's absolute motion is the exact superposition of its
+      // own orbit and body 1's, tracked directly — reusing the same nestedPositionFunction/
+      // nestedContactWindows machinery the ring case uses, just against body 2 itself rather than
+      // one of its rings.
+      const KM_PER_AU = 149597870.7;
+      const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-08-17T19:39:35Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: BODY_TYPE.Barycentre } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const body1: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      // Body 1 & 2's own separation dips to ≈15,499.9 km at their shared periapsis (see the
+      // ring-collision spec's equivalent test) — well short of touching at either body's own
+      // (unset) radius, so the two never collide directly (confirmed below).
+      const body2: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, radius: 14_600, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      // 1 a orbits body 1 in the *same* orbital plane, at mean anomaly 180° from body 1's own
+      // periapsis direction — i.e. pointing the opposite way, toward body 2 — with a 1,000 km
+      // circular radius, so right at body 1/2's own periapsis its full 1,000 km reach subtracts
+      // from their 15,499.9 km separation, landing at ≈14,501 km: inside body 2's 14,600 km
+      // radius. 1 a's own period (10 days) is deliberately long relative to the ~2.4 h until that
+      // periapsis so its phase barely drifts from 180° by the time it matters (numerically
+      // confirmed, minimum separation 14,501 km — see the ring-collision spec's identical setup).
+      const moon1a: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '1 a', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+          meanAnomaly: 180, orbitalPeriod: 10, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: body1,
+      };
+      barycentre.subBodies = [body1, body2];
+      body1.subBodies = [moon1a];
+
+      // Body 1 & 2 are a locked (equal-period) binary — collisionPartners excludes equal periods
+      // (the Trojan/rosette rule), so the plain direct-sibling engine never flags them against
+      // each other; this contact is only reachable via 1 a's own composite motion.
+      expect(service.detectCollisionStatus(body1, nowHere).isCandidate).toBe(false);
+
+      const status = service.detectCollisionStatus(moon1a, nowHere);
+      expect(status.isCandidate).toBe(true);
+      expect(status.partnerName).toBe('2');
+      expect(status.combinedRadiiKm).toBe(14_600);
+      expect(status.nextCollision).not.toBeNull();
+      // The window opens ≈0.084 days (≈2 h) from now, short of body 1 & 2's own periapsis at
+      // ≈0.099 days — matching the moon's own 1,000 km reach extending the contact earlier.
+      expect(status.nextCollision!.days).toBeGreaterThan(0.05);
+      expect(status.nextCollision!.days).toBeLessThan(0.15);
+    });
   });
 
   describe('simultaneousCollisionsWithin', () => {

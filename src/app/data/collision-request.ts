@@ -135,15 +135,3 @@ export function findBodyByPath(node: SystemBody, path: readonly number[]): Syste
   }
   return current;
 }
-
-/**
- * Finds the body named `name` anywhere in the tree containing `node` (searching from its root),
- * for re-resolving a {@link RingCollisionExtent}'s partner by name after crossing the worker
- * boundary, the same way planetary collision dialogs already re-resolve a partner name against
- * the live sibling list. Returns null when no body has that name.
- */
-export function findBodyInTree(node: SystemBody, name: string): SystemBody | null {
-  let root = node;
-  while (root.parent) { root = root.parent; }
-  return flattenTree(root).find(n => n.bodyData.name === name) ?? null;
-}

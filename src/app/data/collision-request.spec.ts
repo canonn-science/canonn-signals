@@ -1,5 +1,5 @@
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import { bodyPathFromRoot, serializeCollisionFamily, rehydrateCollisionFamily, serializeSystemTree, rehydrateSystemTree, findBodyByPath, findBodyInTree } from './collision-request';
+import { bodyPathFromRoot, serializeCollisionFamily, rehydrateCollisionFamily, serializeSystemTree, rehydrateSystemTree, findBodyByPath } from './collision-request';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 
 /**
@@ -144,13 +144,6 @@ describe('collision-request (worker serialization boundary)', () => {
       expect(planetB.subBodies[0].bodyData.name).toBe('B Ring');
     });
 
-    it('findBodyInTree finds a body anywhere in the same system by name, or null when absent', () => {
-      const { moonA1 } = multiLevelTree();
-      const found = findBodyInTree(moonA1, 'B Ring');
-      expect(found?.bodyData.name).toBe('B Ring');
-      expect(findBodyInTree(moonA1, 'Does Not Exist')).toBeNull();
-    });
-
     it('bodyPathFromRoot and findBodyByPath round-trip a non-unique ring identity', () => {
       const { moonA1, ring } = multiLevelTree();
       const path = bodyPathFromRoot(ring);
@@ -180,8 +173,8 @@ describe('collision-request (worker serialization boundary)', () => {
         } as CanonnBiostatsBody,
         subBodies: [], parent: barycentre,
       };
-      const ring1: SystemBody = { bodyData: { bodyId: -1, name: '1 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
-      const ring2: SystemBody = { bodyData: { bodyId: -1, name: '2 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
+      const ring1: SystemBody = { bodyData: { bodyId: -1, name: 'Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
+      const ring2: SystemBody = { bodyData: { bodyId: -1, name: 'Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
       barycentre.subBodies = [body1, body2];
       body1.subBodies = [ring1];
       body2.subBodies = [ring2];

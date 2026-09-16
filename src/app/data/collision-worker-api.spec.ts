@@ -95,8 +95,8 @@ describe('collision-worker-api', () => {
       } as CanonnBiostatsBody,
       subBodies: [], parent: barycentre,
     };
-    const ring1: SystemBody = { bodyData: { bodyId: -1, name: '1 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
-    const ring2: SystemBody = { bodyData: { bodyId: -1, name: '2 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
+    const ring1: SystemBody = { bodyData: { bodyId: -1, name: 'Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
+    const ring2: SystemBody = { bodyData: { bodyId: -1, name: 'Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
     barycentre.subBodies = [body1, body2];
     body1.subBodies = [ring1];
     body2.subBodies = [ring2];

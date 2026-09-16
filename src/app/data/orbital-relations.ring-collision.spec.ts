@@ -33,7 +33,7 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
 
   it('flags a moon whose orbit is timed to cross its own planet\'s rings ("Body on Ring")', () => {
     const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
-    const ring = makeRing('Planet Ring', planet, 100_000, 200_000);
+    const ring = makeRing('Ring', planet, 100_000, 200_000);
     // Periapsis (150,000 km) sits inside the ring band, and meanAnomaly 0 places the moon at
     // periapsis right now, so it should already be in contact.
     const moon = makeBody('Moon', planet, {
@@ -68,7 +68,7 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     // (200,000 km — also widened by the moon's own radius, to 205,007.5 km) so the window still
     // closes normally on both sides rather than never breaking contact at all.
     const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
-    makeRing('Planet Ring', planet, 100_000, 200_000);
+    makeRing('Ring', planet, 100_000, 200_000);
     const moon = makeBody('Moon', planet, {
       semiMajorAxis: (97_000 + 210_000) / 2 / KM_PER_AU,
       orbitalEccentricity: (210_000 - 97_000) / (210_000 + 97_000), orbitalPeriod: 5,
@@ -85,7 +85,7 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
 
   it('does not flag a moon whose orbit never comes close enough to the rings', () => {
     const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
-    makeRing('Planet Ring', planet, 100_000, 200_000);
+    makeRing('Ring', planet, 100_000, 200_000);
     const moon = makeBody('Moon', planet, {
       semiMajorAxis: 1_000_000 / KM_PER_AU, orbitalEccentricity: 0.01, orbitalPeriod: 30,
       meanAnomaly: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0, timestamps: ts,
@@ -96,7 +96,7 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
 
   it('does not flag a planet against its own rings', () => {
     const planet = makeBody('Planet', null, { type: BODY_TYPE.Star });
-    const ring = makeRing('Planet Ring', planet, 100_000, 200_000);
+    const ring = makeRing('Ring', planet, 100_000, 200_000);
     expect(service.detectRingCollisionStatus(ring, now).isCandidate).toBe(false);
   });
 
@@ -115,11 +115,13 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(service.detectRingCollisionStatus(planetA, now).isCandidate).toBe(false);
   });
 
-  it('does not surface a moon of one binary component reaching toward the rings of the other', () => {
+  it('flags a moon of one binary component reaching into the rings of the other ("nested" — exact orbit superposition)', () => {
     // The exact #151 scenario: bodies 1 and 2 orbit a shared barycentre, body 2 has rings, and 1a
-    // is a moon of body 1 (not of the barycentre directly). Timing that precisely needs the moon's
-    // full nested motion, not the parent-body approximation this engine previously used, so the
-    // pair is now skipped rather than surfaced as a false-positive-prone candidate.
+    // is a moon of body 1 (not of the barycentre directly). 1a's absolute motion is the exact
+    // superposition of its own orbit and body 1's (see nestedPositionFunction) — tracked directly,
+    // not approximated by widening the contact band with 1a's periapsis/apoapsis reach the way an
+    // earlier, reverted version of this feature did, which counted *any* body1-body2 conjunction
+    // as a hit regardless of where 1a actually was at that moment.
     const barycentre = makeBody('Barycentre', null, { type: BODY_TYPE.Barycentre });
     const body1 = makeBody('1', barycentre, {
       semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
@@ -132,16 +134,29 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
       orbitalPeriod: 0.283064148217593, timestamps: ts,
     });
     // Body 1 & 2's own separation dips to ≈15,499.9 km at their shared periapsis (see the binary
-    // test above) and rises to ≈23,172.2 km at apoapsis. 1a's own 1,000 km circular reach around
-    // body 1, combined with a small ring on body 2, brackets a band around that periapsis value —
-    // wide enough to register only near periapsis, not for the whole orbit.
-    makeRing('2 Ring', body2, 14_000, 15_000);
+    // test above) and rises to ≈23,172.2 km at apoapsis. 1a orbits body 1 in the *same* orbital
+    // plane, at mean anomaly 180° from body 1's own periapsis direction — i.e. pointing the
+    // opposite way, toward body 2 — with a 1,000 km circular radius, so right at body 1/2's own
+    // periapsis its full 1,000 km reach subtracts from their 15,499.9 km separation, landing at
+    // ≈14,501 km: inside the ring's [14,000, 15,000] band. 1a's own period (10 days) is
+    // deliberately long relative to the ~2.4 h until that periapsis so its phase barely drifts
+    // from 180° by the time it matters (confirmed numerically: minimum separation 14,501 km).
+    makeRing('Ring', body2, 14_000, 15_000);
     const moon1a = makeBody('1 a', body1, {
       semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0,
+      argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+      meanAnomaly: 180, orbitalPeriod: 10, timestamps: ts,
     });
 
     const status = service.detectRingCollisionStatus(moon1a, now);
-    expect(status.isCandidate).toBe(false);
+    expect(status.isCandidate).toBe(true);
+    expect(status.partner?.name).toBe('2 Ring');
+    expect(status.self?.kind).toBe('body');
+    expect(status.nextCollision).not.toBeNull();
+    // The window opens ≈0.084 days (≈2 h) from now, well short of body 1 & 2's own periapsis at
+    // ≈0.099 days — matching the moon's own 1,000 km reach extending the contact earlier.
+    expect(status.nextCollision!.days).toBeGreaterThan(0.05);
+    expect(status.nextCollision!.days).toBeLessThan(0.15);
   });
 
   it('does not flag a collision needing a shared ancestor above the two supported single-frame cases', () => {
@@ -157,7 +172,7 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
       semiMajorAxis: 0.01, orbitalEccentricity: 0, orbitalPeriod: 10,
       meanAnomaly: 0, argOfPeriapsis: 180, ascendingNode: 0, timestamps: ts,
     });
-    makeRing('2 Ring', body2, 50_000, 100_000);
+    makeRing('Ring', body2, 50_000, 100_000);
     const moon1a = makeBody('1 a', body1, { semiMajorAxis: 3_000_000 / KM_PER_AU, orbitalEccentricity: 0 });
     const moon1aMoon = makeBody('1 a 1', moon1a, { semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0 });
 
@@ -180,8 +195,8 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
       argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
       orbitalPeriod: 0.283064148217593, radius: 4723.183, timestamps: ts,
     });
-    const ring1 = makeRing('1 A Ring', body1, 8452, 8454.4);
-    const ring2 = makeRing('2 A Ring', body2, 7104, 7123.8);
+    const ring1 = makeRing('A Ring', body1, 8452, 8454.4);
+    const ring2 = makeRing('A Ring', body2, 7104, 7123.8);
 
     const status = service.detectRingCollisionStatus(ring1, now);
     expect(status.isCandidate).toBe(true);
@@ -217,6 +232,42 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
     expect(longGap).toBeLessThan(6.79);
   });
 
+  it('flags a real "nested" system (Eoch Flyuae KS-V b18-2): a moon crossing its planet\'s binary sibling\'s rings', () => {
+    // Real observed system values: bodies 1 & 2 are a locked binary pair (identical period, 180°
+    // opposed argument of periapsis, sharing a barycentre — the same shape as the test above), and
+    // 1 a is a real moon of body 1, not of the barycentre. Numerically confirmed offline (by
+    // propagating both component orbits with this same math) to swing within a few hundred km of
+    // body 2's rings every close approach, repeatedly, well inside the contact band.
+    const barycentre = makeBody('Barycentre', null, { type: BODY_TYPE.Barycentre });
+    const body1 = makeBody('1', barycentre, {
+      semiMajorAxis: 0.0000476744237542346, orbitalEccentricity: 0.0869, orbitalInclination: -3.691517,
+      argOfPeriapsis: 246.910533, ascendingNode: -16.844281, meanAnomaly: 46.56284,
+      orbitalPeriod: 0.228280919016204, radius: 6363.211, timestamps: ts,
+    });
+    const body2 = makeBody('2', barycentre, {
+      semiMajorAxis: 0.0000816701119758518, orbitalEccentricity: 0.0869, orbitalInclination: -3.691517,
+      argOfPeriapsis: 66.910538, ascendingNode: -16.844281, meanAnomaly: 46.56284,
+      orbitalPeriod: 0.228280919016204, radius: 5415.574, timestamps: ts,
+    });
+    makeRing('A Ring', body2, 8155.4, 8158.6);
+    makeRing('B Ring', body2, 8158.7, 8173.0);
+    const moon1a = makeBody('1 a', body1, {
+      semiMajorAxis: 0.0000667281981855909, orbitalEccentricity: 0.000926, orbitalInclination: 5.715068,
+      argOfPeriapsis: 356.875202, ascendingNode: -159.524488, meanAnomaly: 161.705977,
+      orbitalPeriod: 0.106452093634259, radius: 337.0178125, timestamps: ts,
+    });
+
+    const status = service.detectRingCollisionStatus(moon1a, now);
+    expect(status.isCandidate).toBe(true);
+    expect(status.self?.kind).toBe('body');
+    expect(['2 A Ring', '2 B Ring']).toContain(status.partner?.name);
+    expect(status.nextCollision).not.toBeNull();
+    // The next close approach is under one binary orbit (6.79 h ≈ 0.228 d) away.
+    expect(status.nextCollision!.days).toBeGreaterThan(0);
+    expect(status.nextCollision!.days).toBeLessThan(0.228280919016204);
+    expect(status.upcomingCollisions.length).toBeGreaterThan(0);
+  });
+
   it('splits a close ring-on-ring pass into two contacts either side of closest approach', () => {
     // Contact along the line joining the bodies needs innerA + innerB <= D <= outerA + outerB.
     // These orbits close to 15,499.9 km at periapsis — inside the band's lower edge — so the
@@ -232,8 +283,8 @@ describe('OrbitalRelationsService.detectRingCollisionStatus', () => {
       argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
       orbitalPeriod: 0.283064148217593, radius: 4723.183, timestamps: ts,
     });
-    const ring1 = makeRing('1 B Ring', body1, 8454.5, 8470.4);
-    makeRing('2 A Ring', body2, 7104, 7123.8);
+    const ring1 = makeRing('B Ring', body1, 8454.5, 8470.4);
+    makeRing('A Ring', body2, 7104, 7123.8);
 
     const status = service.detectRingCollisionStatus(ring1, now);
     expect(status.isCandidate).toBe(true);
