@@ -1415,6 +1415,38 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(lastDialogData().nextCollision.minSeparationKm).toBe(1000);
     });
 
+    it('caps the diagram span for a pair whose near-1:1 resonance gives it a huge synodic period', async () => {
+      // A crossing-orbit sibling pair with near-identical periods (as in a real system) has a
+      // synodic period of hundreds of days — ten periods would span years, both mostly empty and
+      // (via the underlying nested-pair search) very slow. The diagram span must stay capped at
+      // SIMULTANEOUS_COLLISION_HORIZON_DAYS (180 days) regardless.
+      const parent = makeBody({ name: 'X 1' });
+      const bodyB = makeBody({ name: 'X 1 b' }, parent);
+      const bodyC = makeBody({ name: 'X 1 c' }, parent);
+      parent.subBodies = [bodyB, bodyC];
+      render(bodyB);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: 'X 1 c', synodicPeriodDays: 622.8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 12, minSeparationKm: 1000,
+        },
+      });
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+
+      await component.showCollisionDialog();
+
+      const MS_PER_DAY = 1000 * 60 * 60 * 24;
+      const [, horizonDaysArg] = orbitalWorkerStub.upcomingContactsWithin.mock.calls[0];
+      expect(horizonDaysArg).toBeLessThanOrEqual(180);
+      expect(horizonDaysArg).toBeGreaterThan(0);
+      const [, , , endMsArg] = orbitalWorkerStub.separationSeries.mock.calls[0];
+      const appService = TestBed.inject(AppService) as any;
+      const now = appService.nowOverride() ?? Date.now();
+      expect(endMsArg - now).toBeLessThanOrEqual(180 * MS_PER_DAY + 1);
+    });
+
     it('does nothing when the body is not a collision candidate', async () => {
       render(makeBody({}));
       component.collisionStatus.set(null);

@@ -87,6 +87,18 @@ const SIMULTANEOUS_COLLISION_HORIZON_DAYS = 180;
 /** Width of the collision dialog's distance-over-time diagram, in synodic periods. */
 const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
 /**
+ * Hard cap (days) on the diagram's span, reusing {@link SIMULTANEOUS_COLLISION_HORIZON_DAYS} as
+ * the same "near-term" scope already used right next to it in the dialog. Ten synodic periods is
+ * normally just days to weeks, but two orbits locked near a 1:1 resonance (near-identical periods,
+ * as with a real crossing-orbit sibling pair) have a synodic period of hundreds of days, ballooning
+ * ten periods into years — which both renders a mostly-empty diagram and forces the underlying
+ * nested-pair search to cover that whole span, measured at 11-12s for one such real pair. The
+ * actual next collision (found independently by `detectCollisionStatus`'s own marching search, not
+ * bounded by this cap) still lands inside this window regardless — the cap only limits how much
+ * *surrounding* context is drawn.
+ */
+const COLLISION_DIAGRAM_MAX_SPAN_DAYS = SIMULTANEOUS_COLLISION_HORIZON_DAYS;
+/**
  * Number of separation samples drawn across the diagram window (~100 per synodic period over the
  * {@link COLLISION_DIAGRAM_SYNODIC_PERIODS}-period span). Enough to render the conjunction dips
  * smoothly; the exact contact minima are threaded into the curve separately for precise markers.
@@ -1593,7 +1605,7 @@ export class SystemBodyComponent implements OnChanges {
     if (!partner) { return null; }
 
     const now = this.appService.nowOverride() ?? Date.now();
-    const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const spanMs = Math.min(synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS, COLLISION_DIAGRAM_MAX_SPAN_DAYS * MS_PER_DAY);
     const endMs = now + spanMs;
     const { series: samples, contacts: windowContactsRaw } = await this.orbitalWorker.ringCollisionDiagram(
       body, partner, now, endMs, COLLISION_DIAGRAM_SAMPLES, spanMs / MS_PER_DAY, now,
@@ -1635,10 +1647,12 @@ export class SystemBodyComponent implements OnChanges {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
     // Timeline: ten synodic periods — long enough to show the conjunction dips recurring and
-    // which of them deepen into collisions. Without a synodic period there is nothing to scale to.
+    // which of them deepen into collisions — capped at COLLISION_DIAGRAM_MAX_SPAN_DAYS for a pair
+    // whose near-1:1 resonance makes that far too wide. Without a synodic period there is nothing
+    // to scale to.
     const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
     if (!(synMs > 0)) { return null; }
-    const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const spanMs = Math.min(synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS, COLLISION_DIAGRAM_MAX_SPAN_DAYS * MS_PER_DAY);
     const endMs = now + spanMs;
 
     // Every contact inside the window — uncapped — grouped by the partner each is with, so dips
