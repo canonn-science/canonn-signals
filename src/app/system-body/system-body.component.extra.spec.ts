@@ -1488,6 +1488,37 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(lastDialogData().separationDiagram).not.toBeNull();
     });
 
+    it('resolves a "niece/nephew" collision partner (a child of this body\'s own sibling, the mirror of aunt/uncle) for the partner panel and distance diagram', async () => {
+      // Moon 1a is not among body 2's own siblings — it's a child of body 2's sibling, body 1,
+      // reachable only via OrbitalRelationsCore.nieceNephewCollisionPartners. Before that fix, only
+      // moon 1a's own page ever resolved this pair (via nestedCollisionPartners); body 2's page
+      // resolved nothing.
+      const grandparent = makeBody({ name: 'Barycentre', bodyId: 0 });
+      const body1 = makeBody({ name: '1' }, grandparent);
+      const body2 = makeBody({ name: '2' }, grandparent);
+      grandparent.subBodies = [body1, body2];
+      const moon1a = makeBody({ name: '1 a' }, body1);
+      body1.subBodies = [moon1a];
+
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+      render(body2);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: '1 a', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 1, minSeparationKm: 1000,
+        },
+      });
+
+      await component.showCollisionDialog();
+      expect(lastDialogData().bodyName).toBe('2');
+      expect(lastDialogData().partnerName).toBe('1 a');
+      expect(lastDialogData().partnerInfo).not.toBeNull();
+      expect(lastDialogData().partnerInfos.find((p: { name: string }) => p.name === '1 a')?.info).not.toBeNull();
+      expect(lastDialogData().separationDiagram).not.toBeNull();
+    });
+
     it('formats the badge countdown in days, adding years past a year, and flags in-progress', () => {
       render(makeBody({}));
       expect(component.formatCollisionCountdown(-1)).toBe('in progress now');

@@ -196,12 +196,14 @@ type RingOrbitPair =
 
 /**
  * A collision partner for a plain body-body collision (see {@link OrbitalRelationsCore.collisionPartners}):
- * either a direct sibling (`'simple'`, both sides a single Kepler orbit under the same parent), a
+ * a direct sibling (`'simple'`, both sides a single Kepler orbit under the same parent), a
  * "nested" aunt/uncle — a sibling of the reference body's own parent, checked against the
  * reference body's exact composite motion (see {@link OrbitalRelationsCore.nestedCollisionPartners}) —
- * or a "cousin" — a child of one of those aunts/uncles, checked against *both* sides' composite
- * motion (see {@link OrbitalRelationsCore.cousinCollisionPartners}). The latter two share the same
- * `'nested'` shape, since `posA`/`posB` are just arbitrary position closures either way. The
+ * its mirror image, a "niece/nephew" — a child of the reference body's own sibling, checked the
+ * other way round (see {@link OrbitalRelationsCore.nieceNephewCollisionPartners}) — or a "cousin" —
+ * a child of one of the reference body's aunts/uncles, checked against *both* sides' composite
+ * motion (see {@link OrbitalRelationsCore.cousinCollisionPartners}). The latter three share the
+ * same `'nested'` shape, since `posA`/`posB` are just arbitrary position closures either way. The
  * body-body analogue of {@link RingOrbitPair}, minus the ring-specific contact band (a plain
  * combined-radii threshold covers both bodies here).
  */
@@ -1292,7 +1294,9 @@ export class OrbitalRelationsCore {
    * a moon, the moon's own true position can independently cross the *other* planet too, at a
    * different moment than its parent's own collision — worth surfacing on the moon's own page the
    * same way a direct sibling collision is. The aunt/uncle's own moons are checked separately, by
-   * superposing *both* sides — see {@link cousinCollisionPartners}.
+   * superposing *both* sides — see {@link cousinCollisionPartners}. The aunt/uncle's own page needs
+   * the mirror-image search, `body` playing the simple role instead — see
+   * {@link nieceNephewCollisionPartners}.
    */
   private nestedCollisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
     const grandparent = body.parent?.parent;
@@ -1371,6 +1375,49 @@ export class OrbitalRelationsCore {
     return partners;
   }
 
+  /**
+   * Every "niece/nephew" collision candidate for `body`: a child of one of `body`'s own siblings,
+   * checked against *that child's* exact composite motion — its own orbit superposed on its
+   * parent's (`body`'s sibling), rather than the sibling's orbit alone. This is the mirror image
+   * of {@link nestedCollisionPartners}: when a nested moon is flagged as colliding with its
+   * aunt/uncle, the aunt/uncle's own page must find that moon too, the same way a direct sibling
+   * collision is symmetric on both bodies' pages — without this, only the moon's own page showed
+   * the badge, not the aunt/uncle's (reachable from either side's own `collisionPartners`/
+   * {@link nestedCollisionPartners}, but neither one searches "down into a sibling's children").
+   * Reuses {@link buildNestedPair} verbatim, with `body` itself playing the "other" (simple) role
+   * instead of the "nested" role.
+   */
+  private nieceNephewCollisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
+    if (!body.parent) { return []; }
+
+    const partners: CollisionPartnerDescriptor[] = [];
+    for (const sibling of body.parent.subBodies) {
+      if (sibling === body) { continue; }
+      if (sibling.bodyData.type === BODY_TYPE.Ring || sibling.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+
+      for (const niece of sibling.subBodies) {
+        if (niece.bodyData.type === BODY_TYPE.Ring || niece.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+        const contactKm = (body.bodyData.radius ?? 0) + (niece.bodyData.radius ?? 0);
+        if (!(contactKm > 0)) { continue; }
+
+        // Cheap radial pre-filter, mirroring nestedCollisionPartners' — the niece/nephew's reach
+        // is the wider nested range (its own orbit superposed on its parent's, the sibling), not
+        // a single orbit.
+        if (this.nestedPairOutOfReach(niece.bodyData, sibling.bodyData, body.bodyData, contactKm)) { continue; }
+
+        const nested = this.buildNestedPair(niece, sibling, body);
+        if (!nested) { continue; }
+
+        partners.push({
+          kind: 'nested', partner: niece, contactKm,
+          posA: nested.posA, posB: nested.posB,
+          fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
+        });
+      }
+    }
+    return partners;
+  }
+
   /** Upcoming contact windows for one collision partner, dispatching on whether it's simple or nested. */
   private collisionWindowsFor(bd: CanonnBiostatsBody, p: CollisionPartnerDescriptor, now: number, count: number, horizonMs: number): CollisionWindow[] {
     return p.kind === 'simple'
@@ -1387,7 +1434,10 @@ export class OrbitalRelationsCore {
    * partners or lacks the phase data to time them.
    */
   upcomingContactsWithin(body: SystemBody, horizonDays: number, now: number = Date.now()): CollisionWindow[] {
-    const partners = [...this.collisionPartners(body), ...this.nestedCollisionPartners(body), ...this.cousinCollisionPartners(body)];
+    const partners = [
+      ...this.collisionPartners(body), ...this.nestedCollisionPartners(body),
+      ...this.cousinCollisionPartners(body), ...this.nieceNephewCollisionPartners(body),
+    ];
     return this.contactWindowsWithin(partners, body.bodyData, horizonDays * MS_PER_DAY, now)
       .sort((a, b) => a.start.getTime() - b.start.getTime());
   }
@@ -1413,15 +1463,19 @@ export class OrbitalRelationsCore {
 
   /**
    * Timed multi-body pile-ups for `body` over the next `horizonDays`: intervals in which it is
-   * simultaneously within contact of two or more siblings (or "aunt/uncle"/"cousin" nested
-   * partners — see {@link nestedCollisionPartners}/{@link cousinCollisionPartners}). Unlike the
+   * simultaneously within contact of two or more siblings (or "aunt/uncle"/"cousin"/
+   * "niece/nephew" nested partners — see {@link nestedCollisionPartners}/
+   * {@link cousinCollisionPartners}/{@link nieceNephewCollisionPartners}). Unlike the
    * simultaneity derived from
    * {@link detectCollisionStatus}'s capped upcoming-contacts list, this scans every direct
    * partner's contacts across the whole horizon, so a cluster beyond the listed rows is still
    * found. Empty when the body has fewer than two crossing partners.
    */
   simultaneousCollisionsWithin(body: SystemBody, horizonDays: number, now: number = Date.now()): SimultaneousCollision[] {
-    const partners = [...this.collisionPartners(body), ...this.nestedCollisionPartners(body), ...this.cousinCollisionPartners(body)];
+    const partners = [
+      ...this.collisionPartners(body), ...this.nestedCollisionPartners(body),
+      ...this.cousinCollisionPartners(body), ...this.nieceNephewCollisionPartners(body),
+    ];
     if (partners.length < 2) { return []; }
     return this.groupSimultaneous(this.contactWindowsWithin(partners, body.bodyData, horizonDays * MS_PER_DAY, now), now);
   }
@@ -1475,13 +1529,15 @@ export class OrbitalRelationsCore {
     const directPartners = this.collisionPartners(body);
     const nestedPartners = this.nestedCollisionPartners(body);
     const cousinPartners = this.cousinCollisionPartners(body);
-    const partners: CollisionPartnerDescriptor[] = [...directPartners, ...nestedPartners, ...cousinPartners];
+    const nieceNephewPartners = this.nieceNephewCollisionPartners(body);
+    const partners: CollisionPartnerDescriptor[] = [...directPartners, ...nestedPartners, ...cousinPartners, ...nieceNephewPartners];
     if (partners.length === 0) { return none; }
 
     // Compute each partner's upcoming contact windows, then merge them into one chronological
-    // list so the soonest collisions surface regardless of which sibling — or "aunt/uncle"/"cousin"
-    // nested partner (see nestedCollisionPartners/cousinCollisionPartners) — they involve. Each
-    // window already carries its partner's name and contact radius (stamped in collisionWindowsFor).
+    // list so the soonest collisions surface regardless of which sibling — or "aunt/uncle"/"cousin"/
+    // "niece/nephew" nested partner (see nestedCollisionPartners/cousinCollisionPartners/
+    // nieceNephewCollisionPartners) — they involve. Each window already carries its partner's name
+    // and contact radius (stamped in collisionWindowsFor).
     const merged: CollisionWindow[] = [];
     for (const p of partners) {
       merged.push(...this.collisionWindowsFor(bd, p, now, MAX_UPCOMING_CONTACTS, Infinity));
@@ -1498,9 +1554,10 @@ export class OrbitalRelationsCore {
     // Identify additional siblings that are part of the same crossing-orbit group, making
     // this a multi-body cluster. Grow the group transitively from every *direct* partner: if
     // A crosses B and B crosses C, C is in the group even if A doesn’t directly cross C. Nested
-    // (aunt/uncle) and cousin partners sit one or two levels removed from this body's own sibling
-    // set and aren't folded into it — a moon crossing its parent's sibling (or its sibling's own
-    // moon) is its own candidate, not part of the sibling cluster's transitive closure.
+    // (aunt/uncle, cousin, niece/nephew) partners sit one or two levels removed from this body's
+    // own sibling set and aren't folded into it — a moon crossing its parent's sibling (or that
+    // sibling's own moon, or its own sibling's moon) is its own candidate, not part of the sibling
+    // cluster's transitive closure.
     const groupMembers = new Set<string>([bd.name, ...directPartners.map(p => p.partner.bodyData.name)]);
     let changed = true;
     while (changed) {

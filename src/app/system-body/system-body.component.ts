@@ -1482,13 +1482,17 @@ export class SystemBodyComponent implements OnChanges {
     // app-level time override) so the dialog's countdowns and now-marker match the badge.
     const body = this.body();
     // A collision partner can also be a "nested" aunt/uncle — a sibling of this body's own
-    // parent, one level further up (see OrbitalRelationsCore.nestedCollisionPartners) — or a
+    // parent, one level further up (see OrbitalRelationsCore.nestedCollisionPartners) — a
     // "cousin" — a child of one of those aunts/uncles, two levels up and back down (see
-    // OrbitalRelationsCore.cousinCollisionPartners) — not just a direct sibling, so all three
-    // levels are searched when resolving a partner's name back to a node.
+    // OrbitalRelationsCore.cousinCollisionPartners) — or a "niece/nephew" — a child of one of
+    // this body's own siblings, the mirror image of the aunt/uncle case (see
+    // OrbitalRelationsCore.nieceNephewCollisionPartners) — not just a direct sibling, so every
+    // level is searched when resolving a partner's name back to a node.
+    const ownSiblings = body.parent?.subBodies ?? [];
     const auntsUncles = body.parent?.parent?.subBodies.filter(s => s !== body.parent) ?? [];
     const cousins = auntsUncles.flatMap(auntUncle => auntUncle.subBodies);
-    const siblings = [...(body.parent?.subBodies ?? []), ...auntsUncles, ...cousins];
+    const niecesNephews = ownSiblings.flatMap(sibling => sibling !== body ? sibling.subBodies : []);
+    const siblings = [...ownSiblings, ...auntsUncles, ...cousins, ...niecesNephews];
     const now = this.appService.nowOverride() ?? Date.now();
 
     // Both of these run the heavy orbital search, so compute them off the main thread before the

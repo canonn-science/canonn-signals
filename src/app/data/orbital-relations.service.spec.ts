@@ -1026,6 +1026,58 @@ describe('OrbitalRelationsService', () => {
       expect(status.nextCollision!.days).toBeLessThan(0.15);
     });
 
+    it('flags the *other* body\'s own page too, symmetric to the moon\'s ("niece/nephew" body-on-body collision)', () => {
+      // Same fixture as the previous test: 1 a collides with 2 via nestedCollisionPartners. This
+      // checks the mirror image — body 2's own detectCollisionStatus must find 1 a too, the same
+      // way a direct sibling collision shows a badge on both bodies' own pages, not just one.
+      // Regression test: before nieceNephewCollisionPartners, only 1 a's own page ever showed the
+      // badge; body 2 (the "aunt/uncle") showed nothing, despite genuinely being in contact.
+      const KM_PER_AU = 149597870.7;
+      const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-08-17T19:39:35Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: BODY_TYPE.Barycentre } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const body1: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const body2: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, radius: 14_600, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const moon1a: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '1 a', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+          meanAnomaly: 180, orbitalPeriod: 10, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: body1,
+      };
+      barycentre.subBodies = [body1, body2];
+      body1.subBodies = [moon1a];
+
+      const status = service.detectCollisionStatus(body2, nowHere);
+      expect(status.isCandidate).toBe(true);
+      expect(status.partnerName).toBe('1 a');
+      expect(status.combinedRadiiKm).toBe(14_600);
+      expect(status.nextCollision).not.toBeNull();
+      expect(status.nextCollision!.days).toBeGreaterThan(0.05);
+      expect(status.nextCollision!.days).toBeLessThan(0.15);
+    });
+
     it('flags two "cousin" moons colliding with each other (both composite motions superposed)', () => {
       // Real orbital elements for Swoiwns TR-T b8-1 6/6a/6b/6aa/6ba: 6 a and 6 b are moons of gas
       // giant 6 on crossing orbits, and each has its own sub-moon (6 a a orbits 6 a; 6 b a orbits
