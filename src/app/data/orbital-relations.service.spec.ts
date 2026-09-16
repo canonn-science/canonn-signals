@@ -1026,6 +1026,70 @@ describe('OrbitalRelationsService', () => {
       expect(status.nextCollision!.days).toBeLessThan(0.15);
     });
 
+    it('flags two "cousin" moons colliding with each other (both composite motions superposed)', () => {
+      // Real orbital elements for Swoiwns TR-T b8-1 6/6a/6b/6aa/6ba: 6 a and 6 b are moons of gas
+      // giant 6 on crossing orbits, and each has its own sub-moon (6 a a orbits 6 a; 6 b a orbits
+      // 6 b). Verified offline (replicating this exact Kepler + superposition maths against the
+      // real Spansh data) that 6 a a and 6 b a's composite motions genuinely cross — dipping to
+      // ≈295 km apart against their ≈999 km combined radius — around day ≈215.7 from this epoch,
+      // independently of (and later than) 6 a a's own "aunt/uncle" contact with 6 b itself. This
+      // is only reachable by superposing *both* sides' own-orbit-plus-parent-orbit motion — see
+      // OrbitalRelationsCore.cousinCollisionPartners.
+      const ts = { meanAnomaly: '2026-03-31T02:37:13Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-03-31T02:37:13Z');
+      const grandparent: SystemBody = {
+        bodyData: { bodyId: 0, name: '6', id64: 0n, subType: '', type: BODY_TYPE.Planet } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const parentA: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '6 a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00415872553977889, orbitalEccentricity: 0.002453, orbitalInclination: 0.009772,
+          argOfPeriapsis: 72.842537, ascendingNode: -34.886632, meanAnomaly: 335.35625,
+          orbitalPeriod: 2.27556874354167, radius: 1123.50025, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      const parentB: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '6 b', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00416885891189136, orbitalEccentricity: 0.000488, orbitalInclination: 0.399202,
+          argOfPeriapsis: 230.161054, ascendingNode: 130.820341, meanAnomaly: 62.208231,
+          orbitalPeriod: 2.28389097309028, radius: 1322.5515, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      grandparent.subBodies = [parentA, parentB];
+      const cousinA: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '6 a a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.76673944880754e-5, orbitalEccentricity: 0, orbitalInclination: 67.988536,
+          argOfPeriapsis: 123.499656, ascendingNode: -107.265331, meanAnomaly: 221.680645,
+          orbitalPeriod: 0.234006676412037, radius: 497.94171875, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentA,
+      };
+      const cousinB: SystemBody = {
+        bodyData: {
+          bodyId: 4, name: '6 b a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.9282955161948e-5, orbitalEccentricity: 0, orbitalInclination: 30.492184,
+          argOfPeriapsis: 283.532484, ascendingNode: 85.343221, meanAnomaly: 287.320169,
+          orbitalPeriod: 0.211418109641204, radius: 501.53709375, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentB,
+      };
+      parentA.subBodies = [cousinA];
+      parentB.subBodies = [cousinB];
+
+      const windows = service.upcomingContactsWithin(cousinA, 220, nowHere);
+      const cousinWindow = windows.find(w => w.partnerName === '6 b a');
+      expect(cousinWindow).not.toBeUndefined();
+      expect(cousinWindow!.combinedRadiiKm).toBeCloseTo(999.4788125, 3);
+      expect(cousinWindow!.minSeparationKm).toBeLessThan(cousinWindow!.combinedRadiiKm!);
+      expect(cousinWindow!.days).toBeGreaterThan(200);
+      expect(cousinWindow!.days).toBeLessThan(230);
+    });
+
     it('drops a contact window rather than fabricating an edge when the true contact outlasts half the synodic period', () => {
       // Two identically-shaped, highly eccentric orbits (same semiMajorAxis/eccentricity, just
       // out of phase via different periods) with a deliberately huge combined radius. Verified

@@ -1,5 +1,5 @@
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import { bodyPathFromRoot, serializeCollisionFamily, rehydrateCollisionFamily, serializeSystemTree, rehydrateSystemTree, findBodyByPath } from './collision-request';
+import { bodyPathFromRoot, serializeSystemTree, rehydrateSystemTree, findBodyByPath } from './collision-request';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 
 /**
@@ -46,48 +46,14 @@ describe('collision-request (worker serialization boundary)', () => {
     ]);
   }
 
-  describe('serializeCollisionFamily', () => {
-    it('captures the parent, every sibling in order, and the focus index', () => {
-      const [a, b] = collidingPair();
-      const dto = serializeCollisionFamily(a);
-      expect(dto).not.toBeNull();
-      expect(dto!.parent).toBe(a.parent!.bodyData);
-      expect(dto!.siblings).toEqual([a.bodyData, b.bodyData]);
-      expect(dto!.focusIndex).toBe(0);
-
-      // A non-first focus reports its own index.
-      expect(serializeCollisionFamily(b)!.focusIndex).toBe(1);
-    });
-
-    it('returns null for a body with no parent (nothing to compare against)', () => {
-      const orphan: SystemBody = {
-        bodyData: { bodyId: 1, name: 'Lonely', id64: 0n, subType: '', type: 'Planet' } as CanonnBiostatsBody,
-        subBodies: [],
-        parent: null,
-      };
-      expect(serializeCollisionFamily(orphan)).toBeNull();
-    });
-  });
-
-  describe('rehydrateCollisionFamily', () => {
-    it('rebuilds a tree whose focus is reference-identical to one of its parent\'s subBodies', () => {
-      const [a] = collidingPair();
-      const focus = rehydrateCollisionFamily(serializeCollisionFamily(a)!);
-      expect(focus.parent).not.toBeNull();
-      expect(focus.parent!.subBodies).toContain(focus);
-      expect(focus.parent!.subBodies[0]).toBe(focus);
-      // Every sibling points back at the same synthetic parent.
-      for (const sib of focus.parent!.subBodies) {
-        expect(sib.parent).toBe(focus.parent);
-      }
-    });
-  });
-
   describe('round-trip equivalence with the live tree', () => {
+    // Both collision engines (planetary and ring) now serialize via the same whole-tree DTO — the
+    // planetary engine needs full ancestry too, to reach a moon's "aunt/uncle" and "cousin" nested
+    // collision partners, which a "parent + its children" DTO couldn't reach.
     it('detectCollisionStatus is identical on the original and the rehydrated body', () => {
       const [a] = collidingPair();
       const direct = core.detectCollisionStatus(a, now);
-      const viaWire = core.detectCollisionStatus(rehydrateCollisionFamily(serializeCollisionFamily(a)!), now);
+      const viaWire = core.detectCollisionStatus(rehydrateSystemTree(serializeSystemTree(a)!), now);
       expect(direct.isCandidate).toBe(true);
       expect(viaWire).toEqual(direct);
     });
@@ -95,18 +61,18 @@ describe('collision-request (worker serialization boundary)', () => {
     it('upcomingContactsWithin is identical through the boundary', () => {
       const [a] = collidingPair();
       const direct = core.upcomingContactsWithin(a, 365, now);
-      const viaWire = core.upcomingContactsWithin(rehydrateCollisionFamily(serializeCollisionFamily(a)!), 365, now);
+      const viaWire = core.upcomingContactsWithin(rehydrateSystemTree(serializeSystemTree(a)!), 365, now);
       expect(direct.length).toBeGreaterThan(0);
       expect(viaWire).toEqual(direct);
     });
   });
 
   /**
-   * Ring collisions scan the *whole* system tree (direct orbit, siblings, and nesting through a
-   * sibling's own parent — see resolveRingOrbitPair), unlike planetary collision's single family,
-   * so they need the whole tree serialized, not just one parent + its children.
+   * Both collision engines scan the *whole* system tree: rings need it for direct orbit, siblings,
+   * and nesting through a sibling's own parent (see resolveRingOrbitPair), and planetary collision
+   * needs it to walk above a moon's own parent to reach aunt/uncle and cousin nested partners.
    */
-  describe('SystemTreeDto (whole-tree serialization for ring collisions)', () => {
+  describe('SystemTreeDto (whole-tree serialization)', () => {
     /** star -> [planetA -> [moonA1], planetB -> [ring]] — three levels, to exercise real nesting. */
     function multiLevelTree(): { star: SystemBody; planetA: SystemBody; moonA1: SystemBody; planetB: SystemBody; ring: SystemBody } {
       const star: SystemBody = { bodyData: { bodyId: 0, name: 'Star', id64: 0n, subType: '', type: 'Star' } as CanonnBiostatsBody, subBodies: [], parent: null };

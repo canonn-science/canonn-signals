@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink';
 import { createCollisionApi, CollisionWorkerApi } from './collision-worker-api';
 import { OrbitalRelationsCore } from './orbital-relations.core';
-import { bodyPathFromRoot, serializeCollisionFamily, serializeSystemTree } from './collision-request';
+import { bodyPathFromRoot, serializeSystemTree } from './collision-request';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 
 /**
@@ -50,7 +50,7 @@ describe('collision-worker-api', () => {
   it('createCollisionApi rehydrates a DTO and delegates to the core', () => {
     const [a] = collidingPair();
     const api = createCollisionApi(core);
-    const viaApi = api.detectCollisionStatus(serializeCollisionFamily(a)!, now);
+    const viaApi = api.detectCollisionStatus(serializeSystemTree(a)!, now);
     expect(viaApi.isCandidate).toBe(true);
     expect(viaApi).toEqual(core.detectCollisionStatus(a, now));
   });
@@ -58,7 +58,7 @@ describe('collision-worker-api', () => {
   it('exposes all four methods, each matching the core on the same inputs', () => {
     const [a, b] = collidingPair();
     const api = createCollisionApi(core);
-    const dto = serializeCollisionFamily(a)!;
+    const dto = serializeSystemTree(a)!;
     const endMs = now + 200 * 24 * 60 * 60 * 1000;
 
     expect(api.simultaneousCollisionsWithin(dto, 180, now)).toEqual(core.simultaneousCollisionsWithin(a, 180, now));
@@ -70,7 +70,67 @@ describe('collision-worker-api', () => {
   it('defaults to a fresh core when none is passed', () => {
     const [a] = collidingPair();
     const api = createCollisionApi();
-    expect(api.detectCollisionStatus(serializeCollisionFamily(a)!, now).isCandidate).toBe(true);
+    expect(api.detectCollisionStatus(serializeSystemTree(a)!, now).isCandidate).toBe(true);
+  });
+
+  /**
+   * Regression test for the bug the switch to {@link serializeSystemTree} fixes: a moon's
+   * "aunt/uncle" nested collision (see `OrbitalRelationsCore.nestedCollisionPartners`) needs its
+   * *grandparent* to find its parent's siblings. The old `CollisionFamilyDto` only carried the
+   * parent + its direct children, so `rehydrateCollisionFamily` always produced a tree with
+   * `parent.parent === null` — silently disabling every aunt/uncle (and, transitively, cousin)
+   * collision whenever a request actually crossed the worker boundary via this API, even though
+   * the same body passed directly to the core (as the inline fallback and every core-level spec
+   * do) worked correctly. This drives the moon through `createCollisionApi` + `serializeSystemTree`
+   * exactly as the worker does, so it fails again if the DTO ever loses that ancestry.
+   */
+  it('finds a moon\'s aunt/uncle nested collision through the worker DTO boundary', () => {
+    const KM_PER_AU = 149597870.7;
+    const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+    const nowHere = Date.parse('2026-08-17T19:39:35Z');
+    const barycentre: SystemBody = {
+      bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: 'Barycentre' } as CanonnBiostatsBody,
+      subBodies: [], parent: null,
+    };
+    const body1: SystemBody = {
+      bodyData: {
+        bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    const body2: SystemBody = {
+      bodyData: {
+        bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, radius: 14_600, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    // Body 1 & 2 are a locked (equal-period) binary, so the direct-sibling engine never flags
+    // them against each other — this contact is only reachable via the moon's composite motion.
+    const moon1a: SystemBody = {
+      bodyData: {
+        bodyId: 3, name: '1 a', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0,
+        argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+        meanAnomaly: 180, orbitalPeriod: 10, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: body1,
+    };
+    barycentre.subBodies = [body1, body2];
+    body1.subBodies = [moon1a];
+
+    const api = createCollisionApi(core);
+    const direct = core.detectCollisionStatus(moon1a, nowHere);
+    expect(direct.isCandidate).toBe(true);
+    expect(direct.partnerName).toBe('2');
+
+    const viaWire = api.detectCollisionStatus(serializeSystemTree(moon1a)!, nowHere);
+    expect(viaWire).toEqual(direct);
   });
 
   /** A ring-bearing binary pair orbiting a shared barycentre (Musca Dark Region SO-Q b5-5 1 & 2). */
@@ -148,7 +208,7 @@ describe('collision-worker-api', () => {
 
   it('round-trips detectCollisionStatus over a real Comlink MessagePort', async () => {
     const [a] = collidingPair();
-    const dto = serializeCollisionFamily(a)!;
+    const dto = serializeSystemTree(a)!;
 
     const { port1, port2 } = new MessageChannel();
     Comlink.expose(createCollisionApi(), port1);

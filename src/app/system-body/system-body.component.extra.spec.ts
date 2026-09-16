@@ -1454,6 +1454,40 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(lastDialogData().separationDiagram).not.toBeNull();
     });
 
+    it('resolves a "cousin" collision partner (a child of an aunt/uncle, two levels up and back down) for the partner panel and distance diagram', async () => {
+      // Body 2 b is not among moon 1a's own siblings, nor a sibling of its parent (body 1) — it's
+      // a child of body 1's sibling, body 2, reachable only via OrbitalRelationsCore.cousinCollisionPartners.
+      const grandparent = makeBody({ name: 'Barycentre', bodyId: 0 });
+      const body1 = makeBody({ name: '1' }, grandparent);
+      const body2 = makeBody({ name: '2' }, grandparent);
+      grandparent.subBodies = [body1, body2];
+      const moon1a = makeBody({ name: '1 a' }, body1);
+      body1.subBodies = [moon1a];
+      const moon2b = makeBody({ name: '2 b' }, body2);
+      body2.subBodies = [moon2b];
+
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+      render(moon1a);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: '2 b', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 1, minSeparationKm: 1000,
+        },
+      });
+
+      await component.showCollisionDialog();
+      expect(lastDialogData().bodyName).toBe('1 a');
+      expect(lastDialogData().partnerName).toBe('2 b');
+      // Before the fix, siblings only searched body.parent.subBodies and the grandparent's other
+      // children (aunts/uncles), not their children in turn, so this would silently resolve to
+      // null and the diagram would drop the only partner entirely.
+      expect(lastDialogData().partnerInfo).not.toBeNull();
+      expect(lastDialogData().partnerInfos.find((p: { name: string }) => p.name === '2 b')?.info).not.toBeNull();
+      expect(lastDialogData().separationDiagram).not.toBeNull();
+    });
+
     it('formats the badge countdown in days, adding years past a year, and flags in-progress', () => {
       render(makeBody({}));
       expect(component.formatCollisionCountdown(-1)).toBe('in progress now');

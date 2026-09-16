@@ -3,7 +3,7 @@ import * as Comlink from 'comlink';
 import type { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 import { OrbitalRelationsCore } from './orbital-relations.core';
 import type { CollisionStatus, SimultaneousCollision, CollisionWindow, SeparationSample, RingCollisionStatus } from './orbital-relations.core';
-import { bodyPathFromRoot, serializeCollisionFamily, serializeSystemTree } from './collision-request';
+import { bodyPathFromRoot, serializeSystemTree } from './collision-request';
 import type { CollisionWorkerApi } from './collision-worker-api';
 
 const WORKER_CALL_TIMEOUT_MS = 30_000;
@@ -176,7 +176,10 @@ export class OrbitalWorkerService {
   async detectCollisionStatus(body: SystemBody, now: number): Promise<CollisionStatus> {
     const proxy = this.getProxy();
     const workerFailure = this.workerFailure;
-    const dto = proxy ? serializeCollisionFamily(body) : null;
+    // A parentless body has nothing to compare against (the core bails out immediately on
+    // `!body.parent`) — skip serializing/posting the whole tree for a result that's always "not a
+    // candidate".
+    const dto = proxy && body.parent ? serializeSystemTree(body) : null;
     if (!proxy || this.workerUnavailable || !dto) { return this.inline.detectCollisionStatus(body, now); }
     return this.runWithFallback(
       () => proxy.detectCollisionStatus(dto, now),
@@ -189,7 +192,7 @@ export class OrbitalWorkerService {
   async simultaneousCollisionsWithin(body: SystemBody, horizonDays: number, now: number): Promise<SimultaneousCollision[]> {
     const proxy = this.getProxy();
     const workerFailure = this.workerFailure;
-    const dto = proxy ? serializeCollisionFamily(body) : null;
+    const dto = proxy && body.parent ? serializeSystemTree(body) : null;
     if (!proxy || this.workerUnavailable || !dto) { return this.inline.simultaneousCollisionsWithin(body, horizonDays, now); }
     return this.runWithFallback(
       () => proxy.simultaneousCollisionsWithin(dto, horizonDays, now),
@@ -202,7 +205,7 @@ export class OrbitalWorkerService {
   async upcomingContactsWithin(body: SystemBody, horizonDays: number, now: number): Promise<CollisionWindow[]> {
     const proxy = this.getProxy();
     const workerFailure = this.workerFailure;
-    const dto = proxy ? serializeCollisionFamily(body) : null;
+    const dto = proxy && body.parent ? serializeSystemTree(body) : null;
     if (!proxy || this.workerUnavailable || !dto) { return this.inline.upcomingContactsWithin(body, horizonDays, now); }
     return this.runWithFallback(
       () => proxy.upcomingContactsWithin(dto, horizonDays, now),
@@ -224,10 +227,12 @@ export class OrbitalWorkerService {
   }
 
   /**
-   * Off-thread {@link OrbitalRelationsCore.detectRingCollisionStatus}. Unlike the planetary methods
-   * above (which only ever need `body`'s shared parent and its direct siblings), ring collisions
-   * scan the whole system tree. Cache one whole-system analysis per root/time so the recursive body
-   * rows share a single worker job instead of each queueing its own full-tree scan.
+   * Off-thread {@link OrbitalRelationsCore.detectRingCollisionStatus}. Ring collisions scan the
+   * whole system tree, same as the planetary methods above (both now serialize via
+   * {@link serializeSystemTree} — the planetary engine needs full ancestry too, to reach a moon's
+   * "aunt/uncle" and "cousin" nested collision partners). Cache one whole-system analysis per
+   * root/time so the recursive body rows share a single worker job instead of each queueing its
+   * own full-tree scan.
    */
   async detectRingCollisionStatus(body: SystemBody, now: number): Promise<RingCollisionStatus> {
     const root = this.systemRoot(body);

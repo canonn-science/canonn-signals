@@ -1,20 +1,20 @@
 import { OrbitalRelationsCore } from './orbital-relations.core';
 import type { CollisionStatus, SimultaneousCollision, CollisionWindow, SeparationSample, RingCollisionStatus } from './orbital-relations.core';
-import { rehydrateCollisionFamily, rehydrateSystemTree, findBodyByPath } from './collision-request';
-import type { CollisionFamilyDto, SystemTreeDto } from './collision-request';
+import { rehydrateSystemTree, findBodyByPath } from './collision-request';
+import type { SystemTreeDto } from './collision-request';
 import type { CanonnBiostatsBody } from '../home/home.component';
 
 /**
  * The collision engine's heavy methods as exposed over Comlink. Every argument is
- * structured-clone-safe (a {@link CollisionFamilyDto}/{@link SystemTreeDto}, a partner name, or
- * flat `bodyData`) and every return value is plain data — `Date` and `bigint` both survive
- * structured clone — so no `Comlink.proxy`/`Comlink.transfer` is needed. {@link OrbitalWorkerService}
- * wraps this shape on the main thread.
+ * structured-clone-safe (a {@link SystemTreeDto}, a partner name/path, or flat `bodyData`) and
+ * every return value is plain data — `Date` and `bigint` both survive structured clone — so no
+ * `Comlink.proxy`/`Comlink.transfer` is needed. {@link OrbitalWorkerService} wraps this shape on
+ * the main thread.
  */
 export interface CollisionWorkerApi {
-  detectCollisionStatus(dto: CollisionFamilyDto, now: number): CollisionStatus;
-  simultaneousCollisionsWithin(dto: CollisionFamilyDto, horizonDays: number, now: number): SimultaneousCollision[];
-  upcomingContactsWithin(dto: CollisionFamilyDto, horizonDays: number, now: number): CollisionWindow[];
+  detectCollisionStatus(dto: SystemTreeDto, now: number): CollisionStatus;
+  simultaneousCollisionsWithin(dto: SystemTreeDto, horizonDays: number, now: number): SimultaneousCollision[];
+  upcomingContactsWithin(dto: SystemTreeDto, horizonDays: number, now: number): CollisionWindow[];
   separationSeries(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startMs: number, endMs: number, samples: number): SeparationSample[];
   detectRingCollisionStatus(dto: SystemTreeDto, now: number): RingCollisionStatus;
   detectRingCollisionStatuses(dto: SystemTreeDto, now: number): RingCollisionStatus[];
@@ -48,11 +48,11 @@ export interface CollisionWorkerApi {
 export function createCollisionApi(core: OrbitalRelationsCore = new OrbitalRelationsCore()): CollisionWorkerApi {
   return {
     detectCollisionStatus: (dto, now) =>
-      core.detectCollisionStatus(rehydrateCollisionFamily(dto), now),
+      core.detectCollisionStatus(rehydrateSystemTree(dto), now),
     simultaneousCollisionsWithin: (dto, horizonDays, now) =>
-      core.simultaneousCollisionsWithin(rehydrateCollisionFamily(dto), horizonDays, now),
+      core.simultaneousCollisionsWithin(rehydrateSystemTree(dto), horizonDays, now),
     upcomingContactsWithin: (dto, horizonDays, now) =>
-      core.upcomingContactsWithin(rehydrateCollisionFamily(dto), horizonDays, now),
+      core.upcomingContactsWithin(rehydrateSystemTree(dto), horizonDays, now),
     separationSeries: (a, b, startMs, endMs, samples) =>
       core.separationSeries(a, b, startMs, endMs, samples),
     detectRingCollisionStatus: (dto, now) =>
