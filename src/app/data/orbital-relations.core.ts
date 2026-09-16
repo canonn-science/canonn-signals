@@ -1479,6 +1479,7 @@ export class OrbitalRelationsCore {
           kind: 'nested', partner: niece, contactKm,
           posA: nested.posA, posB: nested.posB,
           fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
+          maxRelativeSpeed: nested.maxRelativeSpeed,
         });
       }
     }
