@@ -60,5 +60,7 @@ describe('nested collision speed bound', () => {
     // expanded searches, including cousin contacts, well below that cost.
     expect(refinements.mock.calls.length).toBeGreaterThan(0);
     expect(refinements.mock.calls.length).toBeLessThan(100);
-  });
+    // Fast (~1-2s) in isolation, but the two real Infinity-horizon searches over live Swoiwns
+    // data can crowd the default 5s budget under full-suite parallel load.
+  }, 20_000);
 });

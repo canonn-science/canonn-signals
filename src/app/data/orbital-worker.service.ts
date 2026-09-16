@@ -7,7 +7,8 @@ import { bodyPathFromRoot, serializeSystemTree } from './collision-request';
 import type { CollisionWorkerApi } from './collision-worker-api';
 
 const WORKER_CALL_TIMEOUT_MS = 30_000;
-const RING_ANALYSIS_CACHE_WINDOW_MS = 3000;
+/** Shared freshness window for {@link ringCollisionStatusCache} and {@link collisionStatusCache}. */
+const ANALYSIS_CACHE_WINDOW_MS = 3000;
 
 /**
  * Main-thread facade for the heavy collision engine, run off the UI thread in a single shared
@@ -54,6 +55,18 @@ export class OrbitalWorkerService {
   private readonly ringCollisionStatusCache = new WeakMap<SystemBody, {
     createdAt: number;
     promise: Promise<RingCollisionStatus[]>;
+  }>();
+  /**
+   * The planetary-collision analogue of {@link ringCollisionStatusCache}: without it, each row's
+   * own {@link detectCollisionStatus} call independently rediscovers and re-searches every pair it's
+   * part of, even when another row already paid for that exact same pair (a moon's "aunt/uncle"
+   * contact and its aunt/uncle's own "niece/nephew" view of it, say) — see
+   * {@link OrbitalRelationsCore.detectCollisionStatuses}, which shares each pair's search once
+   * across every body in the batch.
+   */
+  private readonly collisionStatusCache = new WeakMap<SystemBody, {
+    createdAt: number;
+    promise: Promise<CollisionStatus[]>;
   }>();
   /**
    * Per-root cache of each body's index within its system's fixed flattened order, so recursively
@@ -172,18 +185,39 @@ export class OrbitalWorkerService {
     }
   }
 
-  /** Off-thread {@link OrbitalRelationsCore.detectCollisionStatus}. */
+  /**
+   * Off-thread {@link OrbitalRelationsCore.detectCollisionStatus}. Cache one whole-system analysis
+   * per root/time (mirroring {@link detectRingCollisionStatus} exactly) so the recursive body rows
+   * share a single worker job, and — more importantly here — so each unique colliding *pair* is
+   * searched once instead of once per row that discovers it (see
+   * {@link OrbitalRelationsCore.detectCollisionStatuses}).
+   */
   async detectCollisionStatus(body: SystemBody, now: number): Promise<CollisionStatus> {
+    // A parentless body has nothing to compare against (the core bails out immediately on
+    // `!body.parent`) — skip the whole batch/cache path for a result that's always "not a candidate".
+    if (!body.parent) { return this.inline.detectCollisionStatus(body, now); }
+
+    const root = this.systemRoot(body);
+    const focusIndex = this.indexInSystem(root, body);
+    if (focusIndex < 0) { return this.inline.detectCollisionStatus(body, now); }
+
+    const cached = this.collisionStatusCache.get(root);
+    let promise = cached && (Date.now() - cached.createdAt) < ANALYSIS_CACHE_WINDOW_MS ? cached.promise : null;
+    if (!promise) {
+      promise = this.detectCollisionStatuses(root, now);
+      this.collisionStatusCache.set(root, { createdAt: Date.now(), promise });
+    }
+    return promise.then(statuses => statuses[focusIndex] ?? this.inline.detectCollisionStatus(body, now));
+  }
+
+  private async detectCollisionStatuses(body: SystemBody, now: number): Promise<CollisionStatus[]> {
     const proxy = this.getProxy();
     const workerFailure = this.workerFailure;
-    // A parentless body has nothing to compare against (the core bails out immediately on
-    // `!body.parent`) — skip serializing/posting the whole tree for a result that's always "not a
-    // candidate".
-    const dto = proxy && body.parent ? serializeSystemTree(body) : null;
-    if (!proxy || this.workerUnavailable || !dto) { return this.inline.detectCollisionStatus(body, now); }
+    const dto = proxy ? serializeSystemTree(body) : null;
+    if (!proxy || this.workerUnavailable || !dto) { return this.inline.detectCollisionStatuses(body, now); }
     return this.runWithFallback(
-      () => proxy.detectCollisionStatus(dto, now),
-      () => this.inline.detectCollisionStatus(body, now),
+      () => proxy.detectCollisionStatuses(dto, now),
+      () => this.inline.detectCollisionStatuses(body, now),
       workerFailure,
     );
   }
@@ -240,7 +274,7 @@ export class OrbitalWorkerService {
     if (focusIndex < 0) { return this.inline.detectRingCollisionStatus(body, now); }
 
     const cached = this.ringCollisionStatusCache.get(root);
-    let promise = cached && (Date.now() - cached.createdAt) < RING_ANALYSIS_CACHE_WINDOW_MS ? cached.promise : null;
+    let promise = cached && (Date.now() - cached.createdAt) < ANALYSIS_CACHE_WINDOW_MS ? cached.promise : null;
     if (!promise) {
       promise = this.detectRingCollisionStatuses(root, now);
       this.ringCollisionStatusCache.set(root, { createdAt: Date.now(), promise });

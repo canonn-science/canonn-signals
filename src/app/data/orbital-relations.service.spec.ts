@@ -1142,6 +1142,102 @@ describe('OrbitalRelationsService', () => {
       expect(cousinWindow!.days).toBeLessThan(230);
     });
 
+    /** The same real Swoiwns TR-T b8-1 6/6a/6b/6aa/6ba family used by the "cousin" test above. */
+    function swoiwnsFamily(): { grandparent: SystemBody; parentA: SystemBody; parentB: SystemBody; cousinA: SystemBody; cousinB: SystemBody } {
+      const ts = { meanAnomaly: '2026-03-31T02:37:13Z' } as CanonnBiostatsBody['timestamps'];
+      const grandparent: SystemBody = {
+        bodyData: { bodyId: 0, name: '6', id64: 0n, subType: '', type: BODY_TYPE.Planet } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const parentA: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '6 a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00415872553977889, orbitalEccentricity: 0.002453, orbitalInclination: 0.009772,
+          argOfPeriapsis: 72.842537, ascendingNode: -34.886632, meanAnomaly: 335.35625,
+          orbitalPeriod: 2.27556874354167, radius: 1123.50025, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      const parentB: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '6 b', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00416885891189136, orbitalEccentricity: 0.000488, orbitalInclination: 0.399202,
+          argOfPeriapsis: 230.161054, ascendingNode: 130.820341, meanAnomaly: 62.208231,
+          orbitalPeriod: 2.28389097309028, radius: 1322.5515, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      grandparent.subBodies = [parentA, parentB];
+      const cousinA: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '6 a a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.76673944880754e-5, orbitalEccentricity: 0, orbitalInclination: 67.988536,
+          argOfPeriapsis: 123.499656, ascendingNode: -107.265331, meanAnomaly: 221.680645,
+          orbitalPeriod: 0.234006676412037, radius: 497.94171875, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentA,
+      };
+      const cousinB: SystemBody = {
+        bodyData: {
+          bodyId: 4, name: '6 b a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.9282955161948e-5, orbitalEccentricity: 0, orbitalInclination: 30.492184,
+          argOfPeriapsis: 283.532484, ascendingNode: 85.343221, meanAnomaly: 287.320169,
+          orbitalPeriod: 0.211418109641204, radius: 501.53709375, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentB,
+      };
+      parentA.subBodies = [cousinA];
+      parentB.subBodies = [cousinB];
+      return { grandparent, parentA, parentB, cousinA, cousinB };
+    }
+
+    it('detectCollisionStatuses matches a per-body detectCollisionStatus call for every body in the family', () => {
+      const { grandparent, parentA, parentB, cousinA, cousinB } = swoiwnsFamily();
+      const nowHere = Date.parse('2026-03-31T02:37:13Z');
+
+      const batch = service.detectCollisionStatuses(grandparent, nowHere);
+      const byName = new Map<string, SystemBody>([
+        ['6', grandparent], ['6 a', parentA], ['6 b', parentB], ['6 a a', cousinA], ['6 b a', cousinB],
+      ]);
+      const flatOrder = ['6', '6 a', '6 a a', '6 b', '6 b a']; // depth-first, matching flattenSystem
+      expect(batch.length).toBe(flatOrder.length);
+      flatOrder.forEach((name, i) => {
+        expect(batch[i]).toEqual(service.detectCollisionStatus(byName.get(name)!, nowHere));
+      });
+      // Sanity: the real pairs found earlier are still all present in the batch.
+      expect(batch.find((_, i) => flatOrder[i] === '6 a')!.partnerName).toBe('6 b');
+      expect(batch.find((_, i) => flatOrder[i] === '6 a a')!.upcomingCollisions.some(w => w.partnerName === '6 b a')).toBe(true);
+      // Genuinely slow: the batch call plus five more independent full (Infinity-horizon) searches
+      // over the real Swoiwns data, each ~1-2s (see the perf investigation this fixture also backs).
+    }, 30_000);
+
+    it('detectCollisionStatuses shares each pair\'s search once instead of once per body that discovers it', () => {
+      const { grandparent } = swoiwnsFamily();
+      const nowHere = Date.parse('2026-03-31T02:37:13Z');
+      // Warm up JIT/caches identically for both measurements before spying, so the comparison
+      // below reflects search-sharing, not incidental first-run cost.
+      service.detectCollisionStatuses(grandparent, nowHere);
+
+      const core = service as unknown as { nestedContactWindows(...args: unknown[]): unknown };
+      const spy = vi.spyOn(core, 'nestedContactWindows');
+      service.detectCollisionStatuses(grandparent, nowHere);
+      const batchCalls = spy.mock.calls.length;
+      spy.mockClear();
+
+      for (const body of [...grandparent.subBodies, ...grandparent.subBodies.flatMap(s => s.subBodies)]) {
+        service.detectCollisionStatus(body, nowHere);
+      }
+      const perBodyCalls = spy.mock.calls.length;
+      spy.mockRestore();
+
+      // Four unique pairs need nestedContactWindows (6aa↔6b, 6ba↔6a, 6aa↔6ba, plus the group-
+      // membership check doesn't use it); computed per-body that's up to 2x since each of the two
+      // moons' pairs is discovered from both sides.
+      expect(batchCalls).toBeGreaterThan(0);
+      expect(batchCalls).toBeLessThan(perBodyCalls);
+      // Genuinely slow: three full (Infinity-horizon) passes over the real Swoiwns data.
+    }, 60_000);
+
     it('drops a contact window rather than fabricating an edge when the true contact outlasts half the synodic period', () => {
       // Two identically-shaped, highly eccentric orbits (same semiMajorAxis/eccentricity, just
       // out of phase via different periods) with a deliberately huge combined radius. Verified

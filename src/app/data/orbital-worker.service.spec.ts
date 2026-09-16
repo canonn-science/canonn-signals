@@ -167,6 +167,18 @@ describe('OrbitalWorkerService', () => {
           isCandidate: true, partnerName: 'From Worker', synodicPeriodDays: 1,
           nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
         }),
+        // Aligned to flattenSystem's depth-first order for collidingPair()'s tree: [Parent, Child 1, Child 2].
+        detectCollisionStatuses: vi.fn().mockResolvedValue([
+          { isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [] },
+          {
+            isCandidate: true, partnerName: 'From Worker', synodicPeriodDays: 1,
+            nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
+          },
+          {
+            isCandidate: true, partnerName: 'Self', synodicPeriodDays: 1,
+            nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
+          },
+        ]),
         simultaneousCollisionsWithin: vi.fn().mockResolvedValue([]),
         upcomingContactsWithin: vi.fn().mockResolvedValue([]),
         separationSeries: vi.fn().mockResolvedValue([]),
@@ -232,7 +244,7 @@ describe('OrbitalWorkerService', () => {
 
       const status = await svc.detectCollisionStatus(a, now);
       expect(status.partnerName).toBe('From Worker'); // came from the proxy, not the local core
-      expect(proxy.detectCollisionStatus).toHaveBeenCalledOnce();
+      expect(proxy.detectCollisionStatuses).toHaveBeenCalledOnce();
 
       await svc.simultaneousCollisionsWithin(a, 180, now);
       await svc.upcomingContactsWithin(a, 180, now);
@@ -269,6 +281,20 @@ describe('OrbitalWorkerService', () => {
       expect(proxy.detectRingCollisionStatus).not.toHaveBeenCalled();
     });
 
+    it('reuses one cached whole-system collision analysis for multiple bodies in the same system', async () => {
+      const proxy = fakeProxy();
+      const { svc } = serviceWith(proxy);
+      const [a, b] = collidingPair();
+
+      const first = await svc.detectCollisionStatus(a, now);
+      const second = await svc.detectCollisionStatus(b, now);
+
+      expect(first.partnerName).toBe('From Worker');
+      expect(second.partnerName).toBe('Self');
+      expect(proxy.detectCollisionStatuses).toHaveBeenCalledOnce();
+      expect(proxy.detectCollisionStatus).not.toHaveBeenCalled();
+    });
+
     it('still falls back to the inline core when a body has no parent (nothing to serialize)', async () => {
       const proxy = fakeProxy();
       const { svc } = serviceWith(proxy);
@@ -280,7 +306,7 @@ describe('OrbitalWorkerService', () => {
 
       const result = await svc.detectCollisionStatus(orphan, now);
       expect(result.isCandidate).toBe(false);
-      expect(proxy.detectCollisionStatus).not.toHaveBeenCalled(); // never crossed the wire
+      expect(proxy.detectCollisionStatuses).not.toHaveBeenCalled(); // never crossed the wire
     });
 
     it('falls back to the inline core when the proxy cannot be created, and latches (no retry)', async () => {
@@ -299,7 +325,7 @@ describe('OrbitalWorkerService', () => {
 
     it('terminates the worker and retries inline when a Comlink RPC rejects', async () => {
       const proxy = fakeProxy();
-      proxy.detectCollisionStatus.mockRejectedValueOnce(new Error('RPC rejected'));
+      proxy.detectCollisionStatuses.mockRejectedValueOnce(new Error('RPC rejected'));
       const { svc, createSpy } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
@@ -317,13 +343,16 @@ describe('OrbitalWorkerService', () => {
       let rejectFirst!: (reason: unknown) => void;
       const firstRpc = new Promise<never>((_, reject) => { rejectFirst = reject; });
       const proxy = fakeProxy();
-      proxy.detectCollisionStatus
+      proxy.detectCollisionStatuses
         .mockReturnValueOnce(firstRpc)
         .mockReturnValueOnce(new Promise(() => undefined));
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
-      const [a, b] = collidingPair();
+      // Two *separate* systems (not two bodies from the same collidingPair() tree) — same-system
+      // bodies now share one cached whole-system request, so this needs genuinely independent RPCs.
+      const [a] = collidingPair();
+      const [b] = collidingPair();
 
       const first = svc.detectCollisionStatus(a, now);
       const second = svc.detectCollisionStatus(b, now);
@@ -339,7 +368,7 @@ describe('OrbitalWorkerService', () => {
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
-      proxy.detectCollisionStatus.mockImplementationOnce(() => {
+      proxy.detectCollisionStatuses.mockImplementationOnce(() => {
         (svc as unknown as { disableWorker(reason: unknown): void }).disableWorker(new Error('disabled during call'));
         return new Promise(() => undefined);
       });
@@ -352,7 +381,7 @@ describe('OrbitalWorkerService', () => {
     it('handles an asynchronous Comlink proxy-release rejection', async () => {
       const proxy = fakeProxy() as ReturnType<typeof fakeProxy> & { [Comlink.releaseProxy]: ReturnType<typeof vi.fn> };
       proxy[Comlink.releaseProxy] = vi.fn().mockRejectedValue(new Error('release failed'));
-      proxy.detectCollisionStatus.mockRejectedValueOnce(new Error('RPC rejected'));
+      proxy.detectCollisionStatuses.mockRejectedValueOnce(new Error('RPC rejected'));
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
@@ -366,7 +395,7 @@ describe('OrbitalWorkerService', () => {
 
     it('retries a pending Comlink RPC inline when the worker emits an error', async () => {
       const proxy = fakeProxy();
-      proxy.detectCollisionStatus.mockReturnValueOnce(new Promise(() => undefined));
+      proxy.detectCollisionStatuses.mockReturnValueOnce(new Promise(() => undefined));
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
@@ -383,7 +412,7 @@ describe('OrbitalWorkerService', () => {
       vi.useFakeTimers();
       try {
         const proxy = fakeProxy();
-        proxy.detectCollisionStatus.mockReturnValueOnce(new Promise(() => undefined));
+        proxy.detectCollisionStatuses.mockReturnValueOnce(new Promise(() => undefined));
         const { svc } = serviceWith(proxy);
         const [a] = collidingPair();
 
@@ -400,12 +429,16 @@ describe('OrbitalWorkerService', () => {
       vi.useFakeTimers();
       try {
         const proxy = fakeProxy();
-        proxy.detectCollisionStatus
+        proxy.detectCollisionStatuses
           .mockReturnValueOnce(new Promise(() => undefined))
-          .mockResolvedValueOnce({
-            isCandidate: true, partnerName: 'Recovered Worker', synodicPeriodDays: 1,
-            nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
-          });
+          .mockResolvedValueOnce([
+            { isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [] },
+            {
+              isCandidate: true, partnerName: 'Recovered Worker', synodicPeriodDays: 1,
+              nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
+            },
+            { isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [] },
+          ]);
         const { svc, createSpy } = serviceWith(proxy);
         const [a] = collidingPair();
 
@@ -414,7 +447,7 @@ describe('OrbitalWorkerService', () => {
         await expect(first).resolves.toEqual(core.detectCollisionStatus(a, now));
 
         await expect(svc.detectCollisionStatus(a, now)).resolves.toMatchObject({ partnerName: 'Recovered Worker' });
-        expect(proxy.detectCollisionStatus).toHaveBeenCalledTimes(2);
+        expect(proxy.detectCollisionStatuses).toHaveBeenCalledTimes(2);
         expect(createSpy).toHaveBeenCalledOnce();
       } finally {
         vi.useRealTimers();

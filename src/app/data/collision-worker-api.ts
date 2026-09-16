@@ -13,6 +13,7 @@ import type { CanonnBiostatsBody } from '../home/home.component';
  */
 export interface CollisionWorkerApi {
   detectCollisionStatus(dto: SystemTreeDto, now: number): CollisionStatus;
+  detectCollisionStatuses(dto: SystemTreeDto, now: number): CollisionStatus[];
   simultaneousCollisionsWithin(dto: SystemTreeDto, horizonDays: number, now: number): SimultaneousCollision[];
   upcomingContactsWithin(dto: SystemTreeDto, horizonDays: number, now: number): CollisionWindow[];
   separationSeries(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startMs: number, endMs: number, samples: number): SeparationSample[];
@@ -49,6 +50,8 @@ export function createCollisionApi(core: OrbitalRelationsCore = new OrbitalRelat
   return {
     detectCollisionStatus: (dto, now) =>
       core.detectCollisionStatus(rehydrateSystemTree(dto), now),
+    detectCollisionStatuses: (dto, now) =>
+      core.detectCollisionStatuses(rehydrateSystemTree(dto), now),
     simultaneousCollisionsWithin: (dto, horizonDays, now) =>
       core.simultaneousCollisionsWithin(rehydrateSystemTree(dto), horizonDays, now),
     upcomingContactsWithin: (dto, horizonDays, now) =>

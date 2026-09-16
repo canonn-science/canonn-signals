@@ -1587,6 +1587,55 @@ export class OrbitalRelationsCore {
   }
 
   detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
+    return this.collisionStatusFor(body, (p, count, horizonMs) => this.collisionWindowsFor(body.bodyData, p, now, count, horizonMs));
+  }
+
+  /**
+   * Every body's {@link CollisionStatus} in `root`'s system, computed in one pass so each unique
+   * *pair* — a moon's "aunt/uncle" contact and its aunt/uncle's own "niece/nephew" view of the same
+   * pair are one example; a "cousin" pair found from both sides is another — pays for its expensive
+   * {@link nestedContactWindows}/{@link nextContacts} search only once, not once per body that
+   * happens to discover it. `detectCollisionStatus` on its own can't share this: it only ever
+   * computes one body's own partner list. Aligned to {@link flattenSystem}'s order, mirroring
+   * {@link detectRingCollisionStatuses}.
+   */
+  detectCollisionStatuses(root: SystemBody, now: number = Date.now()): CollisionStatus[] {
+    // Scoped to this one call — no persistent/unbounded state, since a body's collision partners
+    // never change while a loaded system's tree is being rendered but `now` (and so the resulting
+    // windows) does from one call to the next.
+    const pairWindows = new Map<string, CollisionWindow[]>();
+    const pairKey = (a: string, b: string): string => (a < b ? `${a}::${b}` : `${b}::${a}`);
+    const cachedWindowsFor = (p: CollisionPartnerDescriptor, count: number, horizonMs: number, bd: CanonnBiostatsBody): CollisionWindow[] => {
+      const partnerName = p.partner.bodyData.name;
+      const key = pairKey(bd.name, partnerName);
+      const cached = pairWindows.get(key);
+      if (cached) {
+        // The cached windows carry whichever side computed them first's partner name; relabel for
+        // this caller when it was the *other* side — the underlying geometry is identical either
+        // way (separation is symmetric), but CollisionWindow.partnerName is read directly by the
+        // dialog's per-partner grouping and must reflect this call's own partner.
+        return cached[0]?.partnerName === partnerName ? cached : cached.map(w => ({ ...w, partnerName }));
+      }
+      const windows = this.collisionWindowsFor(bd, p, now, count, horizonMs);
+      pairWindows.set(key, windows);
+      return windows;
+    };
+    return this.flattenSystem(root).map(body =>
+      this.collisionStatusFor(body, (p, count, horizonMs) => cachedWindowsFor(p, count, horizonMs, body.bodyData)));
+  }
+
+  /**
+   * Builds one body's {@link CollisionStatus} from its discovered partners, merging each partner's
+   * upcoming contact windows (via `windowsFor`, which either computes them directly or shares a
+   * cached computation — see {@link detectCollisionStatuses}) into one chronological list, picking
+   * the primary partner, and growing the direct-sibling transitive-closure group. Shared by
+   * {@link detectCollisionStatus} (one body, no sharing) and {@link detectCollisionStatuses} (the
+   * whole system, pairs shared across bodies).
+   */
+  private collisionStatusFor(
+    body: SystemBody,
+    windowsFor: (p: CollisionPartnerDescriptor, count: number, horizonMs: number) => CollisionWindow[],
+  ): CollisionStatus {
     const none: CollisionStatus = {
       isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [],
     };
@@ -1608,7 +1657,7 @@ export class OrbitalRelationsCore {
     // and contact radius (stamped in collisionWindowsFor).
     const merged: CollisionWindow[] = [];
     for (const p of partners) {
-      merged.push(...this.collisionWindowsFor(bd, p, now, MAX_UPCOMING_CONTACTS, Infinity));
+      merged.push(...windowsFor(p, MAX_UPCOMING_CONTACTS, Infinity));
     }
     merged.sort((x, y) => x.start.getTime() - y.start.getTime());
     const upcoming = merged.slice(0, MAX_UPCOMING_CONTACTS);

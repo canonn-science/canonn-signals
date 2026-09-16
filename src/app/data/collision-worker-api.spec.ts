@@ -67,6 +67,17 @@ describe('collision-worker-api', () => {
       .toEqual(core.separationSeries(a.bodyData, b.bodyData, now, endMs, 50));
   });
 
+  it('exposes detectCollisionStatuses, matching a per-body detectCollisionStatus call for every body', () => {
+    const [a] = collidingPair();
+    const api = createCollisionApi(core);
+    const dto = serializeSystemTree(a)!;
+
+    const viaApi = api.detectCollisionStatuses(dto, now);
+    const direct = core.detectCollisionStatuses(a, now);
+    expect(viaApi).toEqual(direct);
+    expect(direct.some(s => s.isCandidate)).toBe(true);
+  });
+
   it('defaults to a fresh core when none is passed', () => {
     const [a] = collidingPair();
     const api = createCollisionApi();
