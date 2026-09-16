@@ -293,14 +293,37 @@ export class SystemBodyComponent implements OnChanges {
     // time, so — like the collision search below — only redo it when the body itself changes.
     if (this.ringCollisionBody !== body) {
       this.ringCollisionBody = body;
-      this.requestRingCollisionStatus(body);
+      if (this.canRingCollide(body)) {
+        this.requestRingCollisionStatus(body);
+      } else {
+        // A belt (no orbital elements) or a rootless body (no parent/sibling context) can never
+        // be a ring-collision candidate — resolveRingOrbitPair/detectRingCollisionStatus would
+        // reach exactly this same conclusion, but only after a full worker round-trip. Skipping
+        // it here avoids firing one (and showing a "checking…" badge) for something that can
+        // only ever come back empty; a system with many such bodies otherwise piles up dozens of
+        // avoidable round-trips, each queued behind the shared worker's single message queue.
+        clearTimeout(this.ringCollisionPendingTimer);
+        this.ringCollisionStatus.set(null);
+        this.ringCollisionPending.set(false);
+        this.reportRingCollisionCandidate(body, false);
+      }
     }
     // Collision detection runs a costly 3D orbital search, so only redo it when the body
     // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
     // the async codex effect, which leave the orbital geometry untouched.
     if (this.collisionBody !== body) {
       this.collisionBody = body;
-      this.requestCollisionStatus(body);
+      if (this.canCollide(body)) {
+        this.requestCollisionStatus(body);
+      } else {
+        // Same reasoning as the ring-collision skip above: a ring, a belt, or a rootless body can
+        // never be a plain collision candidate either (collisionPartners/nestedCollisionPartners
+        // require both a parent and the body's own orbitalPeriod, which none of these have).
+        clearTimeout(this.collisionPendingTimer);
+        this.collisionStatus.set(null);
+        this.collisionPending.set(false);
+        this.reportCollisionCandidate(body, false);
+      }
     }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
@@ -1942,6 +1965,38 @@ export class SystemBodyComponent implements OnChanges {
           : tooCold ? 'Landable: Battery drain risk'
             : 'Landable: Safe to disembark');
     }
+  }
+
+  /**
+   * Whether `body` could plausibly be a ring-collision candidate — cheap and synchronous, no
+   * worker round-trip. False for a belt (no orbital elements, so never resolveRingOrbitPair's
+   * `self`/`partner` on either side), a barycentre (a mathematical point with no physical extent
+   * of its own to collide with — the engine already excludes it as a *partner*, this just skips
+   * the equally pointless round-trip when it's the *subject*), or a rootless body (no parent to
+   * reach a ring through). A ring itself is still eligible — it's a legitimate side of the search,
+   * unlike a belt.
+   */
+  private canRingCollide(body: SystemBody): boolean {
+    return !!body.parent
+      && body.bodyData.type !== BODY_TYPE.Belt
+      && body.bodyData.type !== BODY_TYPE.Barycentre;
+  }
+
+  /**
+   * Whether `body` could plausibly be a plain (non-ring) collision candidate — see
+   * {@link canRingCollide}. Also false for a ring: collisionPartners/nestedCollisionPartners
+   * both require the body's own `orbitalPeriod`, which a ring (a static band, not an orbiting
+   * body) never has. A barycentre *does* have real orbital elements (it usefully traces where
+   * its components' mutual centre of mass moves) but no `radius` of its own, so — unlike the
+   * ring engine, which already excludes it explicitly — collisionPartners has nothing stopping
+   * it from reporting a "collision" the moment that mathematical point's path numerically passes
+   * within a sibling's radius, so it's excluded here too.
+   */
+  private canCollide(body: SystemBody): boolean {
+    return !!body.parent
+      && body.bodyData.type !== BODY_TYPE.Belt
+      && body.bodyData.type !== BODY_TYPE.Ring
+      && body.bodyData.type !== BODY_TYPE.Barycentre;
   }
 
   public trojanStatus: string | null = null;

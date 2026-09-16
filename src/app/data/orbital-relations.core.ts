@@ -258,6 +258,19 @@ const ORBIT_REFINE_GRID = 4;
 const ORBIT_REFINE_ITERATIONS = 10;
 /** Upper bound on conjunctions examined before giving up on finding a collision date. */
 const MAX_CONJUNCTIONS_SCANNED = 300;
+/**
+ * Hard cap on how many conjunctions a single {@link OrbitalRelationsCore.nextContacts} or
+ * {@link OrbitalRelationsCore.nestedContactWindows} search may spend on {@link contactCrossing}'s
+ * genuinely bounded but nontrivial edge search (see {@link appendMinimumWindows}'
+ * `didExpensiveWork`), on top of (not instead of) {@link MAX_CONJUNCTIONS_SCANNED}'s cap on
+ * conjunctions examined overall. A pair whose contact geometry sits right at a threshold boundary
+ * can have *every* conjunction reach that point without ever resolving a window — a real system (a
+ * moon orbiting just inside its own planet's ring band) measured at 2.6–3.7 seconds *per pair*
+ * despite windows.length ending at 0, all MAX_CONJUNCTIONS_SCANNED attempts paying that cost. Run
+ * on a single worker shared by every row, one such pair blocks all the others queued behind it.
+ * A genuine search reaching MAX_UPCOMING_CONTACTS successfully needs nowhere near this many.
+ */
+const MAX_EXPENSIVE_CONTACT_ATTEMPTS = 40;
 
 /** Cap on how many upcoming contact windows are surfaced (merged across all crossing partners). */
 const MAX_UPCOMING_CONTACTS = 10;
@@ -960,6 +973,7 @@ export class OrbitalRelationsCore {
     const stepMs = (30 / 86400) * MS_PER_DAY; // 30-second probes for window bisection
     const maxSpanMs = synodicMs / 2;           // bisection walk bound: half a synodic period
     const results: CollisionWindow[] = [];
+    let expensiveAttempts = 0;
 
     for (let k = 0; k < MAX_CONJUNCTIONS_SCANNED && results.length < count; k++) {
       const candidateMs = t0 + k * synodicMs;
@@ -967,7 +981,10 @@ export class OrbitalRelationsCore {
       // further). Used by the simultaneity scan to bound work to the next N days.
       if (candidateMs - now > horizonMs) { break; }
       const min = this.zoomToMinimum(sep, candidateMs, synodicMs / 2);
-      this.appendMinimumWindows(sep, min.t, min.sepKm, contactKm, minContactKm, stepMs, maxSpanMs, now, count, b.name, results);
+      const { didExpensiveWork } = this.appendMinimumWindows(sep, min.t, min.sepKm, contactKm, minContactKm, stepMs, maxSpanMs, now, count, b.name, results);
+      // See MAX_EXPENSIVE_CONTACT_ATTEMPTS: caps a pair whose every conjunction pays the full
+      // edge-search cost without ever resolving a window from running all 300 attempts anyway.
+      if (didExpensiveWork && ++expensiveAttempts >= MAX_EXPENSIVE_CONTACT_ATTEMPTS) { break; }
     }
     return results;
   }
@@ -1007,13 +1024,19 @@ export class OrbitalRelationsCore {
    * by scanning a dense local-minima search instead) — everything downstream of "here is a
    * conjunction's minimum" is identical between the two.
    *
-   * Returns whether the forward-most edge search came back null — i.e. contact is still open
-   * going forward, {@link contactCrossing} couldn't find where it ends within `maxSpanMs`. A
-   * marching caller ({@link nextContacts}) doesn't need this (it always advances a full synodic
-   * period next regardless); a dense-scan caller ({@link nestedContactWindows}) does — without it,
-   * every subsequent sample still inside that same unresolved stretch would re-trigger the same
-   * expensive, equally-fruitless edge search, since a null edge is never recorded to de-duplicate
-   * against the way a resolved one is.
+   * `didExpensiveWork` is false for a conjunction rejected by one of the cheap checks below
+   * (too old, too far, already covered) and true once it reaches {@link contactCrossing} — callers
+   * use it to cap the number of genuinely expensive attempts a single search can make (see
+   * {@link MAX_EXPENSIVE_CONTACT_ATTEMPTS}), since a pair whose geometry sits right at a threshold
+   * boundary can have *every* conjunction reach this point without ever resolving a window.
+   *
+   * `forwardUnresolved` is true when the forward-most edge search came back null — i.e. contact is
+   * still open going forward, {@link contactCrossing} couldn't find where it ends within
+   * `maxSpanMs`. A marching caller ({@link nextContacts}) doesn't need this (it always advances a
+   * full synodic period next regardless); a dense-scan caller ({@link nestedContactWindows}) does —
+   * without it, every subsequent sample still inside that same unresolved stretch would re-trigger
+   * the same expensive, equally-fruitless edge search, since a null edge is never recorded to
+   * de-duplicate against the way a resolved one is.
    */
   private appendMinimumWindows(
     sep: (tMs: number) => number,
@@ -1022,16 +1045,17 @@ export class OrbitalRelationsCore {
     stepMs: number, maxSpanMs: number,
     now: number, count: number, partnerName: string,
     results: CollisionWindow[],
-  ): boolean {
+  ): { didExpensiveWork: boolean; forwardUnresolved: boolean } {
+    const cheapReject = { didExpensiveWork: false, forwardUnresolved: false };
     // Allow minT to be slightly before now: a contact whose minimum lands at now±ε (e.g. bodies
     // aligned at the reference epoch) must not be discarded. We only reject a conjunction whose
     // minimum is older than maxSpanMs; contacts whose window has already ended are filtered below
     // after computing endMs.
-    if (minT < now - maxSpanMs || !Number.isFinite(minSepKm)) { return false; }
-    if (minSepKm > contactKm) { return false; }
+    if (minT < now - maxSpanMs || !Number.isFinite(minSepKm)) { return cheapReject; }
+    if (minSepKm > contactKm) { return cheapReject; }
 
     // De-duplicate: skip if this minimum falls inside the last recorded contact window.
-    if (results.length > 0 && minT <= results[results.length - 1].end.getTime()) { return false; }
+    if (results.length > 0 && minT <= results[results.length - 1].end.getTime()) { return cheapReject; }
 
     // The conjunction's contact windows. With the default minContactKm of 0 there is exactly
     // one — separation simply dips below contactKm and back, bottoming out at minT — but a
@@ -1084,7 +1108,7 @@ export class OrbitalRelationsCore {
 
     // The forward-most edge is always the last entry's endMs (the "not in the hole" case has one
     // entry; the split-window case's second, receding entry closes at the true outer edge).
-    return conjunctionWindows[conjunctionWindows.length - 1].endMs === null;
+    return { didExpensiveWork: true, forwardUnresolved: conjunctionWindows[conjunctionWindows.length - 1].endMs === null };
   }
 
   /**
@@ -1134,13 +1158,18 @@ export class OrbitalRelationsCore {
     let prevPrev = sep(scanStart);
     let prev = sep(scanStart + stepMs);
     let suppressed = false;
+    let expensiveAttempts = 0;
     for (let t = scanStart + 2 * stepMs; t <= scanEnd && results.length < count; t += stepMs) {
       const curr = sep(t);
       if (suppressed) {
         if (curr > contactKm) { suppressed = false; }
       } else if (prev <= prevPrev && prev <= curr) {
         const refined = this.zoomToMinimum(sep, t - stepMs, stepMs);
-        suppressed = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
+        const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
+        suppressed = r.forwardUnresolved;
+        // See MAX_EXPENSIVE_CONTACT_ATTEMPTS: a backstop on top of the suppression above, for
+        // whatever pathological shape (many *distinct* costly stretches, say) it doesn't cover.
+        if (r.didExpensiveWork && ++expensiveAttempts >= MAX_EXPENSIVE_CONTACT_ATTEMPTS) { break; }
       }
       prevPrev = prev; prev = curr;
     }
