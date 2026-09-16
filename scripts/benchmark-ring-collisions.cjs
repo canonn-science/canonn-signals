@@ -5,6 +5,7 @@
  *
  * Current checkout: node scripts/benchmark-ring-collisions.cjs
  * Compare revision: node scripts/benchmark-ring-collisions.cjs <git-revision>
+ * Body-6 planetary collisions: add --system=swoiwns.
  * Nested moon/ring pair: add --system=eoch to either command above.
  * Compare windowFingerprint as well as timing; run on the same otherwise-idle machine.
  */
@@ -17,10 +18,10 @@ const ts = require('typescript');
 
 const repo = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
-const system = args.includes('--system=eoch') ? 'eoch' : 'musca';
+const system = args.includes('--system=swoiwns') ? 'swoiwns' : args.includes('--system=eoch') ? 'eoch' : 'musca';
 const revision = args.find(arg => !arg.startsWith('--'));
-if (args.some(arg => arg.startsWith('--') && !['--system=eoch', '--system=musca'].includes(arg))) {
-  throw new Error('Supported systems: --system=musca or --system=eoch');
+if (args.some(arg => arg.startsWith('--') && !['--system=eoch', '--system=musca', '--system=swoiwns'].includes(arg))) {
+  throw new Error('Supported systems: --system=musca or --system=eoch or --system=swoiwns');
 }
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'ring-benchmark-'));
 const epoch = '2026-08-17T19:39:35Z';
@@ -95,25 +96,36 @@ try {
   }
   const { OrbitalRelationsCore } = require(path.join(temporary, 'orbital-relations.core.js'));
   const core = new OrbitalRelationsCore();
-  const root = system === 'eoch' ? eochPair() : muscaPair();
+  const fixtureSource = fs.readFileSync(path.join(repo, 'src/app/data/fixtures/swoiwns-collision.ts'), 'utf8');
+  fs.writeFileSync(path.join(temporary, 'swoiwns.js'), ts.transpileModule(fixtureSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText);
+  const root = system === 'swoiwns'
+    ? require(path.join(temporary, 'swoiwns.js')).swoiwnsCollisionFamily()
+    : system === 'eoch' ? eochPair() : muscaPair();
+  const flatten = node => [node, ...node.subBodies.flatMap(flatten)];
+  const subjects = flatten(root);
+  const analyze = () => system === 'swoiwns'
+    ? subjects.map(node => core.detectCollisionStatus(node, Date.parse(epoch)))
+    : core.detectRingCollisionStatuses(root, Date.parse(epoch));
   const times = [];
   let statuses;
   for (let iteration = 0; iteration < 9; iteration++) {
     const start = performance.now();
-    statuses = core.detectRingCollisionStatuses(root, Date.parse(epoch));
+    statuses = analyze();
     if (iteration >= 2) { times.push(performance.now() - start); }
   }
   times.sort((a, b) => a - b);
   const windows = statuses.map(status => ({
     candidate: status.isCandidate,
-    partner: status.partner,
+    partner: 'partnerName' in status ? status.partnerName : status.partner,
     windows: status.upcomingCollisions.map(window => ({
       start: window.start, end: window.end,
       minSeparationKm: window.minSeparationKm, minSeparationAt: window.minSeparationAt,
     })),
   }));
   console.log(JSON.stringify({
-    system: system === 'eoch' ? 'Eoch Flyuae KS-V b18-2' : 'Musca Dark Region SO-Q b5-5',
+    system: system === 'swoiwns' ? 'Swoiwns TR-T b8-1 (body 6 family)' : system === 'eoch' ? 'Eoch Flyuae KS-V b18-2' : 'Musca Dark Region SO-Q b5-5',
     revision: revision ?? 'working tree', epoch,
     medianMs: times[3], minMs: times[0], maxMs: times[6],
     windowCounts: statuses.map(status => status.upcomingCollisions.length),

@@ -189,6 +189,8 @@ type RingOrbitPair =
     fastPeriodDays: number;
     /** The slower of the two component periods (days) — bounds the default scan horizon. */
     slowPeriodDays: number;
+    /** Sum of the component orbits' maximum speeds (km/ms), bounding separation changes. */
+    maxRelativeSpeed: number;
     /** Each side's own display name, for the resulting {@link CollisionWindow.partnerName}. */
     labelA: string;
     labelB: string;
@@ -214,6 +216,8 @@ type CollisionPartnerDescriptor =
     posB: (tMs: number) => Vec3;
     fastPeriodDays: number;
     slowPeriodDays: number;
+    /** Sum of the component orbits' maximum speeds (km/ms), bounding separation changes. */
+    maxRelativeSpeed: number;
     contactKm: number;
   };
 
@@ -274,24 +278,6 @@ const MAX_CONJUNCTIONS_SCANNED = 300;
  * A genuine search reaching MAX_UPCOMING_CONTACTS successfully needs nowhere near this many.
  */
 const MAX_EXPENSIVE_CONTACT_ATTEMPTS = 40;
-/**
- * Cheap-reject multiple for {@link OrbitalRelationsCore.nestedContactWindows}'s dense local-minima
- * scan: a coarse sample is only worth {@link OrbitalRelationsCore.zoomToMinimum}'s full refinement
- * (2000 samples × several halving passes — thousands of evaluations) when it's already within this
- * many multiples of `contactKm`. Unlike {@link MAX_EXPENSIVE_CONTACT_ATTEMPTS} (which bounds the
- * *later* edge-search step, only reached once a refined minimum is already known to be in contact),
- * nothing previously bounded the refinement itself — it ran unconditionally for *every* coarse
- * local minimum found across the whole scan. For a "cousin"/aunt-uncle pair scanned over hundreds
- * of days, most of those minima are the nested body's own small orbital wobble riding a composite
- * position whose baseline separation from its distant partner is nowhere close to touching (tens to
- * hundreds of thousands of km against a contact threshold of a few thousand) — only the rare
- * genuine conjunction's coarse sample lands anywhere near `contactKm`. The scan step is already
- * fine (1/300 of the faster component's own period — {@link NESTED_SAMPLES_PER_FAST_PERIOD}), so a
- * true minimum near a coarse sample can't plunge far below it within one step; 10× is a generous
- * margin against that, verified against every nested/cousin fixture in the spec suite (including
- * the real Swoiwns TR-T b8-1 data, whose genuine contact dips to well under half its threshold).
- */
-const NESTED_COARSE_CANDIDATE_FACTOR = 10;
 
 /** Cap on how many upcoming contact windows are surfaced (merged across all crossing partners). */
 const MAX_UPCOMING_CONTACTS = 10;
@@ -1216,6 +1202,7 @@ export class OrbitalRelationsCore {
     fastPeriodDays: number, slowPeriodDays: number,
     contactKm: number, minContactKm: number,
     now: number, count: number, horizonMs: number, partnerName: string,
+    maxRelativeSpeed: number = Infinity,
   ): CollisionWindow[] {
     const results: CollisionWindow[] = [];
     const fastMs = fastPeriodDays * MS_PER_DAY;
@@ -1251,14 +1238,20 @@ export class OrbitalRelationsCore {
       const curr = sep(t);
       if (suppressed) {
         if (curr > contactKm) { suppressed = false; }
-      } else if (prev <= prevPrev && prev <= curr && prev <= contactKm * NESTED_COARSE_CANDIDATE_FACTOR) {
+      } else if (prev <= prevPrev && prev <= curr
+        // A speed bound limits how far separation can fall from this sample.
+        // Both refiners stay within two step widths of the seed (the zoom's
+        // successive half-widths sum to <2*stepMs). Reject only if the entire
+        // reachable interval is outside contact, with a small roundoff allowance.
+        && prev - 2 * stepMs * maxRelativeSpeed <= contactKm + 1e-9 * Math.max(1, prev)) {
         // At full resolution this bracket spans just 2/300 of the fastest orbit.
         // Keep the same 2000-point basin search, then refine locally instead of
         // repeating thousands of samples at every halving. If the global sample
         // cap enlarged the step, retain the wide search for potentially aliased orbits.
         const refined = stepMs === rawStepMs
           ? this.sampledMinimum(sep, t - stepMs, stepMs)
-          : this.zoomToMinimum(sep, t - stepMs, stepMs);        const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
+          : this.zoomToMinimum(sep, t - stepMs, stepMs);
+        const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
         suppressed = r.forwardUnresolved;
         // See MAX_EXPENSIVE_CONTACT_ATTEMPTS: a backstop on top of the suppression above, for
         // whatever pathological shape (many *distinct* costly stretches, say) it doesn't cover.
@@ -1388,6 +1381,7 @@ export class OrbitalRelationsCore {
         kind: 'nested', partner: aunt, contactKm,
         posA: nested.posA, posB: nested.posB,
         fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
+        maxRelativeSpeed: nested.maxRelativeSpeed,
       });
     }
     return partners;
@@ -1435,7 +1429,10 @@ export class OrbitalRelationsCore {
         const fastPeriodDays = Math.min(bodyPeriod, parentPeriod, cousinPeriod, auntPeriod);
         const slowPeriodDays = Math.max(bodyPeriod, parentPeriod, cousinPeriod, auntPeriod);
 
-        partners.push({ kind: 'nested', partner: cousin, contactKm, posA, posB, fastPeriodDays, slowPeriodDays });
+        const maxRelativeSpeed = this.maximumOrbitalSpeed(body.bodyData)
+          + this.maximumOrbitalSpeed(body.parent.bodyData)
+          + this.maximumOrbitalSpeed(cousin.bodyData) + this.maximumOrbitalSpeed(aunt.bodyData);
+        partners.push({ kind: 'nested', partner: cousin, contactKm, posA, posB, fastPeriodDays, slowPeriodDays, maxRelativeSpeed });
       }
     }
     return partners;
@@ -1445,7 +1442,7 @@ export class OrbitalRelationsCore {
   private collisionWindowsFor(bd: CanonnBiostatsBody, p: CollisionPartnerDescriptor, now: number, count: number, horizonMs: number): CollisionWindow[] {
     return p.kind === 'simple'
       ? this.nextContacts(bd, p.partner.bodyData, p.contactKm, p.synodic, now, count, horizonMs)
-      : this.nestedContactWindows(p.posA, p.posB, p.fastPeriodDays, p.slowPeriodDays, p.contactKm, 0, now, count, horizonMs, p.partner.bodyData.name);
+      : this.nestedContactWindows(p.posA, p.posB, p.fastPeriodDays, p.slowPeriodDays, p.contactKm, 0, now, count, horizonMs, p.partner.bodyData.name, p.maxRelativeSpeed);
   }
 
   /**
@@ -1672,6 +1669,20 @@ export class OrbitalRelationsCore {
     return this.rangesOutOfReach(this.nestedRangeKm(nested, nestedParent), this.orbitalRadialRangeKm(other), contactKm);
   }
 
+  /** Periapsis speed in km/ms; unknown inputs disable time-interval pruning. */
+  private maximumOrbitalSpeed(body: CanonnBiostatsBody): number {
+    const a = body.semiMajorAxis;
+    const period = body.orbitalPeriod;
+    const e = body.orbitalEccentricity ?? 0;
+    if (a == null || a < 0 || !Number.isFinite(a) || !period || period <= 0
+      || !Number.isFinite(period) || !(e >= 0 && e < 1)) { return Infinity; }
+    // Maximum speed is at periapsis. Vis-viva with r = a(1-e) and
+    // GM = (2π/P)²a³ gives v_max = (2πa/P) sqrt((1+e)/(1-e)).
+    // Use the period supplied to the position propagator, in ms, and a in km.
+    // https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/MPG%20Book/Release/Chapter7-OrbitalMechanics.pdf
+    return 2 * Math.PI * a * KM_PER_AU / (period * MS_PER_DAY) * Math.sqrt((1 + e) / (1 - e));
+  }
+
   /**
    * Builds the `'nested'` half of {@link resolveRingOrbitPair}: `nested` orbits `nestedParent`
    * (a real body, sharing an immediate parent with `other`), so its absolute motion is the exact
@@ -1684,7 +1695,7 @@ export class OrbitalRelationsCore {
    */
   private buildNestedPair(nested: SystemBody, nestedParent: SystemBody, other: SystemBody): {
     posA: (tMs: number) => Vec3; posB: (tMs: number) => Vec3;
-    fastPeriodDays: number; slowPeriodDays: number;
+    fastPeriodDays: number; slowPeriodDays: number; maxRelativeSpeed: number;
   } | null {
     const nestedBody = nested.bodyData, parentBody = nestedParent.bodyData, otherBody = other.bodyData;
     if (!nestedBody.orbitalPeriod || !parentBody.orbitalPeriod || !otherBody.orbitalPeriod) { return null; }
@@ -1696,7 +1707,9 @@ export class OrbitalRelationsCore {
     const fastPeriodDays = Math.min(nestedBody.orbitalPeriod, parentBody.orbitalPeriod);
     const slowPeriodDays = Math.max(nestedBody.orbitalPeriod, parentBody.orbitalPeriod, otherBody.orbitalPeriod);
 
-    return { posA, posB, fastPeriodDays, slowPeriodDays };
+    const maxRelativeSpeed = this.maximumOrbitalSpeed(nestedBody)
+      + this.maximumOrbitalSpeed(parentBody) + this.maximumOrbitalSpeed(otherBody);
+    return { posA, posB, fastPeriodDays, slowPeriodDays, maxRelativeSpeed };
   }
 
   /**
@@ -1773,6 +1786,7 @@ export class OrbitalRelationsCore {
       return nested && {
         kind: 'nested', posA: nested.posB, posB: nested.posA,
         fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
+        maxRelativeSpeed: nested.maxRelativeSpeed,
         labelA: self.bodyData.name, labelB: partner.bodyData.name,
       };
     }
@@ -1934,7 +1948,7 @@ export class OrbitalRelationsCore {
     const horizonMs = horizonDays * MS_PER_DAY;
     const windows = pair.kind === 'simple'
       ? this.nextContacts(pair.a, pair.b, band.maxKm, pair.synodicDays, now, MAX_CONJUNCTIONS_SCANNED, horizonMs, band.minKm)
-      : this.nestedContactWindows(pair.posA, pair.posB, pair.fastPeriodDays, pair.slowPeriodDays, band.maxKm, band.minKm, now, MAX_CONJUNCTIONS_SCANNED, horizonMs, pair.labelB);
+      : this.nestedContactWindows(pair.posA, pair.posB, pair.fastPeriodDays, pair.slowPeriodDays, band.maxKm, band.minKm, now, MAX_CONJUNCTIONS_SCANNED, horizonMs, pair.labelB, pair.maxRelativeSpeed);
     return windows.sort((a, b) => a.start.getTime() - b.start.getTime());
   }
 
@@ -2083,7 +2097,7 @@ export class OrbitalRelationsCore {
           // The dominant recurrence driver — displayed as this pair's "synodic period" even
           // though a nested pair's true recurrence is quasi-periodic (see nestedContactWindows).
           synodicDays = pair.fastPeriodDays;
-          windows = this.nestedContactWindows(pair.posA, pair.posB, pair.fastPeriodDays, pair.slowPeriodDays, band.maxKm, band.minKm, now, MAX_UPCOMING_CONTACTS, Infinity, pair.labelB);
+          windows = this.nestedContactWindows(pair.posA, pair.posB, pair.fastPeriodDays, pair.slowPeriodDays, band.maxKm, band.minKm, now, MAX_UPCOMING_CONTACTS, Infinity, pair.labelB, pair.maxRelativeSpeed);
         }
         if (windows.length === 0) { continue; }
 
