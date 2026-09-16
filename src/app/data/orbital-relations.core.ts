@@ -983,7 +983,7 @@ export class OrbitalRelationsCore {
     // Equal-period pairs repeat every orbit. Use bracketed refinement for that bounded
     // cycle; retain the broad zoom for unequal periods (potentially many fast orbits).
     const minimum = a.orbitalPeriod === b.orbitalPeriod
-      ? (t: number) => this.periodicMinimum(sep, t, synodicMs / 2)
+      ? (t: number) => this.sampledMinimum(sep, t, synodicMs / 2)
       : (t: number) => this.zoomToMinimum(sep, t, synodicMs / 2);
     const ref = minimum(initBestT);
 
@@ -1041,14 +1041,15 @@ export class OrbitalRelationsCore {
   }
 
   /**
-   * Refine all sampled basins of an equal-period pair using golden-section search.
-   * These pairs repeat over one orbital period, so the coarse scan covers their cycle.
-   * Unequal-period and nested searches retain the wider iterative zoom: their initial
-   * windows can span many fast orbits, whose narrow minima need repeated coarse scans.
+   * Refine all sampled basins in a bounded interval using golden-section search.
+   * Used for one cycle of an equal-period pair, or the small local bracket found by
+   * the nested scan at its full resolution (1/300 of the fastest period per step).
+   * Wider searches retain iterative zoom: their intervals can span many fast orbits,
+   * whose narrow minima need repeated coarse scans.
    * Retain the best evaluated point, including endpoints, so refinement cannot worsen
    * the coarse result. The final bracket is narrower than one millisecond.
    */
-  private periodicMinimum(sep: (tMs: number) => number, centerMs: number, halfMs: number): { t: number; sepKm: number } {
+  private sampledMinimum(sep: (tMs: number) => number, centerMs: number, halfMs: number): { t: number; sepKm: number } {
     const STEPS = 2000;
     let bestT = centerMs;
     let bestS = sep(centerMs);
@@ -1251,10 +1252,13 @@ export class OrbitalRelationsCore {
       if (suppressed) {
         if (curr > contactKm) { suppressed = false; }
       } else if (prev <= prevPrev && prev <= curr && prev <= contactKm * NESTED_COARSE_CANDIDATE_FACTOR) {
-        // See NESTED_COARSE_CANDIDATE_FACTOR: skip the expensive zoomToMinimum refinement
-        // entirely for a coarse local minimum nowhere near the contact threshold.
-        const refined = this.zoomToMinimum(sep, t - stepMs, stepMs);
-        const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
+        // At full resolution this bracket spans just 2/300 of the fastest orbit.
+        // Keep the same 2000-point basin search, then refine locally instead of
+        // repeating thousands of samples at every halving. If the global sample
+        // cap enlarged the step, retain the wide search for potentially aliased orbits.
+        const refined = stepMs === rawStepMs
+          ? this.sampledMinimum(sep, t - stepMs, stepMs)
+          : this.zoomToMinimum(sep, t - stepMs, stepMs);        const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
         suppressed = r.forwardUnresolved;
         // See MAX_EXPENSIVE_CONTACT_ATTEMPTS: a backstop on top of the suppression above, for
         // whatever pathological shape (many *distinct* costly stretches, say) it doesn't cover.
