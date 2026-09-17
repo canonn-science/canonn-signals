@@ -71,6 +71,16 @@ describe('RegionMapComponent', () => {
     expect(emitted).toEqual(['Sol']);
   });
 
+  it('provides a keyboard control that skips every interactive map element', () => {
+    fixture.detectChanges();
+    const skip = fixture.nativeElement.querySelector('.region-map-skip-link') as HTMLButtonElement;
+    const target = fixture.nativeElement.querySelector('.region-map-skip-target') as HTMLSpanElement;
+
+    skip.click();
+
+    expect(document.activeElement).toBe(target);
+  });
+
   it('maps galactic X/Z coordinates into the SVG viewBox space', () => {
     // Sol is at the galactic origin; check the documented transform constants.
     const tx = (component as any).mapX(0);
@@ -158,6 +168,46 @@ describe('RegionMapComponent', () => {
       (outpostCircles[outpostCircles.length - 1] as Element).dispatchEvent(new MouseEvent('click'));
       expect(emitted).toContain('PG Sys 1');
     });
+
+    it('makes known and outpost markers keyboard accessible and shows descriptions on focus', () => {
+      const emitted: string[] = [];
+      component.systemSelected.subscribe(n => emitted.push(n));
+      fixture.componentRef.setInput('outposts', [
+        { name: 'Outpost &amp; One', galMapSearch: 'PG Sys 1', coordinates: [10, 0, 20], type: 'independentOutpost' },
+      ]);
+      const svg = buildSvg();
+      (component as any).addKnownSystemMarkers(svg);
+
+      const groups = svg.querySelectorAll('.known-system-marker');
+      const knownCircle = groups[0].querySelector('circle')!;
+      const knownText = groups[0].querySelector('text')!;
+      (knownText as any).getBBox = () => ({ x: 1, y: 2, width: 30, height: 10 });
+      expect(knownCircle.getAttribute('role')).toBe('button');
+      expect(knownCircle.getAttribute('tabindex')).toBe('0');
+      expect(knownCircle.getAttribute('aria-label')).toContain('Varati');
+
+      knownCircle.dispatchEvent(new FocusEvent('focus'));
+      expect(knownText.style.display).toBe('block');
+      knownCircle.dispatchEvent(new MouseEvent('mouseenter'));
+      knownCircle.dispatchEvent(new MouseEvent('mouseleave'));
+      expect(knownText.style.display).toBe('block'); // focus still owns the description
+      knownCircle.dispatchEvent(new FocusEvent('blur'));
+      expect(knownText.style.display).toBe('none');
+
+      (component as any).bindSvgReset(svg);
+      svg.setAttribute('viewBox', '100 200 300 300');
+      knownCircle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      expect(emitted).toContain('Varati');
+      expect(svg.getAttribute('viewBox')).toBe('0 0 2048 2048');
+
+      const outpostCircle = groups[groups.length - 1].querySelector('circle')!;
+      expect(outpostCircle.getAttribute('aria-label')).toContain('Outpost & One');
+      expect(outpostCircle.getAttribute('tabindex')).toBe('-1');
+      (component as any).updateMarkerScales(svg, 4);
+      expect(outpostCircle.getAttribute('tabindex')).toBe('0');
+      outpostCircle.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
+      expect(emitted).toContain('PG Sys 1');
+    });
   });
 
   describe('updateMarkerScales', () => {
@@ -168,6 +218,7 @@ describe('RegionMapComponent', () => {
       always.setAttribute('class', 'known-system-marker');
       const ac = document.createElementNS(SVG_NS, 'circle');
       ac.setAttribute('cx', '100'); ac.setAttribute('cy', '200');
+      ac.setAttribute('role', 'button');
       always.appendChild(ac);
       svg.appendChild(always);
 
@@ -176,15 +227,18 @@ describe('RegionMapComponent', () => {
       zoomed.setAttribute('data-zoom-level', 'zoomed');
       const zc = document.createElementNS(SVG_NS, 'circle');
       zc.setAttribute('cx', '50'); zc.setAttribute('cy', '60');
+      zc.setAttribute('role', 'button');
       zoomed.appendChild(zc);
       svg.appendChild(zoomed);
 
       (component as any).updateMarkerScales(svg, 4);
       expect(always.getAttribute('transform')).toContain('scale(0.25)');
       expect(zoomed.style.display).toBe('block'); // visible when zoomed in
+      expect(zc.getAttribute('tabindex')).toBe('0');
 
       (component as any).updateMarkerScales(svg, 1);
       expect(zoomed.style.display).toBe('none'); // hidden at full view
+      expect(zc.getAttribute('tabindex')).toBe('-1');
     });
   });
 
@@ -194,6 +248,7 @@ describe('RegionMapComponent', () => {
         name: 'Sol', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
       });
       const svg = mountSvg(buildSvg());
+      (component as any).bindSvgReset(svg);
       (component as any).highlightRegion();
 
       const active = svg.querySelector('#Region_18') as HTMLElement;
@@ -206,6 +261,34 @@ describe('RegionMapComponent', () => {
       expect(svg.querySelector('#system-marker')).not.toBeNull();
     });
 
+    it('renders coordinate-based markers when region metadata is absent', () => {
+      fixture.componentRef.setInput('system', { name: 'Regionless', coords: { x: 10, y: 20, z: 30 } });
+      fixture.componentRef.setInput('outposts', [
+        { name: 'Remote Outpost', galMapSearch: 'Remote System', coordinates: [40, 50, 60], type: 'independentOutpost' },
+      ]);
+      const svg = mountSvg(buildSvg());
+
+      (component as any).highlightRegion();
+
+      expect(svg.querySelector('#system-marker')).not.toBeNull();
+      expect(svg.querySelectorAll('.known-system-marker').length).toBeGreaterThan(6);
+      expect([...svg.querySelectorAll('.known-system-marker text')].some(text => text.textContent === 'Remote Outpost')).toBe(true);
+    });
+
+    it('removes the previous system marker when the next regionless system has no coordinates', () => {
+      fixture.componentRef.setInput('system', {
+        name: 'Marked', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
+      });
+      const svg = mountSvg(buildSvg());
+      (component as any).highlightRegion();
+      expect(svg.querySelector('#system-marker')).not.toBeNull();
+
+      fixture.componentRef.setInput('system', { name: 'Unlocated' });
+      (component as any).highlightRegion();
+
+      expect(svg.querySelector('#system-marker')).toBeNull();
+    });
+
     it('binds each region zoom handler exactly once across re-highlights', () => {
       fixture.componentRef.setInput('system', {
         name: 'Sol', region: { name: 'x', region: 7 }, coords: { x: 0, y: 0, z: 0 },
@@ -216,6 +299,40 @@ describe('RegionMapComponent', () => {
       svg.querySelectorAll('path[id^="Region_"]').forEach(p => {
         expect(p.getAttribute('data-zoom-bound')).toBe('true');
       });
+    });
+
+    it('makes regions named keyboard controls with Enter and Space zoom activation', () => {
+      fixture.componentRef.setInput('system', {
+        name: 'Sol', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
+      });
+      const svg = mountSvg(buildSvg());
+      (component as any).bindSvgReset(svg);
+      (component as any).highlightRegion();
+
+      const current = svg.querySelector('#Region_18')!;
+      const other = svg.querySelector('#Region_07')!;
+      expect(current.getAttribute('role')).toBe('button');
+      expect(current.getAttribute('tabindex')).toBe('0');
+      expect(current.getAttribute('aria-label')).toBe('Zoom to galaxy region 18, Inner Orion Spur');
+      expect(other.getAttribute('aria-label')).toBe('Zoom to galaxy region 7');
+
+      const interactiveStyles = svg.querySelector('style#custom-region-styles')?.textContent ?? '';
+      expect(interactiveStyles).toContain('[role="button"]:focus-visible');
+      expect(interactiveStyles).toContain('outline: 4px solid var(--color-white)');
+      expect(interactiveStyles).toContain('drop-shadow(0 0 5px var(--color-accent))');
+
+      other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      expect(svg.getAttribute('viewBox')).not.toBe('0 0 2048 2048');
+      expect(other.getAttribute('tabindex')).toBe('0');
+      expect(current.getAttribute('tabindex')).toBe('-1');
+
+      other.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
+      expect(svg.getAttribute('viewBox')).toBe('0 0 2048 2048');
+      expect(other.getAttribute('tabindex')).toBe('0');
+      expect(current.getAttribute('tabindex')).toBe('0');
+
+      current.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true }));
+      expect(svg.getAttribute('viewBox')).not.toBe('0 0 2048 2048');
     });
   });
 
@@ -264,7 +381,17 @@ describe('RegionMapComponent', () => {
 
       const marker = svg.querySelector('#gnosis-marker');
       expect(marker).not.toBeNull();
-      marker!.querySelector('circle')!.dispatchEvent(new MouseEvent('click'));
+      const circle = marker!.querySelector('circle')!;
+      const text = marker!.querySelector('text')!;
+      (text as any).getBBox = () => ({ x: 1, y: 2, width: 30, height: 10 });
+      expect(circle.getAttribute('role')).toBe('button');
+      expect(circle.getAttribute('tabindex')).toBe('0');
+      expect(circle.getAttribute('aria-label')).toBe('Open The Gnosis at Varati');
+      circle.dispatchEvent(new FocusEvent('focus'));
+      expect(text.style.display).toBe('block');
+      circle.dispatchEvent(new FocusEvent('blur'));
+      expect(text.style.display).toBe('none');
+      circle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
       expect(emitted).toEqual(['Varati']);
     });
 
