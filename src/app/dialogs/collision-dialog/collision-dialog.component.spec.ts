@@ -342,7 +342,7 @@ describe('CollisionDialogComponent', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('svg.separation-chart')).toBeNull();
   });
 
-  it('shows the candidate heading and an explanatory note when timing data is missing', () => {
+  it('shows the candidate heading and an explanatory note when no contact date could be resolved', () => {
     const fixture = setup({
       bodyName: 'A', partnerName: 'B', synodicPeriodDays: 10, combinedRadiiKm: 1000,
       upcomingCollisions: [], bodyInfo: null, partnerInfo: null, systemPopulation: 0, systemName: '', simultaneousPartners: [],
@@ -352,6 +352,6 @@ describe('CollisionDialogComponent', () => {
     expect(fixture.componentInstance.overlapPercent).toBeNull();
     expect(fixture.componentInstance.durationMinutes).toBeNull();
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain("can't be");
+    expect(el.textContent).toContain("couldn't be computed");
   });
 });

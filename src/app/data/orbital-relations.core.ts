@@ -844,6 +844,17 @@ export class OrbitalRelationsCore {
   }
 
   /**
+   * Whether `bd` carries what {@link positionFunction} needs to place it in time: mean anomaly,
+   * its sample timestamp, and an orbital period. A body can pass every other candidacy check
+   * ({@link orbitalRadialRange}, {@link minOrbitDistanceKm} — pure orbit-*curve* geometry, no
+   * phase needed) while still failing this, which is the one real "we can't say when" case
+   * {@link collisionStatusFor}'s fallback status exists for.
+   */
+  private hasPhaseData(bd: CanonnBiostatsBody): boolean {
+    return bd.meanAnomaly != null && !!bd.orbitalPeriod && !!bd.timestamps?.meanAnomaly;
+  }
+
+  /**
    * Builds a closure giving a body's absolute position (km) at any epoch-ms time, by propagating
    * its mean anomaly from its recorded sample and evaluating its 3D Keplerian position. Returns
    * null when the body lacks the phase data (mean anomaly + timestamp) needed to place it in
@@ -851,8 +862,8 @@ export class OrbitalRelationsCore {
    * {@link nestedPositionFunction} (one body superposed on another) are assembled from.
    */
   private positionFunction(bd: CanonnBiostatsBody): ((tMs: number) => Vec3) | null {
-    if (bd.meanAnomaly == null || !bd.orbitalPeriod || !bd.timestamps?.meanAnomaly) { return null; }
-    const epoch = Date.parse(bd.timestamps.meanAnomaly);
+    if (!this.hasPhaseData(bd)) { return null; }
+    const epoch = Date.parse(bd.timestamps!.meanAnomaly!);
     return (tMs: number): Vec3 => {
       const M = bd.meanAnomaly! + ((tMs - epoch) / MS_PER_DAY / bd.orbitalPeriod!) * 360;
       return this.orbitalStateVector(bd, M);
@@ -1657,7 +1668,7 @@ export class OrbitalRelationsCore {
   }
 
   detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
-    return this.collisionStatusFor(body, (p, count, horizonMs) => this.collisionWindowsFor(body.bodyData, p, now, count, horizonMs));
+    return this.collisionStatusFor(body, now, (p, count, horizonMs) => this.collisionWindowsFor(body.bodyData, p, now, count, horizonMs));
   }
 
   /**
@@ -1691,7 +1702,7 @@ export class OrbitalRelationsCore {
       return windows;
     };
     return this.flattenSystem(root).map(body =>
-      this.collisionStatusFor(body, (p, count, horizonMs) => cachedWindowsFor(p, count, horizonMs, body.bodyData)));
+      this.collisionStatusFor(body, now, (p, count, horizonMs) => cachedWindowsFor(p, count, horizonMs, body.bodyData)));
   }
 
   /**
@@ -1704,6 +1715,7 @@ export class OrbitalRelationsCore {
    */
   private collisionStatusFor(
     body: SystemBody,
+    now: number,
     windowsFor: (p: CollisionPartnerDescriptor, count: number, horizonMs: number) => CollisionWindow[],
   ): CollisionStatus {
     const none: CollisionStatus = {
@@ -1732,11 +1744,33 @@ export class OrbitalRelationsCore {
     merged.sort((x, y) => x.start.getTime() - y.start.getTime());
     const upcoming = merged.slice(0, MAX_UPCOMING_CONTACTS);
 
-    // The primary partner owns the soonest collision; fall back to the first geometric
-    // candidate when no pair has usable phase/timing data (so the badge still appears).
+    // The primary partner owns the soonest collision. When none resolved, this body is still a
+    // candidate — with an honest "can't say when" status — for one of two genuine reasons, never
+    // just because *some* partner cleared the cheap geometric prefilter that got it into
+    // `partners` in the first place (that prefilter is deliberately loose — see nestedRangeKm's
+    // and collisionPartners' own docs — so on its own it can't distinguish a real near-collision
+    // from a comfortable near-*miss* like the one this fallback used to mislabel):
+    //  (a) a *direct* sibling ('simple' kind) is untimed because it lacks the phase data needed —
+    //      collisionPartners adds one on bare orbit-*curve* proximity alone (it never checks mean
+    //      anomaly), so that pair alone can legitimately have no way to be timed; or
+    //  (b) despite complete phase data, the pair is provably in contact *right now* (today's
+    //      separation is already inside contactKm) but the exact-window search couldn't bound a
+    //      clean start/end for it — what a persistently wide contact does to nestedContactWindows'
+    //      bounded edge search (see its maxSpanMs docs).
+    // Anything else — full phase data, and not currently touching — means the search ran to
+    // completion and genuinely found no contact: a near-miss, not a candidate (mirrors the
+    // ring-collision engine's own "only a genuine detected collision counts" rule).
+    const untimedSimplePartner = upcoming[0] ? undefined : partners.find(p =>
+      p.kind === 'simple' && (!this.hasPhaseData(bd) || !this.hasPhaseData(p.partner.bodyData)));
+    const currentlyTouchingPartner = upcoming[0] || untimedSimplePartner ? undefined : partners.find(p => {
+      const sep = p.kind === 'simple' ? this.separationFunction(bd, p.partner.bodyData) : this.separationFunctionFromPositions(p.posA, p.posB);
+      return !!sep && sep(now) <= p.contactKm;
+    });
+    const fallbackPartner = untimedSimplePartner ?? currentlyTouchingPartner;
+    if (!upcoming[0] && !fallbackPartner) { return none; }
     const primary = (upcoming[0]
       ? partners.find(p => p.partner.bodyData.name === upcoming[0].partnerName)
-      : null) ?? partners[0];
+      : null) ?? fallbackPartner!;
 
     // Identify additional siblings that are part of the same crossing-orbit group, making
     // this a multi-body cluster. Grow the group transitively from every *direct* partner: if

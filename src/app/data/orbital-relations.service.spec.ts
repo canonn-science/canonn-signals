@@ -1078,6 +1078,67 @@ describe('OrbitalRelationsService', () => {
       expect(status.nextCollision!.days).toBeLessThan(0.15);
     });
 
+    it('does not flag an "aunt/uncle" near-miss as a candidate, even though full phase data exists', () => {
+      // Regression test for a real report (system Stranaea BA-A g729, bodies "AB 2 a"/"AB 3"):
+      // nestedCollisionPartners' cheap prefilter (nestedRangeKm) is a loose periapsis/apoapsis
+      // bound that can't rule out a pair whose orbits merely pass *near* each other, only ones
+      // that provably never could. Once such a pair reached the exact search and it correctly
+      // found no actual contact, collisionStatusFor's fallback used to report isCandidate: true
+      // anyway with a misleading "can't be computed without mean-anomaly" status — even though
+      // every body here has complete phase data and the search ran to completion.
+      //
+      // Same fixture as the previous two tests, except 1 a's own reach is 800 km, not 1,000: at
+      // body 1/2's shared periapsis (separation ≈15,499.9 km, see above) that leaves the moon
+      // ≈14,699.9 km from body 2 — just outside body 2's 14,600 km radius, a ≈100 km near-miss
+      // rather than a hit.
+      const KM_PER_AU = 149597870.7;
+      const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-08-17T19:39:35Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: BODY_TYPE.Barycentre } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const body1: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const body2: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, radius: 14_600, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      // A short period (unlike the two hit-producing tests above, which reuse 10 days) keeps
+      // nestedContactWindows' scan — which must run to completion here, since no window is ever
+      // found — bounded to a reasonable horizon instead of the ~300-orbit span a long period
+      // would force. The moon's *position* at `nowHere` (and so whether it's a near-miss) only
+      // depends on meanAnomaly/argOfPeriapsis/semiMajorAxis/inclination, not on this period.
+      const moon1a: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '1 a', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 800 / KM_PER_AU, orbitalEccentricity: 0,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+          meanAnomaly: 180, orbitalPeriod: 0.05, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: body1,
+      };
+      barycentre.subBodies = [body1, body2];
+      body1.subBodies = [moon1a];
+
+      // The loose cheap prefilter still lets this pair through (it can't see the ≈100 km miss),
+      // but the exact search must correctly resolve it as *not* a collision on either body's page.
+      expect(service.detectCollisionStatus(moon1a, nowHere).isCandidate).toBe(false);
+      expect(service.detectCollisionStatus(body2, nowHere).isCandidate).toBe(false);
+    });
+
     it('flags two "cousin" moons colliding with each other (both composite motions superposed)', () => {
       // Real orbital elements for Swoiwns TR-T b8-1 6/6a/6b/6aa/6ba: 6 a and 6 b are moons of gas
       // giant 6 on crossing orbits, and each has its own sub-moon (6 a a orbits 6 a; 6 b a orbits
