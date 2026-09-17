@@ -206,6 +206,34 @@ describe('RegionMapComponent', () => {
       expect(svg.querySelector('#system-marker')).not.toBeNull();
     });
 
+    it('renders coordinate-based markers when region metadata is absent', () => {
+      fixture.componentRef.setInput('system', { name: 'Regionless', coords: { x: 10, y: 20, z: 30 } });
+      fixture.componentRef.setInput('outposts', [
+        { name: 'Remote Outpost', galMapSearch: 'Remote System', coordinates: [40, 50, 60], type: 'independentOutpost' },
+      ]);
+      const svg = mountSvg(buildSvg());
+
+      (component as any).highlightRegion();
+
+      expect(svg.querySelector('#system-marker')).not.toBeNull();
+      expect(svg.querySelectorAll('.known-system-marker').length).toBeGreaterThan(6);
+      expect([...svg.querySelectorAll('.known-system-marker text')].some(text => text.textContent === 'Remote Outpost')).toBe(true);
+    });
+
+    it('removes the previous system marker when the next regionless system has no coordinates', () => {
+      fixture.componentRef.setInput('system', {
+        name: 'Marked', region: { name: 'Inner Orion Spur', region: 18 }, coords: { x: 0, y: 0, z: 0 },
+      });
+      const svg = mountSvg(buildSvg());
+      (component as any).highlightRegion();
+      expect(svg.querySelector('#system-marker')).not.toBeNull();
+
+      fixture.componentRef.setInput('system', { name: 'Unlocated' });
+      (component as any).highlightRegion();
+
+      expect(svg.querySelector('#system-marker')).toBeNull();
+    });
+
     it('binds each region zoom handler exactly once across re-highlights', () => {
       fixture.componentRef.setInput('system', {
         name: 'Sol', region: { name: 'x', region: 7 }, coords: { x: 0, y: 0, z: 0 },
