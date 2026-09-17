@@ -313,6 +313,13 @@ const ALIGNMENT_TOLERANCE_DEG = 5;
 /** Tolerance (degrees) for equal rosette spacing. */
 const ROSETTE_TOLERANCE_DEG = 5;
 
+/** Contact bands share motion, but retain independent edge searches and stopping rules. */
+interface NestedContactBand {
+  contactKm: number;
+  minContactKm: number;
+  partnerName: string;
+}
+
 /** A 3D position in the system's shared frame (kilometres). */
 interface Vec3 { x: number; y: number; z: number; }
 
@@ -682,32 +689,38 @@ export class OrbitalRelationsCore {
    * time-stepped collision search build on.
    */
   private orbitalStateVector(bd: CanonnBiostatsBody, meanAnomalyDeg: number): Vec3 {
+    return this.orbitalPositionFunction(bd)(meanAnomalyDeg);
+  }
+
+  /** Prepare fixed orbital geometry once; only the Kepler solution changes per sample. */
+  private orbitalPositionFunction(bd: CanonnBiostatsBody): (meanAnomalyDeg: number) => Vec3 {
     const a = bd.semiMajorAxis! * KM_PER_AU;
     const e = Math.min(Math.max(bd.orbitalEccentricity ?? 0, 0), 0.999);
-    const M = (((meanAnomalyDeg % 360) + 360) % 360) * DEG_TO_RAD;
-
-    let E = e < 0.8 ? M : Math.PI;
-    for (let i = 0; i < 12; i++) {
-      const delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-      E -= delta;
-      if (Math.abs(delta) < 1e-12) { break; }
-    }
-
-    // Position in the orbital plane (periapsis along +x), then standard 3-1-3 rotation.
-    // The ED/Spansh data uses the opposite sign convention from the standard astronomical
-    // frame, so both angles must be negated before the rotation is applied.
-    const xo = a * (Math.cos(E) - e);
-    const yo = a * Math.sqrt(1 - e * e) * Math.sin(E);
+    // ED/Spansh uses the opposite sign for these angles from the astronomical frame.
     const node = -(bd.ascendingNode ?? 0) * DEG_TO_RAD;
     const argp = -(bd.argOfPeriapsis ?? 0) * DEG_TO_RAD;
     const incl = (bd.orbitalInclination ?? 0) * DEG_TO_RAD;
     const cO = Math.cos(node), sO = Math.sin(node);
     const cw = Math.cos(argp), sw = Math.sin(argp);
     const ci = Math.cos(incl), si = Math.sin(incl);
-    return {
-      x: xo * (cO * cw - sO * sw * ci) - yo * (cO * sw + sO * cw * ci),
-      y: xo * (sO * cw + cO * sw * ci) - yo * (sO * sw - cO * cw * ci),
-      z: xo * (sw * si) + yo * (cw * si),
+    return (meanAnomalyDeg: number): Vec3 => {
+      const M = (((meanAnomalyDeg % 360) + 360) % 360) * DEG_TO_RAD;
+
+      let E = e < 0.8 ? M : Math.PI;
+      for (let i = 0; i < 12; i++) {
+        const delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+        E -= delta;
+        if (Math.abs(delta) < 1e-12) { break; }
+      }
+
+      // Position in the orbital plane (periapsis along +x), then standard 3-1-3 rotation.
+      const xo = a * (Math.cos(E) - e);
+      const yo = a * Math.sqrt(1 - e * e) * Math.sin(E);
+      return {
+        x: xo * (cO * cw - sO * sw * ci) - yo * (cO * sw + sO * cw * ci),
+        y: xo * (sO * cw + cO * sw * ci) - yo * (sO * sw - cO * cw * ci),
+        z: xo * (sw * si) + yo * (cw * si),
+      };
     };
   }
 
@@ -864,9 +877,10 @@ export class OrbitalRelationsCore {
   private positionFunction(bd: CanonnBiostatsBody): ((tMs: number) => Vec3) | null {
     if (!this.hasPhaseData(bd)) { return null; }
     const epoch = Date.parse(bd.timestamps!.meanAnomaly!);
+    const position = this.orbitalPositionFunction(bd);
     return (tMs: number): Vec3 => {
       const M = bd.meanAnomaly! + ((tMs - epoch) / MS_PER_DAY / bd.orbitalPeriod!) * 360;
-      return this.orbitalStateVector(bd, M);
+      return position(M);
     };
   }
 
@@ -1217,7 +1231,20 @@ export class OrbitalRelationsCore {
     now: number, count: number, horizonMs: number, partnerName: string,
     maxRelativeSpeed: number = Infinity,
   ): CollisionWindow[] {
-    const results: CollisionWindow[] = [];
+    return this.nestedContactWindowsForBands(posA, posB, fastPeriodDays, slowPeriodDays,
+      [{ contactKm, minContactKm, partnerName }], now, count, horizonMs, maxRelativeSpeed)[0];
+  }
+
+  /** One motion scan for multiple rings of the same host, without retaining a sample history. */
+  private nestedContactWindowsForBands(
+    posA: (tMs: number) => Vec3, posB: (tMs: number) => Vec3,
+    fastPeriodDays: number, slowPeriodDays: number, bands: NestedContactBand[],
+    now: number, count: number, horizonMs: number, maxRelativeSpeed: number,
+  ): CollisionWindow[][] {
+    const states = bands.map(band => ({
+      ...band, results: [] as CollisionWindow[], suppressed: false, expensiveAttempts: 0,
+    }));
+    const results = states.map(state => state.results);
     const fastMs = fastPeriodDays * MS_PER_DAY;
     const slowMs = slowPeriodDays * MS_PER_DAY;
     if (!(fastMs > 0) || !(slowMs > 0)) { return results; }
@@ -1245,30 +1272,30 @@ export class OrbitalRelationsCore {
     // against contactKm — cheap — until it naturally exits, at which point detection resumes.
     let prevPrev = sep(scanStart);
     let prev = sep(scanStart + stepMs);
-    let suppressed = false;
-    let expensiveAttempts = 0;
-    for (let t = scanStart + 2 * stepMs; t <= scanEnd && results.length < count; t += stepMs) {
+    const active = (state: typeof states[number]): boolean =>
+      state.results.length < count && state.expensiveAttempts < MAX_EXPENSIVE_CONTACT_ATTEMPTS;
+    for (let t = scanStart + 2 * stepMs; t <= scanEnd && states.some(active); t += stepMs) {
       const curr = sep(t);
-      if (suppressed) {
-        if (curr > contactKm) { suppressed = false; }
-      } else if (prev <= prevPrev && prev <= curr
-        // A speed bound limits how far separation can fall from this sample.
-        // Both refiners stay within two step widths of the seed (the zoom's
-        // successive half-widths sum to <2*stepMs). Reject only if the entire
-        // reachable interval is outside contact, with a small roundoff allowance.
-        && prev - 2 * stepMs * maxRelativeSpeed <= contactKm + 1e-9 * Math.max(1, prev)) {
-        // At full resolution this bracket spans just 2/300 of the fastest orbit.
-        // Keep the same 2000-point basin search, then refine locally instead of
-        // repeating thousands of samples at every halving. If the global sample
-        // cap enlarged the step, retain the wide search for potentially aliased orbits.
-        const refined = stepMs === rawStepMs
-          ? this.sampledMinimum(sep, t - stepMs, stepMs)
-          : this.zoomToMinimum(sep, t - stepMs, stepMs);
-        const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm, contactKm, minContactKm, edgeStepMs, maxSpanMs, now, count, partnerName, results);
-        suppressed = r.forwardUnresolved;
-        // See MAX_EXPENSIVE_CONTACT_ATTEMPTS: a backstop on top of the suppression above, for
-        // whatever pathological shape (many *distinct* costly stretches, say) it doesn't cover.
-        if (r.didExpensiveWork && ++expensiveAttempts >= MAX_EXPENSIVE_CONTACT_ATTEMPTS) { break; }
+      let refined: { t: number; sepKm: number } | undefined;
+      for (const state of states) {
+        if (!active(state)) { continue; }
+        if (state.suppressed) {
+          if (curr > state.contactKm) { state.suppressed = false; }
+        } else if (prev <= prevPrev && prev <= curr
+          // Both refiners stay within two step widths of the seed (the zoom's
+          // successive half-widths sum to <2*stepMs). Retain the roundoff allowance.
+          && prev - 2 * stepMs * maxRelativeSpeed <= state.contactKm + 1e-9 * Math.max(1, prev)) {
+          // The minimum depends only on motion. Each ring still searches its own edges and
+          // maintains its own suppression, attempt budget, and requested number of windows.
+          refined ??= stepMs === rawStepMs
+            ? this.sampledMinimum(sep, t - stepMs, stepMs)
+            : this.zoomToMinimum(sep, t - stepMs, stepMs);
+          const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm,
+            state.contactKm, state.minContactKm, edgeStepMs, maxSpanMs,
+            now, count, state.partnerName, state.results);
+          state.suppressed = r.forwardUnresolved;
+          if (r.didExpensiveWork) { state.expensiveAttempts++; }
+        }
       }
       prevPrev = prev; prev = curr;
     }
@@ -2262,6 +2289,16 @@ export class OrbitalRelationsCore {
       };
     };
 
+    type PendingPair = {
+      i: number; j: number; band: { minKm: number; maxKm: number };
+      synodicDays: number; windows: CollisionWindow[];
+    };
+    const pending: PendingPair[] = [];
+    const nestedGroups = new Map<SystemBody, Map<SystemBody, {
+      pair: Extract<RingOrbitPair, { kind: 'nested' }>;
+      entries: { pending: PendingPair; band: NestedContactBand }[];
+    }>>();
+
     for (let i = 0; i < candidates.length; i++) {
       const nodeA = candidates[i];
       const isRingA = nodeA.bodyData.type === BODY_TYPE.Ring;
@@ -2308,13 +2345,36 @@ export class OrbitalRelationsCore {
           // The dominant recurrence driver — displayed as this pair's "synodic period" even
           // though a nested pair's true recurrence is quasi-periodic (see nestedContactWindows).
           synodicDays = pair.fastPeriodDays;
-          windows = this.nestedContactWindows(pair.posA, pair.posB, pair.fastPeriodDays, pair.slowPeriodDays, band.maxKm, band.minKm, now, MAX_UPCOMING_CONTACTS, Infinity, pair.labelB, pair.maxRelativeSpeed);
+          const orbitA = isRingA ? nodeA.parent! : nodeA;
+          const orbitB = isRingB ? nodeB.parent! : nodeB;
+          let byPartner = nestedGroups.get(orbitA);
+          if (!byPartner) { byPartner = new Map(); nestedGroups.set(orbitA, byPartner); }
+          let group = byPartner.get(orbitB);
+          if (!group) { group = { pair, entries: [] }; byPartner.set(orbitB, group); }
+          const entry: PendingPair = { i, j, band, synodicDays, windows: [] };
+          pending.push(entry);
+          group.entries.push({ pending: entry, band: {
+            contactKm: band.maxKm, minContactKm: band.minKm, partnerName: pair.labelB,
+          } });
+          continue;
         }
-        if (windows.length === 0) { continue; }
-
-        updateBest(i, nodeB, band.maxKm, band.minKm, synodicDays, windows);
-        updateBest(j, nodeA, band.maxKm, band.minKm, synodicDays, windows);
+        pending.push({ i, j, band, synodicDays, windows });
       }
+    }
+
+    for (const byPartner of nestedGroups.values()) {
+      for (const { pair, entries } of byPartner.values()) {
+        const windows = this.nestedContactWindowsForBands(pair.posA, pair.posB,
+          pair.fastPeriodDays, pair.slowPeriodDays, entries.map(entry => entry.band),
+          now, MAX_UPCOMING_CONTACTS, Infinity, pair.maxRelativeSpeed);
+        entries.forEach((entry, index) => { entry.pending.windows = windows[index]; });
+      }
+    }
+    // Preserve the original traversal order, including which partner wins equal-time ties.
+    for (const { i, j, band, synodicDays, windows } of pending) {
+      if (windows.length === 0) { continue; }
+      updateBest(i, candidates[j], band.maxKm, band.minKm, synodicDays, windows);
+      updateBest(j, candidates[i], band.maxKm, band.minKm, synodicDays, windows);
     }
 
     return statuses;

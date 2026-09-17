@@ -5,7 +5,7 @@
  *
  * Current checkout: node scripts/benchmark-ring-collisions.cjs
  * Compare revision: node scripts/benchmark-ring-collisions.cjs <git-revision>
- * Body-6 planetary collisions: add --system=swoiwns.
+ * Body-6 planetary collisions (the app's shared batch API): add --system=swoiwns.
  * Nested moon/ring pair: add --system=eoch to either command above.
  * Compare windowFingerprint as well as timing; run on the same otherwise-idle machine.
  */
@@ -103,10 +103,8 @@ try {
   const root = system === 'swoiwns'
     ? require(path.join(temporary, 'swoiwns.js')).swoiwnsCollisionFamily()
     : system === 'eoch' ? eochPair() : muscaPair();
-  const flatten = node => [node, ...node.subBodies.flatMap(flatten)];
-  const subjects = flatten(root);
   const analyze = () => system === 'swoiwns'
-    ? subjects.map(node => core.detectCollisionStatus(node, Date.parse(epoch)))
+    ? core.detectCollisionStatuses(root, Date.parse(epoch))
     : core.detectRingCollisionStatuses(root, Date.parse(epoch));
   const times = [];
   let statuses;
