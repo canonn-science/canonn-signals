@@ -16,6 +16,8 @@ import type { SystemBody } from '../home/home.component';
 @Injectable({ providedIn: 'root' })
 export class BodyInterestRegistryService {
   private systemKey: string | number | bigint | null = null;
+  private readonly orbitalCandidates = new Set<SystemBody>();
+  private readonly ringCandidates = new Set<SystemBody>();
   private readonly collisionCandidates = signal<ReadonlySet<SystemBody>>(new Set());
   readonly collisionCandidateBodies = this.collisionCandidates.asReadonly();
 
@@ -23,16 +25,25 @@ export class BodyInterestRegistryService {
   resetForSystem(key: string | number | bigint): void {
     if (this.systemKey === key) { return; }
     this.systemKey = key;
+    this.orbitalCandidates.clear();
+    this.ringCandidates.clear();
     this.collisionCandidates.set(new Set());
   }
 
   /** Reports whether `body` is a collision candidate. Ignored if `systemKey` isn't the current system. */
   reportCollisionCandidate(systemKey: string | number | bigint, body: SystemBody, isCandidate: boolean): void {
+    this.reportCandidate(this.orbitalCandidates, systemKey, body, isCandidate);
+  }
+
+  /** Reports whether `body` is a ring-collision candidate. Ignored if `systemKey` isn't the current system. */
+  reportRingCollisionCandidate(systemKey: string | number | bigint, body: SystemBody, isCandidate: boolean): void {
+    this.reportCandidate(this.ringCandidates, systemKey, body, isCandidate);
+  }
+
+  private reportCandidate(bucket: Set<SystemBody>, systemKey: string | number | bigint, body: SystemBody, isCandidate: boolean): void {
     if (systemKey !== this.systemKey) { return; }
-    const current = this.collisionCandidates();
-    if (current.has(body) === isCandidate) { return; }
-    const next = new Set(current);
-    if (isCandidate) { next.add(body); } else { next.delete(body); }
-    this.collisionCandidates.set(next);
+    if (bucket.has(body) === isCandidate) { return; }
+    if (isCandidate) { bucket.add(body); } else { bucket.delete(body); }
+    this.collisionCandidates.set(new Set([...this.orbitalCandidates, ...this.ringCandidates]));
   }
 }

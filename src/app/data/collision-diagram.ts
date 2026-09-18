@@ -16,6 +16,14 @@ export interface DistanceSeriesInput {
   partnerName: string;
   /** Contact threshold (km) for this pair — the sum of the two bodies' radii. */
   combinedRadiiKm: number;
+  /**
+   * The contact band's *lower* edge (km), when the pair has one — a ring collision only (see
+   * `OrbitalRelationsCore.ringContactBand`): closer than this, one ring has passed inside the
+   * other's central hole and is no longer touching. Omitted or 0 for a plain combined-radii
+   * threshold (planetary collisions, or a ring pair that never separates once close enough),
+   * in which case only the upper threshold line is drawn.
+   */
+  combinedRadiiMinKm?: number;
   /** Evenly-spaced (time, separation) samples spanning the diagram window. */
   samples: { tMs: number; sepKm: number }[];
   /** Known collision minima (from the upcoming-contacts list) to mark on the curve. */
@@ -42,6 +50,8 @@ export interface DiagramSeries {
   points: string;
   /** y of the horizontal contact-threshold line (clamped to the plot). */
   thresholdY: number;
+  /** y of the lower contact-band threshold line, when the pair has one (see {@link DistanceSeriesInput.combinedRadiiMinKm}). */
+  thresholdMinY: number | null;
   /** Marker centres for the known collisions on this curve. */
   markers: { cx: number; cy: number }[];
 }
@@ -108,6 +118,7 @@ export function synodicDistanceDiagram(input: SynodicDiagramInput): SynodicDiagr
     for (const p of s.samples) { if (Number.isFinite(p.sepKm) && p.sepKm > 0) { values.push(p.sepKm); hasFiniteSample = true; } }
     for (const c of s.contacts) { if (Number.isFinite(c.sepKm) && c.sepKm > 0) { values.push(c.sepKm); } }
     if (s.combinedRadiiKm > 0) { values.push(s.combinedRadiiKm); }
+    if (s.combinedRadiiMinKm && s.combinedRadiiMinKm > 0) { values.push(s.combinedRadiiMinKm); }
   }
   if (!hasFiniteSample || values.length === 0) { return null; }
 
@@ -143,6 +154,7 @@ export function synodicDistanceDiagram(input: SynodicDiagramInput): SynodicDiagr
       color: PALETTE[i % PALETTE.length],
       points,
       thresholdY: r(yOf(s.combinedRadiiKm)),
+      thresholdMinY: s.combinedRadiiMinKm && s.combinedRadiiMinKm > 0 ? r(yOf(s.combinedRadiiMinKm)) : null,
       markers,
     };
   });

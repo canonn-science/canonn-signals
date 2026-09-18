@@ -68,4 +68,12 @@ describe('BodyInterestRegistryService', () => {
     expect(service.collisionCandidateBodies().has(ringA)).toBe(true);
     expect(service.collisionCandidateBodies().has(ringB)).toBe(false);
   });
+
+  it('preserves a ring-collision candidate when the orbital-collision report resolves false', () => {
+    const ring = makeBody(-1);
+    service.resetForSystem(1n);
+    service.reportRingCollisionCandidate(1n, ring, true);
+    service.reportCollisionCandidate(1n, ring, false);
+    expect(service.collisionCandidateBodies().has(ring)).toBe(true);
+  });
 });

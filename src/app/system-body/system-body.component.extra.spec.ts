@@ -7,6 +7,7 @@ import { SystemBodyComponent } from './system-body.component';
 import { AppService } from '../app.service';
 import { SystemBody, CanonnBiostatsBody } from '../home/home.component';
 import { BodyPhysicsService } from '../data/body-physics.service';
+import { OrbitalWorkerService } from '../data/orbital-worker.service';
 
 const KM_PER_AU = 149597870.7;
 
@@ -23,6 +24,16 @@ describe('SystemBodyComponent (extended coverage)', () => {
   let component: SystemBodyComponent;
   let dialogOpenCalls: number;
   let dialogOpenArgs: { component: unknown; config: { data?: any } }[];
+  let orbitalWorkerStub: {
+    detectCollisionStatus: ReturnType<typeof vi.fn>;
+    simultaneousCollisionsWithin: ReturnType<typeof vi.fn>;
+    upcomingContactsWithin: ReturnType<typeof vi.fn>;
+    separationSeries: ReturnType<typeof vi.fn>;
+    detectRingCollisionStatus: ReturnType<typeof vi.fn>;
+    ringContactsWithin: ReturnType<typeof vi.fn>;
+    ringSeparationSeries: ReturnType<typeof vi.fn>;
+    ringCollisionDiagram: ReturnType<typeof vi.fn>;
+  };
 
   /** The inner data the most recent dialog.open routes to its lazily-loaded dialog body. */
   function lastDialogData(): any {
@@ -32,6 +43,22 @@ describe('SystemBodyComponent (extended coverage)', () => {
   beforeEach(() => {
     dialogOpenCalls = 0;
     dialogOpenArgs = [];
+    orbitalWorkerStub = {
+      detectCollisionStatus: vi.fn().mockResolvedValue({
+        isCandidate: false, partnerName: null, synodicPeriodDays: null,
+        nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [],
+      }),
+      simultaneousCollisionsWithin: vi.fn().mockResolvedValue([]),
+      upcomingContactsWithin: vi.fn().mockResolvedValue([]),
+      separationSeries: vi.fn().mockResolvedValue([]),
+      detectRingCollisionStatus: vi.fn().mockResolvedValue({
+        isCandidate: false, self: null, partner: null,
+        combinedRadiiKm: null, combinedRadiiMinKm: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [],
+      }),
+      ringContactsWithin: vi.fn().mockResolvedValue([]),
+      ringSeparationSeries: vi.fn().mockResolvedValue([]),
+      ringCollisionDiagram: vi.fn().mockResolvedValue({ series: [], contacts: [] }),
+    };
     const dialogStub = {
       open: (component: unknown, config: { data?: any } = {}) => {
         dialogOpenCalls++;
@@ -45,6 +72,7 @@ describe('SystemBodyComponent (extended coverage)', () => {
         provideZonelessChangeDetection(),
         { provide: AppService, useValue: { codexEntries: signal([]), nowOverride: signal(null), getBodyDisplayName: (n: string) => `${n}!` } },
         { provide: MatDialog, useValue: dialogStub },
+        { provide: OrbitalWorkerService, useValue: orbitalWorkerStub },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
@@ -1387,12 +1415,140 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(lastDialogData().nextCollision.minSeparationKm).toBe(1000);
     });
 
+    it('caps the diagram span for a pair whose near-1:1 resonance gives it a huge synodic period', async () => {
+      // A crossing-orbit sibling pair with near-identical periods (as in a real system) has a
+      // synodic period of hundreds of days — ten periods would span years, both mostly empty and
+      // (via the underlying nested-pair search) very slow. The diagram span must stay capped at
+      // SIMULTANEOUS_COLLISION_HORIZON_DAYS (180 days) regardless.
+      const parent = makeBody({ name: 'X 1' });
+      const bodyB = makeBody({ name: 'X 1 b' }, parent);
+      const bodyC = makeBody({ name: 'X 1 c' }, parent);
+      parent.subBodies = [bodyB, bodyC];
+      render(bodyB);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: 'X 1 c', synodicPeriodDays: 622.8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 12, minSeparationKm: 1000,
+        },
+      });
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+
+      await component.showCollisionDialog();
+
+      const MS_PER_DAY = 1000 * 60 * 60 * 24;
+      const [, horizonDaysArg] = orbitalWorkerStub.upcomingContactsWithin.mock.calls[0];
+      expect(horizonDaysArg).toBeLessThanOrEqual(180);
+      expect(horizonDaysArg).toBeGreaterThan(0);
+      const [, , , endMsArg] = orbitalWorkerStub.separationSeries.mock.calls[0];
+      const appService = TestBed.inject(AppService) as any;
+      const now = appService.nowOverride() ?? Date.now();
+      expect(endMsArg - now).toBeLessThanOrEqual(180 * MS_PER_DAY + 1);
+    });
+
     it('does nothing when the body is not a collision candidate', async () => {
       render(makeBody({}));
       component.collisionStatus.set(null);
       const before = dialogOpenCalls;
       await component.showCollisionDialog();
       expect(dialogOpenCalls).toBe(before);
+    });
+
+    it('resolves a "nested" collision partner (a sibling of this body\'s own parent, not a direct sibling) for the partner panel and distance diagram', async () => {
+      // Body 2 is not among moon 1a's own siblings (moon 1a has none) — it's a sibling of moon
+      // 1a's parent, body 1, reachable only via OrbitalRelationsCore.nestedCollisionPartners.
+      const grandparent = makeBody({ name: 'Barycentre', bodyId: 0 });
+      const body1 = makeBody({ name: '1' }, grandparent);
+      const body2 = makeBody({ name: '2' }, grandparent);
+      grandparent.subBodies = [body1, body2];
+      const moon1a = makeBody({ name: '1 a' }, body1);
+      body1.subBodies = [moon1a];
+
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+      render(moon1a);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: '2', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 1, minSeparationKm: 1000,
+        },
+      });
+
+      await component.showCollisionDialog();
+      expect(lastDialogData().bodyName).toBe('1 a');
+      expect(lastDialogData().partnerName).toBe('2');
+      // Before the fix, siblings only searched body.parent.subBodies (empty for 1a), so this
+      // would silently resolve to null and the diagram would drop the only partner entirely.
+      expect(lastDialogData().partnerInfo).not.toBeNull();
+      expect(lastDialogData().partnerInfos.find((p: { name: string }) => p.name === '2')?.info).not.toBeNull();
+      expect(lastDialogData().separationDiagram).not.toBeNull();
+    });
+
+    it('resolves a "cousin" collision partner (a child of an aunt/uncle, two levels up and back down) for the partner panel and distance diagram', async () => {
+      // Body 2 b is not among moon 1a's own siblings, nor a sibling of its parent (body 1) — it's
+      // a child of body 1's sibling, body 2, reachable only via OrbitalRelationsCore.cousinCollisionPartners.
+      const grandparent = makeBody({ name: 'Barycentre', bodyId: 0 });
+      const body1 = makeBody({ name: '1' }, grandparent);
+      const body2 = makeBody({ name: '2' }, grandparent);
+      grandparent.subBodies = [body1, body2];
+      const moon1a = makeBody({ name: '1 a' }, body1);
+      body1.subBodies = [moon1a];
+      const moon2b = makeBody({ name: '2 b' }, body2);
+      body2.subBodies = [moon2b];
+
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+      render(moon1a);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: '2 b', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 1, minSeparationKm: 1000,
+        },
+      });
+
+      await component.showCollisionDialog();
+      expect(lastDialogData().bodyName).toBe('1 a');
+      expect(lastDialogData().partnerName).toBe('2 b');
+      // Before the fix, siblings only searched body.parent.subBodies and the grandparent's other
+      // children (aunts/uncles), not their children in turn, so this would silently resolve to
+      // null and the diagram would drop the only partner entirely.
+      expect(lastDialogData().partnerInfo).not.toBeNull();
+      expect(lastDialogData().partnerInfos.find((p: { name: string }) => p.name === '2 b')?.info).not.toBeNull();
+      expect(lastDialogData().separationDiagram).not.toBeNull();
+    });
+
+    it('resolves a "niece/nephew" collision partner (a child of this body\'s own sibling, the mirror of aunt/uncle) for the partner panel and distance diagram', async () => {
+      // Moon 1a is not among body 2's own siblings — it's a child of body 2's sibling, body 1,
+      // reachable only via OrbitalRelationsCore.nieceNephewCollisionPartners. Before that fix, only
+      // moon 1a's own page ever resolved this pair (via nestedCollisionPartners); body 2's page
+      // resolved nothing.
+      const grandparent = makeBody({ name: 'Barycentre', bodyId: 0 });
+      const body1 = makeBody({ name: '1' }, grandparent);
+      const body2 = makeBody({ name: '2' }, grandparent);
+      grandparent.subBodies = [body1, body2];
+      const moon1a = makeBody({ name: '1 a' }, body1);
+      body1.subBodies = [moon1a];
+
+      orbitalWorkerStub.separationSeries.mockResolvedValue([{ tMs: 0, sepKm: 1000 }]);
+      render(body2);
+      component.collisionStatus.set({
+        isCandidate: true, partnerName: '1 a', synodicPeriodDays: 8, combinedRadiiKm: 5000,
+        upcomingCollisions: [], simultaneousPartners: [],
+        nextCollision: {
+          start: new Date('2026-12-15T14:00:00Z'), end: new Date('2026-12-15T15:30:00Z'),
+          days: 1, minSeparationKm: 1000,
+        },
+      });
+
+      await component.showCollisionDialog();
+      expect(lastDialogData().bodyName).toBe('2');
+      expect(lastDialogData().partnerName).toBe('1 a');
+      expect(lastDialogData().partnerInfo).not.toBeNull();
+      expect(lastDialogData().partnerInfos.find((p: { name: string }) => p.name === '1 a')?.info).not.toBeNull();
+      expect(lastDialogData().separationDiagram).not.toBeNull();
     });
 
     it('formats the badge countdown in days, adding years past a year, and flags in-progress', () => {
@@ -1423,6 +1579,72 @@ describe('SystemBodyComponent (extended coverage)', () => {
       const badge: HTMLElement = fixture.nativeElement.querySelector('.badge-red');
       expect(badge).not.toBeNull();
       expect(badge!.textContent?.trim()).toBe('Collision In Progress');
+    });
+  });
+
+  describe('ring collision wiring', () => {
+    it('lands async ring status, renders the badge, and resolves dialog data by stable path', async () => {
+      const now = Date.parse('2026-10-28T15:16:05Z');
+      const appService = TestBed.inject(AppService) as any;
+      appService.nowOverride.set(now);
+
+      const root = makeBody({ bodyId: 0, name: 'Test System', type: 'Star' }, null);
+      const focus = makeBody({ bodyId: 1, name: 'Test System 1' }, root);
+      const sameNamedOwnRing = makeBody({ bodyId: -1, name: 'A Ring', type: 'Ring', innerRadius: 10, outerRadius: 20 }, focus);
+      const partnerHost = makeBody({ bodyId: 2, name: 'Test System 2' }, root);
+      const partnerRing = makeBody({ bodyId: -1, name: 'A Ring', type: 'Ring', innerRadius: 30, outerRadius: 40 }, partnerHost);
+      root.subBodies = [focus, partnerHost];
+      focus.subBodies = [sameNamedOwnRing];
+      partnerHost.subBodies = [partnerRing];
+
+      let resolveStatus!: (status: any) => void;
+      orbitalWorkerStub.detectRingCollisionStatus.mockReturnValueOnce(new Promise(resolve => { resolveStatus = resolve; }));
+      orbitalWorkerStub.ringCollisionDiagram.mockResolvedValue({
+        series: [
+          { tMs: now, sepKm: 100 },
+          { tMs: now + 60_000, sepKm: 90 },
+        ],
+        contacts: [{
+          start: new Date(now + 10_000),
+          end: new Date(now + 20_000),
+          days: 10 / 86_400,
+          minSeparationKm: 90,
+          minSeparationAt: new Date(now + 20_000),
+        }],
+      });
+
+      render(focus, { systemKey: 1n, edGalaxyData: { Name: 'Test System' } });
+      expect(fixture.nativeElement.textContent).not.toContain('Ring Collision');
+
+      resolveStatus({
+        isCandidate: true,
+        self: { name: 'Test System 1', kind: 'body', path: [0] },
+        partner: { name: 'A Ring', kind: 'ring', path: [1, 0] },
+        combinedRadiiKm: 40,
+        combinedRadiiMinKm: 5,
+        synodicPeriodDays: 2,
+        nextCollision: {
+          start: new Date(now + 10_000),
+          end: new Date(now + 20_000),
+          days: 10 / 86_400,
+          minSeparationKm: 90,
+          minSeparationAt: new Date(now + 20_000),
+        },
+        upcomingCollisions: [],
+      });
+      await Promise.resolve();
+      fixture.detectChanges();
+
+      const ringBadge = [...fixture.nativeElement.querySelectorAll('.badge')]
+        .find((el: Element) => el.textContent?.trim() === 'Ring Collision') as HTMLElement | undefined;
+      expect(ringBadge).toBeTruthy();
+
+      await component.showRingCollisionDialog();
+      expect(orbitalWorkerStub.ringCollisionDiagram).toHaveBeenCalledWith(
+        focus, partnerRing, now, now + 2 * 24 * 60 * 60 * 1000 * 10, 1000, 2 * 10, now,
+      );
+      expect(lastDialogData().partner.path).toEqual([1, 0]);
+      expect(lastDialogData().separationDiagram.series[0].partnerName).toBe('A Ring');
     });
   });
 

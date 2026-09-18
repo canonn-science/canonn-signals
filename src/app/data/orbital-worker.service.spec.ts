@@ -54,6 +54,36 @@ describe('OrbitalWorkerService', () => {
     ]);
   }
 
+  /** A ring-bearing binary pair orbiting a shared barycentre (Musca Dark Region SO-Q b5-5 1 & 2). */
+  function ringCollidingPair(): { ring1: SystemBody; ring2: SystemBody } {
+    const barycentre: SystemBody = { bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: 'Barycentre' } as CanonnBiostatsBody, subBodies: [], parent: null };
+    const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+    const body1: SystemBody = {
+      bodyData: {
+        bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    const body2: SystemBody = {
+      bodyData: {
+        bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+        semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+        argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+        orbitalPeriod: 0.283064148217593, timestamps: ts,
+      } as CanonnBiostatsBody,
+      subBodies: [], parent: barycentre,
+    };
+    const ring1: SystemBody = { bodyData: { bodyId: -1, name: '1 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 8452, outerRadius: 8454.4 } as CanonnBiostatsBody, subBodies: [], parent: body1 };
+    const ring2: SystemBody = { bodyData: { bodyId: -1, name: '2 Ring', id64: 0n, subType: '', type: 'Ring', innerRadius: 7104, outerRadius: 7123.8 } as CanonnBiostatsBody, subBodies: [], parent: body2 };
+    barycentre.subBodies = [body1, body2];
+    body1.subBodies = [ring1];
+    body2.subBodies = [ring2];
+    return { ring1, ring2 };
+  }
+
   /** A service whose worker seam is forced off, so every method runs the engine inline. */
   function inlineService(): OrbitalWorkerService {
     const svc = new OrbitalWorkerService();
@@ -105,6 +135,28 @@ describe('OrbitalWorkerService', () => {
       const result = await service.detectCollisionStatus(orphan, now);
       expect(result.isCandidate).toBe(false);
     });
+
+    it('resolves detectRingCollisionStatus with the same result as the core', async () => {
+      const { ring1 } = ringCollidingPair();
+      const result = await service.detectRingCollisionStatus(ring1, now);
+      expect(result.isCandidate).toBe(true);
+      expect(result).toEqual(core.detectRingCollisionStatus(ring1, now));
+    });
+
+    it('resolves ringContactsWithin identically to the core', async () => {
+      const { ring1, ring2 } = ringCollidingPair();
+      const result = await service.ringContactsWithin(ring1, ring2, 5, now);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result).toEqual(core.ringContactsWithin(ring1, ring2, 5, now));
+    });
+
+    it('resolves ringSeparationSeries identically to the core', async () => {
+      const { ring1, ring2 } = ringCollidingPair();
+      const endMs = now + 5 * 24 * 60 * 60 * 1000;
+      const result = await service.ringSeparationSeries(ring1, ring2, now, endMs, 20);
+      expect(result.length).toBe(20);
+      expect(result).toEqual(core.ringSeparationSeries(ring1, ring2, now, endMs, 20));
+    });
   });
 
   describe('worker path (proxy available)', () => {
@@ -115,9 +167,52 @@ describe('OrbitalWorkerService', () => {
           isCandidate: true, partnerName: 'From Worker', synodicPeriodDays: 1,
           nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
         }),
+        // Aligned to flattenSystem's depth-first order for collidingPair()'s tree: [Parent, Child 1, Child 2].
+        detectCollisionStatuses: vi.fn().mockResolvedValue([
+          { isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [] },
+          {
+            isCandidate: true, partnerName: 'From Worker', synodicPeriodDays: 1,
+            nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
+          },
+          {
+            isCandidate: true, partnerName: 'Self', synodicPeriodDays: 1,
+            nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
+          },
+        ]),
         simultaneousCollisionsWithin: vi.fn().mockResolvedValue([]),
         upcomingContactsWithin: vi.fn().mockResolvedValue([]),
         separationSeries: vi.fn().mockResolvedValue([]),
+        detectRingCollisionStatus: vi.fn().mockResolvedValue({
+          isCandidate: true, self: { name: 'Self', kind: 'ring', path: [0] }, partner: { name: 'From Worker', kind: 'ring', path: [1] },
+          combinedRadiiKm: 1, combinedRadiiMinKm: 0, synodicPeriodDays: 1, nextCollision: null, upcomingCollisions: [],
+        }),
+        detectRingCollisionStatuses: vi.fn().mockResolvedValue([
+          { isCandidate: false, self: null, partner: null, combinedRadiiKm: null, combinedRadiiMinKm: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [] },
+          { isCandidate: false, self: null, partner: null, combinedRadiiKm: null, combinedRadiiMinKm: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [] },
+          {
+            isCandidate: true,
+            self: { name: 'Self', kind: 'ring', path: [0, 0] },
+            partner: { name: 'From Worker', kind: 'ring', path: [1, 0] },
+            combinedRadiiKm: 1,
+            combinedRadiiMinKm: 0,
+            synodicPeriodDays: 1,
+            nextCollision: null,
+            upcomingCollisions: [],
+          },
+          { isCandidate: false, self: null, partner: null, combinedRadiiKm: null, combinedRadiiMinKm: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [] },
+          {
+            isCandidate: true,
+            self: { name: 'From Worker', kind: 'ring', path: [1, 0] },
+            partner: { name: 'Self', kind: 'ring', path: [0, 0] },
+            combinedRadiiKm: 1,
+            combinedRadiiMinKm: 0,
+            synodicPeriodDays: 1,
+            nextCollision: null,
+            upcomingCollisions: [],
+          },
+        ]),
+        ringContactsWithin: vi.fn().mockResolvedValue([]),
+        ringSeparationSeries: vi.fn().mockResolvedValue([]),
       };
     }
 
@@ -149,7 +244,7 @@ describe('OrbitalWorkerService', () => {
 
       const status = await svc.detectCollisionStatus(a, now);
       expect(status.partnerName).toBe('From Worker'); // came from the proxy, not the local core
-      expect(proxy.detectCollisionStatus).toHaveBeenCalledOnce();
+      expect(proxy.detectCollisionStatuses).toHaveBeenCalledOnce();
 
       await svc.simultaneousCollisionsWithin(a, 180, now);
       await svc.upcomingContactsWithin(a, 180, now);
@@ -158,8 +253,46 @@ describe('OrbitalWorkerService', () => {
       expect(proxy.upcomingContactsWithin).toHaveBeenCalledOnce();
       expect(proxy.separationSeries).toHaveBeenCalledOnce();
 
+      const { ring1, ring2 } = ringCollidingPair();
+      const ringStatus = await svc.detectRingCollisionStatus(ring1, now);
+      expect(ringStatus.partner?.name).toBe('From Worker'); // came from the proxy, not the local core
+      await svc.ringContactsWithin(ring1, ring2, 5, now);
+      await svc.ringSeparationSeries(ring1, ring2, now, now + 1000, 10);
+      expect(proxy.detectRingCollisionStatuses).toHaveBeenCalledOnce();
+      expect(proxy.detectRingCollisionStatus).not.toHaveBeenCalled();
+      expect(proxy.ringContactsWithin).toHaveBeenCalledWith(expect.anything(), [1, 0], 5, now);
+      expect(proxy.ringSeparationSeries).toHaveBeenCalledWith(expect.anything(), [1, 0], now, now + 1000, 10);
+
       // The worker + its proxy are created once and reused across every call.
       expect(createSpy).toHaveBeenCalledOnce();
+    });
+
+    it('reuses one cached whole-system ring analysis for multiple bodies in the same system', async () => {
+      const proxy = fakeProxy();
+      const { svc } = serviceWith(proxy);
+      const { ring1, ring2 } = ringCollidingPair();
+
+      const first = await svc.detectRingCollisionStatus(ring1, now);
+      const second = await svc.detectRingCollisionStatus(ring2, now);
+
+      expect(first.partner?.name).toBe('From Worker');
+      expect(second.partner?.name).toBe('Self');
+      expect(proxy.detectRingCollisionStatuses).toHaveBeenCalledOnce();
+      expect(proxy.detectRingCollisionStatus).not.toHaveBeenCalled();
+    });
+
+    it('reuses one cached whole-system collision analysis for multiple bodies in the same system', async () => {
+      const proxy = fakeProxy();
+      const { svc } = serviceWith(proxy);
+      const [a, b] = collidingPair();
+
+      const first = await svc.detectCollisionStatus(a, now);
+      const second = await svc.detectCollisionStatus(b, now);
+
+      expect(first.partnerName).toBe('From Worker');
+      expect(second.partnerName).toBe('Self');
+      expect(proxy.detectCollisionStatuses).toHaveBeenCalledOnce();
+      expect(proxy.detectCollisionStatus).not.toHaveBeenCalled();
     });
 
     it('still falls back to the inline core when a body has no parent (nothing to serialize)', async () => {
@@ -173,7 +306,7 @@ describe('OrbitalWorkerService', () => {
 
       const result = await svc.detectCollisionStatus(orphan, now);
       expect(result.isCandidate).toBe(false);
-      expect(proxy.detectCollisionStatus).not.toHaveBeenCalled(); // never crossed the wire
+      expect(proxy.detectCollisionStatuses).not.toHaveBeenCalled(); // never crossed the wire
     });
 
     it('falls back to the inline core when the proxy cannot be created, and latches (no retry)', async () => {
@@ -192,7 +325,7 @@ describe('OrbitalWorkerService', () => {
 
     it('terminates the worker and retries inline when a Comlink RPC rejects', async () => {
       const proxy = fakeProxy();
-      proxy.detectCollisionStatus.mockRejectedValueOnce(new Error('RPC rejected'));
+      proxy.detectCollisionStatuses.mockRejectedValueOnce(new Error('RPC rejected'));
       const { svc, createSpy } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
@@ -210,13 +343,16 @@ describe('OrbitalWorkerService', () => {
       let rejectFirst!: (reason: unknown) => void;
       const firstRpc = new Promise<never>((_, reject) => { rejectFirst = reject; });
       const proxy = fakeProxy();
-      proxy.detectCollisionStatus
+      proxy.detectCollisionStatuses
         .mockReturnValueOnce(firstRpc)
         .mockReturnValueOnce(new Promise(() => undefined));
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
-      const [a, b] = collidingPair();
+      // Two *separate* systems (not two bodies from the same collidingPair() tree) — same-system
+      // bodies now share one cached whole-system request, so this needs genuinely independent RPCs.
+      const [a] = collidingPair();
+      const [b] = collidingPair();
 
       const first = svc.detectCollisionStatus(a, now);
       const second = svc.detectCollisionStatus(b, now);
@@ -232,7 +368,7 @@ describe('OrbitalWorkerService', () => {
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
-      proxy.detectCollisionStatus.mockImplementationOnce(() => {
+      proxy.detectCollisionStatuses.mockImplementationOnce(() => {
         (svc as unknown as { disableWorker(reason: unknown): void }).disableWorker(new Error('disabled during call'));
         return new Promise(() => undefined);
       });
@@ -245,7 +381,7 @@ describe('OrbitalWorkerService', () => {
     it('handles an asynchronous Comlink proxy-release rejection', async () => {
       const proxy = fakeProxy() as ReturnType<typeof fakeProxy> & { [Comlink.releaseProxy]: ReturnType<typeof vi.fn> };
       proxy[Comlink.releaseProxy] = vi.fn().mockRejectedValue(new Error('release failed'));
-      proxy.detectCollisionStatus.mockRejectedValueOnce(new Error('RPC rejected'));
+      proxy.detectCollisionStatuses.mockRejectedValueOnce(new Error('RPC rejected'));
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
@@ -259,7 +395,7 @@ describe('OrbitalWorkerService', () => {
 
     it('retries a pending Comlink RPC inline when the worker emits an error', async () => {
       const proxy = fakeProxy();
-      proxy.detectCollisionStatus.mockReturnValueOnce(new Promise(() => undefined));
+      proxy.detectCollisionStatuses.mockReturnValueOnce(new Promise(() => undefined));
       const { svc } = serviceWith(proxy);
       const worker = fakeWorker();
       (svc as unknown as { registerWorker(worker: Worker): void }).registerWorker(worker as unknown as Worker);
@@ -276,7 +412,7 @@ describe('OrbitalWorkerService', () => {
       vi.useFakeTimers();
       try {
         const proxy = fakeProxy();
-        proxy.detectCollisionStatus.mockReturnValueOnce(new Promise(() => undefined));
+        proxy.detectCollisionStatuses.mockReturnValueOnce(new Promise(() => undefined));
         const { svc } = serviceWith(proxy);
         const [a] = collidingPair();
 
@@ -293,12 +429,16 @@ describe('OrbitalWorkerService', () => {
       vi.useFakeTimers();
       try {
         const proxy = fakeProxy();
-        proxy.detectCollisionStatus
+        proxy.detectCollisionStatuses
           .mockReturnValueOnce(new Promise(() => undefined))
-          .mockResolvedValueOnce({
-            isCandidate: true, partnerName: 'Recovered Worker', synodicPeriodDays: 1,
-            nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
-          });
+          .mockResolvedValueOnce([
+            { isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [] },
+            {
+              isCandidate: true, partnerName: 'Recovered Worker', synodicPeriodDays: 1,
+              nextCollision: null, upcomingCollisions: [], combinedRadiiKm: 1, simultaneousPartners: [],
+            },
+            { isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [] },
+          ]);
         const { svc, createSpy } = serviceWith(proxy);
         const [a] = collidingPair();
 
@@ -307,7 +447,7 @@ describe('OrbitalWorkerService', () => {
         await expect(first).resolves.toEqual(core.detectCollisionStatus(a, now));
 
         await expect(svc.detectCollisionStatus(a, now)).resolves.toMatchObject({ partnerName: 'Recovered Worker' });
-        expect(proxy.detectCollisionStatus).toHaveBeenCalledTimes(2);
+        expect(proxy.detectCollisionStatuses).toHaveBeenCalledTimes(2);
         expect(createSpy).toHaveBeenCalledOnce();
       } finally {
         vi.useRealTimers();

@@ -1,5 +1,6 @@
 import type { CanonnBiostatsBody, SystemBody } from '../home/home.component';
 import { BODY_TYPE } from './body-types';
+import { bodyPathFromRoot } from './collision-request';
 
 /** The five Lagrange points of a two-body system. */
 export type LagrangePointId = 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
@@ -63,6 +64,16 @@ export interface CollisionWindow {
   /** Centre-to-centre separation (km) at closest approach within the window — the deepest point of contact. */
   minSeparationKm: number;
   /**
+   * When {@link minSeparationKm} actually occurs. For an ordinary single-dip window this sits
+   * near the middle, but it need not be the midpoint — most notably for one half of a ring
+   * pair's split contact (see {@link OrbitalRelationsCore.ringContactBand}), where the deepest
+   * point is pinned to whichever edge (`start` or `end`) is nearest the shared closest approach,
+   * not to the window's centre. Always set by {@link OrbitalRelationsCore.detectCollisionStatus}
+   * and {@link OrbitalRelationsCore.detectRingCollisionStatus}; optional only so hand-built test
+   * fixtures may omit it, in which case callers should fall back to the window's midpoint.
+   */
+  minSeparationAt?: Date;
+  /**
    * Name of the sibling body this contact is with. Always set by {@link OrbitalRelationsService.detectCollisionStatus}
    * (a body can have several crossing partners); optional only so hand-built test fixtures may omit it.
    */
@@ -102,6 +113,115 @@ export interface CollisionStatus {
    */
   simultaneousPartners: string[];
 }
+
+/**
+ * One side of a ring collision: either a solid body (its own bound orbit) or a ring (a static
+ * band around its host). Deliberately plain data rather than a `SystemBody` reference — this
+ * status crosses the worker boundary (see {@link OrbitalWorkerService}), so callers re-resolve the
+ * live node from its stable child-index path against the local system tree when they need it back.
+ */
+export interface RingCollisionExtent {
+  /**
+   * Full display name. For a body this is its own `bodyData.name` (already system-prefixed); for
+   * a ring it's its host body's name plus the ring's own bare identifier (e.g. "A Ring") — a
+   * ring's own `bodyData.name` alone is ambiguous once two different bodies' rings are shown side
+   * by side, since it's stripped of its host's name at parse time (see
+   * {@link OrbitalRelationsCore.ringCollisionExtent}).
+   */
+  name: string;
+  /** 'body' for a planet/moon/star, 'ring' for a ring. */
+  kind: 'body' | 'ring';
+  /** Stable child-index path from the system root, for re-resolving this node across the worker boundary. */
+  path: number[];
+}
+
+/**
+ * Result of ring-collision analysis for a body or ring: whether a genuine, timeable collision was
+ * found with some other body's rings (a "Body on Ring" collision) or another ring ("Ring on
+ * Ring") — see {@link OrbitalRelationsCore.detectRingCollisionStatus}. Unlike
+ * {@link CollisionStatus}, there is no untimed "geometric candidate" state: a pair is only ever
+ * reported here once an actual contact window has been found, since rings are static (they don't
+ * move relative to their host) and only the configurations {@link OrbitalRelationsCore.resolveRingOrbitPair}
+ * describes have a tractable orbital frame to search precisely — anything else (e.g. requiring a
+ * shared ancestor two or more levels up) simply isn't evaluated at all rather than surfaced as an
+ * unconfirmed guess.
+ */
+export interface RingCollisionStatus {
+  /** True when a genuine, timed collision was found with another body's rings. */
+  isCandidate: boolean;
+  /** This object, when {@link isCandidate}; null otherwise. */
+  self: RingCollisionExtent | null;
+  /** The other object involved — a ring, or the body whose orbit reaches this ring; null when not a candidate. */
+  partner: RingCollisionExtent | null;
+  /** Sum of the two objects' physical extents (a ring's outer radius, or a body's radius) — the contact threshold. Null when not a candidate. */
+  combinedRadiiKm: number | null;
+  /**
+   * The contact band's *lower* edge (km) — see {@link OrbitalRelationsCore.ringContactBand}. Zero
+   * when the pair can never separate once close enough (e.g. a body whose own radius already
+   * reaches a ring's inner edge); nonzero when closer than this means one side has passed inside
+   * the other's central hole, briefly breaking contact — the source of a close ring-on-ring pass
+   * registering as two collisions either side of closest approach. Null when not a candidate.
+   */
+  combinedRadiiMinKm: number | null;
+  /** Synodic period (days) between the pair's orbital timing — the interval between successive close approaches. Null when not a candidate. */
+  synodicPeriodDays: number | null;
+  /** The soonest contact window; never null when {@link isCandidate} is true. */
+  nextCollision: CollisionWindow | null;
+  /** Up to 10 upcoming contact windows in chronological order; empty when not a candidate. */
+  upcomingCollisions: CollisionWindow[];
+}
+
+/**
+ * What {@link OrbitalRelationsCore.resolveRingOrbitPair} resolves a ring-collision pair to: either
+ * side may be a plain single-Kepler-orbit body (`'simple'`, timed the same way as a planet-planet
+ * collision) or a "nested" body whose absolute motion is the superposition of two orbits (a moon
+ * riding its own planet's orbit around a shared barycentre) — timed by tracking its exact combined
+ * position over time rather than a single ellipse.
+ */
+type RingOrbitPair =
+  | { kind: 'simple'; a: CanonnBiostatsBody; b: CanonnBiostatsBody; synodicDays: number }
+  | {
+    kind: 'nested';
+    /** Absolute position (km) of each side at any epoch-ms time. */
+    posA: (tMs: number) => Vec3;
+    posB: (tMs: number) => Vec3;
+    /** The faster of the two component periods (days) — sets the scan resolution. */
+    fastPeriodDays: number;
+    /** The slower of the two component periods (days) — bounds the default scan horizon. */
+    slowPeriodDays: number;
+    /** Sum of the component orbits' maximum speeds (km/ms), bounding separation changes. */
+    maxRelativeSpeed: number;
+    /** Each side's own display name, for the resulting {@link CollisionWindow.partnerName}. */
+    labelA: string;
+    labelB: string;
+  };
+
+/**
+ * A collision partner for a plain body-body collision (see {@link OrbitalRelationsCore.collisionPartners}):
+ * a direct sibling (`'simple'`, both sides a single Kepler orbit under the same parent), a
+ * "nested" aunt/uncle — a sibling of the reference body's own parent, checked against the
+ * reference body's exact composite motion (see {@link OrbitalRelationsCore.nestedCollisionPartners}) —
+ * its mirror image, a "niece/nephew" — a child of the reference body's own sibling, checked the
+ * other way round (see {@link OrbitalRelationsCore.nieceNephewCollisionPartners}) — or a "cousin" —
+ * a child of one of the reference body's aunts/uncles, checked against *both* sides' composite
+ * motion (see {@link OrbitalRelationsCore.cousinCollisionPartners}). The latter three share the
+ * same `'nested'` shape, since `posA`/`posB` are just arbitrary position closures either way. The
+ * body-body analogue of {@link RingOrbitPair}, minus the ring-specific contact band (a plain
+ * combined-radii threshold covers both bodies here).
+ */
+type CollisionPartnerDescriptor =
+  | { kind: 'simple'; partner: SystemBody; synodic: number; contactKm: number }
+  | {
+    kind: 'nested';
+    partner: SystemBody;
+    posA: (tMs: number) => Vec3;
+    posB: (tMs: number) => Vec3;
+    fastPeriodDays: number;
+    slowPeriodDays: number;
+    /** Sum of the component orbits' maximum speeds (km/ms), bounding separation changes. */
+    maxRelativeSpeed: number;
+    contactKm: number;
+  };
 
 /**
  * A timed multi-body pile-up: an interval in which a reference body is simultaneously in
@@ -147,9 +267,44 @@ const ORBIT_REFINE_GRID = 4;
 const ORBIT_REFINE_ITERATIONS = 10;
 /** Upper bound on conjunctions examined before giving up on finding a collision date. */
 const MAX_CONJUNCTIONS_SCANNED = 300;
+/**
+ * Hard cap on how many conjunctions a single {@link OrbitalRelationsCore.nextContacts} or
+ * {@link OrbitalRelationsCore.nestedContactWindows} search may spend on {@link contactCrossing}'s
+ * genuinely bounded but nontrivial edge search (see {@link appendMinimumWindows}'
+ * `didExpensiveWork`), on top of (not instead of) {@link MAX_CONJUNCTIONS_SCANNED}'s cap on
+ * conjunctions examined overall. A pair whose contact geometry sits right at a threshold boundary
+ * can have *every* conjunction reach that point without ever resolving a window — a real system (a
+ * moon orbiting just inside its own planet's ring band) measured at 2.6–3.7 seconds *per pair*
+ * despite windows.length ending at 0, all MAX_CONJUNCTIONS_SCANNED attempts paying that cost. Run
+ * on a single worker shared by every row, one such pair blocks all the others queued behind it.
+ * A genuine search reaching MAX_UPCOMING_CONTACTS successfully needs nowhere near this many.
+ */
+const MAX_EXPENSIVE_CONTACT_ATTEMPTS = 40;
 
 /** Cap on how many upcoming contact windows are surfaced (merged across all crossing partners). */
 const MAX_UPCOMING_CONTACTS = 10;
+
+/**
+ * Vertical thickness (km) assumed for a planetary ring. Elite's rings run a little under 15 km
+ * thick, of which roughly the inner 5 km is what actually reads as visible material. The dumps
+ * carry no thickness field, so this stands in for it.
+ *
+ * It matters because a ring is a slab, not a razor-thin annulus: its edges reach about half a
+ * thickness beyond `outerRadius` and half a thickness inside `innerRadius`, which widens the
+ * contact band at both ends in {@link OrbitalRelationsCore.ringContactBand} — lengthening each
+ * contact slightly and shortening the no-contact gap through closest approach.
+ */
+const RING_THICKNESS_KM = 15;
+
+/**
+ * Coarse-scan resolution for a "nested" ring-collision pair (see {@link OrbitalRelationsCore.resolveRingOrbitPair}):
+ * samples per cycle of the faster of its two component periods, just enough to seed each local
+ * minimum's basin for {@link OrbitalRelationsCore.zoomToMinimum} to refine to sub-second precision —
+ * it doesn't need to resolve the contact window itself, only land within it.
+ */
+const NESTED_SAMPLES_PER_FAST_PERIOD = 300;
+/** Hard cap on total coarse samples for a nested pair's scan, guarding against a pathologically short fast period paired with a long horizon. */
+const MAX_NESTED_SAMPLES = 1_000_000;
 
 /** Angular tolerance (degrees) for matching a Lagrange geometry. */
 const ANGLE_TOLERANCE_DEG = 1;
@@ -157,6 +312,13 @@ const ANGLE_TOLERANCE_DEG = 1;
 const ALIGNMENT_TOLERANCE_DEG = 5;
 /** Tolerance (degrees) for equal rosette spacing. */
 const ROSETTE_TOLERANCE_DEG = 5;
+
+/** Contact bands share motion, but retain independent edge searches and stopping rules. */
+interface NestedContactBand {
+  contactKm: number;
+  minContactKm: number;
+  partnerName: string;
+}
 
 /** A 3D position in the system's shared frame (kilometres). */
 interface Vec3 { x: number; y: number; z: number; }
@@ -527,32 +689,38 @@ export class OrbitalRelationsCore {
    * time-stepped collision search build on.
    */
   private orbitalStateVector(bd: CanonnBiostatsBody, meanAnomalyDeg: number): Vec3 {
+    return this.orbitalPositionFunction(bd)(meanAnomalyDeg);
+  }
+
+  /** Prepare fixed orbital geometry once; only the Kepler solution changes per sample. */
+  private orbitalPositionFunction(bd: CanonnBiostatsBody): (meanAnomalyDeg: number) => Vec3 {
     const a = bd.semiMajorAxis! * KM_PER_AU;
     const e = Math.min(Math.max(bd.orbitalEccentricity ?? 0, 0), 0.999);
-    const M = (((meanAnomalyDeg % 360) + 360) % 360) * DEG_TO_RAD;
-
-    let E = e < 0.8 ? M : Math.PI;
-    for (let i = 0; i < 12; i++) {
-      const delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-      E -= delta;
-      if (Math.abs(delta) < 1e-12) { break; }
-    }
-
-    // Position in the orbital plane (periapsis along +x), then standard 3-1-3 rotation.
-    // The ED/Spansh data uses the opposite sign convention from the standard astronomical
-    // frame, so both angles must be negated before the rotation is applied.
-    const xo = a * (Math.cos(E) - e);
-    const yo = a * Math.sqrt(1 - e * e) * Math.sin(E);
+    // ED/Spansh uses the opposite sign for these angles from the astronomical frame.
     const node = -(bd.ascendingNode ?? 0) * DEG_TO_RAD;
     const argp = -(bd.argOfPeriapsis ?? 0) * DEG_TO_RAD;
     const incl = (bd.orbitalInclination ?? 0) * DEG_TO_RAD;
     const cO = Math.cos(node), sO = Math.sin(node);
     const cw = Math.cos(argp), sw = Math.sin(argp);
     const ci = Math.cos(incl), si = Math.sin(incl);
-    return {
-      x: xo * (cO * cw - sO * sw * ci) - yo * (cO * sw + sO * cw * ci),
-      y: xo * (sO * cw + cO * sw * ci) - yo * (sO * sw - cO * cw * ci),
-      z: xo * (sw * si) + yo * (cw * si),
+    return (meanAnomalyDeg: number): Vec3 => {
+      const M = (((meanAnomalyDeg % 360) + 360) % 360) * DEG_TO_RAD;
+
+      let E = e < 0.8 ? M : Math.PI;
+      for (let i = 0; i < 12; i++) {
+        const delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+        E -= delta;
+        if (Math.abs(delta) < 1e-12) { break; }
+      }
+
+      // Position in the orbital plane (periapsis along +x), then standard 3-1-3 rotation.
+      const xo = a * (Math.cos(E) - e);
+      const yo = a * Math.sqrt(1 - e * e) * Math.sin(E);
+      return {
+        x: xo * (cO * cw - sO * sw * ci) - yo * (cO * sw + sO * cw * ci),
+        y: xo * (sO * cw + cO * sw * ci) - yo * (sO * sw - cO * cw * ci),
+        z: xo * (sw * si) + yo * (cw * si),
+      };
     };
   }
 
@@ -689,41 +857,81 @@ export class OrbitalRelationsCore {
   }
 
   /**
-   * Builds a closure giving the centre-to-centre distance (km) between two bodies at any
-   * epoch-ms time, by propagating each body's mean anomaly from its recorded sample and
-   * evaluating its 3D Keplerian position. Returns null when either body lacks the phase
-   * data (mean anomaly + timestamp) needed to place it in time. Shared by the collision
-   * search and the distance-over-time diagram so both measure separation identically.
+   * Whether `bd` carries what {@link positionFunction} needs to place it in time: mean anomaly,
+   * its sample timestamp, and an orbital period. A body can pass every other candidacy check
+   * ({@link orbitalRadialRange}, {@link minOrbitDistanceKm} — pure orbit-*curve* geometry, no
+   * phase needed) while still failing this, which is the one real "we can't say when" case
+   * {@link collisionStatusFor}'s fallback status exists for.
    */
-  private separationFunction(a: CanonnBiostatsBody, b: CanonnBiostatsBody): ((tMs: number) => number) | null {
-    if (
-      a.meanAnomaly == null || !a.orbitalPeriod || !a.timestamps?.meanAnomaly ||
-      b.meanAnomaly == null || !b.orbitalPeriod || !b.timestamps?.meanAnomaly
-    ) { return null; }
+  private hasPhaseData(bd: CanonnBiostatsBody): boolean {
+    return bd.meanAnomaly != null && !!bd.orbitalPeriod && !!bd.timestamps?.meanAnomaly;
+  }
 
-    const epochA = Date.parse(a.timestamps.meanAnomaly);
-    const epochB = Date.parse(b.timestamps.meanAnomaly);
+  /**
+   * Builds a closure giving a body's absolute position (km) at any epoch-ms time, by propagating
+   * its mean anomaly from its recorded sample and evaluating its 3D Keplerian position. Returns
+   * null when the body lacks the phase data (mean anomaly + timestamp) needed to place it in
+   * time. The building block both {@link separationFunction} (two single-orbit bodies) and
+   * {@link nestedPositionFunction} (one body superposed on another) are assembled from.
+   */
+  private positionFunction(bd: CanonnBiostatsBody): ((tMs: number) => Vec3) | null {
+    if (!this.hasPhaseData(bd)) { return null; }
+    const epoch = Date.parse(bd.timestamps!.meanAnomaly!);
+    const position = this.orbitalPositionFunction(bd);
+    return (tMs: number): Vec3 => {
+      const M = bd.meanAnomaly! + ((tMs - epoch) / MS_PER_DAY / bd.orbitalPeriod!) * 360;
+      return position(M);
+    };
+  }
+
+  /**
+   * Absolute position (km) of a body nested one level under another orbiting body, at any
+   * epoch-ms time: its own orbit around its immediate parent, plus that parent's orbit around
+   * the shared grandparent — an exact superposition, not an approximation, since both component
+   * orbits are independently Keplerian. Returns null when either body lacks the phase data
+   * needed to place it in time.
+   */
+  private nestedPositionFunction(inner: CanonnBiostatsBody, outer: CanonnBiostatsBody): ((tMs: number) => Vec3) | null {
+    const posInner = this.positionFunction(inner);
+    const posOuter = this.positionFunction(outer);
+    if (!posInner || !posOuter) { return null; }
+    return (tMs: number): Vec3 => {
+      const pi = posInner(tMs), po = posOuter(tMs);
+      return { x: pi.x + po.x, y: pi.y + po.y, z: pi.z + po.z };
+    };
+  }
+
+  /** Centre-to-centre distance (km) between two position closures at any epoch-ms time. */
+  private separationFunctionFromPositions(posA: (tMs: number) => Vec3, posB: (tMs: number) => Vec3): (tMs: number) => number {
     return (tMs: number): number => {
-      const Ma = a.meanAnomaly! + ((tMs - epochA) / MS_PER_DAY / a.orbitalPeriod!) * 360;
-      const Mb = b.meanAnomaly! + ((tMs - epochB) / MS_PER_DAY / b.orbitalPeriod!) * 360;
-      const pa = this.orbitalStateVector(a, Ma);
-      const pb = this.orbitalStateVector(b, Mb);
+      const pa = posA(tMs), pb = posB(tMs);
       const dx = pa.x - pb.x, dy = pa.y - pb.y, dz = pa.z - pb.z;
       return Math.sqrt(dx * dx + dy * dy + dz * dz);
     };
   }
 
   /**
-   * Centre-to-centre distance (km) between two bodies sampled at `samples` evenly-spaced
-   * instants over [startMs, endMs] inclusive — the data behind the collision dialog's
-   * distance-over-time (synodic) diagram. The curve dips to a minimum at each conjunction
-   * and is deepest when that conjunction falls on the orbits' mutual node (a collision).
-   * Returns [] when either body lacks the phase data needed to place it in time, or when
-   * the window/sample count is degenerate.
+   * Builds a closure giving the centre-to-centre distance (km) between two bodies at any
+   * epoch-ms time. Returns null when either body lacks the phase data (mean anomaly +
+   * timestamp) needed to place it in time. Shared by the collision search and the
+   * distance-over-time diagram so both measure separation identically.
    */
-  separationSeries(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startMs: number, endMs: number, samples: number): SeparationSample[] {
-    const sep = this.separationFunction(a, b);
-    if (!sep || !(endMs > startMs) || samples < 2) { return []; }
+  private separationFunction(a: CanonnBiostatsBody, b: CanonnBiostatsBody): ((tMs: number) => number) | null {
+    const posA = this.positionFunction(a);
+    const posB = this.positionFunction(b);
+    if (!posA || !posB) { return null; }
+    return this.separationFunctionFromPositions(posA, posB);
+  }
+
+  /**
+   * Centre-to-centre distance (km) sampled at `samples` evenly-spaced instants over
+   * [startMs, endMs] inclusive, from an already-built separation closure — the data behind the
+   * collision dialog's distance-over-time (synodic) diagram. The curve dips to a minimum at each
+   * conjunction and is deepest when that conjunction falls on the orbits' mutual node (a
+   * collision). Returns [] when the window/sample count is degenerate.
+   */
+  private sampleSeparation(sep: (tMs: number) => number, startMs: number, endMs: number, samples: number): SeparationSample[] {
+    if (!(endMs > startMs) || samples < 2) { return []; }
     const step = (endMs - startMs) / (samples - 1);
     const out: SeparationSample[] = [];
     for (let i = 0; i < samples; i++) {
@@ -731,6 +939,17 @@ export class OrbitalRelationsCore {
       out.push({ tMs, sepKm: sep(tMs) });
     }
     return out;
+  }
+
+  /**
+   * Centre-to-centre distance (km) between two bodies sampled at `samples` evenly-spaced
+   * instants over [startMs, endMs] inclusive — the data behind the collision dialog's
+   * distance-over-time (synodic) diagram. Returns [] when either body lacks the phase data
+   * needed to place it in time, or when the window/sample count is degenerate.
+   */
+  separationSeries(a: CanonnBiostatsBody, b: CanonnBiostatsBody, startMs: number, endMs: number, samples: number): SeparationSample[] {
+    const sep = this.separationFunction(a, b);
+    return sep ? this.sampleSeparation(sep, startMs, endMs, samples) : [];
   }
 
   /**
@@ -755,38 +974,15 @@ export class OrbitalRelationsCore {
    * Not every close approach is a collision — many conjunctions miss the orbits' mutual node
    * — so each synodic event is evaluated individually rather than assumed to collide.
    */
-  private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number, horizonMs: number = Infinity): CollisionWindow[] {
+  private nextContacts(a: CanonnBiostatsBody, b: CanonnBiostatsBody, contactKm: number, synodicDays: number, now: number, count: number, horizonMs: number = Infinity, minContactKm: number = 0): CollisionWindow[] {
     const sep = this.separationFunction(a, b);
     if (!sep || !Number.isFinite(synodicDays)) { return []; }
 
     const synodicMs = synodicDays * MS_PER_DAY;
-    // 2000 steps keeps the first-pass resolution (≈ synodic/2000 per step) comfortably
-    // below the narrowest expected contact window (~10 h for pairs with ~430-day synodics).
+
+    // Step 1: coarse scan over [now − ½syn, now + 1syn] with 2000 equal steps to locate the
+    // closest-approach spike (a sharp local minimum in the distance-vs-time curve).
     const STEPS = 2000;
-
-    /**
-     * Zoom to sub-second precision by repeatedly sampling STEPS points over a ±half window
-     * centred on the running best, halving each pass until half < 500 ms.
-     */
-    const zoomMin = (centerMs: number, halfMs: number): { t: number; sepKm: number } => {
-      let bestT = centerMs;
-      let bestS = Infinity;
-      let half = halfMs;
-      while (half > 500) {
-        const lo = bestT - half;
-        const hi = bestT + half;
-        const step = (hi - lo) / STEPS;
-        bestS = Infinity;
-        for (let t = lo; t <= hi; t += step) {
-          const s = sep(t);
-          if (s < bestS) { bestS = s; bestT = t; }
-        }
-        half /= 2;
-      }
-      return { t: bestT, sepKm: bestS };
-    };
-
-    // Step 1: coarse scan over [now − ½syn, now + 1syn] with STEPS equal steps.
     const scanLo = now - synodicMs / 2;
     const scanHi = now + synodicMs;
     let initBestT = now;
@@ -797,63 +993,345 @@ export class OrbitalRelationsCore {
       if (s < initBestS) { initBestS = s; initBestT = t; }
     }
 
-    // Step 2: refine the coarse best with ±½syn halving to sub-second precision.
-    const ref = zoomMin(initBestT, synodicMs / 2);
+    // Equal-period pairs repeat every orbit. Use bracketed refinement for that bounded
+    // cycle; retain the broad zoom for unequal periods (potentially many fast orbits).
+    const minimum = a.orbitalPeriod === b.orbitalPeriod
+      ? (t: number) => this.sampledMinimum(sep, t, synodicMs / 2)
+      : (t: number) => this.zoomToMinimum(sep, t, synodicMs / 2);
+    const ref = minimum(initBestT);
 
     // Step 3: step backward in synodic-period increments until t < now.
     let t0 = ref.t;
     while (t0 >= now) { t0 -= synodicMs; }
 
-    // Step 4: march forward, zoom-refining each synodic event and collecting contacts.
+    // Step 4: march forward one synodic period at a time; zoom-refine each event to sub-second
+    // precision and record it as a contact when separation ≤ contactKm. Not every close approach
+    // is a collision — many conjunctions miss the orbits' mutual node — so each synodic event is
+    // evaluated individually rather than assumed to collide.
     const stepMs = (30 / 86400) * MS_PER_DAY; // 30-second probes for window bisection
     const maxSpanMs = synodicMs / 2;           // bisection walk bound: half a synodic period
     const results: CollisionWindow[] = [];
+    let expensiveAttempts = 0;
 
     for (let k = 0; k < MAX_CONJUNCTIONS_SCANNED && results.length < count; k++) {
       const candidateMs = t0 + k * synodicMs;
       // Stop once conjunctions march past the caller's time horizon (later ones only recede
       // further). Used by the simultaneity scan to bound work to the next N days.
       if (candidateMs - now > horizonMs) { break; }
-      const min = zoomMin(candidateMs, synodicMs / 2);
-      // Allow min.t to be slightly before now: a contact whose minimum lands at now±ε
-      // (e.g. bodies aligned at the reference epoch) must not be discarded. We only skip
-      // conjunctions whose minimum is older than half a synodic period; contacts whose
-      // window has already ended are filtered below after computing endMs.
-      if (min.t < now - maxSpanMs || !Number.isFinite(min.sepKm)) { continue; }
-      if (min.sepKm > contactKm) { continue; }
+      const min = minimum(candidateMs);
+      const { didExpensiveWork } = this.appendMinimumWindows(sep, min.t, min.sepKm, contactKm, minContactKm, stepMs, maxSpanMs, now, count, b.name, results);
+      // See MAX_EXPENSIVE_CONTACT_ATTEMPTS: caps a pair whose every conjunction pays the full
+      // edge-search cost without ever resolving a window from running all 300 attempts anyway.
+      if (didExpensiveWork && ++expensiveAttempts >= MAX_EXPENSIVE_CONTACT_ATTEMPTS) { break; }
+    }
+    return results;
+  }
 
-      // De-duplicate: skip if this minimum falls inside the last recorded contact window.
-      if (results.length > 0 && min.t <= results[results.length - 1].end.getTime()) { continue; }
-
-      // Root-find the contact window start (backward bisection from min.t).
-      let lo = min.t;
-      let hi = min.t - stepMs;
-      while (min.t - hi <= maxSpanMs && sep(hi) <= contactKm) { lo = hi; hi -= stepMs; }
-      for (let i = 0; i < 40; i++) {
-        const mid = (hi + lo) / 2;
-        if (sep(mid) > contactKm) { hi = mid; } else { lo = mid; }
+  /**
+   * Finds the time of minimum separation within [centerMs − halfMs, centerMs + halfMs] using
+   * iterative zoom: 2000 samples per pass, window halved and recentred on the running best each
+   * pass, until the half-window is under 500 ms (sub-second precision). Shared by
+   * {@link nextContacts}'s synodic marching and {@link nestedContactWindows}'s dense scan to
+   * refine a coarse candidate to the true local minimum, regardless of how that candidate was found.
+   */
+  private zoomToMinimum(sep: (tMs: number) => number, centerMs: number, halfMs: number): { t: number; sepKm: number } {
+    const STEPS = 2000;
+    let bestT = centerMs;
+    let bestS = Infinity;
+    let half = halfMs;
+    while (half > 500) {
+      const lo = bestT - half;
+      const hi = bestT + half;
+      const step = (hi - lo) / STEPS;
+      bestS = Infinity;
+      for (let t = lo; t <= hi; t += step) {
+        const s = sep(t);
+        if (s < bestS) { bestS = s; bestT = t; }
       }
-      const startMs = lo;
-      if (results.length > 0 && startMs <= results[results.length - 1].end.getTime()) { continue; }
+      half /= 2;
+    }
+    return { t: bestT, sepKm: bestS };
+  }
 
-      // Root-find the contact window end (forward bisection from min.t).
-      let elo = min.t;
-      let ehi = min.t + stepMs;
-      while (ehi - min.t <= maxSpanMs && sep(ehi) <= contactKm) { elo = ehi; ehi += stepMs; }
-      for (let i = 0; i < 40; i++) {
-        const mid = (elo + ehi) / 2;
-        if (sep(mid) > contactKm) { ehi = mid; } else { elo = mid; }
+  /**
+   * Refine all sampled basins in a bounded interval using golden-section search.
+   * Used for one cycle of an equal-period pair, or the small local bracket found by
+   * the nested scan at its full resolution (1/300 of the fastest period per step).
+   * Wider searches retain iterative zoom: their intervals can span many fast orbits,
+   * whose narrow minima need repeated coarse scans.
+   * Retain the best evaluated point, including endpoints, so refinement cannot worsen
+   * the coarse result. The final bracket is narrower than one millisecond.
+   */
+  private sampledMinimum(sep: (tMs: number) => number, centerMs: number, halfMs: number): { t: number; sepKm: number } {
+    const STEPS = 2000;
+    let bestT = centerMs;
+    let bestS = sep(centerMs);
+    if (!(halfMs > 0)) { return { t: bestT, sepKm: bestS }; }
+    const lo = centerMs - halfMs;
+    const step = 2 * halfMs / STEPS;
+    const evaluate = (t: number): number => {
+      const s = sep(t);
+      if (s < bestS) { bestS = s; bestT = t; }
+      return s;
+    };
+    // Refine every sampled local minimum, not only the lowest coarse sample. A
+    // narrow, deeper dip can sample higher than a broad, shallower neighbouring dip.
+    const seeds: number[] = [];
+    let previousPrevious = evaluate(lo);
+    let previous = evaluate(lo + step);
+    if (previousPrevious < previous) { seeds.push(lo); }
+    for (let i = 2; i <= STEPS; i++) {
+      const current = evaluate(lo + i * step);
+      if (previous <= previousPrevious && previous <= current
+        && (previous < previousPrevious || previous < current)) {
+        seeds.push(lo + (i - 1) * step);
       }
-      const endMs = elo;
+      previousPrevious = previous;
+      previous = current;
+    }
+    if (previous < previousPrevious) { seeds.push(lo + STEPS * step); }
 
+    const ratio = (Math.sqrt(5) - 1) / 2;
+    for (const seed of seeds) {
+      let left = seed - step;
+      let right = seed + step;
+      let x1 = right - ratio * (right - left);
+      let x2 = left + ratio * (right - left);
+      let s1 = evaluate(x1);
+      let s2 = evaluate(x2);
+      for (let i = 0; i < 80 && right - left > 1; i++) {
+        if (s1 <= s2) {
+          right = x2;
+          x2 = x1; s2 = s1;
+          x1 = right - ratio * (right - left);
+          s1 = evaluate(x1);
+        } else {
+          left = x1;
+          x1 = x2; s1 = s2;
+          x2 = left + ratio * (right - left);
+          s2 = evaluate(x2);
+        }
+      }
+    }
+    return { t: bestT, sepKm: bestS };
+  }
+
+  /**
+   * Given one conjunction's already-refined minimum (`minT`/`minSepKm`), builds its contact
+   * window(s) — bisecting the edges with {@link contactCrossing} — and appends any that survive
+   * (in-threshold, not already covered by the last recorded window, not entirely in the past) to
+   * `results`, mutating it in place. Shared by {@link nextContacts} (which finds each conjunction
+   * by marching in fixed synodic-period steps) and {@link nestedContactWindows} (which finds them
+   * by scanning a dense local-minima search instead) — everything downstream of "here is a
+   * conjunction's minimum" is identical between the two.
+   *
+   * `didExpensiveWork` is false for a conjunction rejected by one of the cheap checks below
+   * (too old, too far, already covered) and true once it reaches {@link contactCrossing} — callers
+   * use it to cap the number of genuinely expensive attempts a single search can make (see
+   * {@link MAX_EXPENSIVE_CONTACT_ATTEMPTS}), since a pair whose geometry sits right at a threshold
+   * boundary can have *every* conjunction reach this point without ever resolving a window.
+   *
+   * `forwardUnresolved` is true when the forward-most edge search came back null — i.e. contact is
+   * still open going forward, {@link contactCrossing} couldn't find where it ends within
+   * `maxSpanMs`. A marching caller ({@link nextContacts}) doesn't need this (it always advances a
+   * full synodic period next regardless); a dense-scan caller ({@link nestedContactWindows}) does —
+   * without it, every subsequent sample still inside that same unresolved stretch would re-trigger
+   * the same expensive, equally-fruitless edge search, since a null edge is never recorded to
+   * de-duplicate against the way a resolved one is.
+   */
+  private appendMinimumWindows(
+    sep: (tMs: number) => number,
+    minT: number, minSepKm: number,
+    contactKm: number, minContactKm: number,
+    stepMs: number, maxSpanMs: number,
+    now: number, count: number, partnerName: string,
+    results: CollisionWindow[],
+  ): { didExpensiveWork: boolean; forwardUnresolved: boolean } {
+    const cheapReject = { didExpensiveWork: false, forwardUnresolved: false };
+    // Allow minT to be slightly before now: a contact whose minimum lands at now±ε (e.g. bodies
+    // aligned at the reference epoch) must not be discarded. We only reject a conjunction whose
+    // minimum is older than maxSpanMs; contacts whose window has already ended are filtered below
+    // after computing endMs.
+    if (minT < now - maxSpanMs || !Number.isFinite(minSepKm)) { return cheapReject; }
+    if (minSepKm > contactKm) { return cheapReject; }
+
+    // De-duplicate: skip if this minimum falls inside the last recorded contact window.
+    if (results.length > 0 && minT <= results[results.length - 1].end.getTime()) { return cheapReject; }
+
+    // The conjunction's contact windows. With the default minContactKm of 0 there is exactly
+    // one — separation simply dips below contactKm and back, bottoming out at minT — but a
+    // ring pair has a contact *band* (see ringContactBand): once the bodies come closer than
+    // the band's inner edge, one ring has passed inside the other's central hole along the line
+    // joining them and they separate again, so a single conjunction yields two windows either
+    // side of the minimum, each bottoming out — at minContactKm, not the true minimum — right
+    // at the edge nearest closest approach (endMs approaching, startMs receding), not centred.
+    const conjunctionWindows: { startMs: number | null; endMs: number | null; minSepKm: number; minSepAtMs: number }[] = [];
+    if (minSepKm >= minContactKm) {
+      conjunctionWindows.push({
+        startMs: this.contactCrossing(sep, minT, -1, contactKm, stepMs, maxSpanMs),
+        endMs: this.contactCrossing(sep, minT, 1, contactKm, stepMs, maxSpanMs),
+        minSepKm, minSepAtMs: minT,
+      });
+    } else {
+      // Approaching: contact opens at the band's outer edge and closes at its inner edge.
+      const endMs = this.contactCrossing(sep, minT, -1, minContactKm, stepMs, maxSpanMs);
+      conjunctionWindows.push({
+        startMs: this.contactCrossing(sep, minT, -1, contactKm, stepMs, maxSpanMs),
+        endMs, minSepKm: minContactKm, minSepAtMs: endMs ?? minT,
+      });
+      // Receding: contact re-opens at the inner edge and closes at the outer edge.
+      const startMs = this.contactCrossing(sep, minT, 1, minContactKm, stepMs, maxSpanMs);
+      conjunctionWindows.push({
+        startMs,
+        endMs: this.contactCrossing(sep, minT, 1, contactKm, stepMs, maxSpanMs),
+        minSepKm: minContactKm, minSepAtMs: startMs ?? minT,
+      });
+    }
+
+    for (const w of conjunctionWindows) {
+      if (results.length >= count) { break; }
+      // A null edge means no crossing was found within maxSpanMs (see contactCrossing) — the
+      // window can't be reliably bounded, so skip it rather than report a fabricated edge.
+      if (w.startMs === null || w.endMs === null) { continue; }
+      if (!(w.endMs > w.startMs)) { continue; }
       // Skip contacts whose window ended entirely before now (historical events; days < 0
       // and the window is over). Contacts in progress (endMs > now, startMs ≤ now) are kept:
       // days will be slightly negative, which CollisionWindow.days documents as intentional.
-      if (endMs < now) { continue; }
+      if (w.endMs < now) { continue; }
+      if (results.length > 0 && w.startMs <= results[results.length - 1].end.getTime()) { continue; }
+      results.push({
+        start: new Date(w.startMs), end: new Date(w.endMs),
+        days: (w.startMs - now) / MS_PER_DAY,
+        minSeparationKm: w.minSepKm, minSeparationAt: new Date(w.minSepAtMs),
+        partnerName, combinedRadiiKm: contactKm,
+      });
+    }
 
-      results.push({ start: new Date(startMs), end: new Date(endMs), days: (startMs - now) / MS_PER_DAY, minSeparationKm: min.sepKm, partnerName: b.name, combinedRadiiKm: contactKm });
+    // The forward-most edge is always the last entry's endMs (the "not in the hole" case has one
+    // entry; the split-window case's second, receding entry closes at the true outer edge).
+    return { didExpensiveWork: true, forwardUnresolved: conjunctionWindows[conjunctionWindows.length - 1].endMs === null };
+  }
+
+  /**
+   * Contact windows for a "nested" ring-collision pair (see {@link resolveRingOrbitPair}): one
+   * side's absolute motion is the superposition of two Kepler orbits, not a single ellipse, so
+   * conjunctions don't recur at one fixed synodic period the way {@link nextContacts} assumes.
+   * Instead this scans the true separation curve densely enough to resolve the faster of the two
+   * component periods, finds every local minimum, and hands each to
+   * {@link appendMinimumWindows} exactly as {@link nextContacts} does per synodic conjunction.
+   *
+   * The scan runs from one fast period before `now` (to catch a contact already in progress) out
+   * to `horizonMs` — or, when unbounded, out to {@link MAX_CONJUNCTIONS_SCANNED} cycles of the
+   * *slower* component period, mirroring how the synodic marcher bounds an unbounded horizon.
+   */
+  private nestedContactWindows(
+    posA: (tMs: number) => Vec3, posB: (tMs: number) => Vec3,
+    fastPeriodDays: number, slowPeriodDays: number,
+    contactKm: number, minContactKm: number,
+    now: number, count: number, horizonMs: number, partnerName: string,
+    maxRelativeSpeed: number = Infinity,
+  ): CollisionWindow[] {
+    return this.nestedContactWindowsForBands(posA, posB, fastPeriodDays, slowPeriodDays,
+      [{ contactKm, minContactKm, partnerName }], now, count, horizonMs, maxRelativeSpeed)[0];
+  }
+
+  /** One motion scan for multiple rings of the same host, without retaining a sample history. */
+  private nestedContactWindowsForBands(
+    posA: (tMs: number) => Vec3, posB: (tMs: number) => Vec3,
+    fastPeriodDays: number, slowPeriodDays: number, bands: NestedContactBand[],
+    now: number, count: number, horizonMs: number, maxRelativeSpeed: number,
+  ): CollisionWindow[][] {
+    const states = bands.map(band => ({
+      ...band, results: [] as CollisionWindow[], suppressed: false, expensiveAttempts: 0,
+    }));
+    const results = states.map(state => state.results);
+    const fastMs = fastPeriodDays * MS_PER_DAY;
+    const slowMs = slowPeriodDays * MS_PER_DAY;
+    if (!(fastMs > 0) || !(slowMs > 0)) { return results; }
+
+    const sep = this.separationFunctionFromPositions(posA, posB);
+    const effectiveHorizonMs = Number.isFinite(horizonMs) ? horizonMs : MAX_CONJUNCTIONS_SCANNED * slowMs;
+    const scanStart = now - fastMs;
+    const scanEnd = now + effectiveHorizonMs;
+    const rawStepMs = fastMs / NESTED_SAMPLES_PER_FAST_PERIOD;
+    const stepMs = Math.max(rawStepMs, (scanEnd - scanStart) / MAX_NESTED_SAMPLES);
+
+    const edgeStepMs = (30 / 86400) * MS_PER_DAY; // 30-second probes for window bisection
+    const maxSpanMs = fastMs;                      // bisection walk bound: one fast period
+
+    // Three-point local-minimum scan: a sample that's no larger than both neighbours seeds a
+    // zoom-refine to the true nearby minimum. Every candidate is refined (not just ones already
+    // under contactKm) since a coarse sample can sit noticeably above the true dip beside it.
+    //
+    // `suppressed` guards against a genuinely wide contact — one that outlasts maxSpanMs, so
+    // appendMinimumWindows can't bound its forward edge and returns true. Without this, every
+    // later sample still inside that same still-unresolved stretch would trigger its own full,
+    // equally fruitless edge search (a null edge is never recorded to de-duplicate against the
+    // way a resolved one is) — turning one wide contact into thousands of expensive searches
+    // instead of one. While suppressed, only the (already-computed) coarse sample is checked
+    // against contactKm — cheap — until it naturally exits, at which point detection resumes.
+    let prevPrev = sep(scanStart);
+    let prev = sep(scanStart + stepMs);
+    const active = (state: typeof states[number]): boolean =>
+      state.results.length < count && state.expensiveAttempts < MAX_EXPENSIVE_CONTACT_ATTEMPTS;
+    for (let t = scanStart + 2 * stepMs; t <= scanEnd && states.some(active); t += stepMs) {
+      const curr = sep(t);
+      let refined: { t: number; sepKm: number } | undefined;
+      for (const state of states) {
+        if (!active(state)) { continue; }
+        if (state.suppressed) {
+          if (curr > state.contactKm) { state.suppressed = false; }
+        } else if (prev <= prevPrev && prev <= curr
+          // Both refiners stay within two step widths of the seed (the zoom's
+          // successive half-widths sum to <2*stepMs). Retain the roundoff allowance.
+          && prev - 2 * stepMs * maxRelativeSpeed <= state.contactKm + 1e-9 * Math.max(1, prev)) {
+          // The minimum depends only on motion. Each ring still searches its own edges and
+          // maintains its own suppression, attempt budget, and requested number of windows.
+          refined ??= stepMs === rawStepMs
+            ? this.sampledMinimum(sep, t - stepMs, stepMs)
+            : this.zoomToMinimum(sep, t - stepMs, stepMs);
+          const r = this.appendMinimumWindows(sep, refined.t, refined.sepKm,
+            state.contactKm, state.minContactKm, edgeStepMs, maxSpanMs,
+            now, count, state.partnerName, state.results);
+          state.suppressed = r.forwardUnresolved;
+          if (r.didExpensiveWork) { state.expensiveAttempts++; }
+        }
+      }
+      prevPrev = prev; prev = curr;
     }
     return results;
+  }
+
+  /**
+   * Time at which `sep` first rises above `threshold`, walking away from `fromMs` in `dir`
+   * (+1 forward, −1 backward) from a point known to be at or below it: coarse 30-second probes
+   * out to `maxSpanMs`, then bisection. Used to root-find the edges of a contact window.
+   *
+   * Returns null when no crossing is found within `maxSpanMs` — i.e. `sep` never rises above
+   * `threshold` anywhere in that whole span, so `outside` never actually leaves the "inside"
+   * region and there is no valid bracket to bisect. Bisecting anyway would silently converge on
+   * the search cap itself and report it as a fabricated contact boundary.
+   */
+  private contactCrossing(
+    sep: (tMs: number) => number,
+    fromMs: number,
+    dir: 1 | -1,
+    threshold: number,
+    stepMs: number,
+    maxSpanMs: number,
+  ): number | null {
+    let inside = fromMs;
+    let outside = fromMs + dir * stepMs;
+    while (Math.abs(outside - fromMs) <= maxSpanMs && sep(outside) <= threshold) {
+      inside = outside;
+      outside += dir * stepMs;
+    }
+    if (sep(outside) <= threshold) { return null; }
+    for (let i = 0; i < 40; i++) {
+      const mid = (inside + outside) / 2;
+      if (sep(mid) > threshold) { outside = mid; } else { inside = mid; }
+    }
+    return inside;
   }
 
   /**
@@ -874,13 +1352,16 @@ export class OrbitalRelationsCore {
    * combined radius — each a direct collision partner — with the pair's synodic period and
    * contact threshold. Most bodies have at most one, but three or four siblings can share
    * crossing orbits. Returns [] when this body itself isn't on a bound, recurring orbit.
+   *
+   * Only *direct* siblings — see {@link nestedCollisionPartners} for a moon crossing its own
+   * parent's sibling.
    */
-  private collisionPartners(body: SystemBody): { partner: SystemBody; synodic: number; contactKm: number }[] {
+  private collisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
     const bd = body.bodyData;
     const range = this.orbitalRadialRange(bd);
     if (!body.parent || !bd.orbitalPeriod || !range) { return []; }
 
-    const partners: { partner: SystemBody; synodic: number; contactKm: number }[] = [];
+    const partners: CollisionPartnerDescriptor[] = [];
     for (const sibling of body.parent.subBodies) {
       if (sibling === body) { continue; }
       const sd = sibling.bodyData;
@@ -900,9 +1381,224 @@ export class OrbitalRelationsCore {
       if (this.minOrbitDistanceKm(bd, sd) > contactKm) { continue; }
 
       const synodic = 1 / Math.abs(1 / bd.orbitalPeriod - 1 / sd.orbitalPeriod);
-      partners.push({ partner: sibling, synodic, contactKm });
+      partners.push({ kind: 'simple', partner: sibling, synodic, contactKm });
     }
     return partners;
+  }
+
+  /**
+   * True when `a` and `b` — always direct siblings under a shared parent, in every caller —
+   * themselves have a genuine orbit-curve proximity: the same radial-range pre-filter then exact
+   * 3D {@link minOrbitDistanceKm} check {@link collisionPartners} itself uses, *without*
+   * `collisionPartners`' equal-period (Trojan/co-orbital) exclusion. That exclusion exists there
+   * to stop a phase-locked binary from being reported as directly colliding (it never will — the
+   * phase is fixed), but a locked binary's own moon can still independently cross the other side
+   * via its composite motion (see the "flags a moon colliding with its parent's sibling body
+   * directly" spec) — reusing `collisionPartners`' own output as this gate would wrongly suppress
+   * that already-supported case, so this checks the raw geometry instead.
+   *
+   * Gates {@link nestedCollisionPartners}, {@link cousinCollisionPartners}, and
+   * {@link nieceNephewCollisionPartners}: searching a whole family branch — every one of a
+   * sibling's own children, potentially several — is only worth paying for when that sibling is
+   * itself at least a plausible candidate against the anchor body. Without this, a body with many
+   * siblings (each with their own children) pays for a full nested-motion search against every
+   * sibling's every child regardless of whether that sibling is anywhere near it at all.
+   */
+  private siblingsInReach(a: SystemBody, b: SystemBody): boolean {
+    const ad = a.bodyData, bd = b.bodyData;
+    const contactKm = (ad.radius ?? 0) + (bd.radius ?? 0);
+    if (!(contactKm > 0)) { return false; }
+    const rangeA = this.orbitalRadialRange(ad);
+    const rangeB = this.orbitalRadialRange(bd);
+    if (!rangeA || !rangeB) { return false; }
+    const radialGapAu = Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo);
+    if (radialGapAu > contactKm / KM_PER_AU) { return false; }
+    return this.minOrbitDistanceKm(ad, bd) <= contactKm;
+  }
+
+  /**
+   * The ring half of {@link siblingsInReach}'s gate: true when either side's rings genuinely reach
+   * the other (body-on-ring or ring-on-ring), `a` and `b` again always direct siblings. Reuses
+   * {@link ringContactBand} + {@link resolveRingOrbitPair} + {@link minOrbitDistanceKm} — the
+   * `'simple'` case always applies here since `a`/`b` share a parent in every caller, so no new
+   * ring physics and no timing/`now` needed, matching the rest of this gate. A `'nested'` ring pair
+   * (needs a real timed search to resolve at all) is conservatively left ungated — this only ever
+   * widens the search, never narrows it below what {@link nestedPairOutOfReach} already allows.
+   */
+  private ringsCollide(a: SystemBody, b: SystemBody): boolean {
+    const reallyCollides = (x: SystemBody, y: SystemBody): boolean => {
+      const band = this.ringContactBand(x, y);
+      if (!(band.maxKm > 0)) { return false; }
+      const pair = this.resolveRingOrbitPair(x, y, band.maxKm);
+      return !!pair && pair.kind === 'simple' && this.minOrbitDistanceKm(pair.a, pair.b) <= band.maxKm;
+    };
+    const aRings = a.subBodies.filter(n => n.bodyData.type === BODY_TYPE.Ring);
+    const bRings = b.subBodies.filter(n => n.bodyData.type === BODY_TYPE.Ring);
+    if (aRings.length === 0 && bRings.length === 0) { return false; }
+    for (const ring of aRings) {
+      if (reallyCollides(ring, b)) { return true; }
+      for (const bRing of bRings) { if (reallyCollides(ring, bRing)) { return true; } }
+    }
+    for (const ring of bRings) {
+      if (reallyCollides(a, ring)) { return true; }
+    }
+    return false;
+  }
+
+  /**
+   * Every "aunt/uncle" collision candidate for `body`: a sibling of `body`'s own parent (i.e. a
+   * body two colliding siblings would each call a "sibling"), checked against `body`'s exact
+   * composite motion — its own orbit superposed on its parent's (see {@link nestedPositionFunction})
+   * — rather than `body`'s own orbit alone. This is the body-on-body analogue of
+   * {@link resolveRingOrbitPair}'s nested ring-collision case: if two planets collide and one has
+   * a moon, the moon's own true position can independently cross the *other* planet too, at a
+   * different moment than its parent's own collision — worth surfacing on the moon's own page the
+   * same way a direct sibling collision is. The aunt/uncle's own moons are checked separately, by
+   * superposing *both* sides — see {@link cousinCollisionPartners}. The aunt/uncle's own page needs
+   * the mirror-image search, `body` playing the simple role instead — see
+   * {@link nieceNephewCollisionPartners}.
+   */
+  private nestedCollisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
+    const grandparent = body.parent?.parent;
+    if (!body.parent || !grandparent) { return []; }
+    const parent = body.parent;
+
+    const partners: CollisionPartnerDescriptor[] = [];
+    for (const aunt of grandparent.subBodies) {
+      if (aunt === parent) { continue; }
+      if (aunt.bodyData.type === BODY_TYPE.Ring || aunt.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+      // Only worth searching this whole branch — aunt's own composite-motion search below — when
+      // body's own parent and this aunt are themselves a plausible pair. See siblingsInReach.
+      if (!this.siblingsInReach(parent, aunt) && !this.ringsCollide(parent, aunt)) { continue; }
+      const contactKm = (body.bodyData.radius ?? 0) + (aunt.bodyData.radius ?? 0);
+      if (!(contactKm > 0)) { continue; }
+
+      // Cheap radial pre-filter, mirroring collisionPartners' — a loose (never-too-small) bound
+      // on the composite side's reach from the shared grandparent, so it can never miss a real
+      // collision, only skip pairs that provably can't touch — checked before paying for
+      // buildNestedPair's position-function construction, not after.
+      if (this.nestedPairOutOfReach(body.bodyData, body.parent.bodyData, aunt.bodyData, contactKm)) { continue; }
+
+      const nested = this.buildNestedPair(body, body.parent, aunt);
+      if (!nested) { continue; }
+
+      partners.push({
+        kind: 'nested', partner: aunt, contactKm,
+        posA: nested.posA, posB: nested.posB,
+        fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
+        maxRelativeSpeed: nested.maxRelativeSpeed,
+      });
+    }
+    return partners;
+  }
+
+  /**
+   * Every "cousin" collision candidate for `body`: a child of one of its aunts/uncles (see
+   * {@link nestedCollisionPartners}) — i.e. two moons whose parents are themselves siblings, each
+   * checked against the *other's* exact composite motion (its own orbit superposed on its
+   * immediate parent's, see {@link nestedPositionFunction}), not just one side's. This is what
+   * catches, say, two colliding planets each having a moon whose own paths also cross: the moons'
+   * true combined motion can bring them into contact independently of — and at a different moment
+   * than — either their parents' own collision or either moon's "aunt/uncle" contact with the
+   * *other* parent. Reuses {@link CollisionPartnerDescriptor}'s existing `'nested'` shape (it
+   * already stores two arbitrary position closures) and {@link nestedContactWindows} verbatim —
+   * only the closures on both sides are new.
+   */
+  private cousinCollisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
+    const grandparent = body.parent?.parent;
+    if (!body.parent || !grandparent) { return []; }
+    const parent = body.parent;
+    const bodyRange = this.nestedRangeKm(body.bodyData, parent.bodyData);
+
+    const partners: CollisionPartnerDescriptor[] = [];
+    for (const aunt of grandparent.subBodies) {
+      if (aunt === parent) { continue; }
+      if (aunt.bodyData.type === BODY_TYPE.Ring || aunt.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+      // Only worth searching this aunt's children as cousins when body's own parent and this
+      // aunt are themselves a plausible pair — see siblingsInReach.
+      if (!this.siblingsInReach(parent, aunt) && !this.ringsCollide(parent, aunt)) { continue; }
+
+      for (const cousin of aunt.subBodies) {
+        if (cousin.bodyData.type === BODY_TYPE.Ring || cousin.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+        const contactKm = (body.bodyData.radius ?? 0) + (cousin.bodyData.radius ?? 0);
+        if (!(contactKm > 0)) { continue; }
+        const bodyPeriod = body.bodyData.orbitalPeriod, parentPeriod = body.parent.bodyData.orbitalPeriod;
+        const cousinPeriod = cousin.bodyData.orbitalPeriod, auntPeriod = aunt.bodyData.orbitalPeriod;
+        if (!bodyPeriod || !parentPeriod || !cousinPeriod || !auntPeriod) { continue; }
+
+        // Cheap radial pre-filter, mirroring nestedCollisionPartners' — both sides' reach is now
+        // the wider nested range (their own orbit superposed on their parent's), not a single
+        // orbit, since both sides ride a parent here.
+        if (this.rangesOutOfReach(bodyRange, this.nestedRangeKm(cousin.bodyData, aunt.bodyData), contactKm)) { continue; }
+
+        const posA = this.nestedPositionFunction(body.bodyData, body.parent.bodyData);
+        const posB = this.nestedPositionFunction(cousin.bodyData, aunt.bodyData);
+        if (!posA || !posB) { continue; }
+
+        const fastPeriodDays = Math.min(bodyPeriod, parentPeriod, cousinPeriod, auntPeriod);
+        const slowPeriodDays = Math.max(bodyPeriod, parentPeriod, cousinPeriod, auntPeriod);
+
+        const maxRelativeSpeed = this.maximumOrbitalSpeed(body.bodyData)
+          + this.maximumOrbitalSpeed(body.parent.bodyData)
+          + this.maximumOrbitalSpeed(cousin.bodyData) + this.maximumOrbitalSpeed(aunt.bodyData);
+        partners.push({ kind: 'nested', partner: cousin, contactKm, posA, posB, fastPeriodDays, slowPeriodDays, maxRelativeSpeed });
+      }
+    }
+    return partners;
+  }
+
+  /**
+   * Every "niece/nephew" collision candidate for `body`: a child of one of `body`'s own siblings,
+   * checked against *that child's* exact composite motion — its own orbit superposed on its
+   * parent's (`body`'s sibling), rather than the sibling's orbit alone. This is the mirror image
+   * of {@link nestedCollisionPartners}: when a nested moon is flagged as colliding with its
+   * aunt/uncle, the aunt/uncle's own page must find that moon too, the same way a direct sibling
+   * collision is symmetric on both bodies' pages — without this, only the moon's own page showed
+   * the badge, not the aunt/uncle's (reachable from either side's own `collisionPartners`/
+   * {@link nestedCollisionPartners}, but neither one searches "down into a sibling's children").
+   * Reuses {@link buildNestedPair} verbatim, with `body` itself playing the "other" (simple) role
+   * instead of the "nested" role.
+   */
+  private nieceNephewCollisionPartners(body: SystemBody): CollisionPartnerDescriptor[] {
+    if (!body.parent) { return []; }
+
+    const partners: CollisionPartnerDescriptor[] = [];
+    for (const sibling of body.parent.subBodies) {
+      if (sibling === body) { continue; }
+      if (sibling.bodyData.type === BODY_TYPE.Ring || sibling.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+      // Only worth searching this sibling's children as nieces/nephews when body and this
+      // sibling are themselves a plausible pair — see siblingsInReach.
+      if (!this.siblingsInReach(body, sibling) && !this.ringsCollide(body, sibling)) { continue; }
+
+      for (const niece of sibling.subBodies) {
+        if (niece.bodyData.type === BODY_TYPE.Ring || niece.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+        const contactKm = (body.bodyData.radius ?? 0) + (niece.bodyData.radius ?? 0);
+        if (!(contactKm > 0)) { continue; }
+
+        // Cheap radial pre-filter, mirroring nestedCollisionPartners' — the niece/nephew's reach
+        // is the wider nested range (its own orbit superposed on its parent's, the sibling), not
+        // a single orbit.
+        if (this.nestedPairOutOfReach(niece.bodyData, sibling.bodyData, body.bodyData, contactKm)) { continue; }
+
+        const nested = this.buildNestedPair(niece, sibling, body);
+        if (!nested) { continue; }
+
+        partners.push({
+          kind: 'nested', partner: niece, contactKm,
+          posA: nested.posA, posB: nested.posB,
+          fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
+          maxRelativeSpeed: nested.maxRelativeSpeed,
+        });
+      }
+    }
+    return partners;
+  }
+
+  /** Upcoming contact windows for one collision partner, dispatching on whether it's simple or nested. */
+  private collisionWindowsFor(bd: CanonnBiostatsBody, p: CollisionPartnerDescriptor, now: number, count: number, horizonMs: number): CollisionWindow[] {
+    return p.kind === 'simple'
+      ? this.nextContacts(bd, p.partner.bodyData, p.contactKm, p.synodic, now, count, horizonMs)
+      : this.nestedContactWindows(p.posA, p.posB, p.fastPeriodDays, p.slowPeriodDays, p.contactKm, 0, now, count, horizonMs, p.partner.bodyData.name, p.maxRelativeSpeed);
   }
 
   /**
@@ -914,7 +1610,11 @@ export class OrbitalRelationsCore {
    * partners or lacks the phase data to time them.
    */
   upcomingContactsWithin(body: SystemBody, horizonDays: number, now: number = Date.now()): CollisionWindow[] {
-    return this.contactWindowsWithin(this.collisionPartners(body), body.bodyData, horizonDays * MS_PER_DAY, now)
+    const partners = [
+      ...this.collisionPartners(body), ...this.nestedCollisionPartners(body),
+      ...this.cousinCollisionPartners(body), ...this.nieceNephewCollisionPartners(body),
+    ];
+    return this.contactWindowsWithin(partners, body.bodyData, horizonDays * MS_PER_DAY, now)
       .sort((a, b) => a.start.getTime() - b.start.getTime());
   }
 
@@ -924,14 +1624,14 @@ export class OrbitalRelationsCore {
    * spaced pairs stay cheap.
    */
   private contactWindowsWithin(
-    partners: { partner: SystemBody; synodic: number; contactKm: number }[],
+    partners: CollisionPartnerDescriptor[],
     bodyData: CanonnBiostatsBody,
     horizonMs: number,
     now: number,
   ): CollisionWindow[] {
     const windows: CollisionWindow[] = [];
     for (const p of partners) {
-      windows.push(...this.nextContacts(bodyData, p.partner.bodyData, p.contactKm, p.synodic, now, MAX_CONJUNCTIONS_SCANNED, horizonMs)
+      windows.push(...this.collisionWindowsFor(bodyData, p, now, MAX_CONJUNCTIONS_SCANNED, horizonMs)
         .filter(w => w.start.getTime() <= now + horizonMs));
     }
     return windows;
@@ -939,13 +1639,19 @@ export class OrbitalRelationsCore {
 
   /**
    * Timed multi-body pile-ups for `body` over the next `horizonDays`: intervals in which it is
-   * simultaneously within contact of two or more siblings. Unlike the simultaneity derived from
+   * simultaneously within contact of two or more siblings (or "aunt/uncle"/"cousin"/
+   * "niece/nephew" nested partners — see {@link nestedCollisionPartners}/
+   * {@link cousinCollisionPartners}/{@link nieceNephewCollisionPartners}). Unlike the
+   * simultaneity derived from
    * {@link detectCollisionStatus}'s capped upcoming-contacts list, this scans every direct
    * partner's contacts across the whole horizon, so a cluster beyond the listed rows is still
    * found. Empty when the body has fewer than two crossing partners.
    */
   simultaneousCollisionsWithin(body: SystemBody, horizonDays: number, now: number = Date.now()): SimultaneousCollision[] {
-    const partners = this.collisionPartners(body);
+    const partners = [
+      ...this.collisionPartners(body), ...this.nestedCollisionPartners(body),
+      ...this.cousinCollisionPartners(body), ...this.nieceNephewCollisionPartners(body),
+    ];
     if (partners.length < 2) { return []; }
     return this.groupSimultaneous(this.contactWindowsWithin(partners, body.bodyData, horizonDays * MS_PER_DAY, now), now);
   }
@@ -989,6 +1695,56 @@ export class OrbitalRelationsCore {
   }
 
   detectCollisionStatus(body: SystemBody, now: number = Date.now()): CollisionStatus {
+    return this.collisionStatusFor(body, now, (p, count, horizonMs) => this.collisionWindowsFor(body.bodyData, p, now, count, horizonMs));
+  }
+
+  /**
+   * Every body's {@link CollisionStatus} in `root`'s system, computed in one pass so each unique
+   * *pair* — a moon's "aunt/uncle" contact and its aunt/uncle's own "niece/nephew" view of the same
+   * pair are one example; a "cousin" pair found from both sides is another — pays for its expensive
+   * {@link nestedContactWindows}/{@link nextContacts} search only once, not once per body that
+   * happens to discover it. `detectCollisionStatus` on its own can't share this: it only ever
+   * computes one body's own partner list. Aligned to {@link flattenSystem}'s order, mirroring
+   * {@link detectRingCollisionStatuses}.
+   */
+  detectCollisionStatuses(root: SystemBody, now: number = Date.now()): CollisionStatus[] {
+    // Scoped to this one call — no persistent/unbounded state, since a body's collision partners
+    // never change while a loaded system's tree is being rendered but `now` (and so the resulting
+    // windows) does from one call to the next.
+    const pairWindows = new Map<string, CollisionWindow[]>();
+    const pairKey = (a: string, b: string): string => (a < b ? `${a}::${b}` : `${b}::${a}`);
+    const cachedWindowsFor = (p: CollisionPartnerDescriptor, count: number, horizonMs: number, bd: CanonnBiostatsBody): CollisionWindow[] => {
+      const partnerName = p.partner.bodyData.name;
+      const key = pairKey(bd.name, partnerName);
+      const cached = pairWindows.get(key);
+      if (cached) {
+        // The cached windows carry whichever side computed them first's partner name; relabel for
+        // this caller when it was the *other* side — the underlying geometry is identical either
+        // way (separation is symmetric), but CollisionWindow.partnerName is read directly by the
+        // dialog's per-partner grouping and must reflect this call's own partner.
+        return cached[0]?.partnerName === partnerName ? cached : cached.map(w => ({ ...w, partnerName }));
+      }
+      const windows = this.collisionWindowsFor(bd, p, now, count, horizonMs);
+      pairWindows.set(key, windows);
+      return windows;
+    };
+    return this.flattenSystem(root).map(body =>
+      this.collisionStatusFor(body, now, (p, count, horizonMs) => cachedWindowsFor(p, count, horizonMs, body.bodyData)));
+  }
+
+  /**
+   * Builds one body's {@link CollisionStatus} from its discovered partners, merging each partner's
+   * upcoming contact windows (via `windowsFor`, which either computes them directly or shares a
+   * cached computation — see {@link detectCollisionStatuses}) into one chronological list, picking
+   * the primary partner, and growing the direct-sibling transitive-closure group. Shared by
+   * {@link detectCollisionStatus} (one body, no sharing) and {@link detectCollisionStatuses} (the
+   * whole system, pairs shared across bodies).
+   */
+  private collisionStatusFor(
+    body: SystemBody,
+    now: number,
+    windowsFor: (p: CollisionPartnerDescriptor, count: number, horizonMs: number) => CollisionWindow[],
+  ): CollisionStatus {
     const none: CollisionStatus = {
       isCandidate: false, partnerName: null, synodicPeriodDays: null, nextCollision: null, upcomingCollisions: [], combinedRadiiKm: null, simultaneousPartners: [],
     };
@@ -996,29 +1752,61 @@ export class OrbitalRelationsCore {
     const range = this.orbitalRadialRange(bd);
     if (!body.parent || !bd.orbitalPeriod || !range) { return none; }
 
-    const partners = this.collisionPartners(body);
+    const directPartners = this.collisionPartners(body);
+    const nestedPartners = this.nestedCollisionPartners(body);
+    const cousinPartners = this.cousinCollisionPartners(body);
+    const nieceNephewPartners = this.nieceNephewCollisionPartners(body);
+    const partners: CollisionPartnerDescriptor[] = [...directPartners, ...nestedPartners, ...cousinPartners, ...nieceNephewPartners];
     if (partners.length === 0) { return none; }
 
     // Compute each partner's upcoming contact windows, then merge them into one chronological
-    // list so the soonest collisions surface regardless of which sibling they involve. Each
-    // window already carries its partner's name and contact radius (stamped in nextContacts).
+    // list so the soonest collisions surface regardless of which sibling — or "aunt/uncle"/"cousin"/
+    // "niece/nephew" nested partner (see nestedCollisionPartners/cousinCollisionPartners/
+    // nieceNephewCollisionPartners) — they involve. Each window already carries its partner's name
+    // and contact radius (stamped in collisionWindowsFor).
     const merged: CollisionWindow[] = [];
     for (const p of partners) {
-      merged.push(...this.nextContacts(bd, p.partner.bodyData, p.contactKm, p.synodic, now, MAX_UPCOMING_CONTACTS));
+      merged.push(...windowsFor(p, MAX_UPCOMING_CONTACTS, Infinity));
     }
     merged.sort((x, y) => x.start.getTime() - y.start.getTime());
     const upcoming = merged.slice(0, MAX_UPCOMING_CONTACTS);
 
-    // The primary partner owns the soonest collision; fall back to the first geometric
-    // candidate when no pair has usable phase/timing data (so the badge still appears).
+    // The primary partner owns the soonest collision. When none resolved, this body is still a
+    // candidate — with an honest "can't say when" status — for one of two genuine reasons, never
+    // just because *some* partner cleared the cheap geometric prefilter that got it into
+    // `partners` in the first place (that prefilter is deliberately loose — see nestedRangeKm's
+    // and collisionPartners' own docs — so on its own it can't distinguish a real near-collision
+    // from a comfortable near-*miss* like the one this fallback used to mislabel):
+    //  (a) a *direct* sibling ('simple' kind) is untimed because it lacks the phase data needed —
+    //      collisionPartners adds one on bare orbit-*curve* proximity alone (it never checks mean
+    //      anomaly), so that pair alone can legitimately have no way to be timed; or
+    //  (b) despite complete phase data, the pair is provably in contact *right now* (today's
+    //      separation is already inside contactKm) but the exact-window search couldn't bound a
+    //      clean start/end for it — what a persistently wide contact does to nestedContactWindows'
+    //      bounded edge search (see its maxSpanMs docs).
+    // Anything else — full phase data, and not currently touching — means the search ran to
+    // completion and genuinely found no contact: a near-miss, not a candidate (mirrors the
+    // ring-collision engine's own "only a genuine detected collision counts" rule).
+    const untimedSimplePartner = upcoming[0] ? undefined : partners.find(p =>
+      p.kind === 'simple' && (!this.hasPhaseData(bd) || !this.hasPhaseData(p.partner.bodyData)));
+    const currentlyTouchingPartner = upcoming[0] || untimedSimplePartner ? undefined : partners.find(p => {
+      const sep = p.kind === 'simple' ? this.separationFunction(bd, p.partner.bodyData) : this.separationFunctionFromPositions(p.posA, p.posB);
+      return !!sep && sep(now) <= p.contactKm;
+    });
+    const fallbackPartner = untimedSimplePartner ?? currentlyTouchingPartner;
+    if (!upcoming[0] && !fallbackPartner) { return none; }
     const primary = (upcoming[0]
       ? partners.find(p => p.partner.bodyData.name === upcoming[0].partnerName)
-      : null) ?? partners[0];
+      : null) ?? fallbackPartner!;
 
     // Identify additional siblings that are part of the same crossing-orbit group, making
-    // this a multi-body cluster. Grow the group transitively from every direct partner: if
-    // A crosses B and B crosses C, C is in the group even if A doesn’t directly cross C.
-    const groupMembers = new Set<string>([bd.name, ...partners.map(p => p.partner.bodyData.name)]);
+    // this a multi-body cluster. Grow the group transitively from every *direct* partner: if
+    // A crosses B and B crosses C, C is in the group even if A doesn’t directly cross C. Nested
+    // (aunt/uncle, cousin, niece/nephew) partners sit one or two levels removed from this body's
+    // own sibling set and aren't folded into it — a moon crossing its parent's sibling (or that
+    // sibling's own moon, or its own sibling's moon) is its own candidate, not part of the sibling
+    // cluster's transitive closure.
+    const groupMembers = new Set<string>([bd.name, ...directPartners.map(p => p.partner.bodyData.name)]);
     let changed = true;
     while (changed) {
       changed = false;
@@ -1050,11 +1838,581 @@ export class OrbitalRelationsCore {
     return {
       isCandidate: true,
       partnerName: primary.partner.bodyData.name,
-      synodicPeriodDays: primary.synodic,
+      // A nested pair's true recurrence is quasi-periodic (see nestedContactWindows); its faster
+      // component period is the closest single-number stand-in, same as the ring engine's own.
+      synodicPeriodDays: primary.kind === 'simple' ? primary.synodic : primary.fastPeriodDays,
       nextCollision: upcoming[0] ?? null,
       upcomingCollisions: upcoming,
       combinedRadiiKm: primary.contactKm,
       simultaneousPartners,
+    };
+  }
+
+  /**
+   * A degenerate a=0 "orbit" that {@link orbitalStateVector} places permanently at (0,0,0)
+   * regardless of mean anomaly — used as a stand-in for a fixed reference point (another body's
+   * position) so the existing time-stepped separation search ({@link separationFunction}/
+   * {@link nextContacts}, which expect two independently orbiting bodies) can be reused for a
+   * body orbiting directly around that reference instead of two siblings orbiting a shared parent.
+   */
+  private stationaryOrigin(name: string, referencePeriodDays: number): CanonnBiostatsBody {
+    return {
+      bodyId: -1, name, id64: 0n, subType: '', type: BODY_TYPE.Planet,
+      semiMajorAxis: 0, orbitalEccentricity: 0, orbitalInclination: 0,
+      argOfPeriapsis: 0, ascendingNode: 0, meanAnomaly: 0,
+      orbitalPeriod: referencePeriodDays,
+      timestamps: { meanAnomaly: '1970-01-01T00:00:00.000Z' },
+    } as CanonnBiostatsBody;
+  }
+
+  /** {@link orbitalRadialRange}, converted to km. */
+  private orbitalRadialRangeKm(bd: CanonnBiostatsBody): { peri: number; apo: number } | null {
+    const range = this.orbitalRadialRange(bd);
+    return range ? { peri: range.peri * KM_PER_AU, apo: range.apo * KM_PER_AU } : null;
+  }
+
+  /**
+   * A nested body's own radial reach (km) from the shared grandparent, bounded by the triangle
+   * inequality: at least `nestedParent`'s periapsis minus the nested body's apoapsis, at most
+   * `nestedParent`'s apoapsis plus the nested body's apoapsis. This can only be loose, never
+   * tight — it drops the (irrelevant, for a reject test) direction each orbit points in — so a
+   * gap check built on it can only skip pairs that provably can't touch, never miss a real one.
+   */
+  private nestedRangeKm(nested: CanonnBiostatsBody, nestedParent: CanonnBiostatsBody): { peri: number; apo: number } | null {
+    const parentRangeKm = this.orbitalRadialRangeKm(nestedParent);
+    const nestedBodyRangeKm = this.orbitalRadialRangeKm(nested);
+    return parentRangeKm && nestedBodyRangeKm
+      ? { peri: Math.max(0, parentRangeKm.peri - nestedBodyRangeKm.apo), apo: parentRangeKm.apo + nestedBodyRangeKm.apo }
+      : null;
+  }
+
+  /**
+   * Cheap reject shared by every radial-reach pre-filter in this file: two [peri, apo] ranges
+   * can only touch if they overlap by at least `contactKm`. A `false` here is not a guarantee the
+   * pair touches, only that it isn't ruled out yet — the caller still owes the exact 3D/composite
+   * check before treating it as a real candidate.
+   */
+  private rangesOutOfReach(rangeA: { peri: number; apo: number } | null, rangeB: { peri: number; apo: number } | null, contactKm: number): boolean {
+    if (!rangeA || !rangeB) { return false; }
+    return Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo) > contactKm;
+  }
+
+  /**
+   * Cheap reject for a nested pair — using only the component orbits' own periapsis/apoapsis via
+   * {@link nestedRangeKm}, before paying for {@link buildNestedPair}'s position-function
+   * construction (two Kepler evaluators plus, downstream, a dense conjunction scan). Mirrors
+   * {@link collisionPartners}'s own radial pre-filter.
+   */
+  private nestedPairOutOfReach(nested: CanonnBiostatsBody, nestedParent: CanonnBiostatsBody, other: CanonnBiostatsBody, contactKm: number): boolean {
+    return this.rangesOutOfReach(this.nestedRangeKm(nested, nestedParent), this.orbitalRadialRangeKm(other), contactKm);
+  }
+
+  /** Periapsis speed in km/ms; unknown inputs disable time-interval pruning. */
+  private maximumOrbitalSpeed(body: CanonnBiostatsBody): number {
+    const a = body.semiMajorAxis;
+    const period = body.orbitalPeriod;
+    const e = body.orbitalEccentricity ?? 0;
+    if (a == null || a < 0 || !Number.isFinite(a) || !period || period <= 0
+      || !Number.isFinite(period) || !(e >= 0 && e < 1)) { return Infinity; }
+    // Maximum speed is at periapsis. Vis-viva with r = a(1-e) and
+    // GM = (2π/P)²a³ gives v_max = (2πa/P) sqrt((1+e)/(1-e)).
+    // Use the period supplied to the position propagator, in ms, and a in km.
+    // https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/MPG%20Book/Release/Chapter7-OrbitalMechanics.pdf
+    return 2 * Math.PI * a * KM_PER_AU / (period * MS_PER_DAY) * Math.sqrt((1 + e) / (1 - e));
+  }
+
+  /**
+   * Builds the `'nested'` half of {@link resolveRingOrbitPair}: `nested` orbits `nestedParent`
+   * (a real body, sharing an immediate parent with `other`), so its absolute motion is the exact
+   * superposition of the two orbits (see {@link nestedPositionFunction}) — tracked directly
+   * rather than approximated by widening the contact threshold with its periapsis/apoapsis reach,
+   * which is what an earlier version of this feature did and which review found false-positive
+   * prone: it let *any* conjunction of `nestedParent` and `other` count as a hit, regardless of
+   * where the nested body actually was at that moment. Callers are expected to have already
+   * rejected the pair via {@link nestedPairOutOfReach} where a contact threshold is known.
+   */
+  private buildNestedPair(nested: SystemBody, nestedParent: SystemBody, other: SystemBody): {
+    posA: (tMs: number) => Vec3; posB: (tMs: number) => Vec3;
+    fastPeriodDays: number; slowPeriodDays: number; maxRelativeSpeed: number;
+  } | null {
+    const nestedBody = nested.bodyData, parentBody = nestedParent.bodyData, otherBody = other.bodyData;
+    if (!nestedBody.orbitalPeriod || !parentBody.orbitalPeriod || !otherBody.orbitalPeriod) { return null; }
+
+    const posA = this.nestedPositionFunction(nestedBody, parentBody);
+    const posB = this.positionFunction(otherBody);
+    if (!posA || !posB) { return null; }
+
+    const fastPeriodDays = Math.min(nestedBody.orbitalPeriod, parentBody.orbitalPeriod);
+    const slowPeriodDays = Math.max(nestedBody.orbitalPeriod, parentBody.orbitalPeriod, otherBody.orbitalPeriod);
+
+    const maxRelativeSpeed = this.maximumOrbitalSpeed(nestedBody)
+      + this.maximumOrbitalSpeed(parentBody) + this.maximumOrbitalSpeed(otherBody);
+    return { posA, posB, fastPeriodDays, slowPeriodDays, maxRelativeSpeed };
+  }
+
+  /**
+   * Resolves a ring-collision pair (either or both sides possibly rings) into what
+   * {@link nextContacts}/{@link nestedContactWindows}/{@link separationSeries} need to time it —
+   * or null when the pair doesn't have a tractable orbital frame to search precisely. Four
+   * configurations qualify:
+   *  - one orbits the other *directly* (e.g. a moon crossing its own planet's rings): the
+   *    non-orbiting side becomes a {@link stationaryOrigin} stand-in for its position, and the
+   *    "distance" is simply the orbiter's own orbital radius over time;
+   *  - the two share an *immediate* parent (e.g. two ringed planets orbiting the same star, or —
+   *    just as validly — two components of a binary orbiting their shared barycentre): both
+   *    sides' real orbits are used directly. The parent itself, whatever it is, never becomes one
+   *    of the two colliding objects; it's only used to confirm the pair shares one orbital plane;
+   *  - one side is *nested* one level under a real body that is itself a sibling of the other side
+   *    (e.g. a moon of one binary component reaching into the rings of the *other* component,
+   *    both sharing a barycentre): {@link buildNestedPair} tracks the nested side's exact,
+   *    superposed absolute motion rather than a single ellipse.
+   *
+   * Anything needing a shared ancestor two or more levels further up than that (e.g. a moon of
+   * one barycentre component reaching toward a *moon* of the other) has no tractable orbital
+   * frame to search and is deliberately not resolved, rather than reported as an unconfirmed guess.
+   *
+   * A pair sharing an immediate parent with *equal* orbital periods (typical of two components of
+   * a binary, which by construction complete one loop of their mutual orbit together) is still
+   * resolved: unlike {@link collisionPartners}'s Trojan/rosette exclusion for bodies co-orbiting a
+   * *third*, real central body, two siblings with the same period here simply repeat their whole
+   * relative geometry once per shared period — so that period itself is used as the synodic step.
+   *
+   * `contactKm` — the pair's contact threshold, known to every caller via {@link ringContactBand}
+   * before it needs the resolved pair itself — is used only to reject an out-of-reach *nested*
+   * side cheaply (see {@link nestedPairOutOfReach}), before paying for its position-function
+   * construction; the simple cases don't need it.
+   */
+  private resolveRingOrbitPair(self: SystemBody, partner: SystemBody, contactKm: number): RingOrbitPair | null {
+    const selfOrbitBody = self.bodyData.type === BODY_TYPE.Ring ? self.parent : self;
+    const partnerOrbitBody = partner.bodyData.type === BODY_TYPE.Ring ? partner.parent : partner;
+    if (!selfOrbitBody || !partnerOrbitBody || selfOrbitBody === partnerOrbitBody) { return null; }
+
+    if (selfOrbitBody.parent === partnerOrbitBody) {
+      const orbiter = selfOrbitBody.bodyData;
+      if (!orbiter.orbitalPeriod) { return null; }
+      // b's own .name feeds nextContacts' CollisionWindow.partnerName directly — for the
+      // stationary-origin stand-in that's otherwise just the ring's *host* name (e.g. "Planet"
+      // rather than "Planet A Ring") whenever partner is a ring, so it's named via
+      // ringDisplayName here rather than off partnerOrbitBody.bodyData.name directly.
+      return { kind: 'simple', a: orbiter, b: this.stationaryOrigin(this.ringDisplayName(partner), orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
+    }
+    if (partnerOrbitBody.parent === selfOrbitBody) {
+      const orbiter = partnerOrbitBody.bodyData;
+      if (!orbiter.orbitalPeriod) { return null; }
+      // Here it's self that plays b's role (partner is the real orbiter, a) — same naming fix.
+      return { kind: 'simple', a: orbiter, b: this.stationaryOrigin(this.ringDisplayName(self), orbiter.orbitalPeriod), synodicDays: orbiter.orbitalPeriod };
+    }
+    if (selfOrbitBody.parent && selfOrbitBody.parent === partnerOrbitBody.parent) {
+      const a = selfOrbitBody.bodyData, b = partnerOrbitBody.bodyData;
+      if (!a.orbitalPeriod || !b.orbitalPeriod) { return null; }
+      const synodicDays = a.orbitalPeriod === b.orbitalPeriod ? a.orbitalPeriod : 1 / Math.abs(1 / a.orbitalPeriod - 1 / b.orbitalPeriod);
+      // b is partnerOrbitBody's own data (the ring's *host*, when partner is a ring) — override
+      // just its display name, not its physics, to match ringCollisionExtent's convention.
+      return { kind: 'simple', a, b: { ...b, name: this.ringDisplayName(partner) }, synodicDays };
+    }
+    // Nested: self orbits a real body (its own parent) that is itself a sibling of partner. The
+    // cheap radial reject runs before buildNestedPair pays for its position-function closures.
+    if (selfOrbitBody.parent && selfOrbitBody.parent !== partnerOrbitBody && selfOrbitBody.parent.parent === partnerOrbitBody.parent) {
+      if (this.nestedPairOutOfReach(selfOrbitBody.bodyData, selfOrbitBody.parent.bodyData, partnerOrbitBody.bodyData, contactKm)) { return null; }
+      const nested = this.buildNestedPair(selfOrbitBody, selfOrbitBody.parent, partnerOrbitBody);
+      return nested && { kind: 'nested', ...nested, labelA: self.bodyData.name, labelB: partner.bodyData.name };
+    }
+    // Symmetric: partner orbits a real body that is itself a sibling of self.
+    if (partnerOrbitBody.parent && partnerOrbitBody.parent !== selfOrbitBody && partnerOrbitBody.parent.parent === selfOrbitBody.parent) {
+      if (this.nestedPairOutOfReach(partnerOrbitBody.bodyData, partnerOrbitBody.parent.bodyData, selfOrbitBody.bodyData, contactKm)) { return null; }
+      const nested = this.buildNestedPair(partnerOrbitBody, partnerOrbitBody.parent, selfOrbitBody);
+      return nested && {
+        kind: 'nested', posA: nested.posB, posB: nested.posA,
+        fastPeriodDays: nested.fastPeriodDays, slowPeriodDays: nested.slowPeriodDays,
+        maxRelativeSpeed: nested.maxRelativeSpeed,
+        labelA: self.bodyData.name, labelB: partner.bodyData.name,
+      };
+    }
+    return null;
+  }
+
+  /**
+   * Minimum separation (km) between two bodies that share an identical orbital period — a
+   * phase-locked pair (e.g. two components of a binary), whose relative geometry repeats exactly
+   * once per period rather than sweeping through every possible relative phase the way a normal
+   * (unequal-period) pair eventually does. {@link minOrbitDistanceKm}'s unconstrained two-body
+   * search isn't a valid stand-in here: it freely varies each body's phase independently to find
+   * the closest the two *orbit curves* could ever come, which can be smaller than what a
+   * phase-locked pair — confined to a single, fixed relative phase — actually ever reaches. This
+   * instead samples the real, single-degree-of-freedom separation-over-time curve directly
+   * (a coarse scan over one shared period, then a few halving refine passes around the minimum).
+   */
+  private minLockedSeparationKm(a: CanonnBiostatsBody, b: CanonnBiostatsBody, periodDays: number): number {
+    const sep = this.separationFunction(a, b);
+    if (!sep) { return Infinity; }
+    const periodMs = periodDays * MS_PER_DAY;
+    const SAMPLES = 360;
+    let bestT = 0, bestS = Infinity;
+    for (let i = 0; i < SAMPLES; i++) {
+      const t = (i / SAMPLES) * periodMs;
+      const s = sep(t);
+      if (s < bestS) { bestS = s; bestT = t; }
+    }
+    let half = periodMs / SAMPLES;
+    for (let pass = 0; pass < 8; pass++) {
+      const lo = bestT - half, hi = bestT + half;
+      const step = (hi - lo) / 20;
+      for (let t = lo; t <= hi; t += step) {
+        const s = sep(t);
+        if (s < bestS) { bestS = s; bestT = t; }
+      }
+      half /= 2;
+    }
+    return bestS;
+  }
+
+  /**
+   * The centre-to-centre separation band within which two objects physically overlap, treating
+   * each as the radial band it actually occupies: `[innerRadius, outerRadius]` for a ring, or
+   * `[0, radius]` for a solid body.
+   *
+   * Contact is tested along the line joining the two bodies, which is where two rings in
+   * *different* planes can meet — a real ring is a flat disc, so it only has material where its
+   * plane cuts the other's. Along that line object A occupies `[innerA, outerA]` from A and
+   * object B occupies `[D − outerB, D − innerB]`, so they overlap exactly when
+   * `innerA + innerB ≤ D ≤ outerA + outerB`.
+   *
+   * The upper edge is the familiar combined-radii contact threshold. The lower edge is what a
+   * sphere-shaped approximation misses: once the bodies are closer than that, one ring has passed
+   * *inside* the other's central hole along the connecting line and they are no longer touching —
+   * which is why a close ring-on-ring pass registers as two collisions either side of closest
+   * approach rather than one continuous one (observed in Musca Dark Region SO-Q b5-5, whose raw
+   * ring-edge interval is D ∈ [15,558.5, 15,594.2] km, widened by the 15 km slab thickness here to
+   * a true contact band of D ∈ [15,543.5, 15,609.2] km, while their periapsis separation is
+   * 15,499.9 km).
+   *
+   * That `innerA + innerB` lower edge only holds when *both* objects are flat rings confined to
+   * the line, though. A solid body isn't confined to any plane — its surface genuinely occupies
+   * every direction around its centre, not just the one along the connecting line — so a body of
+   * radius `r` can reach a ring's inner edge `i` from the *far* side too, as soon as `D + r ≥ i`,
+   * i.e. `D ≥ i − r`, without needing the line-restricted `D ≥ i` at all. So for a body-on-ring
+   * pair the lower edge relaxes to `max(0, innerRing − bodyRadius)`. For two solid bodies both
+   * inner radii are 0 and both this and the ring-only formula collapse to the plain `D ≤ rA + rB`
+   * test used for planetary collisions.
+   *
+   * (This "far side" relief is deliberately *not* extended to ring-on-ring: two flat rings can
+   * only meet where their planes actually cross, and for realistic — much-thinner-than-wide —
+   * rings the equivalent far-side band sits at a separation far below anything an orbit reaches,
+   * disjoint from the real contact band, not merged with it. Applying it there would silently
+   * paper back over the very gap this method exists to find.)
+   *
+   * Each ring's edges are then relaxed by half of {@link RING_THICKNESS_KM}, since a ring is a
+   * slab with real vertical extent rather than a razor-thin annulus, and so has a little reach
+   * beyond the radii the dumps report.
+   *
+   */
+  private ringContactBand(a: SystemBody, b: SystemBody): { minKm: number; maxKm: number } {
+    const isRing = (n: SystemBody): boolean => n.bodyData.type === BODY_TYPE.Ring;
+    const inner = (n: SystemBody): number => isRing(n) ? (n.bodyData.innerRadius ?? 0) : 0;
+    const outer = (n: SystemBody): number => isRing(n) ? (n.bodyData.outerRadius ?? 0) : (n.bodyData.radius ?? 0);
+    const reach = (n: SystemBody): number => isRing(n) ? RING_THICKNESS_KM / 2 : 0;
+    const edgeKm = reach(a) + reach(b);
+    const innerA = inner(a);
+    const outerA = outer(a);
+    const innerB = inner(b);
+    const outerB = outer(b);
+    const bothConfinedToLine = isRing(a) && isRing(b);
+    const rawMinKm = bothConfinedToLine
+      ? innerA + innerB
+      : Math.max(innerA - outerB, innerB - outerA);
+    return {
+      minKm: Math.max(0, rawMinKm - edgeKm),
+      maxKm: outerA + outerB + edgeKm,
+    };
+  }
+
+  /**
+   * Cheaply proves `ring` can never contact `other`, without paying for a contact-window search:
+   * either there's no tractable orbital frame at all ({@link resolveRingOrbitPair} returns null,
+   * which already runs {@link nestedPairOutOfReach}'s cheap nested-side reject internally), or —
+   * for a `'simple'` pair — the two orbits' periapsis/apoapsis ranges can never come within the
+   * contact band regardless of phase. A `false` result only means "not ruled out this way", not
+   * that the pair actually touches.
+   *
+   * Both rejects are one-directional in the same useful way: they only ever compare against
+   * {@link ringContactBand}'s `maxKm` (the *largest* separation that could still count as
+   * contact), so shrinking `maxKm` — which is exactly what happens when this same test is reused
+   * for a *narrower* ring of the same host, see {@link ringCollisionStatusesFor} — can only make
+   * the reject easier to trigger, never harder. That's what lets a widest-ring result stand in for
+   * every narrower ring sharing its host and orbit.
+   */
+  private ringPairCheaplyUnreachable(ring: SystemBody, other: SystemBody): boolean {
+    const band = this.ringContactBand(ring, other);
+    if (!(band.maxKm > 0)) { return true; }
+    const pair = this.resolveRingOrbitPair(ring, other, band.maxKm);
+    if (!pair) { return true; }
+    if (pair.kind !== 'simple') { return false; }
+    const rangeA = this.orbitalRadialRange(pair.a);
+    const rangeB = this.orbitalRadialRange(pair.b);
+    if (!rangeA || !rangeB) { return false; }
+    const radialGapAu = Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo);
+    return radialGapAu > band.maxKm / KM_PER_AU;
+  }
+
+  /**
+   * Centre-to-centre distance-over-time samples for a ring-collision pair's distance diagram —
+   * the ring-collision analogue of {@link separationSeries}, resolving the pair via
+   * {@link resolveRingOrbitPair} first so it also covers a body orbiting directly around the
+   * other's ring host, not just two siblings. Returns [] when the pair can't be timed or lacks
+   * the phase data needed to place it.
+   */
+  ringSeparationSeries(self: SystemBody, partner: SystemBody, startMs: number, endMs: number, samples: number): SeparationSample[] {
+    const band = this.ringContactBand(self, partner);
+    const pair = this.resolveRingOrbitPair(self, partner, band.maxKm);
+    if (!pair) { return []; }
+    if (pair.kind === 'simple') { return this.separationSeries(pair.a, pair.b, startMs, endMs, samples); }
+    return this.sampleSeparation(this.separationFunctionFromPositions(pair.posA, pair.posB), startMs, endMs, samples);
+  }
+
+  /**
+   * Every contact window for a known ring-collision pair that opens within the next `horizonDays`,
+   * in chronological order — uncapped, unlike {@link detectRingCollisionStatus}'s 10-row
+   * {@link RingCollisionStatus.upcomingCollisions}. A ring pass can yield two windows per
+   * approach (see {@link ringContactBand}), so the diagram — which spans several synodic periods —
+   * needs this rather than the capped list to mark every in-view dip, not just the first few.
+   * Returns [] when the pair can't be timed (should not happen for a pair `detectRingCollisionStatus`
+   * already found) or lacks the phase data to place it.
+   */
+  ringContactsWithin(self: SystemBody, partner: SystemBody, horizonDays: number, now: number = Date.now()): CollisionWindow[] {
+    const band = this.ringContactBand(self, partner);
+    if (!(band.maxKm > 0)) { return []; }
+    const pair = this.resolveRingOrbitPair(self, partner, band.maxKm);
+    if (!pair) { return []; }
+    const horizonMs = horizonDays * MS_PER_DAY;
+    const windows = pair.kind === 'simple'
+      ? this.nextContacts(pair.a, pair.b, band.maxKm, pair.synodicDays, now, MAX_CONJUNCTIONS_SCANNED, horizonMs, band.minKm)
+      : this.nestedContactWindows(pair.posA, pair.posB, pair.fastPeriodDays, pair.slowPeriodDays, band.maxKm, band.minKm, now, MAX_CONJUNCTIONS_SCANNED, horizonMs, pair.labelB, pair.maxRelativeSpeed);
+    return windows.sort((a, b) => a.start.getTime() - b.start.getTime());
+  }
+
+  /**
+   * Combines {@link ringSeparationSeries} and {@link ringContactsWithin} for the ring-collision
+   * dialog's diagram into one call, so opening it costs one tree walk instead of two: across the
+   * worker boundary each of those methods is handed its own rehydrated copy of the whole system
+   * tree, so calling both independently (as `Promise.all([ringSeparationSeries(...),
+   * ringContactsWithin(...)])` used to) serializes, structured-clones, and rehydrates the entire
+   * system twice for what is conceptually one "build this pair's diagram" request.
+   */
+  ringCollisionDiagram(
+    self: SystemBody,
+    partner: SystemBody,
+    startMs: number,
+    endMs: number,
+    samples: number,
+    horizonDays: number,
+    now: number = Date.now(),
+  ): { series: SeparationSample[]; contacts: CollisionWindow[] } {
+    return {
+      series: this.ringSeparationSeries(self, partner, startMs, endMs, samples),
+      contacts: this.ringContactsWithin(self, partner, horizonDays, now),
+    };
+  }
+
+  /**
+   * Flags a body or ring as a "ring collision" candidate only once an actual, timed contact
+   * window has been found with a ring belonging to a *different* body — either a solid body's
+   * orbit passing through another body's ring ("Body on Ring") or two different bodies' rings
+   * whose extents overlap in 3D ("Ring on Ring"). There is no untimed "might overlap" state:
+   * per the feature request, a candidate is only ever surfaced when a genuine collision is
+   * actually detected, using the same 3D orbit-crossing search {@link detectCollisionStatus}
+   * runs for planet-planet collisions — just with each ring's outer radius (or a plain body's own
+   * radius) as the contact threshold, and only for the two pair configurations
+   * {@link resolveRingOrbitPair} can actually time (see its docs for why others, like crossing a
+   * shared barycentre several levels up, are skipped rather than guessed at).
+   */
+  detectRingCollisionStatus(node: SystemBody, now: number = Date.now()): RingCollisionStatus {
+    const candidates = this.flattenSystem(this.systemRoot(node));
+    const focusIndex = candidates.indexOf(node);
+    return focusIndex < 0 ? this.emptyRingCollisionStatus() : this.ringCollisionStatusesFor(candidates, now)[focusIndex];
+  }
+
+  /** One ring-collision analysis for the whole system, aligned to {@link flattenSystem}'s order. */
+  detectRingCollisionStatuses(node: SystemBody, now: number = Date.now()): RingCollisionStatus[] {
+    return this.ringCollisionStatusesFor(this.flattenSystem(this.systemRoot(node)), now);
+  }
+
+  private ringCollisionStatusesFor(candidates: SystemBody[], now: number): RingCollisionStatus[] {
+    const statuses = candidates.map(() => this.emptyRingCollisionStatus());
+    if (!candidates.some(candidate => candidate.bodyData.type === BODY_TYPE.Ring)) { return statuses; }
+
+    // Outer-ring-first pruning: every ring under the same host shares that host's exact orbit —
+    // only each ring's own inner/outer radius (and so its contact band) differs — so if the
+    // *widest* ring of a multi-ring host is cheaply proven unreachable against some partner (see
+    // ringPairCheaplyUnreachable's monotonic-in-maxKm argument), every narrower ring of that same
+    // host is unreachable against that same partner too, and the pair can be skipped without
+    // paying for its own band/orbit-pair/prefilter work at all. Hosts with only one ring get no
+    // entry here, since there's nothing narrower to prune.
+    const widestRingOf = new Map<SystemBody, SystemBody>();
+    {
+      const ringsByHost = new Map<SystemBody, SystemBody[]>();
+      for (const candidate of candidates) {
+        if (candidate.bodyData.type === BODY_TYPE.Ring && candidate.parent) {
+          const rings = ringsByHost.get(candidate.parent);
+          if (rings) { rings.push(candidate); } else { ringsByHost.set(candidate.parent, [candidate]); }
+        }
+      }
+      for (const rings of ringsByHost.values()) {
+        if (rings.length < 2) { continue; }
+        widestRingOf.set(rings[0].parent!, rings.reduce((a, b) => (b.bodyData.outerRadius ?? 0) > (a.bodyData.outerRadius ?? 0) ? b : a));
+      }
+    }
+    const widestUnreachableCache = new Map<SystemBody, Map<SystemBody, boolean>>();
+    const isWidestUnreachable = (widest: SystemBody, other: SystemBody): boolean => {
+      let againstOther = widestUnreachableCache.get(widest);
+      if (!againstOther) { againstOther = new Map(); widestUnreachableCache.set(widest, againstOther); }
+      let result = againstOther.get(other);
+      if (result === undefined) {
+        result = this.ringPairCheaplyUnreachable(widest, other);
+        againstOther.set(other, result);
+      }
+      return result;
+    };
+
+    const updateBest = (subjectIndex: number, other: SystemBody, contactKm: number, contactMinKm: number, synodicDays: number, windows: CollisionWindow[]): void => {
+      const current = statuses[subjectIndex];
+      if (current.nextCollision && current.nextCollision.days <= windows[0].days) { return; }
+      const subject = candidates[subjectIndex];
+      statuses[subjectIndex] = {
+        isCandidate: true,
+        self: this.ringCollisionExtent(subject),
+        partner: this.ringCollisionExtent(other),
+        combinedRadiiKm: contactKm,
+        combinedRadiiMinKm: contactMinKm,
+        synodicPeriodDays: synodicDays,
+        nextCollision: windows[0],
+        upcomingCollisions: windows,
+      };
+    };
+
+    type PendingPair = {
+      i: number; j: number; band: { minKm: number; maxKm: number };
+      synodicDays: number; windows: CollisionWindow[];
+    };
+    const pending: PendingPair[] = [];
+    const nestedGroups = new Map<SystemBody, Map<SystemBody, {
+      pair: Extract<RingOrbitPair, { kind: 'nested' }>;
+      entries: { pending: PendingPair; band: NestedContactBand }[];
+    }>>();
+
+    for (let i = 0; i < candidates.length; i++) {
+      const nodeA = candidates[i];
+      const isRingA = nodeA.bodyData.type === BODY_TYPE.Ring;
+      if (nodeA.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+      for (let j = i + 1; j < candidates.length; j++) {
+        const nodeB = candidates[j];
+        const isRingB = nodeB.bodyData.type === BODY_TYPE.Ring;
+        if (!isRingA && !isRingB) { continue; }
+        if (isRingA && nodeA.parent === nodeB) { continue; }
+        if (isRingB && nodeB.parent === nodeA) { continue; }
+        if (isRingA && isRingB && nodeA.parent === nodeB.parent) { continue; }
+        if (nodeB.bodyData.type === BODY_TYPE.Barycentre) { continue; }
+
+        const widestA = isRingA ? widestRingOf.get(nodeA.parent!) : undefined;
+        if (widestA && widestA !== nodeA && isWidestUnreachable(widestA, nodeB)) { continue; }
+        const widestB = isRingB ? widestRingOf.get(nodeB.parent!) : undefined;
+        if (widestB && widestB !== nodeB && isWidestUnreachable(widestB, nodeA)) { continue; }
+
+        const band = this.ringContactBand(nodeA, nodeB);
+        if (!(band.maxKm > 0)) { continue; }
+
+        // resolveRingOrbitPair rejects an out-of-reach nested side itself (see
+        // nestedPairOutOfReach) before building its position functions; the 'simple' case still
+        // needs its own cheap reject below, ahead of the costlier orbit-curve search.
+        const pair = this.resolveRingOrbitPair(nodeA, nodeB, band.maxKm);
+        if (!pair) { continue; }
+
+        let windows: CollisionWindow[];
+        let synodicDays: number;
+        if (pair.kind === 'simple') {
+          synodicDays = pair.synodicDays;
+          const rangeA = this.orbitalRadialRange(pair.a);
+          const rangeB = this.orbitalRadialRange(pair.b);
+          if (rangeA && rangeB) {
+            const radialGapAu = Math.max(rangeA.peri, rangeB.peri) - Math.min(rangeA.apo, rangeB.apo);
+            if (radialGapAu > band.maxKm / KM_PER_AU) { continue; }
+          }
+          const prefilterKm = pair.a.orbitalPeriod === pair.b.orbitalPeriod
+            ? this.minLockedSeparationKm(pair.a, pair.b, pair.synodicDays)
+            : this.minOrbitDistanceKm(pair.a, pair.b);
+          if (prefilterKm > band.maxKm) { continue; }
+          windows = this.nextContacts(pair.a, pair.b, band.maxKm, pair.synodicDays, now, MAX_UPCOMING_CONTACTS, Infinity, band.minKm);
+        } else {
+          // The dominant recurrence driver — displayed as this pair's "synodic period" even
+          // though a nested pair's true recurrence is quasi-periodic (see nestedContactWindows).
+          synodicDays = pair.fastPeriodDays;
+          const orbitA = isRingA ? nodeA.parent! : nodeA;
+          const orbitB = isRingB ? nodeB.parent! : nodeB;
+          let byPartner = nestedGroups.get(orbitA);
+          if (!byPartner) { byPartner = new Map(); nestedGroups.set(orbitA, byPartner); }
+          let group = byPartner.get(orbitB);
+          if (!group) { group = { pair, entries: [] }; byPartner.set(orbitB, group); }
+          const entry: PendingPair = { i, j, band, synodicDays, windows: [] };
+          pending.push(entry);
+          group.entries.push({ pending: entry, band: {
+            contactKm: band.maxKm, minContactKm: band.minKm, partnerName: pair.labelB,
+          } });
+          continue;
+        }
+        pending.push({ i, j, band, synodicDays, windows });
+      }
+    }
+
+    for (const byPartner of nestedGroups.values()) {
+      for (const { pair, entries } of byPartner.values()) {
+        const windows = this.nestedContactWindowsForBands(pair.posA, pair.posB,
+          pair.fastPeriodDays, pair.slowPeriodDays, entries.map(entry => entry.band),
+          now, MAX_UPCOMING_CONTACTS, Infinity, pair.maxRelativeSpeed);
+        entries.forEach((entry, index) => { entry.pending.windows = windows[index]; });
+      }
+    }
+    // Preserve the original traversal order, including which partner wins equal-time ties.
+    for (const { i, j, band, synodicDays, windows } of pending) {
+      if (windows.length === 0) { continue; }
+      updateBest(i, candidates[j], band.maxKm, band.minKm, synodicDays, windows);
+      updateBest(j, candidates[i], band.maxKm, band.minKm, synodicDays, windows);
+    }
+
+    return statuses;
+  }
+
+  private emptyRingCollisionStatus(): RingCollisionStatus {
+    return {
+      isCandidate: false,
+      self: null,
+      partner: null,
+      combinedRadiiKm: null,
+      combinedRadiiMinKm: null,
+      synodicPeriodDays: null,
+      nextCollision: null,
+      upcomingCollisions: [],
+    };
+  }
+
+  /**
+   * A ring's own `bodyData.name` is stripped down to its bare identifier at parse time (e.g.
+   * "A Ring", not "<host> A Ring" — see `HomeComponent.stripParentName`), unlike a body's, which
+   * keeps its full system-prefixed name. Bare, that's ambiguous once two different bodies' rings
+   * are shown side by side (a "Ring on Ring" collision), so a ring is displayed under its host's
+   * name instead, matching a body's own naming convention exactly (and so working the same way
+   * with {@link RingCollisionDialogComponent.shortName}'s system-prefix stripping).
+   */
+  private ringDisplayName(node: SystemBody): string {
+    return node.bodyData.type === BODY_TYPE.Ring && node.parent
+      ? `${node.parent.bodyData.name} ${node.bodyData.name}`
+      : node.bodyData.name;
+  }
+
+  private ringCollisionExtent(node: SystemBody): RingCollisionExtent {
+    const isRing = node.bodyData.type === BODY_TYPE.Ring;
+    return {
+      name: this.ringDisplayName(node),
+      kind: isRing ? 'ring' : 'body',
+      path: bodyPathFromRoot(node),
     };
   }
 }

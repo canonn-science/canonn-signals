@@ -115,6 +115,16 @@
         <span class="badge badge-skeleton" aria-hidden="true"
           matTooltip="Checking for crossing orbits…">Collision</span>
       }
+      @if (ringCollisionStatus(); as rcs) {
+        @if (rcs.isCandidate) {
+        <span class="badge badge-red clickable"
+          [matTooltip]="'Ring collision with ' + rcs.partner!.name + ' — click for details'"
+          (click)="showRingCollisionDialog()">Ring Collision</span>
+        }
+      } @else if (ringCollisionPending()) {
+        <span class="badge badge-skeleton" aria-hidden="true"
+          matTooltip="Checking for ring collisions…">Ring Collision</span>
+      }
       @if (getRocheExcess() !== null) {
       <span class="badge badge-red"
         [matTooltip]="'Roche limit exceeded by ' + (getRocheExcess()! | number:'0.0-0') + ' km'">

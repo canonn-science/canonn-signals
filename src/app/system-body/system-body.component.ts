@@ -16,8 +16,9 @@ import {
   NARROW_RING_SPAN_RADII, PAUPER_RING_MIN_INNER_EDGE_RADII, PAUPER_RING_MAX_SPAN_RADII, HighAngularDiameterAssessment,
 } from '../data/body-physics.service';
 import { StellarPhysicsService } from '../data/stellar-physics.service';
-import { OrbitalRelationsService, CollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
+import { OrbitalRelationsService, CollisionStatus, RingCollisionStatus, LagrangeConfiguration, LagrangeOccupant } from '../data/orbital-relations.service';
 import { OrbitalWorkerService } from '../data/orbital-worker.service';
+import { findBodyByPath } from '../data/collision-request';
 import { logger } from '../data/logger';
 import { RocheChartData, HillChartData } from '../data/chart-rendering.service';
 import { BODY_TYPE } from '../data/body-types';
@@ -34,6 +35,7 @@ import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dial
 import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
 import type { ParentDistanceDialogData } from '../dialogs/parent-distance-dialog/parent-distance-dialog.component';
 import type { CollisionBodyInfo, CollisionDialogData } from '../dialogs/collision-dialog/collision-dialog.component';
+import type { RingCollisionDialogData } from '../dialogs/ring-collision-dialog/ring-collision-dialog.component';
 import type { SynodicDiagramInput } from '../data/collision-diagram';
 import type { JsonDialogData } from '../dialogs/json-dialog/json-dialog.component';
 import { formatBodyJson } from '../dialogs/json-dialog/format-body-json';
@@ -84,6 +86,18 @@ const COLLISION_SKELETON_DELAY_MS = 150;
 const SIMULTANEOUS_COLLISION_HORIZON_DAYS = 180;
 /** Width of the collision dialog's distance-over-time diagram, in synodic periods. */
 const COLLISION_DIAGRAM_SYNODIC_PERIODS = 10;
+/**
+ * Hard cap (days) on the diagram's span, reusing {@link SIMULTANEOUS_COLLISION_HORIZON_DAYS} as
+ * the same "near-term" scope already used right next to it in the dialog. Ten synodic periods is
+ * normally just days to weeks, but two orbits locked near a 1:1 resonance (near-identical periods,
+ * as with a real crossing-orbit sibling pair) have a synodic period of hundreds of days, ballooning
+ * ten periods into years — which both renders a mostly-empty diagram and forces the underlying
+ * nested-pair search to cover that whole span, measured at 11-12s for one such real pair. The
+ * actual next collision (found independently by `detectCollisionStatus`'s own marching search, not
+ * bounded by this cap) still lands inside this window regardless — the cap only limits how much
+ * *surrounding* context is drawn.
+ */
+const COLLISION_DIAGRAM_MAX_SPAN_DAYS = SIMULTANEOUS_COLLISION_HORIZON_DAYS;
 /**
  * Number of separation samples drawn across the diagram window (~100 per synodic period over the
  * {@link COLLISION_DIAGRAM_SYNODIC_PERIODS}-period span). Enough to render the conjunction dips
@@ -286,12 +300,42 @@ export class SystemBodyComponent implements OnChanges {
     this.trojanStatus = trojan.lagrangePoint;
     this.trojanHostStatus = trojan.isHost;
     this.rosetteStatus = this.orbitalRelations.detectRosetteStatus(body);
+    // Ring-collision detection can run the same costly 3D orbital search as planetary collision
+    // detection (minOrbitDistanceKm + nextContacts) for any pair with a single orbital frame to
+    // time, so — like the collision search below — only redo it when the body itself changes.
+    if (this.ringCollisionBody !== body) {
+      this.ringCollisionBody = body;
+      if (this.canRingCollide(body)) {
+        this.requestRingCollisionStatus(body);
+      } else {
+        // A belt (no orbital elements) or a rootless body (no parent/sibling context) can never
+        // be a ring-collision candidate — resolveRingOrbitPair/detectRingCollisionStatus would
+        // reach exactly this same conclusion, but only after a full worker round-trip. Skipping
+        // it here avoids firing one (and showing a "checking…" badge) for something that can
+        // only ever come back empty; a system with many such bodies otherwise piles up dozens of
+        // avoidable round-trips, each queued behind the shared worker's single message queue.
+        clearTimeout(this.ringCollisionPendingTimer);
+        this.ringCollisionStatus.set(null);
+        this.ringCollisionPending.set(false);
+        this.reportRingCollisionCandidate(body, false);
+      }
+    }
     // Collision detection runs a costly 3D orbital search, so only redo it when the body
     // itself changes — not on the many ngOnChanges re-fires from unrelated input flips or
     // the async codex effect, which leave the orbital geometry untouched.
     if (this.collisionBody !== body) {
       this.collisionBody = body;
-      this.requestCollisionStatus(body);
+      if (this.canCollide(body)) {
+        this.requestCollisionStatus(body);
+      } else {
+        // Same reasoning as the ring-collision skip above: a ring, a belt, or a rootless body can
+        // never be a plain collision candidate either (collisionPartners/nestedCollisionPartners
+        // require both a parent and the body's own orbitalPeriod, which none of these have).
+        clearTimeout(this.collisionPendingTimer);
+        this.collisionStatus.set(null);
+        this.collisionPending.set(false);
+        this.reportCollisionCandidate(body, false);
+      }
     }
     this.getNextPeriapsis.set(this.calculateNextPeriapsis());
     this.getNextApoapsis.set(this.calculateNextApoapsis());
@@ -1103,6 +1147,8 @@ export class SystemBodyComponent implements OnChanges {
     this.destroyRef.onDestroy(() => {
       this.collisionRequestId++;
       clearTimeout(this.collisionPendingTimer);
+      this.ringCollisionRequestId++;
+      clearTimeout(this.ringCollisionPendingTimer);
     });
 
     // Codex reference data loads asynchronously. When it changes, refresh the
@@ -1447,7 +1493,18 @@ export class SystemBodyComponent implements OnChanges {
     // two bodies into one dialog. Use `now` consistent with the badge's candidacy (honours the
     // app-level time override) so the dialog's countdowns and now-marker match the badge.
     const body = this.body();
-    const siblings = body.parent?.subBodies ?? [];
+    // A collision partner can also be a "nested" aunt/uncle — a sibling of this body's own
+    // parent, one level further up (see OrbitalRelationsCore.nestedCollisionPartners) — a
+    // "cousin" — a child of one of those aunts/uncles, two levels up and back down (see
+    // OrbitalRelationsCore.cousinCollisionPartners) — or a "niece/nephew" — a child of one of
+    // this body's own siblings, the mirror image of the aunt/uncle case (see
+    // OrbitalRelationsCore.nieceNephewCollisionPartners) — not just a direct sibling, so every
+    // level is searched when resolving a partner's name back to a node.
+    const ownSiblings = body.parent?.subBodies ?? [];
+    const auntsUncles = body.parent?.parent?.subBodies.filter(s => s !== body.parent) ?? [];
+    const cousins = auntsUncles.flatMap(auntUncle => auntUncle.subBodies);
+    const niecesNephews = ownSiblings.flatMap(sibling => sibling !== body ? sibling.subBodies : []);
+    const siblings = [...ownSiblings, ...auntsUncles, ...cousins, ...niecesNephews];
     const now = this.appService.nowOverride() ?? Date.now();
 
     // Both of these run the heavy orbital search, so compute them off the main thread before the
@@ -1498,6 +1555,82 @@ export class SystemBodyComponent implements OnChanges {
     });
   }
 
+  /** Opens the ring collision dialog with this body's/ring's radial-overlap and (when timeable) contact-window details. */
+  public async showRingCollisionDialog(): Promise<void> {
+    const status = this.ringCollisionStatus();
+    if (!status?.isCandidate || !status.self || !status.partner) { return; }
+    const body = this.body();
+
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/ring-collision-dialog/ring-collision-dialog.component').then(m => m.RingCollisionDialogComponent),
+      skeleton: 'diagram',
+      width: '900px',
+      maxWidth: '95vw',
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      data: {
+        self: status.self,
+        partner: status.partner,
+        combinedRadiiKm: status.combinedRadiiKm,
+        combinedRadiiMinKm: status.combinedRadiiMinKm,
+        synodicPeriodDays: status.synodicPeriodDays,
+        nextCollision: status.nextCollision,
+        upcomingCollisions: status.upcomingCollisions,
+        systemName: this.edGalaxyData()?.Name ?? '',
+        separationDiagram: await this.buildRingCollisionDistanceDiagram(body, status),
+      } satisfies RingCollisionDialogData,
+    });
+  }
+
+  /**
+   * Builds the distance-over-time samples for the ring collision dialog's diagram: a single
+   * centre-to-centre (or moon-to-host, for a body orbiting directly around the ring's host)
+   * separation curve over ten synodic periods, mirroring {@link buildCollisionDistanceDiagram}
+   * but for a ring-collision pair. Every contact within the window is marked — via
+   * {@link OrbitalRelationsCore.ringContactsWithin}'s uncapped list, not the 10-row
+   * {@link RingCollisionStatus.upcomingCollisions} — since a ring pass can yield two windows per
+   * approach, so the 10-row cap alone would leave later in-view dips unmarked. Both off-thread
+   * calls run through {@link OrbitalWorkerService}, matching the planetary collision path; the
+   * partner is re-resolved from `status.partner.path` against `body`'s live system tree so rings
+   * with duplicate display names still resolve to the correct node after the worker round-trip.
+   * Returns null when the pair can't be timed or lacks the phase data to place it — in practice
+   * this shouldn't happen here, since {@link ringCollisionStatus} already required a real
+   * detected contact window before flagging a candidate at all.
+   */
+  private async buildRingCollisionDistanceDiagram(body: SystemBody, status: RingCollisionStatus): Promise<SynodicDiagramInput | null> {
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
+    if (!(synMs > 0) || !status.self || !status.partner || !status.combinedRadiiKm) { return null; }
+    const partner = findBodyByPath(body, status.partner.path);
+    if (!partner) { return null; }
+
+    const now = this.appService.nowOverride() ?? Date.now();
+    const spanMs = Math.min(synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS, COLLISION_DIAGRAM_MAX_SPAN_DAYS * MS_PER_DAY);
+    const endMs = now + spanMs;
+    const { series: samples, contacts: windowContactsRaw } = await this.orbitalWorker.ringCollisionDiagram(
+      body, partner, now, endMs, COLLISION_DIAGRAM_SAMPLES, spanMs / MS_PER_DAY, now,
+    );
+    if (samples.length === 0) { return null; }
+
+    const windowContacts = windowContactsRaw.filter(w => w.start.getTime() <= endMs);
+    const contacts = windowContacts.map(w => ({
+      tMs: (w.minSeparationAt ?? new Date((w.start.getTime() + w.end.getTime()) / 2)).getTime(),
+      sepKm: w.minSeparationKm,
+    }));
+
+    return {
+      startMs: now,
+      endMs,
+      nowMs: now,
+      series: [{
+        partnerName: status.partner.name,
+        combinedRadiiKm: status.combinedRadiiKm,
+        combinedRadiiMinKm: status.combinedRadiiMinKm ?? undefined,
+        samples, contacts,
+      }],
+    };
+  }
+
   /**
    * Builds the distance-over-time samples for the collision dialog's synodic-period diagram:
    * one centre-to-centre separation curve from this body to each sibling it directly collides
@@ -1514,10 +1647,12 @@ export class SystemBodyComponent implements OnChanges {
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
     // Timeline: ten synodic periods — long enough to show the conjunction dips recurring and
-    // which of them deepen into collisions. Without a synodic period there is nothing to scale to.
+    // which of them deepen into collisions — capped at COLLISION_DIAGRAM_MAX_SPAN_DAYS for a pair
+    // whose near-1:1 resonance makes that far too wide. Without a synodic period there is nothing
+    // to scale to.
     const synMs = (status.synodicPeriodDays ?? 0) * MS_PER_DAY;
     if (!(synMs > 0)) { return null; }
-    const spanMs = synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS;
+    const spanMs = Math.min(synMs * COLLISION_DIAGRAM_SYNODIC_PERIODS, COLLISION_DIAGRAM_MAX_SPAN_DAYS * MS_PER_DAY);
     const endMs = now + spanMs;
 
     // Every contact inside the window — uncapped — grouped by the partner each is with, so dips
@@ -1547,7 +1682,7 @@ export class SystemBodyComponent implements OnChanges {
         ?? status.combinedRadiiKm
         ?? ((body.bodyData.radius ?? 0) + (sibling.bodyData.radius ?? 0));
       const contacts = partnerWindows.map(w => ({
-        tMs: (w.start.getTime() + w.end.getTime()) / 2,
+        tMs: (w.minSeparationAt ?? new Date((w.start.getTime() + w.end.getTime()) / 2)).getTime(),
         sepKm: w.minSeparationKm,
       }));
       return { partnerName: name, combinedRadiiKm, samples: samplesArr, contacts };
@@ -1852,9 +1987,88 @@ export class SystemBodyComponent implements OnChanges {
     }
   }
 
+  /**
+   * Whether `body` could plausibly be a ring-collision candidate — cheap and synchronous, no
+   * worker round-trip. False for a belt (no orbital elements, so never resolveRingOrbitPair's
+   * `self`/`partner` on either side), a barycentre (a mathematical point with no physical extent
+   * of its own to collide with — the engine already excludes it as a *partner*, this just skips
+   * the equally pointless round-trip when it's the *subject*), or a rootless body (no parent to
+   * reach a ring through). A ring itself is still eligible — it's a legitimate side of the search,
+   * unlike a belt.
+   */
+  private canRingCollide(body: SystemBody): boolean {
+    return !!body.parent
+      && body.bodyData.type !== BODY_TYPE.Belt
+      && body.bodyData.type !== BODY_TYPE.Barycentre;
+  }
+
+  /**
+   * Whether `body` could plausibly be a plain (non-ring) collision candidate — see
+   * {@link canRingCollide}. Also false for a ring: collisionPartners/nestedCollisionPartners
+   * both require the body's own `orbitalPeriod`, which a ring (a static band, not an orbiting
+   * body) never has. A barycentre *does* have real orbital elements (it usefully traces where
+   * its components' mutual centre of mass moves) but no `radius` of its own, so — unlike the
+   * ring engine, which already excludes it explicitly — collisionPartners has nothing stopping
+   * it from reporting a "collision" the moment that mathematical point's path numerically passes
+   * within a sibling's radius, so it's excluded here too.
+   */
+  private canCollide(body: SystemBody): boolean {
+    return !!body.parent
+      && body.bodyData.type !== BODY_TYPE.Belt
+      && body.bodyData.type !== BODY_TYPE.Ring
+      && body.bodyData.type !== BODY_TYPE.Barycentre;
+  }
+
   public trojanStatus: string | null = null;
   public trojanHostStatus: boolean = false;
   public rosetteStatus: string | null = null;
+  /**
+   * Result of the off-thread ring-collision search for the current body, or null while it is
+   * still running (or when the body isn't a candidate). A signal, not a plain field, for the same
+   * reason as {@link collisionStatus}: the worker resolves asynchronously and setting it is what
+   * schedules change detection under zoneless. See {@link requestRingCollisionStatus}.
+   */
+  public readonly ringCollisionStatus = signal<RingCollisionStatus | null>(null);
+  /** True once a ring-collision search has been outstanding longer than {@link COLLISION_SKELETON_DELAY_MS}. */
+  public readonly ringCollisionPending = signal(false);
+  /** The body {@link ringCollisionStatus} was last requested for, to skip recompute on unrelated re-renders. */
+  private ringCollisionBody: SystemBody | null = null;
+  /** Generation token: increments per request so a stale worker response for a superseded body is dropped. */
+  private ringCollisionRequestId = 0;
+  /** Timer that reveals the pending skeleton; cleared when the result arrives or the component is destroyed. */
+  private ringCollisionPendingTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Runs {@link OrbitalRelationsCore.detectRingCollisionStatus} for `body` off the main thread and
+   * lands the result in {@link ringCollisionStatus}, mirroring {@link requestCollisionStatus}
+   * exactly (per-request generation token, delayed pending skeleton).
+   */
+  private requestRingCollisionStatus(body: SystemBody): void {
+    const requestId = ++this.ringCollisionRequestId;
+    this.ringCollisionStatus.set(null);
+    const now = this.appService.nowOverride() ?? Date.now();
+
+    clearTimeout(this.ringCollisionPendingTimer);
+    this.ringCollisionPendingTimer = setTimeout(() => {
+      if (requestId === this.ringCollisionRequestId) { this.ringCollisionPending.set(true); }
+    }, COLLISION_SKELETON_DELAY_MS);
+
+    this.orbitalWorker.detectRingCollisionStatus(body, now)
+      .then(status => {
+        if (requestId !== this.ringCollisionRequestId) { return; }
+        clearTimeout(this.ringCollisionPendingTimer);
+        this.ringCollisionStatus.set(status);
+        this.ringCollisionPending.set(false);
+        this.reportRingCollisionCandidate(body, status.isCandidate);
+      })
+      .catch((err: unknown) => {
+        logger.error('Ring collision search failed', err);
+        if (requestId !== this.ringCollisionRequestId) { return; }
+        clearTimeout(this.ringCollisionPendingTimer);
+        this.ringCollisionPending.set(false);
+        this.reportRingCollisionCandidate(body, false);
+      });
+  }
   /**
    * Result of the off-thread collision search for the current body, or null while it is still
    * running (or when the body isn't a collision candidate). A signal, not a plain field, because
@@ -1935,6 +2149,12 @@ export class SystemBodyComponent implements OnChanges {
     const key = this.systemKey();
     if (key === null) { return; }
     this.interestRegistry.reportCollisionCandidate(key, body, isCandidate);
+  }
+
+  private reportRingCollisionCandidate(body: SystemBody, isCandidate: boolean): void {
+    const key = this.systemKey();
+    if (key === null) { return; }
+    this.interestRegistry.reportRingCollisionCandidate(key, body, isCandidate);
   }
 
   /**

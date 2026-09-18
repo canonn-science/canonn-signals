@@ -954,6 +954,482 @@ describe('OrbitalRelationsService', () => {
       expect(r.upcomingCollisions[0].partnerName).toBe(r.partnerName);
       expect(r.nextCollision).toBe(r.upcomingCollisions[0]);
     });
+
+    it('flags a moon colliding with its parent\'s sibling body directly ("nested" body-on-body collision)', () => {
+      // The plain-body analogue of the ring-collision engine's "nested" case (see
+      // orbital-relations.ring-collision.spec.ts): 1 and 2 are a locked binary pair sharing a
+      // barycentre (identical period, 180° opposed argument of periapsis), and 1 a is a moon of
+      // body 1 (not of the barycentre). 1 a's absolute motion is the exact superposition of its
+      // own orbit and body 1's, tracked directly — reusing the same nestedPositionFunction/
+      // nestedContactWindows machinery the ring case uses, just against body 2 itself rather than
+      // one of its rings.
+      const KM_PER_AU = 149597870.7;
+      const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-08-17T19:39:35Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: BODY_TYPE.Barycentre } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const body1: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      // Body 1 & 2's own separation dips to ≈15,499.9 km at their shared periapsis (see the
+      // ring-collision spec's equivalent test) — well short of touching at either body's own
+      // (unset) radius, so the two never collide directly (confirmed below).
+      const body2: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, radius: 14_600, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      // 1 a orbits body 1 in the *same* orbital plane, at mean anomaly 180° from body 1's own
+      // periapsis direction — i.e. pointing the opposite way, toward body 2 — with a 1,000 km
+      // circular radius, so right at body 1/2's own periapsis its full 1,000 km reach subtracts
+      // from their 15,499.9 km separation, landing at ≈14,501 km: inside body 2's 14,600 km
+      // radius. 1 a's own period (10 days) is deliberately long relative to the ~2.4 h until that
+      // periapsis so its phase barely drifts from 180° by the time it matters (numerically
+      // confirmed, minimum separation 14,501 km — see the ring-collision spec's identical setup).
+      const moon1a: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '1 a', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+          meanAnomaly: 180, orbitalPeriod: 10, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: body1,
+      };
+      barycentre.subBodies = [body1, body2];
+      body1.subBodies = [moon1a];
+
+      // Body 1 & 2 are a locked (equal-period) binary — collisionPartners excludes equal periods
+      // (the Trojan/rosette rule), so the plain direct-sibling engine never flags them against
+      // each other; this contact is only reachable via 1 a's own composite motion.
+      expect(service.detectCollisionStatus(body1, nowHere).isCandidate).toBe(false);
+
+      const status = service.detectCollisionStatus(moon1a, nowHere);
+      expect(status.isCandidate).toBe(true);
+      expect(status.partnerName).toBe('2');
+      expect(status.combinedRadiiKm).toBe(14_600);
+      expect(status.nextCollision).not.toBeNull();
+      // The window opens ≈0.084 days (≈2 h) from now, short of body 1 & 2's own periapsis at
+      // ≈0.099 days — matching the moon's own 1,000 km reach extending the contact earlier.
+      expect(status.nextCollision!.days).toBeGreaterThan(0.05);
+      expect(status.nextCollision!.days).toBeLessThan(0.15);
+    });
+
+    it('flags the *other* body\'s own page too, symmetric to the moon\'s ("niece/nephew" body-on-body collision)', () => {
+      // Same fixture as the previous test: 1 a collides with 2 via nestedCollisionPartners. This
+      // checks the mirror image — body 2's own detectCollisionStatus must find 1 a too, the same
+      // way a direct sibling collision shows a badge on both bodies' own pages, not just one.
+      // Regression test: before nieceNephewCollisionPartners, only 1 a's own page ever showed the
+      // badge; body 2 (the "aunt/uncle") showed nothing, despite genuinely being in contact.
+      const KM_PER_AU = 149597870.7;
+      const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-08-17T19:39:35Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: BODY_TYPE.Barycentre } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const body1: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const body2: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, radius: 14_600, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const moon1a: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '1 a', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 1_000 / KM_PER_AU, orbitalEccentricity: 0,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+          meanAnomaly: 180, orbitalPeriod: 10, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: body1,
+      };
+      barycentre.subBodies = [body1, body2];
+      body1.subBodies = [moon1a];
+
+      const status = service.detectCollisionStatus(body2, nowHere);
+      expect(status.isCandidate).toBe(true);
+      expect(status.partnerName).toBe('1 a');
+      expect(status.combinedRadiiKm).toBe(14_600);
+      expect(status.nextCollision).not.toBeNull();
+      expect(status.nextCollision!.days).toBeGreaterThan(0.05);
+      expect(status.nextCollision!.days).toBeLessThan(0.15);
+    });
+
+    it('does not flag an "aunt/uncle" near-miss as a candidate, even though full phase data exists', () => {
+      // Regression test for a real report (system Stranaea BA-A g729, bodies "AB 2 a"/"AB 3"):
+      // nestedCollisionPartners' cheap prefilter (nestedRangeKm) is a loose periapsis/apoapsis
+      // bound that can't rule out a pair whose orbits merely pass *near* each other, only ones
+      // that provably never could. Once such a pair reached the exact search and it correctly
+      // found no actual contact, collisionStatusFor's fallback used to report isCandidate: true
+      // anyway with a misleading "can't be computed without mean-anomaly" status — even though
+      // every body here has complete phase data and the search ran to completion.
+      //
+      // Same fixture as the previous two tests, except 1 a's own reach is 800 km, not 1,000: at
+      // body 1/2's shared periapsis (separation ≈15,499.9 km, see above) that leaves the moon
+      // ≈14,699.9 km from body 2 — just outside body 2's 14,600 km radius, a ≈100 km near-miss
+      // rather than a hit.
+      const KM_PER_AU = 149597870.7;
+      const ts = { meanAnomaly: '2026-08-17T19:39:35Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-08-17T19:39:35Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Barycentre', id64: 0n, subType: '', type: BODY_TYPE.Barycentre } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const body1: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '1', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000468578213261962, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const body2: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '2', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 0.0000823957132312579, orbitalEccentricity: 0.198392, orbitalInclination: -4.164512,
+          argOfPeriapsis: 353.76807, ascendingNode: -100.3383, meanAnomaly: 233.703906,
+          orbitalPeriod: 0.283064148217593, radius: 14_600, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      // A short period (unlike the two hit-producing tests above, which reuse 10 days) keeps
+      // nestedContactWindows' scan — which must run to completion here, since no window is ever
+      // found — bounded to a reasonable horizon instead of the ~300-orbit span a long period
+      // would force. The moon's *position* at `nowHere` (and so whether it's a near-miss) only
+      // depends on meanAnomaly/argOfPeriapsis/semiMajorAxis/inclination, not on this period.
+      const moon1a: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '1 a', id64: 0n, subType: '', type: 'Planet',
+          semiMajorAxis: 800 / KM_PER_AU, orbitalEccentricity: 0,
+          argOfPeriapsis: 173.768076, ascendingNode: -100.3383, orbitalInclination: -4.164512,
+          meanAnomaly: 180, orbitalPeriod: 0.05, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: body1,
+      };
+      barycentre.subBodies = [body1, body2];
+      body1.subBodies = [moon1a];
+
+      // The loose cheap prefilter still lets this pair through (it can't see the ≈100 km miss),
+      // but the exact search must correctly resolve it as *not* a collision on either body's page.
+      expect(service.detectCollisionStatus(moon1a, nowHere).isCandidate).toBe(false);
+      expect(service.detectCollisionStatus(body2, nowHere).isCandidate).toBe(false);
+    });
+
+    it('flags two "cousin" moons colliding with each other (both composite motions superposed)', () => {
+      // Real orbital elements for Swoiwns TR-T b8-1 6/6a/6b/6aa/6ba: 6 a and 6 b are moons of gas
+      // giant 6 on crossing orbits, and each has its own sub-moon (6 a a orbits 6 a; 6 b a orbits
+      // 6 b). Verified offline (replicating this exact Kepler + superposition maths against the
+      // real Spansh data) that 6 a a and 6 b a's composite motions genuinely cross — dipping to
+      // ≈295 km apart against their ≈999 km combined radius — around day ≈215.7 from this epoch,
+      // independently of (and later than) 6 a a's own "aunt/uncle" contact with 6 b itself. This
+      // is only reachable by superposing *both* sides' own-orbit-plus-parent-orbit motion — see
+      // OrbitalRelationsCore.cousinCollisionPartners.
+      const ts = { meanAnomaly: '2026-03-31T02:37:13Z' } as CanonnBiostatsBody['timestamps'];
+      const nowHere = Date.parse('2026-03-31T02:37:13Z');
+      const grandparent: SystemBody = {
+        bodyData: { bodyId: 0, name: '6', id64: 0n, subType: '', type: BODY_TYPE.Planet } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const parentA: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '6 a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00415872553977889, orbitalEccentricity: 0.002453, orbitalInclination: 0.009772,
+          argOfPeriapsis: 72.842537, ascendingNode: -34.886632, meanAnomaly: 335.35625,
+          orbitalPeriod: 2.27556874354167, radius: 1123.50025, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      const parentB: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '6 b', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00416885891189136, orbitalEccentricity: 0.000488, orbitalInclination: 0.399202,
+          argOfPeriapsis: 230.161054, ascendingNode: 130.820341, meanAnomaly: 62.208231,
+          orbitalPeriod: 2.28389097309028, radius: 1322.5515, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      grandparent.subBodies = [parentA, parentB];
+      const cousinA: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '6 a a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.76673944880754e-5, orbitalEccentricity: 0, orbitalInclination: 67.988536,
+          argOfPeriapsis: 123.499656, ascendingNode: -107.265331, meanAnomaly: 221.680645,
+          orbitalPeriod: 0.234006676412037, radius: 497.94171875, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentA,
+      };
+      const cousinB: SystemBody = {
+        bodyData: {
+          bodyId: 4, name: '6 b a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.9282955161948e-5, orbitalEccentricity: 0, orbitalInclination: 30.492184,
+          argOfPeriapsis: 283.532484, ascendingNode: 85.343221, meanAnomaly: 287.320169,
+          orbitalPeriod: 0.211418109641204, radius: 501.53709375, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentB,
+      };
+      parentA.subBodies = [cousinA];
+      parentB.subBodies = [cousinB];
+
+      const windows = service.upcomingContactsWithin(cousinA, 220, nowHere);
+      const cousinWindow = windows.find(w => w.partnerName === '6 b a');
+      expect(cousinWindow).not.toBeUndefined();
+      expect(cousinWindow!.combinedRadiiKm).toBeCloseTo(999.4788125, 3);
+      expect(cousinWindow!.minSeparationKm).toBeLessThan(cousinWindow!.combinedRadiiKm!);
+      expect(cousinWindow!.days).toBeGreaterThan(200);
+      expect(cousinWindow!.days).toBeLessThan(230);
+    });
+
+    it('does not search a family branch whose own root siblings are radially-overlapping but 3D-apart', () => {
+      // A and B share a radial band (same semiMajorAxis) but a relative tilt holds their orbit
+      // curves apart in 3D — the exact fixture from "does not flag radially-overlapping orbits
+      // that a relative tilt holds 3D-apart" above, so A/B are a genuine non-candidate pair, not
+      // just "far apart" (which the existing cheap radial pre-filter already handles on its own).
+      // Each has a moon with a large-enough orbit that the per-candidate nestedPairOutOfReach
+      // reach filter alone would *not* reject a nested/cousin/niece-nephew search between them —
+      // only the new sibling-proximity gate does. Regression test for the "way too greedy" report:
+      // before this gate, every one of a body's siblings' whole moon families was searched
+      // regardless of whether that sibling was anywhere near it.
+      const star: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Star', id64: 0n, subType: '', type: BODY_TYPE.Star } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const ts = { meanAnomaly: '2026-01-01T00:00:00Z' } as CanonnBiostatsBody['timestamps'];
+      const bodyA: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: 'A', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 10, semiMajorAxis: 1, orbitalEccentricity: 0.001, radius: 3000,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: star,
+      };
+      const bodyB: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: 'B', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 11, semiMajorAxis: 1, orbitalEccentricity: 0.001, radius: 3000,
+          orbitalInclination: 60, ascendingNode: 90, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: star,
+      };
+      star.subBodies = [bodyA, bodyB];
+      expect(service.detectCollisionStatus(bodyA, Date.now()).isCandidate).toBe(false); // sanity: A/B don't collide
+      const moonA: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: 'A a', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 5, semiMajorAxis: 0.05, orbitalEccentricity: 0, radius: 1000,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: bodyA,
+      };
+      const moonB: SystemBody = {
+        bodyData: {
+          bodyId: 4, name: 'B a', id64: 0n, subType: '', type: 'Planet',
+          orbitalPeriod: 5, semiMajorAxis: 0.05, orbitalEccentricity: 0, radius: 1000,
+          orbitalInclination: 0, ascendingNode: 0, argOfPeriapsis: 0, meanAnomaly: 0, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: bodyB,
+      };
+      bodyA.subBodies = [moonA];
+      bodyB.subBodies = [moonB];
+
+      const priv = service as unknown as {
+        nestedCollisionPartners(body: SystemBody): unknown[];
+        cousinCollisionPartners(body: SystemBody): unknown[];
+        nieceNephewCollisionPartners(body: SystemBody): unknown[];
+      };
+      expect(priv.nestedCollisionPartners(moonA)).toEqual([]); // moonA vs aunt B
+      expect(priv.cousinCollisionPartners(moonA)).toEqual([]); // moonA vs cousin moonB (via aunt B)
+      expect(priv.nieceNephewCollisionPartners(bodyA)).toEqual([]); // A vs niece moonB (via sibling B)
+    });
+
+    /** The same real Swoiwns TR-T b8-1 6/6a/6b/6aa/6ba family used by the "cousin" test above. */
+    function swoiwnsFamily(): { grandparent: SystemBody; parentA: SystemBody; parentB: SystemBody; cousinA: SystemBody; cousinB: SystemBody } {
+      const ts = { meanAnomaly: '2026-03-31T02:37:13Z' } as CanonnBiostatsBody['timestamps'];
+      const grandparent: SystemBody = {
+        bodyData: { bodyId: 0, name: '6', id64: 0n, subType: '', type: BODY_TYPE.Planet } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const parentA: SystemBody = {
+        bodyData: {
+          bodyId: 1, name: '6 a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00415872553977889, orbitalEccentricity: 0.002453, orbitalInclination: 0.009772,
+          argOfPeriapsis: 72.842537, ascendingNode: -34.886632, meanAnomaly: 335.35625,
+          orbitalPeriod: 2.27556874354167, radius: 1123.50025, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      const parentB: SystemBody = {
+        bodyData: {
+          bodyId: 2, name: '6 b', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 0.00416885891189136, orbitalEccentricity: 0.000488, orbitalInclination: 0.399202,
+          argOfPeriapsis: 230.161054, ascendingNode: 130.820341, meanAnomaly: 62.208231,
+          orbitalPeriod: 2.28389097309028, radius: 1322.5515, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: grandparent,
+      };
+      grandparent.subBodies = [parentA, parentB];
+      const cousinA: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: '6 a a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.76673944880754e-5, orbitalEccentricity: 0, orbitalInclination: 67.988536,
+          argOfPeriapsis: 123.499656, ascendingNode: -107.265331, meanAnomaly: 221.680645,
+          orbitalPeriod: 0.234006676412037, radius: 497.94171875, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentA,
+      };
+      const cousinB: SystemBody = {
+        bodyData: {
+          bodyId: 4, name: '6 b a', id64: 0n, subType: '', type: BODY_TYPE.Planet,
+          semiMajorAxis: 1.9282955161948e-5, orbitalEccentricity: 0, orbitalInclination: 30.492184,
+          argOfPeriapsis: 283.532484, ascendingNode: 85.343221, meanAnomaly: 287.320169,
+          orbitalPeriod: 0.211418109641204, radius: 501.53709375, timestamps: ts,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: parentB,
+      };
+      parentA.subBodies = [cousinA];
+      parentB.subBodies = [cousinB];
+      return { grandparent, parentA, parentB, cousinA, cousinB };
+    }
+
+    it('detectCollisionStatuses matches a per-body detectCollisionStatus call for every body in the family', () => {
+      const { grandparent, parentA, parentB, cousinA, cousinB } = swoiwnsFamily();
+      const nowHere = Date.parse('2026-03-31T02:37:13Z');
+
+      const batch = service.detectCollisionStatuses(grandparent, nowHere);
+      const byName = new Map<string, SystemBody>([
+        ['6', grandparent], ['6 a', parentA], ['6 b', parentB], ['6 a a', cousinA], ['6 b a', cousinB],
+      ]);
+      const flatOrder = ['6', '6 a', '6 a a', '6 b', '6 b a']; // depth-first, matching flattenSystem
+      expect(batch.length).toBe(flatOrder.length);
+      flatOrder.forEach((name, i) => {
+        expect(batch[i]).toEqual(service.detectCollisionStatus(byName.get(name)!, nowHere));
+      });
+      // Sanity: the real pairs found earlier are still all present in the batch.
+      expect(batch.find((_, i) => flatOrder[i] === '6 a')!.partnerName).toBe('6 b');
+      expect(batch.find((_, i) => flatOrder[i] === '6 a a')!.upcomingCollisions.some(w => w.partnerName === '6 b a')).toBe(true);
+      // Genuinely slow: the batch call plus five more independent full (Infinity-horizon) searches
+      // over the real Swoiwns data, each ~1-2s (see the perf investigation this fixture also backs).
+    }, 30_000);
+
+    it('detectCollisionStatuses shares each pair\'s search once instead of once per body that discovers it', () => {
+      const { grandparent } = swoiwnsFamily();
+      const nowHere = Date.parse('2026-03-31T02:37:13Z');
+      // Warm up JIT/caches identically for both measurements before spying, so the comparison
+      // below reflects search-sharing, not incidental first-run cost.
+      service.detectCollisionStatuses(grandparent, nowHere);
+
+      const core = service as unknown as { nestedContactWindows(...args: unknown[]): unknown };
+      const spy = vi.spyOn(core, 'nestedContactWindows');
+      service.detectCollisionStatuses(grandparent, nowHere);
+      const batchCalls = spy.mock.calls.length;
+      spy.mockClear();
+
+      for (const body of [...grandparent.subBodies, ...grandparent.subBodies.flatMap(s => s.subBodies)]) {
+        service.detectCollisionStatus(body, nowHere);
+      }
+      const perBodyCalls = spy.mock.calls.length;
+      spy.mockRestore();
+
+      // Four unique pairs need nestedContactWindows (6aa↔6b, 6ba↔6a, 6aa↔6ba, plus the group-
+      // membership check doesn't use it); computed per-body that's up to 2x since each of the two
+      // moons' pairs is discovered from both sides.
+      expect(batchCalls).toBeGreaterThan(0);
+      expect(batchCalls).toBeLessThan(perBodyCalls);
+      // Genuinely slow: three full (Infinity-horizon) passes over the real Swoiwns data.
+    }, 60_000);
+
+    it('drops a contact window rather than fabricating an edge when the true contact outlasts half the synodic period', () => {
+      // Two identically-shaped, highly eccentric orbits (same semiMajorAxis/eccentricity, just
+      // out of phase via different periods) with a deliberately huge combined radius. Verified
+      // numerically (replicating this exact Kepler math offline): true separation at the shared
+      // conjunction (both at apoapsis, t=0) first exceeds this contactKm only at t≈+/-248.8 days —
+      // far past this pair's own maxSpanMs bound (half the ~166.7-day synodic period, ≈83.3 days).
+      // nextContacts must recognise it can't find that edge within its search bound and drop the
+      // window entirely, rather than reporting a fabricated boundary pinned at the search cap
+      // (the bug appendMinimumWindows'/contactCrossing's null-return path exists to prevent).
+      const nowHere = Date.parse('2026-06-27T00:00:00Z');
+      const shared = {
+        orbitalEccentricity: 0.9, semiMajorAxis: 1, argOfPeriapsis: 0, ascendingNode: 0,
+        orbitalInclination: 0, meanAnomaly: 180, timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      };
+      const [a, b] = makeFamily([
+        { ...shared, orbitalPeriod: 100, radius: 140_000_000 },
+        { ...shared, orbitalPeriod: 250, radius: 140_000_000 },
+      ]);
+
+      // A horizon comfortably covering the dropped conjunction's neighbourhood (well under the
+      // true, far-off exit at ~249 days) but nowhere near the next synodic recurrence (~167 days),
+      // so this conjunction is the only one in view — it must be dropped, not fabricated.
+      const windows = service.upcomingContactsWithin(a, 90, nowHere);
+      expect(windows).toEqual([]);
+    });
+
+    it('bounds the number of expensive edge searches for a nested pair whose contact genuinely outlasts one fast period', () => {
+      // Regression test for a real production slowdown: a "nested" moon-vs-sibling pair whose
+      // true contact duration exceeds nestedContactWindows' own search bound (one fast period —
+      // see the test above) used to re-run the full, equally fruitless edge search on *every*
+      // subsequent dense-scan sample still inside that same unresolved stretch, because a null
+      // (unresolved) edge was never recorded to de-duplicate against the way a resolved one is.
+      // For this exact setup that meant ~2,100 contactCrossing calls and ~24 seconds — appendMinimumWindows
+      // now reports back when an edge came back unresolved so the scan can suppress re-triggering
+      // until separation naturally rises back above the threshold, cutting this to ~300 calls.
+      const nowHere = Date.parse('2026-06-27T00:00:00Z');
+      const barycentre: SystemBody = {
+        bodyData: { bodyId: 0, name: 'Star', id64: 0n, subType: '', type: 'Star' } as CanonnBiostatsBody,
+        subBodies: [], parent: null,
+      };
+      const shared = {
+        orbitalEccentricity: 0.9, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0,
+        meanAnomaly: 180, semiMajorAxis: 1, timestamps: { meanAnomaly: '2026-06-27T00:00:00Z' } as any,
+      };
+      const bodyA: SystemBody = {
+        bodyData: { bodyId: 1, name: 'A', id64: 0n, subType: '', type: 'Planet', ...shared, orbitalPeriod: 100, radius: 0 } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      const bodyB: SystemBody = {
+        bodyData: { bodyId: 2, name: 'B', id64: 0n, subType: '', type: 'Planet', ...shared, orbitalPeriod: 250, radius: 140_000_000 } as CanonnBiostatsBody,
+        subBodies: [], parent: barycentre,
+      };
+      barycentre.subBodies = [bodyA, bodyB];
+      const moon: SystemBody = {
+        bodyData: {
+          bodyId: 3, name: 'A moon', id64: 0n, subType: '', type: 'Planet',
+          orbitalEccentricity: 0, argOfPeriapsis: 0, ascendingNode: 0, orbitalInclination: 0, meanAnomaly: 0,
+          semiMajorAxis: 100 / 149597870.7, orbitalPeriod: 1, radius: 140_000_000, timestamps: shared.timestamps,
+        } as CanonnBiostatsBody,
+        subBodies: [], parent: bodyA,
+      };
+      bodyA.subBodies = [moon];
+
+      const spy = vi.spyOn(Object.getPrototypeOf(service), 'contactCrossing' as any);
+      const status = service.detectCollisionStatus(moon, nowHere);
+
+      expect(status.isCandidate).toBe(true);
+      expect(spy.mock.calls.length).toBeLessThan(500);
+    });
   });
 
   describe('simultaneousCollisionsWithin', () => {
