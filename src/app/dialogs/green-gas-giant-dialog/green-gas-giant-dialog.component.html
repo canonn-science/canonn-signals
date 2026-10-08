@@ -1,0 +1,139 @@
+<app-dialog-shell [heading]="heading">
+  <div class="ggg-dialog">
+    <div class="verdict">
+      <p class="body-id">{{ data.bodyName }} — {{ data.subType }}</p>
+      @if (data.isCatalogued) {
+      <p class="catalogued">
+        Visited and <strong>confirmed green</strong>: this giant is in the Green Gas Giant catalogue.
+        The model's verdict: {{ verdictTitle }}.
+      </p>
+      }
+      <p>{{ detail }}</p>
+    </div>
+
+    <div class="diagram">
+      @if (diagram(); as d) {
+      <svg [attr.viewBox]="'0 0 ' + d.viewWidth + ' ' + d.viewHeight" class="ggg-ladder" role="img"
+        [attr.aria-label]="'Cloud-layer diagram for ' + data.bodyName + ': seven layers from '
+          + layerDisplay(d.rungs[0].temperature) + ' to ' + layerDisplay(d.rungs[6].temperature)
+          + ' kelvin, against the temperature band boundaries they are coloured from. '
+          + (d.isGreen ? 'One layer sits exactly on a boundary' : 'No layer sits on a boundary')
+          + (data.prediction.isGreen ? ', so the planet renders green.' : '.')">
+
+        <!-- The planet: one stripe per cloud layer, coloured by the band it falls in. A layer
+             on a boundary belongs to no band and keeps the renderer's default green. -->
+        <defs>
+          <clipPath id="ggg-planet-clip">
+            <circle [attr.cx]="d.planetCenterX" [attr.cy]="d.planetCenterY" [attr.r]="d.planetRadius" />
+          </clipPath>
+        </defs>
+        <g clip-path="url(#ggg-planet-clip)">
+          @for (stripe of d.stripes; track stripe.layer) {
+          <rect class="stripe" [class.stripe--hit]="stripe.isHit" [attr.data-band]="stripe.band"
+            [attr.x]="d.planetCenterX - d.planetRadius" [attr.y]="stripe.y"
+            [attr.width]="d.planetRadius * 2" [attr.height]="stripe.height" />
+          }
+        </g>
+        <!-- The edge glows only for a green verdict: an offset or rounded temperature can put a
+             layer on a boundary in this picture without the planet being green in game. -->
+        <circle class="planet-edge" [class.planet-edge--green]="data.prediction.isGreen" [attr.cx]="d.planetCenterX"
+          [attr.cy]="d.planetCenterY" [attr.r]="d.planetRadius" />
+
+        <!-- Band boundaries ("cracks") across the ladder. -->
+        @for (crack of d.cracks; track crack.temperature) {
+        <line class="crack" [class.crack--hit]="crack.isHit" [attr.x1]="d.lineLeft" [attr.x2]="d.lineRight"
+          [attr.y1]="crack.y" [attr.y2]="crack.y" />
+        <text class="axis-label" [attr.x]="d.lineLeft - 8" [attr.y]="crack.y + 4" text-anchor="end">
+          {{ crack.temperature }} K
+        </text>
+        }
+
+        @if (d.ceiling; as ceiling) {
+        <line class="ceiling" [attr.x1]="d.lineLeft" [attr.x2]="d.lineRight" [attr.y1]="ceiling.y"
+          [attr.y2]="ceiling.y" />
+        <text class="axis-label" [attr.x]="d.lineRight + 6" [attr.y]="ceiling.y + 4">
+          ceiling {{ ceiling.temperature }} K
+        </text>
+        }
+
+        @if (d.reach; as reach) {
+        <line class="reach" [attr.x1]="d.rungRight + 10" [attr.x2]="d.lineRight" [attr.y1]="reach.y"
+          [attr.y2]="reach.y" />
+        <text class="axis-label" [attr.x]="d.lineRight + 6" [attr.y]="reach.y + 4">reach</text>
+        }
+
+        <!-- The ladder's two stiles, spanning the lowest to the highest layer. -->
+        <line class="stile" [attr.x1]="d.rungLeft + 14" [attr.x2]="d.rungLeft + 14"
+          [attr.y1]="d.rungs[0].y" [attr.y2]="d.rungs[6].y" />
+        <line class="stile" [attr.x1]="d.rungRight - 14" [attr.x2]="d.rungRight - 14"
+          [attr.y1]="d.rungs[0].y" [attr.y2]="d.rungs[6].y" />
+
+        @for (rung of d.rungs; track rung.layer) {
+        <line class="rung" [class.rung--hit]="rung.isHit" [attr.x1]="d.rungLeft" [attr.x2]="d.rungRight"
+          [attr.y1]="rung.y" [attr.y2]="rung.y" />
+        <circle class="rung-dot" [class.rung-dot--hit]="rung.isHit"
+          [attr.cx]="(d.rungLeft + d.rungRight) / 2" [attr.cy]="rung.y" [attr.r]="rung.isHit ? 7 : 4" />
+        }
+      </svg>
+      }
+    </div>
+
+    <div class="numbers">
+      <strong>The numbers for this body</strong>
+      <dl>
+        <div><dt>Surface temperature</dt><dd>{{ layerDisplay(data.prediction.layers[0]) }} K</dd></div>
+        <div><dt>Bulk density</dt><dd>{{ densityDisplay }} kg/m³</dd></div>
+        <div><dt>Layer spacing</dt><dd>{{ data.prediction.step.toFixed(4) }} K</dd></div>
+        <div><dt>Ceiling</dt><dd>{{ data.prediction.ceiling }} K</dd></div>
+      </dl>
+      <p class="small">{{ spacingExplanation }}</p>
+    </div>
+
+    <div class="layers">
+      <strong>The seven cloud layers</strong>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Layer</th>
+            <th scope="col">Temperature</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (rung of diagram()!.rungs; track rung.layer) {
+          <tr [class.hit]="rung.isHit">
+            <td>{{ rung.layer }}@if (rung.layer === 1) {<span class="small"> (surface)</span>}</td>
+            <td class="num">{{ layerDisplay(rung.temperature) }} K</td>
+            <td class="small">{{ layerNote(rung.layer) }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="explainer">
+      <strong>How this works</strong>
+      <p>
+        Every gas giant is drawn with seven cloud layers, each coloured from a chart of temperature
+        bands. A layer exactly on the boundary between two bands matches neither, gets no colour, and
+        keeps the renderer's default: pure green. That is a Green Gas Giant.
+      </p>
+      <p>
+        The layers are evenly spaced from the surface temperature up to the lower of two limits: how far
+        they can reach, set by surface temperature and bulk density, or a fixed ceiling for the
+        temperature band. Some classes also keep the spacing within a fixed range.
+      </p>
+      <p class="small">
+        The match must be exact to about seven significant digits: a layer the smallest possible gap
+        off a boundary renders normally. Some classes also get a random temperature offset first, which
+        no public data records, so for those the model can only narrow it down.
+      </p>
+      <p class="small credit">
+        Cloud-layer model by <strong>CMDRs Arcanic and Regza</strong>, Green Gas Giant catalogue by
+        <strong>CMDR Arcanic</strong> —
+        <a href="https://ed-ggg.github.io/edggg/densitydemo.html" target="_blank" rel="noopener noreferrer">
+          how a GGG happens</a>.
+      </p>
+    </div>
+  </div>
+</app-dialog-shell>

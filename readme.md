@@ -50,4 +50,5 @@ The RegionMap is used from https://github.com/klightspeed/EliteDangerousRegionMa
 * CMDR Chewcat1 for invisible ring research
 * CMDR Vithigar / [Elite Observatory](https://observatory.xjph.net/) for cross-checking orbital collision and synodic-period calculations
 * CMDR Esvandiary for [EDTS](https://bitbucket.org/Esvandiary/edts) used for procedurally-generated region naming
-* CMDR Arcanic for the [Green Gas Giant](https://ed-ggg.github.io/edggg/) reference images
+* CMDR Arcanic for the [Green Gas Giant](https://ed-ggg.github.io/edggg/) catalogue and reference images
+* CMDRs Arcanic and Regza for the [cloud-layer model](https://ed-ggg.github.io/edggg/densitydemo.html) behind the Green Gas Giant detection

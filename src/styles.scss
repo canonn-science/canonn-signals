@@ -92,6 +92,28 @@ $dark-theme: mat.m2-define-dark-theme((color: (primary: mat.m2-define-palette(ma
   --color-illum-day: #f3c969;
   --color-illum-night: #1b2233;
 
+  /* Green Gas Giant cloud-layer diagram. The band fills are illustrative only — the
+     game's real per-band palette isn't public — and run coldest (0) to hottest (7).
+     `--color-ggg-green` is the renderer's default green a layer keeps when it lands on
+     a band boundary and so matches no band at all; it's the one colour here that is
+     meant to be literal. */
+  --color-ggg-band-0: #e4d6bd;
+  --color-ggg-band-1: #d2b893;
+  --color-ggg-band-2: #bf9a72;
+  --color-ggg-band-3: #a98468;
+  --color-ggg-band-4: #9b8f86;
+  --color-ggg-band-5: #857a73;
+  --color-ggg-band-6: #6f645e;
+  --color-ggg-band-7: #5c534e;
+  --color-ggg-green: #2fd35b;
+
+  /* Neon green glow for the Green Gas Giant badge — three stacked, progressively wider
+     and fainter halos. */
+  --color-ggg-glow: #7cff8a;
+  --color-ggg-glow-strong: rgba(124, 255, 138, 0.9);
+  --color-ggg-glow-mid: rgba(80, 255, 120, 0.6);
+  --color-ggg-glow-faint: rgba(60, 255, 100, 0.4);
+
   /* Geometry for the body-tree connector lines (drawn with pseudo-elements).
      Deriving every offset from these keeps the elbows aligned if they change. */
   --tree-color: var(--color-surface);

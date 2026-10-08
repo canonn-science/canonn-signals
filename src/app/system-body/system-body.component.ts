@@ -5,6 +5,7 @@ import { faCircleChevronRight, faCircleQuestion, faInfo, faSquareCaretDown, faSq
 import { AppService, CanonnCodexEntry } from '../app.service';
 import { BodyImage } from '../data/body-images';
 import { getGreenGasGiantImagePath, isGreenGasGiant } from '../data/green-gas-giant-images';
+import { GreenGasGiantPrediction, predictGreenGasGiant } from '../data/green-gas-giant-prediction';
 import { MINING_RESOURCES } from '../data/mining-resources';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
@@ -31,6 +32,7 @@ import type { OrbitalDiagramType, OrbitElements } from '../dialogs/orbital-diagr
 import type { TidalLockDialogData } from '../dialogs/tidal-lock-dialog/tidal-lock-dialog.component';
 import type { InvisibleRingDialogData } from '../dialogs/invisible-ring-dialog/invisible-ring-dialog.component';
 import type { RingClassificationDialogData } from '../dialogs/ring-classification-dialog/ring-classification-dialog.component';
+import type { GreenGasGiantDialogData } from '../dialogs/green-gas-giant-dialog/green-gas-giant-dialog.component';
 import type { ApoPeriDialogData } from '../dialogs/apo-peri-dialog/apo-peri-dialog.component';
 import type { AnomalyDialogData } from '../dialogs/anomaly-dialog/anomaly-dialog.component';
 import type { ParentDistanceDialogData } from '../dialogs/parent-distance-dialog/parent-distance-dialog.component';
@@ -342,6 +344,7 @@ export class SystemBodyComponent implements OnChanges {
     this.getParentDistanceKm.set(this.calculateParentDistanceKm());
     this.getRocheExcess.set(this.calculateRocheExcess());
     this.getStellarAgeAssessment.set(this.computeStellarAgeAssessment());
+    this.getGreenGasGiantPrediction.set(predictGreenGasGiant(body.bodyData));
 
     this.bodyCoronaImage = "";
     this.bodyImage = "";
@@ -739,6 +742,84 @@ export class SystemBodyComponent implements OnChanges {
   /** Whether this body is a catalogued Green Gas Giant (drives the glowing-green label style). */
   public isDisplayGreenGasGiant(): boolean {
     return isGreenGasGiant(this.body().bodyData.name);
+  }
+
+  /**
+   * Badge text for the Green Gas Giant status, or null for no badge.
+   *
+   * Only catalogued bodies and the rare model outcomes earn a badge: a predicted hit
+   * ("Candidate", since only a visit confirms it) or a near miss. The verdicts that leave
+   * it open (`possible`, `unpredictable`, `imprecise`) get **none**: together they cover
+   * roughly 30% of all gas giants and would drown the real finds. Any gas giant's subtype
+   * label still opens the dialog that explains them.
+   */
+  public greenGasGiantBadge(): string | null {
+    // A catalogued body carries its whole classification in the badge — the title row
+    // renders no separate subType label for it (see the template), so this is the only
+    // place that text appears.
+    if (this.isDisplayGreenGasGiant()) { return this.getDisplaySubType(); }
+    const prediction = this.getGreenGasGiantPrediction();
+    if (!prediction) { return null; }
+    switch (prediction.verdict) {
+      case 'green':
+      case 'green-unless-nudged':
+        return 'Green Gas Giant Candidate';
+      case 'near-miss':
+        return 'Green Gas Giant Near Miss';
+      default:
+        return null;
+    }
+  }
+
+  /** Tooltip for the Green Gas Giant badge. */
+  public greenGasGiantBadgeTooltip(): string {
+    const prediction = this.getGreenGasGiantPrediction();
+    if (this.isDisplayGreenGasGiant()) {
+      return 'Confirmed green by a visit and listed in the Green Gas Giant catalogue. '
+        + 'Click for the cloud-layer breakdown.';
+    }
+    if (prediction?.verdict === 'near-miss') {
+      return 'A cloud layer only just misses a temperature band boundary; rounding in the scan '
+        + 'data could be hiding a green giant. Click for the breakdown.';
+    }
+    const caveat = prediction?.nudge === 'possible'
+      ? ', unless a random temperature offset moved it'
+      : '';
+    return `Predicted green: a cloud layer sits exactly on a temperature band boundary${caveat}. `
+      + 'Click for the breakdown.';
+  }
+
+  /**
+   * Whether the badge is the neutral "near miss" one rather than a green find. Drives the
+   * badge colour: a near miss is a hint to go and look, not a result.
+   */
+  public isGreenGasGiantNearMiss(): boolean {
+    return !this.isDisplayGreenGasGiant()
+      && this.getGreenGasGiantPrediction()?.verdict === 'near-miss';
+  }
+
+  /**
+   * Opens the cloud-layer explanation for this gas giant. Available from any gas giant's
+   * subtype label, not just the ones that earn a badge, so a commander can see where a
+   * giant's layers fell relative to the band boundaries either way.
+   */
+  public async showGreenGasGiantDialog(): Promise<void> {
+    const prediction = this.getGreenGasGiantPrediction();
+    if (!prediction) { return; }
+    const bodyData = this.body().bodyData;
+    openLazyDialog(this.dialog, {
+      loader: () => import('../dialogs/green-gas-giant-dialog/green-gas-giant-dialog.component')
+        .then(m => m.GreenGasGiantDialogComponent),
+      skeleton: 'diagram',
+      width: '760px',
+      maxWidth: '95vw',
+      data: {
+        bodyName: bodyData.name,
+        subType: bodyData.subType,
+        prediction,
+        isCatalogued: isGreenGasGiant(bodyData.name),
+      } satisfies GreenGasGiantDialogData,
+    });
   }
 
   /** Opens the white-dwarf spectral-type reference modal, highlighting this star's type. */
@@ -2201,6 +2282,7 @@ export class SystemBodyComponent implements OnChanges {
   public readonly getChildrenExpandedState = signal<boolean>(false);
   public readonly getRocheExcess = signal<number | null>(null);
   public readonly getStellarAgeAssessment = signal<StellarAgeAssessment | null>(null);
+  public readonly getGreenGasGiantPrediction = signal<GreenGasGiantPrediction | null>(null);
 
   /** Assesses the star's age against its spectral / luminosity class, or null for non-stars. */
   private computeStellarAgeAssessment(): StellarAgeAssessment | null {

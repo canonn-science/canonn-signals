@@ -362,14 +362,25 @@
     font-size: 0.8em
 }
 
-// Green Gas Giant classification label: a neon-green glow evoking the body's own
-// bioluminescent glow, distinguishing it from the plain subType text next to it.
-.glowing-green-gas-giant {
-    color: #7cff8a;
+// Green Gas Giant badge: a neon-green glow evoking the body's own bioluminescent glow.
+// Unlike the flat-fill badges above, this is a dark chip with a green outline and halo, so
+// it stands out as the rarest find in the title row. The outer box-shadow is the glow
+// proper; the inset repeats it faintly so the chip looks lit from within, not outlined.
+// A catalogued Green Gas Giant puts its whole classification in here ("Glowing green gas
+// giant with water-based life") and renders no separate subType label, so this one chip
+// carries the glow that label used to.
+.badge-ggg {
+    color: var(--color-ggg-glow);
+    background-color: var(--color-surface-3);
+    border: 1px solid var(--color-ggg-glow-mid);
     text-shadow:
-        0 0 4px rgba(124, 255, 138, 0.9),
-        0 0 10px rgba(80, 255, 120, 0.6),
-        0 0 18px rgba(60, 255, 100, 0.4);
+        0 0 4px var(--color-ggg-glow-strong),
+        0 0 10px var(--color-ggg-glow-mid);
+    box-shadow:
+        0 0 4px var(--color-ggg-glow-strong),
+        0 0 12px var(--color-ggg-glow-mid),
+        0 0 22px var(--color-ggg-glow-faint),
+        inset 0 0 6px var(--color-ggg-glow-faint);
 }
 
 .body-signal-data {

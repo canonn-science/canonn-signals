@@ -65,9 +65,12 @@ export const RESOLVED_GREEN_GAS_GIANTS: readonly ResolvedGreenGasGiant[] = [
     ...MANUAL_ADDITIONS,
 ];
 
+// Keyed by lowercase name; built reversed so a duplicate keeps its first entry, as `find` did.
+const BY_BODY_NAME = new Map([...RESOLVED_GREEN_GAS_GIANTS].reverse().map(g => [g.body.toLowerCase(), g]));
+
 /** The catalogued Green Gas Giant matching `bodyName`, or `null` if it isn't one. */
 export function findGreenGasGiant(bodyName: string): ResolvedGreenGasGiant | null {
-    return RESOLVED_GREEN_GAS_GIANTS.find(g => g.body.toLowerCase() === bodyName.toLowerCase()) ?? null;
+    return BY_BODY_NAME.get(bodyName.toLowerCase()) ?? null;
 }
 
 /** Whether `bodyName` is a catalogued Green Gas Giant. */

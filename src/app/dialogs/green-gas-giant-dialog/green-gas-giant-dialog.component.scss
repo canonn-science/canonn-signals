@@ -1,0 +1,193 @@
+.ggg-dialog {
+    .verdict {
+        margin-bottom: 16px;
+        line-height: 1.6;
+    }
+
+    .body-id {
+        margin: 0 0 10px;
+        color: var(--color-text-subtle);
+        font-size: 0.9em;
+    }
+
+    .catalogued {
+        margin-bottom: 10px;
+        padding: 12px;
+        background: var(--color-callout-success-bg);
+        border-left: 4px solid var(--color-callout-success-border);
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    .diagram {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .ggg-ladder {
+        width: 100%;
+        max-width: 620px;
+        height: auto;
+        background: var(--color-surface-2);
+        border-radius: 8px;
+        padding: 12px;
+
+        // The stripes are the illustrative band palette; a layer that matched no band at
+        // all is the green one, which is the single literal colour in the picture.
+        .stripe {
+            &[data-band="0"] { fill: var(--color-ggg-band-0); }
+            &[data-band="1"] { fill: var(--color-ggg-band-1); }
+            &[data-band="2"] { fill: var(--color-ggg-band-2); }
+            &[data-band="3"] { fill: var(--color-ggg-band-3); }
+            &[data-band="4"] { fill: var(--color-ggg-band-4); }
+            &[data-band="5"] { fill: var(--color-ggg-band-5); }
+            &[data-band="6"] { fill: var(--color-ggg-band-6); }
+            &[data-band="7"] { fill: var(--color-ggg-band-7); }
+
+            // No `data-band` at all: the layer is on a boundary and belongs to no band.
+            &:not([data-band]),
+            &.stripe--hit {
+                fill: var(--color-ggg-green);
+            }
+        }
+
+        .planet-edge {
+            fill: none;
+            stroke: var(--color-border-muted);
+            stroke-width: 1;
+            vector-effect: non-scaling-stroke;
+
+            &.planet-edge--green {
+                stroke: var(--color-ggg-green);
+                stroke-width: 3;
+            }
+        }
+
+        .crack {
+            stroke: var(--color-text-subtle);
+            stroke-width: 1.5;
+            stroke-dasharray: 5 4;
+
+            &.crack--hit {
+                stroke: var(--color-ggg-green);
+                stroke-width: 2.5;
+                stroke-dasharray: none;
+            }
+        }
+
+        .ceiling {
+            stroke: var(--color-text-muted);
+            stroke-width: 1;
+            stroke-dasharray: 6 4;
+        }
+
+        .reach {
+            stroke: var(--color-text-muted);
+            stroke-width: 1;
+        }
+
+        .stile,
+        .rung {
+            stroke: var(--color-text);
+            stroke-width: 2;
+        }
+
+        .rung--hit {
+            stroke: var(--color-ggg-green);
+            stroke-width: 5;
+        }
+
+        .rung-dot {
+            fill: var(--color-text);
+
+            &.rung-dot--hit {
+                fill: var(--color-ggg-green);
+            }
+        }
+
+        .axis-label {
+            fill: var(--color-text-subtle);
+            font-size: 12px;
+        }
+    }
+
+    .numbers,
+    .layers,
+    .explainer {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .numbers dl {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+        margin: 8px 0;
+    }
+
+    .numbers dt {
+        color: var(--color-text-subtle);
+        font-size: 0.85em;
+    }
+
+    .numbers dd {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .layers table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+    }
+
+    .layers th,
+    .layers td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--color-surface-5);
+    }
+
+    .layers th {
+        color: var(--color-text-subtle);
+        font-size: 0.85em;
+        font-weight: 600;
+    }
+
+    .layers tr:last-child td {
+        border-bottom: none;
+    }
+
+    .layers tr.hit td {
+        color: var(--color-ggg-green);
+        font-weight: 600;
+    }
+
+    .num {
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+    }
+
+    .small {
+        font-size: 0.85em;
+        color: var(--color-text-subtle);
+    }
+
+    .layers tr.hit td.small {
+        color: var(--color-ggg-green);
+    }
+
+    .explainer p {
+        margin-bottom: 8px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .credit {
+        padding-top: 8px;
+        border-top: 1px solid var(--color-surface-5);
+    }
+}

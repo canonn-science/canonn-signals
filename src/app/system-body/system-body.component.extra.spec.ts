@@ -248,11 +248,99 @@ describe('SystemBodyComponent (extended coverage)', () => {
       expect(component.getDisplaySubType()).toBe('Class I gas giant');
     });
 
-    it('flags a catalogued body for the glowing-green label style', () => {
+    it('flags a catalogued body for the glowing-green badge style', () => {
       render(makeBody({ name: 'Systimbu WJ-R e4-720 10', subType: 'Class I gas giant' }));
       expect(component.isDisplayGreenGasGiant()).toBe(true);
       render(makeBody({ name: 'Sol 1', subType: 'Class I gas giant' }));
       expect(component.isDisplayGreenGasGiant()).toBe(false);
+    });
+  });
+
+  describe('Green Gas Giant badge', () => {
+    /** M17 Sector CF-Y c1-23 2's real scan values — predicted green, not catalogued. */
+    const predictedGreen = {
+      name: 'Uncatalogued Giant 2', subType: 'Class I gas giant',
+      surfaceTemperature: 133.998352, earthMasses: 220.366837, radius: 66635.716,
+    };
+
+    it('shows a catalogued body\'s full classification in the badge, so the title needs no separate label', () => {
+      render(makeBody({ name: 'Aemonz UT-R d4-36 10 a', subType: 'Gas giant with water-based life' }));
+      expect(component.greenGasGiantBadge()).toBe('Glowing green gas giant with water-based life');
+      expect(component.isGreenGasGiantNearMiss()).toBe(false);
+      // The template suppresses the subType span for exactly this case.
+      expect(fixture.nativeElement.textContent).toContain('Glowing green gas giant with water-based life');
+    });
+
+    it('labels an uncatalogued predicted giant as a candidate', () => {
+      render(makeBody(predictedGreen));
+      expect(component.greenGasGiantBadge()).toBe('Green Gas Giant Candidate');
+      expect(component.isGreenGasGiantNearMiss()).toBe(false);
+      expect(component.getGreenGasGiantPrediction()?.verdict).toBe('green');
+    });
+
+    it('labels a near miss distinctly and styles it as the neutral badge', () => {
+      // Plaa Eurk CA-P d6-6 ABC 1 — one float32 step off the 270 K boundary.
+      render(makeBody({
+        name: 'Plaa Eurk CA-P d6-6 ABC 1', subType: 'Class I gas giant',
+        surfaceTemperature: 125.288841, earthMasses: 195.145721, radius: 68355.944,
+      }));
+      expect(component.greenGasGiantBadge()).toBe('Green Gas Giant Near Miss');
+      expect(component.isGreenGasGiantNearMiss()).toBe(true);
+    });
+
+    it('shows no badge for the common "a random offset decides it" verdicts', () => {
+      // `possible` and `unpredictable` between them cover ~30% of all gas giants, so a
+      // badge for either would bury the real finds.
+      render(makeBody({
+        name: 'Nudged Giant', subType: 'Class II gas giant',
+        surfaceTemperature: 166.724182, earthMasses: 95.072899, radius: 52542.176,
+      }));
+      expect(component.getGreenGasGiantPrediction()?.verdict).toBe('unpredictable');
+      expect(component.greenGasGiantBadge()).toBeNull();
+
+      render(makeBody({
+        name: 'Maybe Giant', subType: 'Class I gas giant',
+        surfaceTemperature: 120.72538, earthMasses: 83.17791, radius: 57642.944,
+      }));
+      expect(component.getGreenGasGiantPrediction()?.verdict).toBe('possible');
+      expect(component.greenGasGiantBadge()).toBeNull();
+    });
+
+    it('shows no badge, and no prediction, for a body that is not a gas giant', () => {
+      render(makeBody({ name: 'Rock 1', subType: 'High metal content world', surfaceTemperature: 300, earthMasses: 1, radius: 6371 }));
+      expect(component.getGreenGasGiantPrediction()).toBeNull();
+      expect(component.greenGasGiantBadge()).toBeNull();
+    });
+
+    it('makes no prediction for a gas giant missing the mass or radius the ladder needs', () => {
+      render(makeBody({ name: 'Unscanned Giant', subType: 'Class I gas giant', surfaceTemperature: 130 }));
+      expect(component.getGreenGasGiantPrediction()).toBeNull();
+      expect(component.greenGasGiantBadge()).toBeNull();
+    });
+
+    it('opens the explanation dialog with this body\'s prediction', async () => {
+      render(makeBody(predictedGreen));
+      await component.showGreenGasGiantDialog();
+      expect(dialogOpenCalls).toBe(1);
+      const data = lastDialogData();
+      expect(data.bodyName).toBe('Uncatalogued Giant 2');
+      expect(data.subType).toBe('Class I gas giant');
+      expect(data.isCatalogued).toBe(false);
+      expect(data.prediction.verdict).toBe('green');
+      expect(data.prediction.hitLayer).toBe(6);
+    });
+
+    it('tells the dialog when the body is a confirmed, catalogued find', async () => {
+      render(makeBody({ name: 'Aemonz UT-R d4-36 10 a', subType: 'Gas giant with water-based life',
+        surfaceTemperature: 176.666702, earthMasses: 408.532623, radius: 75062.848 }));
+      await component.showGreenGasGiantDialog();
+      expect(lastDialogData().isCatalogued).toBe(true);
+    });
+
+    it('does not open the dialog for a body with no prediction', async () => {
+      render(makeBody({ name: 'Rock 1', subType: 'Icy body' }));
+      await component.showGreenGasGiantDialog();
+      expect(dialogOpenCalls).toBe(0);
     });
   });
 
