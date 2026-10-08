@@ -12,7 +12,33 @@
 }
 
 .region-map-slot {
+    position: relative;
     width: 100%;
+}
+
+.region-map-skip-link {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    padding: 0.4rem 0.6rem;
+    border: 2px solid var(--color-accent);
+    border-radius: 4px;
+    background: var(--color-surface-3);
+    color: var(--color-white);
+    font: inherit;
+    cursor: pointer;
+    transform: translateY(-150%);
+}
+
+.region-map-skip-link:focus-visible {
+    transform: translateY(0);
+    outline: 3px solid var(--color-white);
+    outline-offset: 2px;
+}
+
+.region-map-skip-target {
+    position: absolute;
 }
 
 // Square placeholder matching the loaded map's footprint (square viewBox, rendered at 100% width
