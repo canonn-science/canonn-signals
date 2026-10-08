@@ -101,7 +101,7 @@ describe('GreenGasGiantDialogComponent', () => {
     const text: string = fixture.nativeElement.textContent;
     expect(fixture.componentInstance.heading).toBe('Confirmed Green Gas Giant');
     expect(text).toContain('confirmed green');
-    expect(text).toContain('The model\'s verdict: Predicted Green Gas Giant.');
+    expect(text).toContain('What the model makes of it:');
     expect(fixture.nativeElement.querySelector('.catalogued')).toBeTruthy();
   });
 
@@ -129,6 +129,16 @@ describe('GreenGasGiantDialogComponent', () => {
     expect(fixture.componentInstance.heading).toBe('Green Gas Giant: cannot be predicted');
     expect(fixture.componentInstance.detail).toContain('always gets a random temperature offset');
     expect(fixture.nativeElement.querySelectorAll('svg.ggg-ladder .rung')).toHaveLength(7);
+  });
+
+  it('does not title a body green when only a random offset could make it so', () => {
+    // Dryooe Groa QX-F c16 A 7 — no layer on a boundary, but its class may be nudged.
+    const fixture = setup(dialogData({
+      subType: 'Class I gas giant',
+      surfaceTemperature: 120.72538, earthMasses: 83.17791, radius: 57642.944,
+    }));
+    expect(fixture.componentInstance.heading).toBe('Green Gas Giant: depends on a random offset');
+    expect(fixture.componentInstance.heading).not.toContain('Possible');
   });
 
   it('explains a green-unless-nudged verdict as still green, with the caveat', () => {

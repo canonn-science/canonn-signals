@@ -31,7 +31,7 @@ const VERDICT_COPY: Readonly<Record<GreenGasGiantVerdict, { title: string; detai
       + 'Only a visit settles it.',
   },
   'possible': {
-    title: 'Possible Green Gas Giant',
+    title: 'Green Gas Giant: depends on a random offset',
     detail: 'No cloud layer sits on a band boundary, but this class can get a random temperature '
       + 'offset first, which could move one onto it. Only a visit settles it.',
   },
@@ -77,11 +77,7 @@ export class GreenGasGiantDialogComponent {
 
   /** The dialog title: the verdict itself, or "confirmed" for a catalogued body. */
   public get heading(): string {
-    return this.data.isCatalogued ? 'Confirmed Green Gas Giant' : this.verdictTitle;
-  }
-
-  public get verdictTitle(): string {
-    return VERDICT_COPY[this.data.prediction.verdict].title;
+    return this.data.isCatalogued ? 'Confirmed Green Gas Giant' : VERDICT_COPY[this.data.prediction.verdict].title;
   }
 
   public get detail(): string {
