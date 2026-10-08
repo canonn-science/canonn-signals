@@ -266,7 +266,6 @@ describe('SystemBodyComponent (extended coverage)', () => {
     it('shows a catalogued body\'s full classification in the badge, so the title needs no separate label', () => {
       render(makeBody({ name: 'Aemonz UT-R d4-36 10 a', subType: 'Gas giant with water-based life' }));
       expect(component.greenGasGiantBadge()).toBe('Glowing green gas giant with water-based life');
-      expect(component.isGreenGasGiantNearMiss()).toBe(false);
       // The template suppresses the subType span for exactly this case.
       expect(fixture.nativeElement.textContent).toContain('Glowing green gas giant with water-based life');
     });
@@ -274,18 +273,17 @@ describe('SystemBodyComponent (extended coverage)', () => {
     it('labels an uncatalogued predicted giant as a candidate', () => {
       render(makeBody(predictedGreen));
       expect(component.greenGasGiantBadge()).toBe('Green Gas Giant Candidate');
-      expect(component.isGreenGasGiantNearMiss()).toBe(false);
       expect(component.getGreenGasGiantPrediction()?.verdict).toBe('green');
     });
 
-    it('labels a near miss distinctly and styles it as the neutral badge', () => {
-      // Plaa Eurk CA-P d6-6 ABC 1 — one float32 step off the 270 K boundary.
+    it('shows no badge for a near miss, which the published model ruled out', () => {
+      // Plaa Eurk CA-P d6-6 ABC 1 — one float32 step off the 270 K boundary, but not green.
       render(makeBody({
         name: 'Plaa Eurk CA-P d6-6 ABC 1', subType: 'Class I gas giant',
         surfaceTemperature: 125.288841, earthMasses: 195.145721, radius: 68355.944,
       }));
-      expect(component.greenGasGiantBadge()).toBe('Green Gas Giant Near Miss');
-      expect(component.isGreenGasGiantNearMiss()).toBe(true);
+      expect(component.getGreenGasGiantPrediction()?.verdict).toBe('not-green');
+      expect(component.greenGasGiantBadge()).toBeNull();
     });
 
     it('shows no badge for the common "a random offset decides it" verdicts', () => {

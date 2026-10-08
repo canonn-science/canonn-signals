@@ -309,10 +309,10 @@ describe('predictGreenGasGiant — the random nudge', () => {
 });
 
 describe('predictGreenGasGiant — near misses', () => {
-  // The published model ruled these two out by checking the journal's 8-digit gravity
-  // against the mass/radius rounding. Leamiae 9 was then visited: it is not green. So
-  // `near-miss` must stay a "worth a second look", never a green claim.
-  it('flags a density-driven ladder that misses by a single float32 step', () => {
+  // Plaa Eurk CA-P d6-6 ABC 1 and Leamiae IQ-O c22-1431 9 miss 270 K by a single float32
+  // step. The published model ruled both out using the journal's 8-digit gravity, and
+  // Leamiae 9 was visited: it is not green. So a miss this close is still just a miss.
+  it('calls a ladder that misses by a single float32 step not green', () => {
     for (const body of [
       giant({ surfaceTemperature: 125.288841, earthMasses: 195.145721, radius: 68355.944 }),
       giant({
@@ -321,7 +321,7 @@ describe('predictGreenGasGiant — near misses', () => {
       }),
     ]) {
       const prediction = predict(body);
-      expect(prediction.verdict).toBe('near-miss');
+      expect(prediction.verdict).toBe('not-green');
       expect(prediction.isGreen).toBe(false);
       expect(prediction.densityDriven).toBe(true);
       expect(prediction.nearest?.crack).toBe(270);
@@ -329,9 +329,7 @@ describe('predictGreenGasGiant — near misses', () => {
     }
   });
 
-  it('does not flag a ladder whose step the ceiling or a clamp fixed', () => {
-    // Capped by the ceiling: density can't move the layers, so a miss is final even if
-    // the arithmetic lands close.
+  it('reports the closest miss on a ceiling-capped ladder too', () => {
     const prediction = predict(giant({
       subType: 'Gas giant with water-based life',
       surfaceTemperature: 176.666626, earthMasses: 408.532623, radius: 75062.848,
@@ -340,12 +338,6 @@ describe('predictGreenGasGiant — near misses', () => {
     expect(prediction.densityDriven).toBe(false);
     expect(prediction.nearest?.ulps).toBe(1);
     expect(prediction.verdict).toBe('not-green');
-  });
-
-  it('does not flag an ordinary miss as a near miss', () => {
-    const prediction = predict(giant({ surfaceTemperature: 130, earthMasses: 58.582287, radius: 51913.968 }));
-    expect(prediction.verdict).toBe('not-green');
-    expect(prediction.nearest!.ulps).toBeGreaterThan(2);
   });
 });
 
@@ -516,7 +508,7 @@ describe('predictGreenGasGiant — specificity', () => {
   /**
    * The badge is only worth showing if it stays rare. An 18,000-body sample of real gas
    * giants drawn from Spansh (every giant subtype, nearest Sol first) produced exactly
-   * one `isGreen` body — and no `near-miss` at all. This test pins the behaviour that
+   * one `isGreen` body. This test pins the behaviour that
    * makes that possible: an ordinary giant, and small perturbations of a known GGG, must
    * not come back green.
    */

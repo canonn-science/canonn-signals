@@ -747,8 +747,8 @@ export class SystemBodyComponent implements OnChanges {
   /**
    * Badge text for the Green Gas Giant status, or null for no badge.
    *
-   * Only catalogued bodies and the rare model outcomes earn a badge: a predicted hit
-   * ("Candidate", since only a visit confirms it) or a near miss. The verdicts that leave
+   * Only catalogued bodies and predicted hits earn a badge ("Candidate", since only a
+   * visit confirms a prediction). The verdicts that leave
    * it open (`possible`, `unpredictable`, `imprecise`) get **none**: together they cover
    * roughly 30% of all gas giants and would drown the real finds. Any gas giant's subtype
    * label still opens the dialog that explains them.
@@ -758,17 +758,7 @@ export class SystemBodyComponent implements OnChanges {
     // renders no separate subType label for it (see the template), so this is the only
     // place that text appears.
     if (this.isDisplayGreenGasGiant()) { return this.getDisplaySubType(); }
-    const prediction = this.getGreenGasGiantPrediction();
-    if (!prediction) { return null; }
-    switch (prediction.verdict) {
-      case 'green':
-      case 'green-unless-nudged':
-        return 'Green Gas Giant Candidate';
-      case 'near-miss':
-        return 'Green Gas Giant Near Miss';
-      default:
-        return null;
-    }
+    return this.getGreenGasGiantPrediction()?.isGreen ? 'Green Gas Giant Candidate' : null;
   }
 
   /** Tooltip for the Green Gas Giant badge. */
@@ -778,24 +768,11 @@ export class SystemBodyComponent implements OnChanges {
       return 'Confirmed green by a visit and listed in the Green Gas Giant catalogue. '
         + 'Click for the cloud-layer breakdown.';
     }
-    if (prediction?.verdict === 'near-miss') {
-      return 'A cloud layer only just misses a temperature band boundary; rounding in the scan '
-        + 'data could be hiding a green giant. Click for the breakdown.';
-    }
     const caveat = prediction?.nudge === 'possible'
       ? ', unless a random temperature offset moved it'
       : '';
     return `Predicted green: a cloud layer sits exactly on a temperature band boundary${caveat}. `
       + 'Click for the breakdown.';
-  }
-
-  /**
-   * Whether the badge is the neutral "near miss" one rather than a green find. Drives the
-   * badge colour: a near miss is a hint to go and look, not a result.
-   */
-  public isGreenGasGiantNearMiss(): boolean {
-    return !this.isDisplayGreenGasGiant()
-      && this.getGreenGasGiantPrediction()?.verdict === 'near-miss';
   }
 
   /**

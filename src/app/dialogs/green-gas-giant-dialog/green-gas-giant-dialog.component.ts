@@ -47,12 +47,6 @@ const VERDICT_COPY: Readonly<Record<GreenGasGiantVerdict, { title: string; detai
       + 'and the model needs about six decimal places. The layers below use the whole number as '
       + 'given. Check the temperature in your own scan.',
   },
-  'near-miss': {
-    title: 'Green Gas Giant near miss',
-    detail: 'A cloud layer misses a band boundary by the smallest gap the game can store, or two. '
-      + 'Scans round mass and radius slightly, so the true values could still land it on the '
-      + 'boundary. Worth a look, though most near misses are not green.',
-  },
   'not-green': {
     title: 'Not a Green Gas Giant',
     detail: 'No cloud layer sits on a band boundary, and this class never gets a random '

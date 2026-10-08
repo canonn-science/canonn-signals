@@ -21,8 +21,7 @@
         }</span>
       }
       @if (greenGasGiantBadge(); as gggBadge) {
-      <span class="badge clickable" [class.badge-gray]="isGreenGasGiantNearMiss()"
-        [class.badge-ggg]="!isGreenGasGiantNearMiss()" [matTooltip]="greenGasGiantBadgeTooltip()"
+      <span class="badge badge-ggg clickable" [matTooltip]="greenGasGiantBadgeTooltip()"
         matTooltipClass="multiline-tooltip" (click)="showGreenGasGiantDialog()">{{ gggBadge }}</span>
       }
       @if (body().bodyData.atmosphereType || body().bodyData.atmosphereComposition || getWhiteDwarfAtmosphere()) {

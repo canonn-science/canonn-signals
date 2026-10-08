@@ -138,8 +138,6 @@ export type GreenGasGiantVerdict =
   | 'unpredictable'
   /** A whole-number temperature in a record that was rounded at source, too coarse to place the layers. */
   | 'imprecise'
-  /** Density-driven ladder whose closest layer misses a crack by one or two float32 steps. */
-  | 'near-miss'
   /** No layer hits a crack and the body is never nudged. */
   | 'not-green';
 
@@ -318,10 +316,6 @@ export function predictGreenGasGiant(body: GreenGasGiantCandidate): GreenGasGian
   let hitLayer: number | null = null;
   let hitCrack: number | null = null;
   let nearest: GreenGasGiantNearest | null = null;
-  // True when *any* layer above the surface comes within two float32 steps of a crack —
-  // not necessarily the closest one overall. Layer 1 is the surface temperature itself,
-  // which no rounding of mass or radius could move, so it never counts.
-  let hasCloseLayer = false;
   for (let layer = 0; layer < LAYER_COUNT; layer++) {
     const temperature = layers[layer];
     const crackIndex = cracks.indexOf(temperature);
@@ -344,7 +338,6 @@ export function predictGreenGasGiant(body: GreenGasGiantCandidate): GreenGasGian
           ulps: Math.round(delta / float32Ulp(crack)),
         };
       }
-      if (layer > 0 && delta <= 2 * float32Ulp(crack)) { hasCloseLayer = true; }
     }
   }
   if (hitLayer !== null) { nearest = null; }
@@ -353,7 +346,7 @@ export function predictGreenGasGiant(body: GreenGasGiantCandidate): GreenGasGian
   const nudge = nudgeFor(giant, surfaceTemp);
 
   const temperatureRounded = isRoundedTemperature(surfaceTemperature, body.atmosphereComposition);
-  const verdict = classify({ nudge, hasHit: hitLayer !== null, densityDriven, hasCloseLayer, temperatureRounded });
+  const verdict = classify({ nudge, hasHit: hitLayer !== null, temperatureRounded });
 
   return {
     verdict,
@@ -376,21 +369,14 @@ export function predictGreenGasGiant(body: GreenGasGiantCandidate): GreenGasGian
 function classify(input: {
   nudge: GreenGasGiantNudge;
   hasHit: boolean;
-  densityDriven: boolean;
-  hasCloseLayer: boolean;
   temperatureRounded: boolean;
 }): GreenGasGiantVerdict {
-  const { nudge, hasHit, densityDriven, hasCloseLayer, temperatureRounded } = input;
+  const { nudge, hasHit, temperatureRounded } = input;
   // An always-nudged body's own temperature is discarded before the ladder is built, so
   // whether its un-nudged layers hit a crack says nothing about the body in game.
   if (nudge === 'always') { return 'unpredictable'; }
   if (temperatureRounded) { return 'imprecise'; }
   if (hasHit) { return nudge === 'possible' ? 'green-unless-nudged' : 'green'; }
   if (nudge === 'possible') { return 'possible'; }
-  // Only meaningful for a density-driven ladder: there, a mass or radius slightly
-  // different from the rounded figures the API reports could still put the layer exactly
-  // on the crack. Where the ceiling or a step clamp set the step, density is irrelevant
-  // and a miss is a miss.
-  if (densityDriven && hasCloseLayer) { return 'near-miss'; }
   return 'not-green';
 }
