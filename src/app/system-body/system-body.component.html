@@ -11,10 +11,9 @@
            instead of here, so the rarest find in the system reads as one label, not two. -->
       @if (body().bodyData.subType && !isDisplayGreenGasGiant()) {
       <span>-</span>
-      <span [class.clickable]="getWhiteDwarfSpectralCode() || getGreenGasGiantPrediction()"
-        [matTooltip]="body().bodyData.speculative ? speculativeBodyTooltip : (getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : (getGreenGasGiantPrediction() ? 'Click to see whether this gas giant\'s cloud layers make it render green' : getSolidCompositionTooltip()))"
-        matTooltipClass="multiline-tooltip"
-        (click)="getWhiteDwarfSpectralCode() ? showWhiteDwarfSpectralDialog() : (getGreenGasGiantPrediction() && showGreenGasGiantDialog())">{{
+      <span [class.clickable]="getWhiteDwarfSpectralCode()"
+        [matTooltip]="body().bodyData.speculative ? speculativeBodyTooltip : (getWhiteDwarfSpectralCode() ? 'White dwarf spectral type — click for the full classification' : getSolidCompositionTooltip())"
+        matTooltipClass="multiline-tooltip" (click)="getWhiteDwarfSpectralCode() && showWhiteDwarfSpectralDialog()">{{
         getDisplaySubType() }}{{ body().bodyData.speculative ? '?' : '' }}@if (classifyNeutronStar()) {
         <span> ({{
           classifyNeutronStar() }})</span>

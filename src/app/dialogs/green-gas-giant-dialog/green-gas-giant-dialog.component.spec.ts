@@ -110,12 +110,15 @@ describe('GreenGasGiantDialogComponent', () => {
     expect(fixture.nativeElement.querySelector('.catalogued')).toBeNull();
   });
 
-  it('explains a not-green verdict and reports the closest approach instead of a hit', () => {
+  // The dialog opens only from a badge: for a candidate, or for a catalogued body, whose
+  // model verdict can be anything. The cases below are catalogued bodies for that reason.
+  it('reports the closest approach instead of a hit when no layer lands on a boundary', () => {
     const fixture = setup(dialogData({
       subType: 'Gas giant with water-based life',
       surfaceTemperature: 176.666626, earthMasses: 408.532623, radius: 75062.848,
-    }));
-    expect(fixture.componentInstance.heading).toBe('Not a Green Gas Giant');
+    }, { isCatalogued: true }));
+    expect(fixture.componentInstance.heading).toBe('Confirmed Green Gas Giant');
+    expect(fixture.componentInstance.detail).toContain('It renders normally');
     const text: string = fixture.nativeElement.textContent;
     expect(text).toContain('closest: 0.000031 K off the 270 K boundary, the smallest gap the game can store');
     expect(fixture.nativeElement.querySelector('.rung--hit')).toBeNull();
@@ -125,20 +128,20 @@ describe('GreenGasGiantDialogComponent', () => {
     const fixture = setup(dialogData({
       subType: 'Class II gas giant',
       surfaceTemperature: 166.724182, earthMasses: 95.072899, radius: 52542.176,
-    }));
-    expect(fixture.componentInstance.heading).toBe('Green Gas Giant: cannot be predicted');
+    }, { isCatalogued: true }));
+    expect(fixture.componentInstance.heading).toBe('Confirmed Green Gas Giant');
     expect(fixture.componentInstance.detail).toContain('always gets a random temperature offset');
     expect(fixture.nativeElement.querySelectorAll('svg.ggg-ladder .rung')).toHaveLength(7);
   });
 
-  it('does not title a body green when only a random offset could make it so', () => {
+  it('explains a possible verdict as a random offset deciding it', () => {
     // Dryooe Groa QX-F c16 A 7 — no layer on a boundary, but its class may be nudged.
     const fixture = setup(dialogData({
       subType: 'Class I gas giant',
       surfaceTemperature: 120.72538, earthMasses: 83.17791, radius: 57642.944,
-    }));
-    expect(fixture.componentInstance.heading).toBe('Green Gas Giant: depends on a random offset');
-    expect(fixture.componentInstance.heading).not.toContain('Possible');
+    }, { isCatalogued: true }));
+    expect(fixture.componentInstance.heading).toBe('Confirmed Green Gas Giant');
+    expect(fixture.componentInstance.detail).toContain('could move one onto it');
   });
 
   it('explains a green-unless-nudged verdict as still green, with the caveat', () => {
@@ -156,8 +159,8 @@ describe('GreenGasGiantDialogComponent', () => {
       subType: 'Gas giant with water-based life',
       surfaceTemperature: 158, earthMasses: 639.976929, radius: 77196.584,
       atmosphereComposition: { Helium: 26.31, Hydrogen: 73.62, Oxygen: 0.07 },
-    }));
-    expect(fixture.componentInstance.heading).toBe('Green Gas Giant: temperature too rounded');
+    }, { isCatalogued: true }));
+    expect(fixture.componentInstance.heading).toBe('Confirmed Green Gas Giant');
     expect(fixture.componentInstance.detail).toContain('Check the temperature in your own scan');
     // The rounded value still puts a layer on 210 K in the picture, but that is not a green verdict.
     const svg: SVGElement = fixture.nativeElement.querySelector('svg.ggg-ladder');

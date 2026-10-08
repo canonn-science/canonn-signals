@@ -17,38 +17,35 @@ export interface GreenGasGiantDialogData {
   isCatalogued: boolean;
 }
 
-/** Title + explanation shown for each verdict, independent of any one body. */
-const VERDICT_COPY: Readonly<Record<GreenGasGiantVerdict, { title: string; detail: string }>> = {
+/**
+ * Explanation shown for each verdict, independent of any one body. Every verdict needs one:
+ * the dialog opens for candidates and for catalogued bodies, which can have any verdict.
+ */
+const VERDICT_COPY: Readonly<Record<GreenGasGiantVerdict, { detail: string }>> = {
   'green': {
-    title: 'Predicted Green Gas Giant',
     detail: 'A cloud layer sits exactly on a band boundary, and this class never gets a random '
       + 'temperature offset. Expect it to render green.',
   },
   'green-unless-nudged': {
-    title: 'Predicted Green Gas Giant, unless nudged',
     detail: 'A cloud layer sits exactly on a band boundary, so it should render green. But this '
       + 'class can get a random temperature offset first, which would move the layer off it. '
       + 'Only a visit settles it.',
   },
   'possible': {
-    title: 'Green Gas Giant: depends on a random offset',
     detail: 'No cloud layer sits on a band boundary, but this class can get a random temperature '
       + 'offset first, which could move one onto it. Only a visit settles it.',
   },
   'unpredictable': {
-    title: 'Green Gas Giant: cannot be predicted',
     detail: 'This class always gets a random temperature offset before its layers are built, and '
       + 'no public data records it. The layers below are the starting point before that offset, '
       + 'not a prediction.',
   },
   'imprecise': {
-    title: 'Green Gas Giant: temperature too rounded',
     detail: 'The recorded temperature is a whole number in a record that was rounded at source, '
       + 'and the model needs about six decimal places. The layers below use the whole number as '
       + 'given. Check the temperature in your own scan.',
   },
   'not-green': {
-    title: 'Not a Green Gas Giant',
     detail: 'No cloud layer sits on a band boundary, and this class never gets a random '
       + 'temperature offset. It renders normally.',
   },
@@ -75,9 +72,12 @@ export class GreenGasGiantDialogComponent {
 
   public readonly diagram = computed(() => greenGasGiantLadderDiagram(this.data.prediction));
 
-  /** The dialog title: the verdict itself, or "confirmed" for a catalogued body. */
+  /** The dialog title. It only opens for a catalogued body or a candidate, from its badge. */
   public get heading(): string {
-    return this.data.isCatalogued ? 'Confirmed Green Gas Giant' : VERDICT_COPY[this.data.prediction.verdict].title;
+    if (this.data.isCatalogued) { return 'Confirmed Green Gas Giant'; }
+    return this.data.prediction.verdict === 'green-unless-nudged'
+      ? 'Predicted Green Gas Giant, unless nudged'
+      : 'Predicted Green Gas Giant';
   }
 
   public get detail(): string {

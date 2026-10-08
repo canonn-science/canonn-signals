@@ -750,8 +750,7 @@ export class SystemBodyComponent implements OnChanges {
    * Only catalogued bodies and predicted hits earn a badge ("Candidate", since only a
    * visit confirms a prediction). The verdicts that leave
    * it open (`possible`, `unpredictable`, `imprecise`) get **none**: together they cover
-   * roughly 30% of all gas giants and would drown the real finds. Any gas giant's subtype
-   * label still opens the dialog that explains them.
+   * roughly 30% of all gas giants and would drown the real finds.
    */
   public greenGasGiantBadge(): string | null {
     // A catalogued body carries its whole classification in the badge — the title row
@@ -776,9 +775,7 @@ export class SystemBodyComponent implements OnChanges {
   }
 
   /**
-   * Opens the cloud-layer explanation for this gas giant. Available from any gas giant's
-   * subtype label, not just the ones that earn a badge, so a commander can see where a
-   * giant's layers fell relative to the band boundaries either way.
+   * Opens the cloud-layer explanation for this gas giant, from its Green Gas Giant badge.
    */
   public async showGreenGasGiantDialog(): Promise<void> {
     const prediction = this.getGreenGasGiantPrediction();
